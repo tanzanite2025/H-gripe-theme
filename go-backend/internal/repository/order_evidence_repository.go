@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -325,21 +326,34 @@ func (r *OrderEvidenceRepository) DeleteAttachment(attachmentID uint) error {
 	if attachmentID == 0 {
 		return gorm.ErrRecordNotFound
 	}
-	// Attachment rows are mutable package references. The underlying object
-	// remains immutable and is intentionally retained for later audit/review.
-	// Use controlled SQL because the domain hook correctly blocks generic
-	// GORM deletes on immutable attachment records.
-	result := r.db.Exec(
-		"DELETE FROM order_evidence_attachments WHERE id = ?",
-		attachmentID,
-	)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
+	return r.WithLockedOrderEvidenceAttachmentLifecycleTransaction(r.db.Statement.Context, func(_ context.Context, repo *OrderEvidenceRepository) error {
+		attachment, err := repo.findMutableOrderEvidenceAttachmentBeforeDetachment(attachmentID)
+		if err != nil {
+			return err
+		}
+		// Only the placement changes. The row remains an immutable retention claim.
+		result := repo.db.Exec("UPDATE order_evidence_attachments SET detached_at = ? WHERE id = ? AND detached_at IS NULL", time.Now().UTC(), attachment.ID)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected != 1 {
+			return gorm.ErrRecordNotFound
+		}
+		item, err := repo.FindItemByID(attachment.EvidenceItemID)
+		if err != nil {
+			return err
+		}
+		remaining, err := repo.ListAttachmentsByItemID(item.ID)
+		if err != nil {
+			return err
+		}
+		if len(remaining) == 0 && item.Status == orderevidence.EvidenceItemStatusComplete && orderEvidenceItemRequiresImmutableAttachment(item.ItemType) {
+			item.Status = orderevidence.EvidenceItemStatusDraft
+			_, _, err = repo.UpdateItemAndRefreshPackage(item)
+			return err
+		}
+		return nil
+	})
 }
 
 func (r *OrderEvidenceRepository) ListAttachmentsByItemID(itemID uint) ([]orderevidence.OrderEvidenceAttachment, error) {

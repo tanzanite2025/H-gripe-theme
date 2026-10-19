@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -30,6 +31,10 @@ type OutboxRepository struct {
 
 func NewOutboxRepository(db *gorm.DB) *OutboxRepository {
 	return &OutboxRepository{db: db}
+}
+
+func (r *OutboxRepository) WithContext(ctx context.Context) *OutboxRepository {
+	return &OutboxRepository{db: r.db.WithContext(ctx)}
 }
 
 func (r *OutboxRepository) WithTx(tx *gorm.DB) *OutboxRepository {

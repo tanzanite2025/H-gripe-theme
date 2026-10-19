@@ -12,6 +12,7 @@ import (
 	"time"
 
 	mediadomain "commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
@@ -53,6 +54,8 @@ func TestMediaDerivativeRebuildSynchronizesStorefrontSnapshotsAndOwnedThumbnail(
 	})
 	require.NoError(t, err)
 	mediaService := NewMediaService(mediaRepo, storageService, nil, "https://shop.example.test", 20<<30)
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}))
+	mediaService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	mediaService.ConfigureDerivativePresetRepository(presetRepo)
 	mediaService.ConfigureDerivativeRebuildJobRepository(rebuildRepo)
 
@@ -166,6 +169,8 @@ func TestMediaDerivativeRebuildKeepsGeneratedThumbnailOwnershipAcrossFallbackPre
 	})
 	require.NoError(t, err)
 	mediaService := NewMediaService(mediaRepo, storageService, nil, "https://shop.example.test", 20<<30)
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}))
+	mediaService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	mediaService.ConfigureDerivativePresetRepository(presetRepo)
 	mediaService.ConfigureDerivativeRebuildJobRepository(rebuildRepo)
 

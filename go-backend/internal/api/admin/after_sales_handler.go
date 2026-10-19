@@ -2,17 +2,18 @@ package admin
 
 import (
 	"errors"
-	"mime"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"commerce-platform/internal/api/privateattachment"
 	"commerce-platform/internal/domain/aftersales"
 	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/pagination"
 	"commerce-platform/internal/pkg/response"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -115,6 +116,7 @@ func (h *AfterSalesHandler) LookupByReturnTracking(c *gin.Context) {
 // ServeAttachment opens a private customer evidence attachment for backoffice review.
 // GET /api/admin/after-sales/:id/attachments/:attachment_id
 func (h *AfterSalesHandler) ServeAttachment(c *gin.Context) {
+	privateattachment.SetPrivateAttachmentResponseHeaders(c)
 	caseID, ok := parseAfterSalesID(c, "after-sales case ID")
 	if !ok {
 		return
@@ -126,32 +128,10 @@ func (h *AfterSalesHandler) ServeAttachment(c *gin.Context) {
 
 	file, err := h.service.OpenAttachmentFile(c.Request.Context(), caseID, attachmentID)
 	if err != nil {
-		respondAfterSalesError(c, err)
+		respondAdministratorPrivateOrderAttachmentReadError(c, err)
 		return
 	}
-	if strings.TrimSpace(file.RedirectURL) != "" {
-		c.Header("Cache-Control", "private, no-store")
-		c.Header("X-Content-Type-Options", "nosniff")
-		c.Redirect(http.StatusTemporaryRedirect, file.RedirectURL)
-		return
-	}
-	if file.ReadCloser == nil {
-		respondAfterSalesError(c, service.ErrAfterSalesAttachmentStorageUnavailable)
-		return
-	}
-	defer func() { _ = file.ReadCloser.Close() }()
-
-	filename := strings.TrimSpace(file.Filename)
-	if filename != "" {
-		c.Header("Content-Disposition", mime.FormatMediaType("inline", map[string]string{"filename": filename}))
-	}
-	mimeType := strings.TrimSpace(file.MimeType)
-	if mimeType == "" {
-		mimeType = "application/octet-stream"
-	}
-	c.Header("Cache-Control", "private, no-store")
-	c.Header("X-Content-Type-Options", "nosniff")
-	c.DataFromReader(http.StatusOK, file.Size, mimeType, file.ReadCloser, nil)
+	privateattachment.ServeAuthorizedPrivateAttachmentFile(c, &storage.StoredObject{ReadCloser: file.ReadCloser, Name: file.Filename, MimeType: file.MimeType, Size: file.Size})
 }
 
 // ListByOrder lists independent after-sales cases without changing order.status.

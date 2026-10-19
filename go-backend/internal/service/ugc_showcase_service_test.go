@@ -14,6 +14,7 @@ import (
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/ugcshowcase"
 	"commerce-platform/internal/domain/user"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -57,25 +58,23 @@ func TestShowcaseUploadPhotosDeletesUploadedImagesWhenCreateFails(t *testing.T) 
 	require.NoError(t, db.Migrator().DropTable(&ugcshowcase.UGCShowcase{}))
 	completedAt := time.Date(2026, 8, 13, 12, 0, 0, 0, time.UTC)
 	require.NoError(t, db.Create(&order.Order{
-		ID:          91,
-		UserID:      7,
-		OrderNumber: "SHOWCASE-91",
-		Status:      "completed",
-		CompletedAt: &completedAt,
+		ID:               91,
+		UserID:           7,
+		OrderNumber:      "SHOWCASE-91",
+		Status:           "completed",
+		CompletedAt:      &completedAt,
 		TotalAmountMinor: 10000,
-		Currency:    "USD",
+		Currency:         "USD",
 	}).Error)
 	UGCShowcaseService.ConfigureUploadEligibility(NewUGCShowcaseUploadEligibilityService(repository.NewOrderRepository(db)))
 
 	_, err := UGCShowcaseService.UploadPhotos(context.Background(), 7, 91, []*multipart.FileHeader{
-		{Filename: "first.webp", Size: 100},
-		{Filename: "second.webp", Size: 100},
+		createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "first.webp"),
+		createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "second.webp"),
 	}, map[string]string{"region": "US"})
 	require.Error(t, err)
-	assert.Equal(t, []string{
-		"showcase/pending/2026/08/13/first.webp",
-		"showcase/pending/2026/08/13/second.webp",
-	}, storage.deletedURLs)
+	processUGCShowcasePrecommittedCleanupReceiptsForExistingServiceTest(t, db, UGCShowcaseService)
+	assert.ElementsMatch(t, storage.preallocatedKeys, storage.deletedURLs)
 	assert.Equal(t, []string{"showcase/pending", "showcase/pending"}, storage.uploadPrefixes)
 }
 
@@ -89,22 +88,24 @@ func TestShowcaseUploadPhotosDeletesPreviousImagesWhenLaterUploadFails(t *testin
 	UGCShowcaseService.storage = storage
 	completedAt := time.Date(2026, 8, 13, 12, 0, 0, 0, time.UTC)
 	require.NoError(t, db.Create(&order.Order{
-		ID:          92,
-		UserID:      7,
-		OrderNumber: "SHOWCASE-92",
-		Status:      "completed",
-		CompletedAt: &completedAt,
+		ID:               92,
+		UserID:           7,
+		OrderNumber:      "SHOWCASE-92",
+		Status:           "completed",
+		CompletedAt:      &completedAt,
 		TotalAmountMinor: 10000,
-		Currency:    "USD",
+		Currency:         "USD",
 	}).Error)
 	UGCShowcaseService.ConfigureUploadEligibility(NewUGCShowcaseUploadEligibilityService(repository.NewOrderRepository(db)))
 
 	_, err := UGCShowcaseService.UploadPhotos(context.Background(), 7, 92, []*multipart.FileHeader{
-		{Filename: "first.webp", Size: 100},
-		{Filename: "second.webp", Size: 100},
+		createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "first.webp"),
+		createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "second.webp"),
 	}, map[string]string{"region": "US"})
 	require.Error(t, err)
-	assert.Equal(t, []string{"showcase/pending/2026/08/13/first.webp"}, storage.deletedURLs)
+	processUGCShowcasePrecommittedCleanupReceiptsForExistingServiceTest(t, db, UGCShowcaseService)
+	assert.Len(t, storage.deletedURLs, 2)
+	assert.Contains(t, storage.deletedURLs, storage.preallocatedKeys[0])
 	assert.Equal(t, []string{"showcase/pending", "showcase/pending"}, storage.uploadPrefixes)
 }
 
@@ -119,19 +120,19 @@ func TestShowcaseUploadPhotosStoresPendingImageKeysOnly(t *testing.T) {
 	UGCShowcaseService.storage = storage
 	completedAt := time.Date(2026, 8, 13, 12, 0, 0, 0, time.UTC)
 	require.NoError(t, db.Create(&order.Order{
-		ID:          93,
-		UserID:      7,
-		OrderNumber: "SHOWCASE-93",
-		Status:      "completed",
-		CompletedAt: &completedAt,
+		ID:               93,
+		UserID:           7,
+		OrderNumber:      "SHOWCASE-93",
+		Status:           "completed",
+		CompletedAt:      &completedAt,
 		TotalAmountMinor: 10000,
-		Currency:    "USD",
+		Currency:         "USD",
 	}).Error)
 	UGCShowcaseService.ConfigureUploadEligibility(NewUGCShowcaseUploadEligibilityService(repository.NewOrderRepository(db)))
 
 	item, err := UGCShowcaseService.UploadPhotos(context.Background(), 7, 93, []*multipart.FileHeader{
-		{Filename: "first.webp", Size: 100},
-		{Filename: "second.webp", Size: 100},
+		createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "first.webp"),
+		createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "second.webp"),
 	}, map[string]string{"region": "US"})
 	require.NoError(t, err)
 
@@ -140,10 +141,7 @@ func TestShowcaseUploadPhotosStoresPendingImageKeysOnly(t *testing.T) {
 
 	var savedImages []string
 	require.NoError(t, json.Unmarshal(saved.Images, &savedImages))
-	require.Equal(t, []string{
-		"showcase/pending/2026/08/13/first.webp",
-		"showcase/pending/2026/08/13/second.webp",
-	}, savedImages)
+	require.Equal(t, storage.preallocatedKeys, savedImages)
 	for _, imageReference := range savedImages {
 		assert.NotContains(t, imageReference, "://")
 		assert.True(t, strings.HasPrefix(imageReference, "showcase/pending/"))
@@ -183,13 +181,13 @@ func TestShowcaseUploadPhotosEnforcesPendingLimitAtCreateTime(t *testing.T) {
 		Password: "password",
 	}).Error)
 	require.NoError(t, db.Create(&order.Order{
-		ID:          94,
-		UserID:      7,
-		OrderNumber: "SHOWCASE-94",
-		Status:      "completed",
-		CompletedAt: &completedAt,
+		ID:               94,
+		UserID:           7,
+		OrderNumber:      "SHOWCASE-94",
+		Status:           "completed",
+		CompletedAt:      &completedAt,
 		TotalAmountMinor: 10000,
-		Currency:    "USD",
+		Currency:         "USD",
 	}).Error)
 	require.NoError(t, db.Create(&ugcshowcase.UGCShowcase{
 		UserID: 7,
@@ -199,10 +197,12 @@ func TestShowcaseUploadPhotosEnforcesPendingLimitAtCreateTime(t *testing.T) {
 	UGCShowcaseService.ConfigureUploadEligibility(NewUGCShowcaseUploadEligibilityService(repository.NewOrderRepository(db)))
 
 	_, err := UGCShowcaseService.UploadPhotos(context.Background(), 7, 94, []*multipart.FileHeader{
-		{Filename: "blocked.webp", Size: 100},
+		createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "blocked.webp"),
 	}, map[string]string{"region": "US"})
 	require.ErrorIs(t, err, ErrShowcaseUploadPendingLimitExceeded)
-	assert.Equal(t, []string{"showcase/pending/2026/08/13/blocked.webp"}, storage.deletedURLs)
+	assert.Empty(t, storage.preallocatedKeys)
+	processUGCShowcasePrecommittedCleanupReceiptsForExistingServiceTest(t, db, UGCShowcaseService)
+	assert.Len(t, storage.deletedURLs, 1)
 
 	count, err := UGCShowcaseService.CountPendingSubmissions(7)
 	require.NoError(t, err)
@@ -304,8 +304,9 @@ func TestShowcaseOpenPublicImageFileRequiresApprovedRecord(t *testing.T) {
 	}
 	require.NoError(t, db.Create(item).Error)
 
-	_, err = UGCShowcaseService.OpenPublicImageFile(context.Background(), item.ID, 0)
-	require.Error(t, err)
+	file, err := UGCShowcaseService.OpenPublicImageFile(context.Background(), item.ID, 0)
+	require.NoError(t, err)
+	require.NoError(t, file.ReadCloser.Close())
 }
 
 func TestShowcaseOpenPublicImageFileRejectsApprovedRecordOutsideApprovedNamespace(t *testing.T) {
@@ -401,7 +402,11 @@ func TestShowcaseApproveKeepsPendingSourceWhenCopyFails(t *testing.T) {
 	require.NoError(t, db.Create(item).Error)
 
 	require.Error(t, UGCShowcaseService.Approve(context.Background(), item.ID))
-	assert.Empty(t, storage.deletedURLs)
+	processUGCShowcasePrecommittedCleanupReceiptsForExistingServiceTest(t, db, UGCShowcaseService)
+	// A failed copy can have written its destination. Its known exact key is
+	// durably compensated even when the provider returns an error.
+	require.Len(t, storage.deletedURLs, 1)
+	assert.True(t, strings.HasPrefix(storage.deletedURLs[0], showcaseApprovedUploadPrefix+"/"))
 
 	var saved ugcshowcase.UGCShowcase
 	require.NoError(t, db.First(&saved, item.ID).Error)
@@ -434,8 +439,10 @@ func TestShowcaseApproveDeletesCopiedApprovedImagesWhenLaterCopyFails(t *testing
 	require.NoError(t, db.Create(item).Error)
 
 	require.Error(t, UGCShowcaseService.Approve(context.Background(), item.ID))
+	processUGCShowcasePrecommittedCleanupReceiptsForExistingServiceTest(t, db, UGCShowcaseService)
 	require.Len(t, storage.copiedKeys, 1)
-	assert.Equal(t, []string{storage.copiedKeys[0][1]}, storage.deletedURLs)
+	require.Len(t, storage.deletedURLs, 2)
+	assert.Contains(t, storage.deletedURLs, storage.copiedKeys[0][1])
 	assert.NotContains(t, storage.deletedURLs, imageKeys[0])
 	assert.NotContains(t, storage.deletedURLs, imageKeys[1])
 
@@ -664,6 +671,15 @@ func TestShowcaseCleanupLeavesRecentPendingRecordsUntouched(t *testing.T) {
 	assert.Equal(t, ugcshowcase.StatusPending, saved.Status)
 }
 
+func processUGCShowcasePrecommittedCleanupReceiptsForExistingServiceTest(t *testing.T, db *gorm.DB, svc *UGCShowcaseService) {
+	t.Helper()
+	var events []outbox.Event
+	require.NoError(t, db.Where("event_key LIKE ?", repository.UGCShowcasePrecommittedObjectWriteReceiptEventKeyPrefix+"%").Find(&events).Error)
+	for _, event := range events {
+		require.NoError(t, NewObjectStorageCleanupOutboxHandler(nil, nil, nil, svc).Handle(t.Context(), event))
+	}
+}
+
 func newTestShowcaseService(t *testing.T) (*gorm.DB, *UGCShowcaseService) {
 	t.Helper()
 
@@ -686,17 +702,69 @@ func newTestShowcaseService(t *testing.T) (*gorm.DB, *UGCShowcaseService) {
 }
 
 type fakeShowcaseStorage struct {
-	uploadURLs     []string
-	deletedURLs    []string
-	copiedKeys     [][2]string
-	uploadPrefixes []string
-	uploadErr      error
-	copyErr        error
-	deleteErrors   map[string]error
-	copyErrAt      int
-	errAt          int
-	uploadCalled   int
-	copyCalled     int
+	preallocatedKeys []string
+	storedObjects    map[string][]byte
+	uploadURLs       []string
+	deletedURLs      []string
+	copiedKeys       [][2]string
+	uploadPrefixes   []string
+	uploadErr        error
+	copyErr          error
+	deleteErrors     map[string]error
+	copyErrAt        int
+	errAt            int
+	uploadCalled     int
+	copyCalled       int
+}
+
+func (s *fakeShowcaseStorage) VerifyStoredObjectExists(_ context.Context, key string) error {
+	if _, exists := s.storedObjects[key]; exists {
+		return nil
+	}
+	for _, pair := range s.copiedKeys {
+		if pair[1] == key {
+			return nil
+		}
+	}
+	for index, reference := range s.uploadURLs {
+		if index >= s.uploadCalled {
+			break
+		}
+		resolved, _ := s.ObjectKey(reference)
+		if resolved == key {
+			return nil
+		}
+	}
+	return errors.New("fake showcase storage has no uploaded or copied object at this key")
+}
+
+func (s *fakeShowcaseStorage) WritePrivateObjectAtPreallocatedKey(ctx context.Context, reader io.Reader, key string) (string, error) {
+	s.uploadCalled++
+	s.preallocatedKeys = append(s.preallocatedKeys, key)
+	s.uploadPrefixes = append(s.uploadPrefixes, showcasePendingUploadPrefix)
+	if s.uploadErr != nil && s.uploadCalled == s.errAt {
+		return "", s.uploadErr
+	}
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+	if s.storedObjects == nil {
+		s.storedObjects = make(map[string][]byte)
+	}
+	s.storedObjects[key] = data
+	return key, ctx.Err()
+}
+
+func (s *fakeShowcaseStorage) Open(ctx context.Context, key string) (*storage.StoredObject, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	data, exists := s.storedObjects[key]
+	if !exists {
+		data = []byte("historical showcase test object")
+	}
+	return &storage.StoredObject{ReadCloser: io.NopCloser(strings.NewReader(string(data))), Size: int64(len(data))}, nil
 }
 
 func (s *fakeShowcaseStorage) Upload(context.Context, *multipart.FileHeader) (string, error) {

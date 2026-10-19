@@ -16,15 +16,42 @@ import (
 // cleanup. The retention service remains the authority for dependency holds,
 // recovery-window checks and audit records.
 type CustomerServiceRetentionScheduler struct {
-	retentionService *service.CustomerServiceRetentionService
-	interval         time.Duration
-	batchLimit       int
-	cancel           context.CancelFunc
-	done             chan struct{}
-	once             sync.Once
-	started          bool
-	stopped          bool
-	mu               sync.Mutex
+	businessDraftMediaService *service.MediaService
+	retentionService          *service.CustomerServiceRetentionService
+	interval                  time.Duration
+	batchLimit                int
+	cancel                    context.CancelFunc
+	done                      chan struct{}
+	once                      sync.Once
+	started                   bool
+	stopped                   bool
+	mu                        sync.Mutex
+}
+
+func (s *CustomerServiceRetentionScheduler) ConfigureBusinessDraftMediaUploadExpiry(mediaService *service.MediaService) {
+	if s != nil {
+		s.businessDraftMediaService = mediaService
+	}
+}
+
+func (s *CustomerServiceRetentionScheduler) RunBusinessDraftMediaUploadExpiryOnce(ctx context.Context) (service.BusinessDraftMediaUploadExpiryBatchResult, error) {
+	if s == nil || s.businessDraftMediaService == nil {
+		return service.BusinessDraftMediaUploadExpiryBatchResult{}, nil
+	}
+	return s.businessDraftMediaService.ExpireUnboundBusinessDraftMediaUploads(ctx, s.batchLimit)
+}
+
+func (s *CustomerServiceRetentionScheduler) expirePendingBusinessDraftMediaUploadsOnce(ctx context.Context) {
+	passContext, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	result, err := s.RunBusinessDraftMediaUploadExpiryOnce(passContext)
+	if err != nil {
+		logger.Error("business draft media upload expiry failed", zap.Error(err))
+		return
+	}
+	if result.Scanned > 0 {
+		logger.Info("business draft media upload expiry completed", zap.Int("scanned", result.Scanned), zap.Int("retired", result.Retired), zap.Int("blocked", result.Blocked), zap.Int("errors", result.Errors))
+	}
 }
 
 func NewCustomerServiceRetentionScheduler(retentionService *service.CustomerServiceRetentionService, cfg config.WorkerConfig) *CustomerServiceRetentionScheduler {
@@ -81,6 +108,7 @@ func (s *CustomerServiceRetentionScheduler) Start(ctx context.Context) {
 				logger.Info("customer-service retention scheduler stopped")
 				return
 			case <-timer.C:
+				s.expirePendingBusinessDraftMediaUploadsOnce(runCtx)
 				s.expirePendingCustomerServiceAttachmentUploadsOnce(runCtx)
 				cfg, err := s.retentionService.RuntimeConfig()
 				if err == nil && cfg.Enabled && (lastRun.IsZero() || time.Since(lastRun) >= time.Duration(cfg.IntervalSeconds)*time.Second) {

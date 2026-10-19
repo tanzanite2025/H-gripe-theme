@@ -1,15 +1,17 @@
 package main
 
 import (
-	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/database"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 // SettingImport 导入的设置结构
@@ -79,7 +81,23 @@ func main() {
 	// 创建 repository
 	settingRepo := repository.NewSettingRepository(db)
 
-	// 导入设置
+	if !*dryRun {
+		storageConfig := storage.LoadConfigFromEnv()
+		if _, configured := os.LookupEnv("STORAGE_BASE_URL"); !configured {
+			storageConfig.BaseURL = cfg.Server.BaseURL
+		}
+		storageService, err := storage.NewStorageService(storageConfig)
+		if err != nil {
+			log.Fatalf("initialize settings import media identity validation: %v", err)
+		}
+		storefrontBaseURL := strings.TrimSpace(os.Getenv("STOREFRONT_BASE_URL"))
+		if storefrontBaseURL == "" {
+			storefrontBaseURL = cfg.Server.BaseURL
+		}
+		settingRepo.ConfigurePublicBusinessMediaReferenceIdentityResolver(service.NewMediaService(repository.NewMediaRepository(db), storageService, nil, storefrontBaseURL, cfg.MediaUpload.AccountStorageQuotaBytes))
+	}
+
+	// The entire file is one mutation, including all media-bearing settings.
 	fmt.Println("开始导入...")
 	fmt.Println()
 
@@ -92,47 +110,16 @@ func main() {
 			fmt.Printf("  进度: %d/%d (%.1f%%)\r", i+1, len(importSettings), float64(i+1)/float64(len(importSettings))*100)
 		}
 
-		// 试运行模式，跳过实际写入
 		if *dryRun {
 			fmt.Printf("  [试运行] %s.%s = %s\n", importSetting.Group, importSetting.Key, truncate(importSetting.Value, 50))
-			continue
 		}
-
-		// 检查是否已存在
-		existing, err := settingRepo.Get(importSetting.Key, importSetting.Locale)
-
-		// 创建 Setting 对象
-		s := &setting.Setting{
-			Key:         importSetting.Key,
-			Value:       importSetting.Value,
-			Type:        importSetting.Type,
-			Group:       importSetting.Group,
-			Locale:      importSetting.Locale,
-			IsPublic:    importSetting.IsPublic,
-			Description: importSetting.Description,
-		}
-
+	}
+	if !*dryRun {
+		importStats, err := importSettingsWithAtomicRegisteredMediaValidation(settingRepo, importSettings)
 		if err != nil {
-			// 不存在，创建新记录
-			if err := settingRepo.Set(s); err != nil {
-				log.Printf("❌ 创建设置失败 [%s]: %v", importSetting.Key, err)
-				stats["skipped"]++
-			} else {
-				stats["created"]++
-			}
-		} else {
-			// 已存在，更新
-			if existing.Value != importSetting.Value {
-				if err := settingRepo.Set(s); err != nil {
-					log.Printf("❌ 更新设置失败 [%s]: %v", importSetting.Key, err)
-					stats["skipped"]++
-				} else {
-					stats["updated"]++
-				}
-			} else {
-				stats["skipped"]++
-			}
+			log.Fatalf("settings import rolled back: %v", err)
 		}
+		stats = importStats
 	}
 
 	fmt.Println()
@@ -157,6 +144,7 @@ func main() {
 
 	if *dryRun {
 		fmt.Println("⚠️  这是试运行，没有实际写入数据库")
+		fmt.Println("仅预览内容，不代表媒体登记、复用资格或整批保存校验通过")
 		fmt.Println("移除 --dry-run 参数以执行实际导入")
 	} else {
 		fmt.Println("✓ 数据已成功导入到数据库")

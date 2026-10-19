@@ -7,6 +7,7 @@ export type ApiRequestQueryValue = ApiRequestQueryPrimitive | ApiRequestQueryPri
 export type ApiRequestQuery = Record<string, ApiRequestQueryValue> | URLSearchParams
 
 export interface ApiRequestInit extends RequestInit {
+  responseType?: 'json' | 'blob'
   params?: ApiRequestQuery
   query?: ApiRequestQuery
 }
@@ -272,7 +273,7 @@ export function useApiRequest() {
       throw new Error('Missing runtimeConfig.public.apiBase for API requests')
     }
 
-    const { params, query, ...fetchInit } = init
+    const { params, query, responseType, ...fetchInit } = init
     const requestPath = appendQuery(path, params, query)
     const headers = new Headers(fetchInit.headers || undefined)
     if (isUnsafeMethod(fetchInit.method)) {
@@ -292,6 +293,7 @@ export function useApiRequest() {
     }
 
     const response = await fetch(requestURL, finalInit)
+    if (response.ok && responseType === 'blob') return await response.blob() as T
     const payload = await readResponse(response)
 
     if (!response.ok) {

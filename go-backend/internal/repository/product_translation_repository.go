@@ -217,13 +217,11 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 		for _, binding := range sourceBindings {
 			binding.ID = 0
 			binding.ProductID = target.ID
-			if binding.VariantID != nil {
-				translatedVariantID, exists := variantIDs[*binding.VariantID]
-				if !exists {
-					continue
-				}
-				binding.VariantID = &translatedVariantID
+			translatedVariantID, exists := variantIDs[binding.VariantID]
+			if !exists {
+				continue
 			}
+			binding.VariantID = translatedVariantID
 			copiedBindings = append(copiedBindings, binding)
 		}
 		if len(copiedBindings) > 0 {

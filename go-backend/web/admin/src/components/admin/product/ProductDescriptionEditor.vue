@@ -182,14 +182,14 @@ const uploadAndInsert = async (event: Event, type: 'image' | 'video') => {
     formData.append('file', file)
     formData.append('media_type', type)
     if (type === 'image') formData.append('image_purpose', 'product_description_image')
-    const asset = await mediaApi.uploadAsset(formData, 'catalog')
+    const asset = await mediaApi.uploadBusinessDraftAsset(formData, 'catalog')
     const url = String(asset?.url || '').trim()
     if (!url) {
       toast.error('上传成功但没有返回媒体地址')
       return
     }
     insertMedia(type, url, asset?.alt || asset?.original_filename || file.name)
-    toast.success(type === 'image' ? '详情图片已插入' : '详情视频已插入')
+    toast.success(type === 'image' ? '详情图片已插入，请在 24 小时内保存商品' : '详情视频已插入，请在 24 小时内保存商品')
   } catch (error) {
     console.error('Failed to upload product description media:', error)
     toast.error(type === 'image' ? '详情图片上传失败' : '详情视频上传失败')

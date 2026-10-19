@@ -6,14 +6,12 @@ import (
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"mime/multipart"
 	"strconv"
 	"time"
 
-	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -23,6 +21,7 @@ type UGCShowcaseService struct {
 	outbox            *repository.OutboxRepository
 	uploadEligibility *UGCShowcaseUploadEligibilityService
 	pendingLimit      int
+	siteURL           string
 }
 
 func (s *UGCShowcaseService) ConfigureObjectCleanupOutbox(repo *repository.OutboxRepository) {
@@ -32,11 +31,18 @@ func (s *UGCShowcaseService) ConfigureObjectCleanupOutbox(repo *repository.Outbo
 	s.outbox = repo
 }
 
-func NewUGCShowcaseService(repo *repository.UGCShowcaseRepository, st storage.StorageService) *UGCShowcaseService {
-	return &UGCShowcaseService{
+func NewUGCShowcaseService(repo *repository.UGCShowcaseRepository, st storage.StorageService, siteURLs ...string) *UGCShowcaseService {
+	service := &UGCShowcaseService{
 		repo:    repo,
 		storage: st,
 	}
+	if len(siteURLs) > 0 {
+		service.siteURL = siteURLs[0]
+	}
+	if repo != nil {
+		repo.ConfigureTransactionalUGCShowcaseImageOwnershipValidation(service.validateUGCShowcaseImageBindingsAfterLifecycleLock, service.resolveUGCShowcaseStoredImageObjectKey)
+	}
+	return service
 }
 
 func (s *UGCShowcaseService) ConfigureUploadEligibility(eligibility *UGCShowcaseUploadEligibilityService) {
@@ -56,6 +62,16 @@ func (s *UGCShowcaseService) UploadPhotos(ctx context.Context, userID, orderID u
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no files provided")
 	}
+	if s.repo != nil {
+		if err := s.repo.RequireIndependentUGCShowcaseProviderOperationTransaction(); err != nil {
+			return nil, err
+		}
+	}
+	if s.outbox != nil {
+		if err := s.outbox.RequireIndependentUGCShowcaseObjectWriteReceiptTransaction(); err != nil {
+			return nil, err
+		}
+	}
 
 	if s.uploadEligibility == nil {
 		return nil, ErrShowcaseUploadEligibilityUnavailable
@@ -64,47 +80,11 @@ func (s *UGCShowcaseService) UploadPhotos(ctx context.Context, userID, orderID u
 		return nil, err
 	}
 
-	if s.storage == nil {
+	if s.storage == nil || s.outbox == nil || s.repo == nil {
 		return nil, ErrShowcaseStorageUnavailable
 	}
 
-	// 1. 上传图片。待审核图片只保存对象 key，避免 pending 文件的公开 URL 泄露到数据库或后台列表。
-	var pendingImageKeys []string
-	for _, file := range files {
-		key, err := s.uploadPendingShowcaseImage(ctx, file)
-		if err != nil {
-			deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, pendingImageKeys)
-			return nil, fmt.Errorf("failed to upload file %s: %w", file.Filename, err)
-		}
-		pendingImageKeys = append(pendingImageKeys, key)
-	}
-
-	imagesJSON, err := json.Marshal(pendingImageKeys)
-	if err != nil {
-		deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, pendingImageKeys)
-		return nil, fmt.Errorf("failed to encode uploaded images: %w", err)
-	}
-
-	item := &ugcshowcase.UGCShowcase{
-		UserID:    userID,
-		OrderID:   showcaseUploadOrderID(orderID),
-		Kind:      ugcshowcase.KindUser,
-		Region:    params["region"],
-		Location:  params["location"],
-		Nickname:  params["nickname"],
-		Notes:     params["notes"],
-		Images:    imagesJSON,
-		Status:    ugcshowcase.StatusPending,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	if err := s.createPendingSubmission(item); err != nil {
-		deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, pendingImageKeys)
-		return nil, err
-	}
-
-	return item, nil
+	return s.uploadPendingShowcaseImagesWithPrecommittedKeysAndAtomicSubmission(ctx, userID, orderID, files, params)
 }
 
 func showcaseUploadOrderID(orderID uint) *uint {
@@ -123,14 +103,14 @@ func (s *UGCShowcaseService) ValidateUploadOrder(ctx context.Context, userID, or
 	return err
 }
 
-func (s *UGCShowcaseService) createPendingSubmission(item *ugcshowcase.UGCShowcase) error {
+func (s *UGCShowcaseService) createPendingSubmission(ctx context.Context, item *ugcshowcase.UGCShowcase) error {
 	if s == nil || s.repo == nil {
 		return ErrShowcaseStorageUnavailable
 	}
 	if s.pendingLimit <= 0 {
-		return s.repo.Create(item)
+		return s.repo.WithContext(ctx).Create(item)
 	}
-	return s.repo.WithTransaction(func(repo *repository.UGCShowcaseRepository, _ *gorm.DB) error {
+	return s.repo.WithContext(ctx).WithTransaction(func(repo *repository.UGCShowcaseRepository, _ *gorm.DB) error {
 		if err := repo.LockUserForSubmissionLimit(item.UserID); err != nil {
 			if repository.IsRecordNotFound(err) {
 				return ErrShowcaseUploadOrderNotEligible
@@ -146,18 +126,6 @@ func (s *UGCShowcaseService) createPendingSubmission(item *ugcshowcase.UGCShowca
 		}
 		return repo.Create(item)
 	})
-}
-
-func deleteUploadedShowcaseImagesBestEffort(ctx context.Context, storageService storage.StorageService, imageReferences []string) {
-	if storageService == nil {
-		return
-	}
-	for _, imageReference := range imageReferences {
-		if imageReference == "" {
-			continue
-		}
-		_ = storageService.Delete(ctx, imageReference)
-	}
 }
 
 func (s *UGCShowcaseService) List(kind string, status string, page int, perPage int) ([]ugcshowcase.UGCShowcase, error) {
@@ -182,100 +150,50 @@ func (s *UGCShowcaseService) ListPublic(kind string, page int, perPage int) ([]u
 }
 
 func (s *UGCShowcaseService) Approve(ctx context.Context, id uint) error {
-	item, err := s.Get(id)
-	if err != nil {
-		return err
-	}
-	if item.Status != ugcshowcase.StatusPending {
-		return ErrShowcaseInvalidTransition
-	}
-	if s.storage == nil {
+	if s == nil || s.repo == nil || s.storage == nil || s.outbox == nil {
 		return ErrShowcaseStorageUnavailable
 	}
-	imageReferences, err := decodeShowcaseImageURLs(item.Images)
-	if err != nil {
-		return err
+	if ctx == nil {
+		ctx = context.Background()
 	}
-	publication, err := s.publishShowcaseImages(ctx, imageReferences)
-	if err != nil {
-		deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, publication.CopiedObjectKeys)
-		return err
-	}
-	imagesJSON, err := json.Marshal(publication.PublishedObjectKeys)
-	if err != nil {
-		deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, publication.CopiedObjectKeys)
-		return fmt.Errorf("failed to encode published images: %w", err)
-	}
-	cleanupKeys := s.showcasePendingCleanupKeys(publication.PendingSourceReferences)
-	err = s.repo.WithTransaction(func(repo *repository.UGCShowcaseRepository, tx *gorm.DB) error {
-		updated, updateErr := repo.UpdatePendingImagesAndStatus(id, datatypes.JSON(imagesJSON), ugcshowcase.StatusApproved, "")
-		if updateErr != nil {
-			return updateErr
-		}
-		if !updated {
-			return ErrShowcaseInvalidTransition
-		}
-		return s.enqueueShowcaseCleanup(tx, id, cleanupKeys)
-	})
-	if err != nil {
-		deleteUploadedShowcaseImagesBestEffort(ctx, s.storage, publication.CopiedObjectKeys)
-		return err
-	}
-	return nil
+	return s.approveUGCShowcaseWithPrecommittedCopyDestinationsAndAtomicPublication(ctx, id)
 }
 
 func (s *UGCShowcaseService) Reject(ctx context.Context, id uint, reason string) error {
-	item, err := s.Get(id)
-	if err != nil {
-		return err
+	if s == nil || s.repo == nil || s.storage == nil {
+		return ErrShowcaseStorageUnavailable
 	}
-	if item.Status != ugcshowcase.StatusPending {
-		return ErrShowcaseInvalidTransition
-	}
-	imageReferences, err := decodeShowcaseImageURLs(item.Images)
-	if err != nil {
-		return err
-	}
-
-	pendingImageReferences := make([]string, 0, len(imageReferences))
-	if s.storage != nil {
-		for _, imageReference := range imageReferences {
-			key, keyErr := s.storage.ObjectKey(imageReference)
-			if keyErr == nil && showcaseStorageKeyIsPending(key) {
-				pendingImageReferences = append(pendingImageReferences, imageReference)
-			}
+	return s.repo.WithContext(ctx).WithTransaction(func(repo *repository.UGCShowcaseRepository, tx *gorm.DB) error {
+		item, err := repo.FindUGCShowcaseByIDForUpdateWithinLifecycleTransaction(id)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrShowcaseNotFound
 		}
-	}
-
-	cleanupKeys := s.showcasePendingCleanupKeys(pendingImageReferences)
-	err = s.repo.WithTransaction(func(repo *repository.UGCShowcaseRepository, tx *gorm.DB) error {
-		updated, updateErr := repo.UpdatePendingStatus(id, ugcshowcase.StatusRejected, reason)
-		if updateErr != nil {
-			return updateErr
+		if err != nil {
+			return err
+		}
+		if item.Status != ugcshowcase.StatusPending {
+			return ErrShowcaseInvalidTransition
+		}
+		references, err := decodeShowcaseImageURLs(item.Images)
+		if err != nil {
+			return err
+		}
+		updated, err := repo.UpdatePendingStatus(id, ugcshowcase.StatusRejected, reason)
+		if err != nil {
+			return err
 		}
 		if !updated {
 			return ErrShowcaseInvalidTransition
 		}
-		return s.enqueueShowcaseCleanup(tx, id, cleanupKeys)
+		return s.enqueueShowcaseCleanup(tx, id, s.showcasePendingCleanupKeys(references))
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (s *UGCShowcaseService) showcasePendingCleanupKeys(references []string) []string {
 	if s == nil || s.storage == nil {
 		return nil
 	}
-	keys := make([]string, 0, len(references))
-	for _, reference := range references {
-		key, err := s.storage.ObjectKey(reference)
-		if err == nil && showcaseStorageKeyIsPending(key) {
-			keys = append(keys, key)
-		}
-	}
-	return normalizeObjectCleanupKeys(keys)
+	return s.canonicalPendingUGCShowcaseCleanupKeys(references)
 }
 
 func (s *UGCShowcaseService) enqueueShowcaseCleanup(tx *gorm.DB, id uint, keys []string) error {

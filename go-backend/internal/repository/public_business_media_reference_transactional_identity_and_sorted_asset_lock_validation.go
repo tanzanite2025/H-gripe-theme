@@ -29,20 +29,31 @@ type publicBusinessMediaReferenceBinding struct {
 }
 
 type lockedPublicBusinessMediaReferenceIdentities struct {
-	identities map[string]registeredBusinessMediaObjectIdentity
-	keys       map[string]string
-	assets     map[uint]*media.MediaAsset
+	tx                 *gorm.DB
+	identities         map[string]registeredBusinessMediaObjectIdentity
+	keys               map[string]string
+	assets             map[uint]*media.MediaAsset
+	assetURLObjectKeys map[uint]string
 }
 
 func lockAndResolvePublicBusinessMediaReferenceIdentities(tx *gorm.DB, resolver PublicBusinessMediaReferenceObjectKeyResolver, references []string, requestedAssetIDs []uint) (*lockedPublicBusinessMediaReferenceIdentities, error) {
+	return lockAndResolvePublicBusinessMediaReferenceIdentitiesWithAdditionalPrivateAttachmentLocks(tx, resolver, references, requestedAssetIDs, nil)
+}
+
+// Additional private IDs join the same lock order without granting public reuse.
+// The owning conversation binding protocol validates their actor/session policy.
+func lockAndResolvePublicBusinessMediaReferenceIdentitiesWithAdditionalPrivateAttachmentLocks(tx *gorm.DB, resolver PublicBusinessMediaReferenceObjectKeyResolver, references []string, requestedAssetIDs, privateAssetIDs []uint) (*lockedPublicBusinessMediaReferenceIdentities, error) {
 	resolved := &lockedPublicBusinessMediaReferenceIdentities{
+		tx:         tx,
 		identities: make(map[string]registeredBusinessMediaObjectIdentity),
 		keys:       make(map[string]string), assets: make(map[uint]*media.MediaAsset),
+		assetURLObjectKeys: make(map[uint]string),
 	}
-	if len(references) == 0 && len(requestedAssetIDs) == 0 {
+	if len(references) == 0 && len(requestedAssetIDs) == 0 && len(privateAssetIDs) == 0 {
 		return resolved, nil
 	}
 	repo := NewMediaRepository(tx)
+	repo.ConfigurePublicBusinessMediaReferenceIdentityResolver(resolver)
 	hasAssets := repo.hasTable("media_assets")
 	hasDerivatives := hasAssets && repo.hasAssetDerivativesTable()
 	if !hasAssets && resolver != nil {
@@ -84,6 +95,16 @@ func lockAndResolvePublicBusinessMediaReferenceIdentities(tx *gorm.DB, resolver 
 	if len(assetIDs) > 0 && !hasAssets {
 		return nil, fmt.Errorf("%w: registered media storage is unavailable", ErrProductMediaReferenceInvalid)
 	}
+	publicAssetIDs := make(map[uint]bool, len(assetIDs))
+	for id := range assetIDs {
+		publicAssetIDs[id] = true
+	}
+	for _, id := range privateAssetIDs {
+		if id == 0 {
+			return nil, ErrCustomerServiceAttachmentBindingUnavailable
+		}
+		assetIDs[id] = struct{}{}
+	}
 	ordered := make([]uint, 0, len(assetIDs))
 	for id := range assetIDs {
 		ordered = append(ordered, id)
@@ -97,10 +118,26 @@ func lockAndResolvePublicBusinessMediaReferenceIdentities(tx *gorm.DB, resolver 
 		if err != nil {
 			return nil, err
 		}
+		if !publicAssetIDs[id] {
+			continue
+		}
+		asset.RequiresConversationAccess, err = repo.HistoricalUnclassifiedMediaRequiresConversationAccess(asset)
+		if err != nil {
+			return nil, err
+		}
 		if !media.CanMediaAssetBeReusedByPublicBusinessContent(asset) || storage.IsPrivateObjectKey(asset.StorageKey) || strings.TrimSpace(asset.URL) == "" {
 			return nil, fmt.Errorf("%w: selected asset is not eligible for public business reuse", ErrProductMediaReferenceInvalid)
 		}
 		resolved.assets[id] = asset
+		// ID-only fields can select historical registrations without StorageKey.
+		// Their URL belongs to a dedicated namespace only if its origin is trusted.
+		key, keyErr := storage.TrustedBusinessMediaReferenceObjectKey(asset.URL, nil, "")
+		if keyErr == nil && resolver != nil {
+			key, keyErr = resolver.ResolveTrustedMediaObjectKeyForPublicBusinessReference(asset.URL)
+		}
+		if keyErr == nil {
+			resolved.assetURLObjectKeys[id] = key
+		}
 	}
 	for reference, identity := range resolved.identities {
 		current, err := repo.resolveRegisteredBusinessMediaObjectIdentity(reference, resolved.keys[reference], hasAssets, hasDerivatives)
@@ -137,6 +174,16 @@ func (resolved *lockedPublicBusinessMediaReferenceIdentities) validateAndCanonic
 	if resolved.keys[reference] != "" && identity.AssetID == 0 && (!binding.RetainsExistingPlacement || reference != binding.PreviousURL) {
 		return fmt.Errorf("%w: managed media file is not registered; select or upload an active asset", ErrProductMediaReferenceInvalid)
 	}
+	dedicatedNamespace := resolved.dedicatedObjectNamespaceForResolvedPublicMediaReference(reference, identity.AssetID)
+	if dedicatedNamespace != "" {
+		if !binding.RetainsExistingPlacement || binding.PreviousURL != reference || (requestedID != nil && (binding.PreviousAssetID == nil || *binding.PreviousAssetID != *requestedID)) {
+			return fmt.Errorf("%w: %s objects belong to their dedicated lifecycle and cannot be newly attached through a media registration", ErrProductMediaReferenceInvalid, dedicatedNamespace)
+		}
+		if asset := resolved.assets[identity.AssetID]; asset != nil && binding.ExpectedMediaType != "" && asset.MediaType != binding.ExpectedMediaType {
+			return fmt.Errorf("%w: media type does not match the business field", ErrProductMediaReferenceInvalid)
+		}
+		return nil // Keep the exact historical placement without canonicalizing it into a new alias.
+	}
 	if identity.AssetID == 0 {
 		return nil
 	}
@@ -162,5 +209,17 @@ func (resolved *lockedPublicBusinessMediaReferenceIdentities) validateAndCanonic
 		id := asset.ID
 		*binding.AssetID = &id
 	}
-	return nil
+	return NewMediaRepository(resolved.tx).BindBusinessDraftMediaUploadReceiptWithinTransaction(asset)
+}
+
+func (resolved *lockedPublicBusinessMediaReferenceIdentities) dedicatedObjectNamespaceForResolvedPublicMediaReference(reference string, assetID uint) string {
+	if namespace := dedicatedSiteIdentityOrVisualShowcaseNamespaceForObjectKey(resolved.keys[reference]); namespace != "" {
+		return namespace
+	}
+	if asset := resolved.assets[assetID]; asset != nil {
+		if namespace := dedicatedSiteIdentityOrVisualShowcaseNamespaceForObjectKey(asset.StorageKey); namespace != "" {
+			return namespace
+		}
+	}
+	return dedicatedSiteIdentityOrVisualShowcaseNamespaceForObjectKey(resolved.assetURLObjectKeys[assetID])
 }

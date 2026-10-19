@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"strings"
+	"sync/atomic"
 
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
@@ -35,17 +36,21 @@ var (
 // in dedicated files for upload, catalog, access, evidence, references, and
 // deletion so each can grow independently.
 type MediaService struct {
-	repo                                           *repository.MediaRepository
-	derivativePresets                              *repository.MediaDerivativePresetRepository
-	derivativeRebuildJobs                          *repository.MediaDerivativeRebuildJobRepository
-	objectCleanupOutbox                            *repository.OutboxRepository
-	storage                                        storage.StorageService
-	settings                                       *SettingService
-	siteURL                                        string
-	accountStorageQuotaBytes                       int64
-	visitorSessionStorageQuotaBytes                int64
-	cdnPurger                                      *mediaCDNPurger
-	customerServicePrivateAttachmentUploadsEnabled bool
+	repo                                               *repository.MediaRepository
+	derivativePresets                                  *repository.MediaDerivativePresetRepository
+	derivativeRebuildJobs                              *repository.MediaDerivativeRebuildJobRepository
+	objectCleanupOutbox                                *repository.OutboxRepository
+	storage                                            storage.StorageService
+	settings                                           *SettingService
+	siteURL                                            string
+	accountStorageQuotaBytes                           int64
+	visitorSessionStorageQuotaBytes                    int64
+	cdnPurger                                          *mediaCDNPurger
+	customerServicePrivateAttachmentUploadsEnabled     bool
+	reviewedHistoricalCustomerServiceAttachmentOrigins map[string]struct{}
+	capacityAuditAdditionalStorageProviders            []storage.StorageService
+	capacityAuditRunning                               *atomic.Bool
+	usageSummaryRunning                                *atomic.Bool
 }
 
 // PublicMediaURLResolver is the boundary used by public response mappers when
@@ -67,6 +72,8 @@ func NewMediaService(
 		visitorQuotaBytes = quotaOptions[0].VisitorSessionStorageQuotaBytes
 	}
 	service := &MediaService{
+		capacityAuditRunning:            &atomic.Bool{},
+		usageSummaryRunning:             &atomic.Bool{},
 		repo:                            repo,
 		storage:                         storageSvc,
 		settings:                        settingSvc,

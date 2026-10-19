@@ -14,7 +14,7 @@
 
         <div v-else-if="hasReferences" class="space-y-3">
           <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
-            当前资源仍被 {{ total }} 处内容引用。请先到对应内容里替换或移除图片，再回到媒体库删除。
+            当前资源仍有 {{ total }} 处引用或登记占用。请先处理对应的业务引用或登记，再回到媒体库删除。
           </div>
           <div class="max-h-72 space-y-2 overflow-y-auto rounded-lg border bg-muted/20 p-2">
             <div
@@ -28,6 +28,8 @@
                 <span>{{ referenceTypeLabel(item.resource_type) }}</span>
                 <span v-if="item.field">字段：{{ item.field }}</span>
               </div>
+              <p v-if="item.usage_state === 'retained_deleted_parent' || item.usage_state === 'retained_deleted_placement'" class="mt-1 text-xs text-amber-700">已删除记录仍保留此引用，文件继续受保护。</p>
+              <p v-else-if="item.usage_state === 'disabled'" class="mt-1 text-xs text-amber-700">已停用的自动回复仍保留此媒体，移除引用后才能清理。</p>
             </div>
           </div>
         </div>

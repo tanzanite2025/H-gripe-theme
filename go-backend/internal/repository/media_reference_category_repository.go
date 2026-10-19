@@ -16,31 +16,39 @@ func (r *MediaRepository) productCategoryImageReferences(query mediaAssetReferen
 		ImageMediaAssetID *uint
 		ImageURL          string
 	}
-	var rows []row
-	if err := r.db.Table("product_categories").
-		Select("id, name, image_media_asset_id, image_url").
-		Where("image_media_asset_id = ? OR image_url IN ?", query.AssetID, query.URLs).
-		Find(&rows).Error; err != nil {
-		return nil, err
-	}
+	references := make([]media.AssetReference, 0)
+	for afterID := uint(0); ; {
+		var rows []row
+		if err := r.db.Table("product_categories").
+			Select("id, name, image_media_asset_id, image_url").
+			Where("id > ?", afterID).Order("id ASC").Limit(256).
+			Find(&rows).Error; err != nil {
+			return nil, err
+		}
 
-	references := make([]media.AssetReference, 0, len(rows))
-	for _, item := range rows {
-		fields := make([]string, 0, 2)
-		if item.ImageMediaAssetID != nil && *item.ImageMediaAssetID == query.AssetID {
-			fields = append(fields, "image_media_asset_id")
+		for _, item := range rows {
+			fields := make([]string, 0, 2)
+			if query.AssetID != 0 && item.ImageMediaAssetID != nil && *item.ImageMediaAssetID == query.AssetID {
+				fields = append(fields, "image_media_asset_id")
+			}
+			if r.matchesExactRegisteredOrTrustedMediaReference(query, item.ImageURL) {
+				fields = append(fields, "image_url")
+			}
+			if len(fields) == 0 {
+				continue
+			}
+			references = append(references, newMediaReference(
+				media.ReferenceCategoryCatalog,
+				"product_category",
+				item.ID,
+				0,
+				namedMediaReferenceLabel("商品分类", item.ID, item.Name),
+				strings.Join(fields, ", "),
+			))
 		}
-		if containsMediaReferenceURL(query.URLs, item.ImageURL) {
-			fields = append(fields, "image_url")
+		if len(rows) < 256 {
+			return references, nil
 		}
-		references = append(references, newMediaReference(
-			media.ReferenceCategoryCatalog,
-			"product_category",
-			item.ID,
-			0,
-			namedMediaReferenceLabel("商品分类", item.ID, item.Name),
-			strings.Join(fields, ", "),
-		))
+		afterID = rows[len(rows)-1].ID
 	}
-	return references, nil
 }

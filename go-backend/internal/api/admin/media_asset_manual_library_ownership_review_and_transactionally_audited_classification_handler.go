@@ -41,11 +41,20 @@ func canManuallyAssignMediaAssetToBusinessLibraryPartition(role auth.Role, parti
 }
 
 func (h *MediaHandler) ReviewMediaAssetLibraryOwnershipForManualClassification(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
 	id, ok := parseMediaAssetID(c)
 	if !ok {
 		return
 	}
-	review, err := h.mediaService.ReviewMediaAssetLibraryOwnershipForManualClassification(c.Request.Context(), id)
+	asset, err := h.mediaService.GetAsset(id)
+	if err != nil {
+		respondMediaError(c, err)
+		return
+	}
+	if !h.authorizeCustomerServiceMediaAssetMetadataAccess(c, asset) {
+		return
+	}
+	review, err := h.mediaService.ReviewMediaAssetLibraryOwnershipWithPermissionScopedReferencePresentation(c.Request.Context(), id, mediaUsageSummaryReferenceScopeForAuthenticatedAdministrator(c))
 	if err != nil {
 		respondMediaError(c, err)
 		return

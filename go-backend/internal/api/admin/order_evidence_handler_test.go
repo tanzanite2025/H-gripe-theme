@@ -16,6 +16,7 @@ import (
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
@@ -350,20 +351,7 @@ func completeAdminEvidencePackageForHandlerTest(
 		if item.ItemType == orderevidence.EvidenceItemTypeProductIdentity ||
 			item.ItemType == orderevidence.EvidenceItemTypeOutboundWeightPackaging ||
 			item.ItemType == orderevidence.EvidenceItemTypeSignedPOD {
-			_, err := attachmentService.RegisterReference(
-				repository.TxRepositories{
-					OrderEvidence: evidenceRepo,
-				},
-				service.OrderEvidenceAttachmentReferenceInput{
-					EvidenceItemID:   item.ID,
-					StorageKey:       "order-evidence/1/" + string(item.ItemType) + ".jpg",
-					OriginalFilename: string(item.ItemType) + ".jpg",
-					MimeType:         "image/jpeg",
-					SizeBytes:        12,
-					SHA256:           "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-					UploadedBy:       7,
-				},
-			)
+			_, err := attachmentService.Upload(t.Context(), orderID, item.ID, newAdminEvidencePNGFileHeader(t, item.ItemType+".png"), 7)
 			require.NoError(t, err)
 		}
 		_, err := adminService.UpdateItem(orderID, service.OrderEvidenceAdminItemUpdateInput{
@@ -422,6 +410,7 @@ func newOrderEvidenceServicesForHandlerTest(
 		evidenceRepo,
 		storageService,
 	)
+	attachmentService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	return adminService, attachmentService
 }
 
@@ -453,6 +442,7 @@ func newAdminOrderEvidenceHandlerDB(t *testing.T) *gorm.DB {
 		&orderevidence.OrderEvidencePackage{},
 		&orderevidence.OrderEvidenceItem{},
 		&orderevidence.OrderEvidenceAttachment{},
+		&outbox.Event{},
 		&orderevidence.OrderEvidenceExportSnapshot{},
 		&shipping.TrackingProviderConfig{},
 		&shipping.TrackingShipment{},

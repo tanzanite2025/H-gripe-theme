@@ -13,7 +13,6 @@ import (
 
 func TestPublicWishlistResponseOmitsCommercialFields(t *testing.T) {
 	productSpecificationTemplateID := uint(2)
-	shippingTemplateID := uint(3)
 	mediaAssetID := uint(4)
 
 	item := wishlistdomain.Item{
@@ -24,7 +23,6 @@ func TestPublicWishlistResponseOmitsCommercialFields(t *testing.T) {
 		Product: &productdomain.Product{
 			ID:                             13,
 			ProductSpecificationTemplateID: &productSpecificationTemplateID,
-			ShippingTemplateIDs:            []uint{shippingTemplateID},
 			SKU:                            "INTERNAL-WISHLIST-SKU",
 			Name:                           "Saved Product",
 			Slug:                           "saved-product",

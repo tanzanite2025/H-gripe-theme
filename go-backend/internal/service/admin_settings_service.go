@@ -90,18 +90,20 @@ func (s *AdminSettingsService) UpdateSetting(req setting.UpdateSettingRequest) (
 	if err != nil {
 		return nil, err
 	}
-	if err := s.settings.BatchSet([]setting.Setting{st}); err != nil {
+	records := []setting.Setting{st}
+	if err := s.settings.BatchSet(records); err != nil {
 		return nil, err
 	}
-	return maskSensitiveSetting(&st), nil
+	return maskSensitiveSetting(&records[0]), nil
 }
 
 func (s *AdminSettingsService) UpdateDomainManagedSetting(req setting.UpdateSettingRequest) (*setting.Setting, error) {
 	st := normalizeSettingRequest(req)
-	if err := s.settings.BatchSet([]setting.Setting{st}); err != nil {
+	records := []setting.Setting{st}
+	if err := s.settings.BatchSet(records); err != nil {
 		return nil, err
 	}
-	return &st, nil
+	return &records[0], nil
 }
 
 func (s *AdminSettingsService) BatchUpdateSettings(req setting.BatchUpdateSettingsRequest) (int, error) {

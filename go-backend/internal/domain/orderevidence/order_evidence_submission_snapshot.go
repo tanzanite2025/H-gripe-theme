@@ -2,7 +2,6 @@ package orderevidence
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -83,9 +82,14 @@ func (s OrderEvidenceSubmissionSnapshot) Validate() error {
 }
 
 func (s OrderEvidenceSubmissionSnapshot) VerifyIntegrity() error {
-	hash := sha256.Sum256(s.SnapshotData)
-	expected := hex.EncodeToString(hash[:])
-	if !strings.EqualFold(strings.TrimSpace(s.SnapshotSHA256), expected) {
+	var legacyPayload any
+	switch s.Provider {
+	case "stripe":
+		legacyPayload = &StripeDisputeEvidenceSnapshotPayload{}
+	case "paypal":
+		legacyPayload = &PayPalDisputeEvidenceSnapshotPayload{}
+	}
+	if !immutableSnapshotDigestMatchesDocumentOrVerifiedLegacySerialization(s.SnapshotData, s.SnapshotSHA256, legacyPayload) {
 		return errors.New("order evidence submission snapshot sha256 does not match snapshot data")
 	}
 	return nil

@@ -44,9 +44,24 @@ func (r *MediaRepository) AssetStorageUsageByUploadActor(identity media.MediaUpl
 }
 
 // CreateAssetWithinUploadActorStorageQuota rechecks usage while serializing
-// PostgreSQL uploads for the quota owner. Object upload stays outside the short
-// transaction; the caller compensates by deleting the object on rejection.
+// PostgreSQL uploads for the quota owner. Permanent original uploads hold this
+// lock through provider IO and exchange their precommitted cleanup receipt atomically.
 func (r *MediaRepository) CreateAssetWithinUploadActorStorageQuota(ctx context.Context, asset *media.MediaAsset, quotaBytes int64, customerServiceUploadSessionIDs ...string) error {
+	var customerSessionID string
+	if len(customerServiceUploadSessionIDs) > 0 {
+		customerSessionID = customerServiceUploadSessionIDs[0]
+	}
+	return r.createMediaAssetWithinActorQuotaAndPreparedReceipt(ctx, asset, quotaBytes, customerSessionID, "")
+}
+
+func (r *MediaRepository) CreateBusinessDraftMediaAssetWithinUploadActorStorageQuota(ctx context.Context, asset *media.MediaAsset, quotaBytes int64, receiptID string) error {
+	if receiptID == "" {
+		return ErrBusinessDraftMediaUploadReceiptUnavailable
+	}
+	return r.createMediaAssetWithinActorQuotaAndPreparedReceipt(ctx, asset, quotaBytes, "", receiptID)
+}
+
+func (r *MediaRepository) createMediaAssetWithinActorQuotaAndPreparedReceipt(ctx context.Context, asset *media.MediaAsset, quotaBytes int64, customerSessionID, draftReceiptID string) error {
 	if r == nil || r.db == nil {
 		return gorm.ErrInvalidDB
 	}
@@ -65,20 +80,8 @@ func (r *MediaRepository) CreateAssetWithinUploadActorStorageQuota(ctx context.C
 		transactionOptions = append(transactionOptions, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	}
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if tx.Name() == "postgres" {
-			// Account namespaces share a lock because their legacy usage overlaps.
-			lockOwner := fmt.Sprintf("media-upload-quota/account/%d", identity.AccountID)
-			if identity.ActorType == media.MediaUploadActorVisitor {
-				lockOwner = "media-upload-quota/visitor/" + identity.VisitorSessionHash
-			}
-			lockDigest := sha256.Sum256([]byte(lockOwner))
-			var lockID int64
-			if _, err := binary.Decode(lockDigest[:8], binary.BigEndian, &lockID); err != nil {
-				return fmt.Errorf("decode media upload quota lock identity: %w", err)
-			}
-			if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", lockID).Error; err != nil {
-				return err
-			}
+		if err := r.WithTx(tx).lockMediaUploadActorQuotaWithinTransaction(identity); err != nil {
+			return err
 		}
 		transactionRepository := r.WithTx(tx)
 		used, err := transactionRepository.AssetStorageUsageByUploadActor(identity)
@@ -88,12 +91,41 @@ func (r *MediaRepository) CreateAssetWithinUploadActorStorageQuota(ctx context.C
 		if quotaBytes <= 0 || used >= quotaBytes || asset.Size > quotaBytes-used {
 			return ErrMediaUploadActorStorageQuotaExceeded
 		}
+		if draftReceiptID != "" {
+			if err := transactionRepository.validateBusinessDraftMediaRegistrationReceiptWithinTransaction(draftReceiptID, asset); err != nil {
+				return err
+			}
+			transactionRepository.preparedBusinessDraftUploadReceiptID = draftReceiptID
+		}
 		if err := transactionRepository.CreateAsset(asset); err != nil {
 			return err
 		}
-		if len(customerServiceUploadSessionIDs) > 0 && customerServiceUploadSessionIDs[0] != "" {
-			return transactionRepository.RegisterCustomerServiceUploadSessionAssetWithinTransaction(customerServiceUploadSessionIDs[0], asset)
+		if customerSessionID != "" {
+			return transactionRepository.RegisterCustomerServiceUploadSessionAssetWithinTransaction(customerSessionID, asset)
+		}
+		if draftReceiptID != "" {
+			return tx.Model(&media.BusinessDraftMediaUploadReceipt{}).Where("id = ? AND status = ?", draftReceiptID, "uploading").Updates(map[string]any{"asset_id": asset.ID, "status": "ready"}).Error
 		}
 		return nil
 	}, transactionOptions...)
+}
+
+// Permanent original writes acquire this lock before their exact object lock.
+func (r *MediaRepository) lockMediaUploadActorQuotaWithinTransaction(identity media.MediaUploadActorIdentity) error {
+	if r.db.Name() == "postgres" {
+		// Account namespaces share a lock because their legacy usage overlaps.
+		lockOwner := fmt.Sprintf("media-upload-quota/account/%d", identity.AccountID)
+		if identity.ActorType == media.MediaUploadActorVisitor {
+			lockOwner = "media-upload-quota/visitor/" + identity.VisitorSessionHash
+		}
+		lockDigest := sha256.Sum256([]byte(lockOwner))
+		var lockID int64
+		if _, err := binary.Decode(lockDigest[:8], binary.BigEndian, &lockID); err != nil {
+			return fmt.Errorf("decode media upload quota lock identity: %w", err)
+		}
+		if err := r.db.Exec("SELECT pg_advisory_xact_lock(?)", lockID).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

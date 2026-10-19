@@ -20,6 +20,7 @@ import {
   validProductDisplayPrice,
 } from '~/utils/productDetail'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
+import { buildCarbonRimSalesVariantEngineeringProperties } from '~/utils/seo/carbonRimSalesVariantEngineeringProperties'
 import {
   buildProductPath,
   toAbsoluteSeoUrl,
@@ -190,6 +191,8 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
     const seoVariants = options.activeVariants.value.map((variant) => {
       const price = variantSeoPrice(variant)
       return {
+        additionalProperties: product.product_type === 'carbon_rim' ? buildCarbonRimSalesVariantEngineeringProperties(variant.carbon_rim_specification) : undefined,
+        weightGrams: product.product_type === 'carbon_rim' ? variant.carbon_rim_specification?.net_weight_grams : undefined,
         id: variant.id,
         name: options.variantLabel(variant),
         sku: variant.sku,
@@ -213,6 +216,14 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
 
     return buildProductSeoDocument(
       {
+        size: product.product_type === 'carbon_rim' ? product.spec_values?.find(value => value.definition?.slug === 'wheel_size' && value.definition?.is_visible !== false)?.value : undefined,
+        material: product.product_type === 'carbon_rim' ? product.spec_values?.find(value => value.definition?.slug === 'material' && value.definition?.is_visible !== false)?.value : undefined,
+        weightGrams: product.product_type === 'carbon_rim' ? options.selectedVariant.value?.carbon_rim_specification?.net_weight_grams : undefined,
+        additionalProperties: product.product_type === 'carbon_rim' ? [...(product.spec_values || [])
+          .filter(value => value.definition?.is_visible !== false && value.definition?.slug && value.value != null && value.value !== '')
+          .map(value => ({ '@type': 'PropertyValue' as const, propertyID: value.definition!.slug, name: value.definition!.name, value: String(value.value), ...(value.definition!.unit ? { unitText: value.definition!.unit } : {}) })),
+          ...(options.activeVariants.value.length === 1 ? buildCarbonRimSalesVariantEngineeringProperties(options.selectedVariant.value?.carbon_rim_specification) : []),
+        ] : undefined,
         name: product.name,
         brand: product.brand?.name,
         metaTitle: product.meta_title,
@@ -247,7 +258,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
             }
           : null,
         productGroupId: `product-${product.id}`,
-        variesBy: options.variantOptionDefinitions.value.map((definition) => (
+        variesBy: product.product_type === 'carbon_rim' ? ['spoke_hole_count', 'drilling_pattern', 'finish_code'] : options.variantOptionDefinitions.value.map((definition) => (
           `https://schema.org/${String(definition.slug || '').trim()}`
         )),
         variants: seoVariants,

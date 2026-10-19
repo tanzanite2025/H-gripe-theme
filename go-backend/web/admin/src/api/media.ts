@@ -21,6 +21,7 @@ export interface MediaAsset {
   alt?: string | null
   url?: string | null
   access_url?: string | null
+  business_draft_upload_expires_at?: string | null
   media_type?: string | null
   status?: string | null
   visibility?: string | null
@@ -118,7 +119,7 @@ export interface MediaAssetListResult {
 }
 
 export interface MediaReference {
-  usage_state?: 'active' | 'retained_deleted_parent' | 'missing_parent' | 'pending_upload' | null
+  usage_state?: 'active' | 'disabled' | 'retained_deleted_parent' | 'retained_deleted_placement' | 'retained_unpublished_parent' | 'retained_upload_receipt' | 'missing_parent' | 'pending_upload' | 'restricted' | null
   resource_type?: string | null
   resource_id?: string | number | null
   field?: string | null
@@ -158,6 +159,7 @@ export interface MediaAssetLibraryOwnershipReview {
   reference_category_counts: Record<string, number>
   retained_deleted_parent_references: number
   missing_parent_references: number
+  has_restricted_references?: boolean
 }
 
 export interface MediaAssetManualLibraryClassificationChange {
@@ -252,6 +254,12 @@ export const mediaApi = {
 
   async uploadAsset(formData: FormData, context?: OperationalMediaUploadContext): Promise<MediaAsset> {
     const path = context ? `/api/admin/media/uploads/${context}` : '/api/admin/media/assets'
+    const payload = requireApiObject(unwrapApiPayload(await axios.post(path, formData), path), path)
+    return requireApiObjectField<MediaAsset>(payload, 'asset', path)
+  },
+
+  async uploadBusinessDraftAsset(formData: FormData, context: 'catalog' | 'content' | 'website-profile'): Promise<MediaAsset> {
+    const path = `/api/admin/media/uploads/business-drafts/${context}`
     const payload = requireApiObject(unwrapApiPayload(await axios.post(path, formData), path), path)
     return requireApiObjectField<MediaAsset>(payload, 'asset', path)
   },

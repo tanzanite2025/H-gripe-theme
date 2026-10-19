@@ -11,6 +11,7 @@ import (
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type StorefrontRouteCatalogRepository struct {
@@ -43,7 +44,7 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 			entry.LastSeenAt = seenAt
 
 			var existing seodomain.StorefrontRouteCatalogEntry
-			err := tx.Where("route_key = ?", entry.RouteKey).First(&existing).Error
+			err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("route_key = ?", entry.RouteKey).First(&existing).Error
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				if err := tx.Create(&entry).Error; err != nil {
 					return err
@@ -78,38 +79,27 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 			}
 			if routeCheckProjectionMustBeReset(existing, entry) {
 				resetRouteCheckProjection(updates)
+				if err := deleteStorefrontRouteChecksAndIssues(tx, []uint{existing.ID}); err != nil {
+					return err
+				}
 			}
 			if err := tx.Model(&existing).Updates(updates).Error; err != nil {
 				return err
 			}
-			if err := r.publishRouteCatalogChanged(tx, entry.ID, entry.ManifestVersion, seenAt, "upsert"); err != nil {
+			if err := r.publishRouteCatalogChanged(tx, existing.ID, entry.ManifestVersion, seenAt, "upsert"); err != nil {
 				return err
 			}
 		}
 
-		// Mark only routes absent from this snapshot as stale. Applying this after
-		// upserts lets unchanged routes retain their latest HTTP check projection.
+		// The catalog contains the current manifest only. Removed routes and
+		// their observations must not accumulate as historical work items.
 		var staleIDs []uint
-		if err := tx.Model(&seodomain.StorefrontRouteCatalogEntry{}).
+		if err := tx.Model(&seodomain.StorefrontRouteCatalogEntry{}).Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("last_seen_at < ?", seenAt).
 			Pluck("id", &staleIDs).Error; err != nil {
 			return err
 		}
-		if err := tx.Model(&seodomain.StorefrontRouteCatalogEntry{}).
-			Where("last_seen_at < ?", seenAt).
-			Updates(map[string]interface{}{
-				"entry_status":        "stale",
-				"updated_at":          time.Now().UTC(),
-				"last_check_status":   "",
-				"last_http_status":    0,
-				"last_final_url":      "",
-				"last_canonical_url":  "",
-				"last_response_ms":    0,
-				"last_redirect_count": 0,
-				"last_content_hash":   "",
-				"last_check_error":    "",
-				"last_checked_at":     nil,
-			}).Error; err != nil {
+		if err := deleteStorefrontRoutesAbsentFromCurrentSnapshot(tx, staleIDs); err != nil {
 			return err
 		}
 		for _, routeEntryID := range staleIDs {
@@ -118,7 +108,7 @@ func (r *StorefrontRouteCatalogRepository) UpsertSnapshot(entries []seodomain.St
 			}
 		}
 
-		return nil
+		return retainOnlyLatestStorefrontRouteCheckResults(tx)
 	})
 }
 
@@ -419,7 +409,6 @@ func (r *StorefrontRouteCatalogRepository) ListIssueCandidateIDs() ([]uint, erro
 		Where("("+routeNeedsAttentionCondition()+") OR EXISTS ("+
 			"SELECT 1 FROM storefront_url_issues active_issue "+
 			"WHERE active_issue.route_entry_id = storefront_route_catalog_entries.id "+
-			"AND active_issue.state IN ('open', 'acknowledged', 'resolved', 'suppressed')"+
 			")").
 		Order("id ASC").
 		Pluck("id", &ids).Error

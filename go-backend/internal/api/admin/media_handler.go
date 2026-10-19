@@ -60,11 +60,13 @@ func respondMediaError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrMediaAssetInUse):
 		var inUse *service.MediaAssetInUseError
 		if errors.As(err, &inUse) {
+			c.Header("Cache-Control", "no-store")
+			scoped := permissionScopedMediaReferenceReportForAuthenticatedAdministrator(c, inUse.References)
 			c.JSON(http.StatusConflict, gin.H{
 				"error":      err.Error(),
 				"code":       "media_asset_in_use",
-				"references": inUse.References,
-				"total":      len(inUse.References),
+				"references": scoped.References,
+				"total":      scoped.Total,
 			})
 			return
 		}

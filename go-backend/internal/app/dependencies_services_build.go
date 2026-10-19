@@ -258,6 +258,10 @@ func (b *dependencyServicesBuilder) build() error {
 	mediaService := service.NewMediaService(b.repos.Media, storageSvc, settingService, storefrontBaseURL, b.cfg.MediaUpload.AccountStorageQuotaBytes,
 		service.MediaUploadActorQuotaOptions{VisitorSessionStorageQuotaBytes: b.cfg.MediaUpload.VisitorSessionStorageQuotaBytes})
 	mediaService.ConfigureCustomerServicePrivateAttachmentUploads(b.cfg.MediaUpload.CustomerServicePrivateAttachmentsEnabled)
+	mediaService.ConfigureAdditionalPhysicalCapacityAuditStorageProviders(siteLogoStorageSvc)
+	if err := mediaService.ConfigureReviewedHistoricalCustomerServiceAttachmentOrigins(b.cfg.MediaUpload.ReviewedHistoricalCustomerServiceAttachmentOrigins); err != nil {
+		return fmt.Errorf("configure historical customer-service attachment access: %w", err)
+	}
 	service.ConfigureMediaDerivativeGenerationCapacity(b.cfg.Worker.MediaDerivativeGenerationCapacity)
 	mediaService.ConfigureDerivativePresetRepository(b.repos.MediaDerivativePresets)
 	mediaService.ConfigureDerivativeRebuildJobRepository(b.repos.MediaDerivativeRebuildJobs)
@@ -271,6 +275,8 @@ func (b *dependencyServicesBuilder) build() error {
 	siteFaviconService := service.NewSiteFaviconService(b.repos.SiteFavicon, storageSvc, storefrontBaseURL)
 	siteFaviconService.ConfigureSettingService(settingService)
 	productService.ConfigureMediaService(mediaService)
+	productBrandService.ConfigureMediaService(mediaService)
+	b.repos.ProductCategory.ConfigurePublicBusinessMediaReferenceIdentityResolver(mediaService)
 	seoResourceService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureCanonicalBaseURL(storefrontBaseURL)
 	storefrontRouteCatalogService := service.NewStorefrontRouteCatalogService(
@@ -399,7 +405,7 @@ func (b *dependencyServicesBuilder) build() error {
 		GoogleMerchant:                    googleMerchantService,
 		SocialOAuth:                       socialOAuthService,
 		FAQ:                               service.NewFAQService(b.repos.FAQ),
-		Gallery:                           service.NewGalleryService(b.repos.Gallery, b.repos.Media),
+		Gallery:                           service.NewGalleryService(b.repos.Gallery),
 		Media:                             mediaService,
 		SiteLogo:                          siteLogoService,
 		SiteFavicon:                       siteFaviconService,
@@ -438,8 +444,8 @@ func (b *dependencyServicesBuilder) build() error {
 		LighthouseRunner:             lighthouseRunnerService,
 		SiteQualityEngine:            siteQualityEngineService,
 		HotDataArchive:               hotDataArchiveService,
-		UGCShowcase:                  service.NewUGCShowcaseService(b.repos.UGCShowcase, storageSvc),
-		HomeVisualTiles:              service.NewHomeVisualTileService(b.repos.HomeVisualTiles, storageSvc),
+		UGCShowcase:                  service.NewUGCShowcaseService(b.repos.UGCShowcase, storageSvc, b.support.StorefrontBaseURL),
+		HomeVisualTiles:              service.NewHomeVisualTileService(b.repos.HomeVisualTiles, storageSvc, storefrontBaseURL),
 		WorkbenchFeed:                workbenchFeedService,
 		UGCShowcaseUploadProtection:  UGCShowcaseUploadProtectionService,
 		UGCShowcaseUploadEligibility: UGCShowcaseUploadEligibilityService,

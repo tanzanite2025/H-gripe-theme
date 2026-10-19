@@ -71,7 +71,7 @@ func TestOrderEvidenceAdminServiceReturnsCompletePackageGraphAfterUpdate(t *test
 	require.NoError(t, err)
 	identity := findEvidenceItemByType(items, orderevidence.EvidenceItemTypeProductIdentity)
 
-	_, err = NewOrderEvidenceAttachmentService().RegisterReference(
+	_, err = createHistoricalOrderEvidenceAttachmentFixtureWithoutUploading(t,
 		repository.TxRepositories{OrderEvidence: evidenceRepo},
 		OrderEvidenceAttachmentReferenceInput{
 			EvidenceItemID:   identity.ID,

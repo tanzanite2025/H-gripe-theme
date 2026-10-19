@@ -44,6 +44,8 @@ func respondPostServiceError(c *gin.Context, err error, fallbackMessage string) 
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrUnsupportedLocale):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	case errors.Is(err, service.ErrPostMediaReferenceInvalid), errors.Is(err, service.ErrBlogCategoryInvalid), errors.Is(err, service.ErrBlogCategoryNotFound):
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fallbackMessage})
 	}

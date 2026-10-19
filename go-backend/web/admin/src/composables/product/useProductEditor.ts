@@ -1,4 +1,5 @@
 import { computed, reactive, ref } from 'vue'
+import { createEmptyCarbonRimSpecificationForm, createEmptyCarbonRimVariantSpecificationForm, normalizeCarbonRimSpecificationForSubmission, normalizeCarbonRimVariantSpecificationForSubmission, validateCarbonRimDedicatedProductSubmission } from '@/modules/product/carbonRimDedicatedSpecificationFormValuesAndValidation'
 import { toast } from 'vue-sonner'
 import productApi from '@/api/products'
 import productSpecificationTemplateApi from '@/api/productSpecificationTemplates'
@@ -70,10 +71,12 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const productForm = reactive<ProductFormRecord>({
     id: null,
+    product_type: '',
+    carbon_rim_specification: null,
+    parent_id: null,
     product_specification_template_id: null,
     product_category_id: null,
     brand_id: null,
-    shipping_template_ids: [],
     after_sales_template_id: null,
     packaging_template_id: null,
     customs_classification_profile_id: null,
@@ -162,12 +165,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     productForm.specs[slug] = value === '__empty__' ? '' : value
     clearFieldError(`spec:${slug}`)
   }
-  const setProductShippingTemplates = (values: unknown) => {
-    const raw = Array.isArray(values) ? values : [values]
-    const ids = raw.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0)
-    productForm.shipping_template_ids = Array.from(new Set(ids))
-    clearFieldError('shipping_template_ids')
-  }
   const setProductBrand = (value: string) => {
     productForm.brand_id = value === '__none__' ? null : Number(value)
     clearFieldError('brand_id')
@@ -236,8 +233,9 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
 
   const createEmptyVariant = (overrides: Record<string, any> = {}) => ({
-    id: null,
     shipping_template_ids: [],
+    carbon_rim_specification: productForm.product_type === 'carbon_rim' ? createEmptyCarbonRimVariantSpecificationForm() : undefined,
+    id: null,
     sku: '',
     title: '',
     option_values: {},
@@ -387,6 +385,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const buildVariantFormValues = (product: any) => {
     const variants = (product.variants || []).map((variant: any, index: number) => createEmptyVariant({
+      carbon_rim_specification: variant.carbon_rim_specification ? { ...createEmptyCarbonRimVariantSpecificationForm(), ...variant.carbon_rim_specification } : undefined,
       id: variant.id || null,
       shipping_template_ids: Array.isArray(variant.shipping_template_ids) ? [...variant.shipping_template_ids] : [],
       sku: variant.sku || '',
@@ -421,11 +420,13 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
 
   const addVariant = () => {
+    if (productForm.product_type === 'carbon_rim' && productForm.parent_id) { toast.warning('请在原语言商品中维护销售规格'); return }
     productForm.variants.push(createEmptyVariant({ is_default: productForm.variants.length === 0 }))
     clearFieldError('variants')
   }
 
   const removeVariant = (index: number) => {
+    if (productForm.product_type === 'carbon_rim' && productForm.variants[index]?.id) { toast.warning('已保存的车圈 SKU 请取消启用，保留销售记录'); return }
     if (productForm.variants.length <= 1) {
       toast.warning('至少保留一个变体')
       return
@@ -466,6 +467,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         if (value !== undefined && value !== null && value !== '') optionValues[spec.slug] = value
       })
       return {
+        carbon_rim_specification: productForm.product_type === 'carbon_rim' ? normalizeCarbonRimVariantSpecificationForSubmission(variant.carbon_rim_specification) : undefined,
         id: variant.id || undefined,
         shipping_template_ids: Array.from(new Set((Array.isArray(variant.shipping_template_ids) ? variant.shipping_template_ids : []).map((value: any) => Number(value)).filter((value: number) => Number.isInteger(value) && value > 0))),
         sku: String(variant.sku || '').trim(),
@@ -498,11 +500,12 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
 
   const buildProductPayload = () => ({
+    product_type: productForm.product_type || undefined,
+    carbon_rim_specification: productForm.product_type === 'carbon_rim' ? normalizeCarbonRimSpecificationForSubmission(productForm.carbon_rim_specification) : undefined,
     id: productForm.id,
     product_specification_template_id: productForm.product_specification_template_id,
     product_category_id: productForm.product_category_id,
     brand_id: productForm.brand_id,
-    shipping_template_ids: Array.from(new Set(productForm.shipping_template_ids.map((value: any) => Number(value)).filter((value: number) => Number.isInteger(value) && value > 0))),
     after_sales_template_id: productForm.after_sales_template_id,
     packaging_template_id: productForm.packaging_template_id,
     customs_classification_profile_id: productForm.customs_classification_profile_id || null,
@@ -527,6 +530,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const validateForm = (payload: any) => {
     clearFormErrors()
+    if (payload.product_type === 'carbon_rim') Object.assign(formErrors, validateCarbonRimDedicatedProductSubmission(payload))
     if (!payload.name) formErrors.name = '请输入商品名称'
     if (!payload.slug) formErrors.slug = '请输入 URL slug'
     if (!payload.locale) formErrors.locale = '请选择语言'
@@ -641,10 +645,12 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const resetForm = () => {
     Object.assign(productForm, {
       id: null,
-      product_specification_template_id: null,
+      product_type: '',
+    carbon_rim_specification: null,
+    parent_id: null,
+    product_specification_template_id: null,
       product_category_id: null,
       brand_id: null,
-      shipping_template_ids: [],
       after_sales_template_id: null,
       packaging_template_id: null,
       customs_classification_profile_id: null,
@@ -672,7 +678,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
 
   const fetchProductSpecTemplates = async () => {
     try {
-      productSpecTemplates.value = await productSpecificationTemplateApi.list()
+      productSpecTemplates.value = (await productSpecificationTemplateApi.list()).filter((template: any) => !['rim', 'carbon_rim', 'carbon-rim'].includes(String(template.slug).trim().toLowerCase()))
     } catch (error) {
       console.error('Failed to fetch product specification templates:', error)
     }
@@ -699,10 +705,15 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     }
   }
 
-  const showCreateDialog = async () => {
+  const showCreateDialog = async (productType = '') => {
     await fetchPrimaryPricingCurrency()
     dialogMode.value = 'create'
     resetForm()
+    if (productType === 'carbon_rim') {
+      productForm.product_type = productType
+      productForm.carbon_rim_specification = createEmptyCarbonRimSpecificationForm()
+      productForm.variants = [createEmptyVariant({ is_default: true })]
+    }
     templateSyncDialogVisible.value = false
     templateSyncDiff.value = null
     await notifyProductLoaded(null, 'create')
@@ -714,21 +725,24 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     let detail = product
     try {
       await fetchPrimaryPricingCurrency()
-      if (productSpecTemplates.value.length === 0) await fetchProductSpecTemplates()
+      if (product.product_type !== 'carbon_rim' && productSpecTemplates.value.length === 0) await fetchProductSpecTemplates()
       detail = await productApi.get(product.id)
       if (detail.product_specification_template && !productSpecTemplates.value.some((template) => template.id === detail.product_specification_template.id)) {
         productSpecTemplates.value.push(detail.product_specification_template)
       }
     } catch (error) {
-      toast.warning('获取商品详情失败，已使用列表数据编辑')
+      toast.error('获取商品详情失败，请重试后再编辑')
+      return
     }
     const formSpecs = buildSpecFormValues(detail)
     Object.assign(productForm, {
+      product_type: detail.product_type || '',
+      carbon_rim_specification: detail.carbon_rim_specification ? { ...createEmptyCarbonRimSpecificationForm(), ...detail.carbon_rim_specification } : null,
+      parent_id: detail.parent_id || null,
       id: detail.id,
       product_specification_template_id: detail.product_specification_template_id || detail.product_specification_template?.id || null,
       product_category_id: detail.product_category_id ?? detail.product_category?.id ?? null,
       brand_id: detail.brand_id ?? detail.brand?.id ?? null,
-      shipping_template_ids: Array.isArray(detail.shipping_template_ids) ? [...detail.shipping_template_ids] : [],
       after_sales_template_id: detail.after_sales_template_id ?? detail.after_sales_template?.id ?? null,
       packaging_template_id: detail.packaging_template_id ?? detail.packaging_template?.id ?? null,
       customs_classification_profile_id: detail.customs_classification_profile_id ?? detail.customs_classification_profile?.id ?? null,
@@ -791,6 +805,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
 
   const submitForm = async () => {
+    if (submitting.value || uploadingMedia.value) return
     const payload = buildProductPayload()
     if (!validateForm(payload)) return
     submitting.value = true
@@ -804,10 +819,19 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         savedProduct = await productApi.update(id, data)
         toast.success('商品更新成功')
       }
-      const afterSaveResult = await notifyProductSaved(savedProduct, dialogMode.value)
+      const savedMode = dialogMode.value
+      productForm.id = savedProduct.id
+      dialogMode.value = 'edit'
+      productForm.variants.forEach((variant: any) => {
+        const saved = savedProduct.variants?.find((item: any) => item.sku === variant.sku)
+        if (saved) variant.id = saved.id
+      })
+      const afterSaveResult = await notifyProductSaved(savedProduct, savedMode)
       if (!afterSaveResult.keepDialogOpen) dialogVisible.value = false
       await refreshProducts()
-    } catch (error) {
+    } catch (error: any) {
+      formErrors.submit = error?.response?.data?.error || '商品保存失败，请检查资料后重试'
+      toast.error(formErrors.submit)
       console.error('Failed to save product:', error)
     } finally {
       submitting.value = false
@@ -850,7 +874,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     getSpecLabel,
     specSelectValue,
     setSpecSelectValue,
-    setProductShippingTemplates,
     setProductBrand,
     setProductCategory,
     setProductInformationTemplate,

@@ -14,20 +14,21 @@ import (
 )
 
 type ProductVariantInput struct {
-	ID                  *uint
-	ShippingTemplateIDs []uint
-	SKU                 string
-	Title               string
-	OptionValues        map[string]string
-	Currency            string
-	PriceMinor          int64
-	Stock               int
-	Weight              int
-	IsDefault           bool
-	IsActive            *bool
-	SortOrder           int
-	OptionGroupRules    []product.ProductOptionGroupVariantRule
-	OptionValueRules    []product.ProductOptionValueVariantRule
+	CarbonRimSpecification *product.CarbonRimVariantSpecification
+	ID                     *uint
+	ShippingTemplateIDs    []uint
+	SKU                    string
+	Title                  string
+	OptionValues           map[string]string
+	Currency               string
+	PriceMinor             int64
+	Stock                  int
+	Weight                 int
+	IsDefault              bool
+	IsActive               *bool
+	SortOrder              int
+	OptionGroupRules       []product.ProductOptionGroupVariantRule
+	OptionValueRules       []product.ProductOptionValueVariantRule
 }
 
 func (s *ProductService) buildSpecValues(productSpecificationTemplateID *uint, values map[string]string, excludeProductID uint) ([]product.ProductSpecValue, error) {

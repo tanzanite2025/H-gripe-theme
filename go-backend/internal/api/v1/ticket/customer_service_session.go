@@ -162,6 +162,10 @@ func publicConversationID(item *ticket.Ticket) string {
 }
 
 func writePublicCustomerServiceError(c *gin.Context, err error) {
+	if errors.Is(err, service.ErrCustomerServiceMessageMediaReferenceInvalid) {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "message media is unavailable; reload the selected file"})
+		return
+	}
 	if errors.Is(err, service.ErrCustomerServiceConversationAccessDenied) {
 		c.JSON(http.StatusForbidden, gin.H{"success": false, "message": "conversation access denied"})
 		return

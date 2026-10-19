@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"path"
 	"strings"
+	"time"
 
 	"commerce-platform/internal/domain/homevisualtile"
 	"commerce-platform/internal/domain/outbox"
@@ -39,7 +40,6 @@ const (
 	HomeMainProductCategoriesTileSetKey    = "home-main-product-categories"
 	maxHomeVisualTileItems                 = 100
 	HomeVisualTileStoragePrefix            = "visual-showcase"
-	homeVisualTileImageCacheControl        = "public, max-age=31536000, immutable"
 )
 
 type HomeVisualTileInput struct {
@@ -60,11 +60,12 @@ type HomeVisualTileInput struct {
 }
 
 type HomeVisualTileImageUpload struct {
-	ImageURL     string `json:"image_url"`
-	ThumbnailURL string `json:"thumbnail_url"`
-	StorageKey   string `json:"storage_key"`
-	Width        int    `json:"width"`
-	Height       int    `json:"height"`
+	ImageURL       string     `json:"image_url"`
+	ThumbnailURL   string     `json:"thumbnail_url"`
+	StorageKey     string     `json:"storage_key"`
+	Width          int        `json:"width"`
+	Height         int        `json:"height"`
+	DraftExpiresAt *time.Time `json:"draft_expires_at,omitempty"`
 }
 
 type HomeVisualTilePublishedResult struct {
@@ -79,10 +80,18 @@ type HomeVisualTileService struct {
 	repo    *repository.HomeVisualTileRepository
 	storage storage.StorageService
 	outbox  *repository.OutboxRepository
+	siteURL string
 }
 
-func NewHomeVisualTileService(repo *repository.HomeVisualTileRepository, storageSvc storage.StorageService) *HomeVisualTileService {
-	return &HomeVisualTileService{repo: repo, storage: storageSvc}
+func NewHomeVisualTileService(repo *repository.HomeVisualTileRepository, storageSvc storage.StorageService, siteURLs ...string) *HomeVisualTileService {
+	service := &HomeVisualTileService{repo: repo, storage: storageSvc}
+	if len(siteURLs) > 0 {
+		service.siteURL = strings.TrimSpace(siteURLs[0])
+	}
+	if repo != nil {
+		repo.ConfigureTransactionalVisualShowcaseImageBindingValidation(service.validateVisualShowcaseImageBindingsWithObjectExistenceUnderTransactionLock)
+	}
+	return service
 }
 
 func (s *HomeVisualTileService) ConfigureObjectCleanupOutbox(repo *repository.OutboxRepository) {
@@ -219,23 +228,11 @@ func (s *HomeVisualTileService) UploadAdminImage(
 		return nil, err
 	}
 
-	imageURL, err := s.uploadVisualShowcaseImage(ctx, key, normalizedLocale, file)
-	if err != nil {
-		return nil, err
-	}
-	storageKey := s.visualShowcaseStorageKeyFromReference(imageURL)
-	if storageKey == "" {
-		_ = s.storage.Delete(ctx, imageURL)
-		return nil, ErrHomeVisualTileImageInvalid
-	}
+	return s.uploadVisualShowcaseDraftImageWithPrecommittedExactKeyReceipt(ctx, key, normalizedLocale, file, width, height)
+}
 
-	return &HomeVisualTileImageUpload{
-		ImageURL:     imageURL,
-		ThumbnailURL: imageURL,
-		StorageKey:   storageKey,
-		Width:        width,
-		Height:       height,
-	}, nil
+func (s *HomeVisualTileService) persistFailedUploadCompensationWithOwnerAndHistoricalReferenceProtection(ctx context.Context, reference string) error {
+	return persistFailedDedicatedPublicUploadCompensationBeforeAttemptingOwnerCheckedCleanup(ctx, s.outbox, s.storage, HomeVisualTileStoragePrefix, objectCleanupResourceHomeVisualTile, outbox.AggregateTypeHomeVisualTileSet, reference, NewObjectStorageCleanupOutboxHandler(nil, nil, s, nil))
 }
 
 func (s *HomeVisualTileService) ReplaceAdminItems(
@@ -264,11 +261,13 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 		if err != nil {
 			return nil, err
 		}
-		retainedStorageKeys[item.StorageKey] = struct{}{}
+		for _, objectKey := range s.dedicatedVisualShowcaseObjectKeysReferencedByItem(item) {
+			retainedStorageKeys[objectKey] = struct{}{}
+		}
 		items = append(items, item)
 	}
 
-	if err := s.repo.ReplaceItems(key, normalizedLocale, items, func(tx *gorm.DB, previous []homevisualtile.Tile) error {
+	if err := s.repo.WithContext(ctx).ReplaceItems(key, normalizedLocale, items, func(tx *gorm.DB, previous []homevisualtile.Tile) error {
 		removedKeys := homeVisualTileRemovedStorageKeys(s, previous, retainedStorageKeys)
 		if len(removedKeys) == 0 {
 			return nil
@@ -277,13 +276,7 @@ func (s *HomeVisualTileService) ReplaceAdminItems(
 			return ErrObjectStorageCleanupUnavailable
 		}
 		aggregateID := key + ":" + normalizedLocale
-		event, eventErr := newObjectStorageCleanupEvent(
-			objectCleanupResourceHomeVisualTile,
-			aggregateID,
-			outbox.AggregateTypeHomeVisualTileSet,
-			aggregateID,
-			removedKeys,
-		)
+		event, eventErr := newVisualShowcaseCommittedPlacementRemovalObjectCleanupEvent(aggregateID, removedKeys)
 		if eventErr != nil {
 			return eventErr
 		}
@@ -327,13 +320,14 @@ func (s *HomeVisualTileService) SaveSingleVisualShowcaseAdminItem(
 		return nil, err
 	}
 
-	retainedStorageKeys := map[string]struct{}{item.StorageKey: {}}
-	previousStorageKey := ""
-	err = s.repo.SaveSingleVisualShowcaseItem(&item, func(tx *gorm.DB, previous *homevisualtile.Tile) error {
+	retainedStorageKeys := make(map[string]struct{})
+	for _, objectKey := range s.dedicatedVisualShowcaseObjectKeysReferencedByItem(item) {
+		retainedStorageKeys[objectKey] = struct{}{}
+	}
+	err = s.repo.WithContext(ctx).SaveSingleVisualShowcaseItem(&item, func(tx *gorm.DB, previous *homevisualtile.Tile) error {
 		if previous == nil {
 			return nil
 		}
-		previousStorageKey = previous.StorageKey
 		removedKeys := homeVisualTileRemovedStorageKeys(s, []homevisualtile.Tile{*previous}, retainedStorageKeys)
 		if len(removedKeys) == 0 {
 			return nil
@@ -342,22 +336,13 @@ func (s *HomeVisualTileService) SaveSingleVisualShowcaseAdminItem(
 			return ErrObjectStorageCleanupUnavailable
 		}
 		aggregateID := key + ":" + normalizedLocale
-		event, eventErr := newObjectStorageCleanupEvent(
-			objectCleanupResourceHomeVisualTile,
-			aggregateID,
-			outbox.AggregateTypeHomeVisualTileSet,
-			aggregateID,
-			removedKeys,
-		)
+		event, eventErr := newVisualShowcaseCommittedPlacementRemovalObjectCleanupEvent(aggregateID, removedKeys)
 		if eventErr != nil {
 			return eventErr
 		}
 		return s.outbox.WithTx(tx).CreateEvent(event)
 	})
 	if err != nil {
-		if s.storage != nil && previousStorageKey != "" && previousStorageKey != item.StorageKey {
-			_ = s.storage.Delete(ctx, item.ImageURL)
-		}
 		return nil, err
 	}
 	return s.repo.ListItems(key, normalizedLocale, false)
@@ -475,30 +460,22 @@ func homeVisualTileRemovedStorageKeys(
 ) []string {
 	removed := make([]string, 0, len(previousItems))
 	for _, item := range previousItems {
-		storageKey := s.visualShowcaseStorageKeyFromInput(item.StorageKey, item.ImageURL)
-		if storageKey == "" {
-			continue
+		for _, storageKey := range s.dedicatedVisualShowcaseObjectKeysReferencedByItem(item) {
+			if _, retained := retainedStorageKeys[storageKey]; !retained {
+				removed = append(removed, storageKey)
+			}
 		}
-		if _, retained := retainedStorageKeys[storageKey]; retained {
-			continue
-		}
-		removed = append(removed, storageKey)
 	}
 	return normalizeObjectCleanupKeys(removed)
 }
 
-func (s *HomeVisualTileService) uploadVisualShowcaseImage(ctx context.Context, tileSetKey string, locale string, file *multipart.FileHeader) (string, error) {
-	prefix := homeVisualTileStoragePrefix(tileSetKey, locale)
-	if cacheControlled, ok := s.storage.(storage.CacheControlledObjectUploader); ok {
-		return cacheControlled.UploadWithPrefixAndCacheControl(ctx, file, prefix, homeVisualTileImageCacheControl)
-	}
-	return s.storage.UploadWithPrefix(ctx, file, prefix)
-}
-
 func (s *HomeVisualTileService) visualShowcaseStorageKeyFromInput(inputStorageKey string, imageURL string) string {
+	if strings.TrimSpace(inputStorageKey) == "" {
+		return s.visualShowcaseStorageKeyFromReference(imageURL)
+	}
 	normalizedStorageKey, hasStorageKey := storage.NormalizeObjectKey(inputStorageKey)
 	if !hasStorageKey || !IsHomeVisualTileStorageKey(normalizedStorageKey) {
-		return s.visualShowcaseStorageKeyFromReference(imageURL)
+		return ""
 	}
 
 	referencedStorageKey := s.visualShowcaseStorageKeyFromReference(imageURL)
@@ -514,7 +491,7 @@ func (s *HomeVisualTileService) visualShowcaseStorageKeyFromReference(reference 
 		return ""
 	}
 	if s != nil && s.storage != nil {
-		if key, err := s.storage.ObjectKey(value); err == nil && IsHomeVisualTileStorageKey(key) {
+		if key, err := storage.TrustedBusinessMediaReferenceObjectKey(value, s.storage, s.siteURL); err == nil && IsHomeVisualTileStorageKey(key) {
 			return key
 		}
 	}

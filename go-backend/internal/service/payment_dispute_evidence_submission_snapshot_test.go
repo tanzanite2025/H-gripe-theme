@@ -197,7 +197,7 @@ func TestPayPalDisputeEvidenceRetryReusesSnapshotAndDoesNotReuploadInvoice(t *te
 		url: "https://cdn.example.test/evidence/paypal-snapshot.pdf",
 	}
 	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(fakeSubmitter)
-	paymentService.ConfigurePayPalDisputeEvidenceDocumentStorage(fakeStorage)
+	configurePayPalInvoiceDurableStorageForRegression(t, db, paymentService, fakeStorage)
 	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
 		Seller: invoice.SellerProfile{
 			Name:    "Commerce Platform Factory",
@@ -233,5 +233,5 @@ func TestPayPalDisputeEvidenceRetryReusesSnapshotAndDoesNotReuploadInvoice(t *te
 	require.Equal(t, "DHL-PAYPAL-SNAPSHOT-1", fakeSubmitter.paramsHistory[1].Evidences.EvidenceInfo.TrackingInfo[0].TrackingNumber)
 	require.Contains(t, fakeSubmitter.paramsHistory[1].Evidences.Notes, "Original PayPal statement.")
 	require.NotContains(t, fakeSubmitter.paramsHistory[1].Evidences.Notes, "Changed PayPal statement")
-	require.Equal(t, "https://cdn.example.test/evidence/paypal-snapshot.pdf", fakeSubmitter.paramsHistory[1].Evidences.Documents[0].URL)
+	require.Equal(t, fakeStorage.url, fakeSubmitter.paramsHistory[1].Evidences.Documents[0].URL)
 }

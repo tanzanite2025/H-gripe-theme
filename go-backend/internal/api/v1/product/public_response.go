@@ -25,35 +25,37 @@ const (
 // shipping configuration, internal relationships, and audit timestamps are kept
 // out of this response.
 type PublicProduct struct {
-	ID                           uint                                `json:"id"`
-	Name                         string                              `json:"name"`
-	Slug                         string                              `json:"slug"`
-	LocalizedRoutes              []PublicProductTranslationRoute     `json:"localized_routes,omitempty"`
-	Breadcrumb                   *service.ProductBreadcrumbView      `json:"breadcrumb,omitempty"`
-	SKU                          string                              `json:"sku,omitempty"`
-	Description                  string                              `json:"description"`
-	ShortDesc                    string                              `json:"short_description"`
-	Currency                     string                              `json:"currency"`
-	PriceDecimal                 string                              `json:"price_decimal"`
-	DisplayPrice                 *PublicDisplayPrice                 `json:"display_price,omitempty"`
-	DisplayPrices                []PublicDisplayPrice                `json:"display_prices,omitempty"`
-	FulfillmentMode              string                              `json:"fulfillment_mode,omitempty"`
-	MetaTitle                    string                              `json:"meta_title"`
-	MetaDesc                     string                              `json:"meta_description"`
-	Brand                        *PublicProductBrand                 `json:"brand,omitempty"`
-	Category                     *PublicProductCategory              `json:"product_category,omitempty"`
-	AfterSalesTemplate           *PublicProductInformationTemplate   `json:"after_sales_template,omitempty"`
-	PackagingTemplate            *PublicProductInformationTemplate   `json:"packaging_template,omitempty"`
-	Availability                 Availability                        `json:"availability"`
-	Media                        []PublicProductMedia                `json:"media,omitempty"`
-	ProductSpecificationTemplate *PublicProductSpecificationTemplate `json:"product_specification_template,omitempty"`
-	SpecValues                   []PublicProductSpecValue            `json:"spec_values,omitempty"`
-	Variants                     []PublicProductVariant              `json:"variants,omitempty"`
-	VariantOptionValues          []PublicVariantOptionValue          `json:"variant_option_values,omitempty"`
-	OptionValueRelations         []PublicProductOptionValueRelation  `json:"option_value_relations,omitempty"`
-	SpokeRepairKitModels         []PublicSpokeRepairKitModel         `json:"spoke_repair_kit_models,omitempty"`
-	ReviewSummary                *PublicProductReviewSummary         `json:"review_summary,omitempty"`
-	ShippingDetails              *PublicProductShippingDetails       `json:"shipping_details,omitempty"`
+	ProductType                  string                                `json:"product_type,omitempty"`
+	CarbonRimSpecification       *productdomain.CarbonRimSpecification `json:"carbon_rim_specification,omitempty"`
+	ID                           uint                                  `json:"id"`
+	Name                         string                                `json:"name"`
+	Slug                         string                                `json:"slug"`
+	LocalizedRoutes              []PublicProductTranslationRoute       `json:"localized_routes,omitempty"`
+	Breadcrumb                   *service.ProductBreadcrumbView        `json:"breadcrumb,omitempty"`
+	SKU                          string                                `json:"sku,omitempty"`
+	Description                  string                                `json:"description"`
+	ShortDesc                    string                                `json:"short_description"`
+	Currency                     string                                `json:"currency"`
+	PriceDecimal                 string                                `json:"price_decimal"`
+	DisplayPrice                 *PublicDisplayPrice                   `json:"display_price,omitempty"`
+	DisplayPrices                []PublicDisplayPrice                  `json:"display_prices,omitempty"`
+	FulfillmentMode              string                                `json:"fulfillment_mode,omitempty"`
+	MetaTitle                    string                                `json:"meta_title"`
+	MetaDesc                     string                                `json:"meta_description"`
+	Brand                        *PublicProductBrand                   `json:"brand,omitempty"`
+	Category                     *PublicProductCategory                `json:"product_category,omitempty"`
+	AfterSalesTemplate           *PublicProductInformationTemplate     `json:"after_sales_template,omitempty"`
+	PackagingTemplate            *PublicProductInformationTemplate     `json:"packaging_template,omitempty"`
+	Availability                 Availability                          `json:"availability"`
+	Media                        []PublicProductMedia                  `json:"media,omitempty"`
+	ProductSpecificationTemplate *PublicProductSpecificationTemplate   `json:"product_specification_template,omitempty"`
+	SpecValues                   []PublicProductSpecValue              `json:"spec_values,omitempty"`
+	Variants                     []PublicProductVariant                `json:"variants,omitempty"`
+	VariantOptionValues          []PublicVariantOptionValue            `json:"variant_option_values,omitempty"`
+	OptionValueRelations         []PublicProductOptionValueRelation    `json:"option_value_relations,omitempty"`
+	SpokeRepairKitModels         []PublicSpokeRepairKitModel           `json:"spoke_repair_kit_models,omitempty"`
+	ReviewSummary                *PublicProductReviewSummary           `json:"review_summary,omitempty"`
+	ShippingDetails              *PublicProductShippingDetails         `json:"shipping_details,omitempty"`
 }
 
 // PublicSpokeRepairKitModel is the small product option contract exposed to
@@ -181,19 +183,20 @@ type PublicProductSpecValue struct {
 }
 
 type PublicProductVariant struct {
-	ID               uint                                  `json:"id"`
-	SKU              string                                `json:"sku,omitempty"`
-	Title            string                                `json:"title"`
-	OptionValues     string                                `json:"option_values"`
-	WeightGrams      int                                   `json:"weight_grams,omitempty"`
-	Currency         string                                `json:"currency"`
-	PriceDecimal     string                                `json:"price_decimal"`
-	DisplayPrice     *PublicDisplayPrice                   `json:"display_price,omitempty"`
-	DisplayPrices    []PublicDisplayPrice                  `json:"display_prices,omitempty"`
-	IsDefault        bool                                  `json:"is_default"`
-	Availability     Availability                          `json:"availability"`
-	OptionGroupRules []PublicProductOptionGroupVariantRule `json:"option_group_rules,omitempty"`
-	OptionValueRules []PublicProductOptionValueVariantRule `json:"option_value_rules,omitempty"`
+	CarbonRimSpecification *productdomain.CarbonRimVariantSpecification `json:"carbon_rim_specification,omitempty"`
+	ID                     uint                                         `json:"id"`
+	SKU                    string                                       `json:"sku,omitempty"`
+	Title                  string                                       `json:"title"`
+	OptionValues           string                                       `json:"option_values"`
+	WeightGrams            int                                          `json:"weight_grams,omitempty"`
+	Currency               string                                       `json:"currency"`
+	PriceDecimal           string                                       `json:"price_decimal"`
+	DisplayPrice           *PublicDisplayPrice                          `json:"display_price,omitempty"`
+	DisplayPrices          []PublicDisplayPrice                         `json:"display_prices,omitempty"`
+	IsDefault              bool                                         `json:"is_default"`
+	Availability           Availability                                 `json:"availability"`
+	OptionGroupRules       []PublicProductOptionGroupVariantRule        `json:"option_group_rules,omitempty"`
+	OptionValueRules       []PublicProductOptionValueVariantRule        `json:"option_value_rules,omitempty"`
 }
 
 type PublicProductOptionGroupVariantRule struct {
@@ -411,7 +414,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		optionValueRelations = append(optionValueRelations, PublicProductOptionValueRelation{ID: relation.ID, SourceOptionValueID: relation.SourceOptionValueID, TargetOptionValueID: relation.TargetOptionValueID, RelationType: relation.RelationType})
 	}
 
-	specValues := make([]PublicProductSpecValue, 0, len(item.SpecValues))
+	specValues := publicCarbonRimSpecificationValues(item.CarbonRimSpecification, locale)
 	for _, value := range item.SpecValues {
 		if value.SpecDefinition == nil || !value.SpecDefinition.IsVisible {
 			continue
@@ -437,6 +440,8 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	}
 
 	return PublicProduct{
+		ProductType:                  item.ProductType,
+		CarbonRimSpecification:       item.CarbonRimSpecification,
 		ID:                           item.ID,
 		Name:                         item.Name,
 		Slug:                         item.Slug,
@@ -562,19 +567,20 @@ func publicProductVariantFromDomainWithFulfillmentMode(item productdomain.Produc
 	priceMoney, _ := item.PriceMoney()
 	price, _ := priceMoney.FormatMajor()
 	return PublicProductVariant{
-		ID:               item.ID,
-		SKU:              item.SKU,
-		Title:            item.Title,
-		OptionValues:     item.OptionValues,
-		WeightGrams:      item.Weight,
-		Currency:         item.Currency,
-		PriceDecimal:     price,
-		DisplayPrice:     displayPriceForCurrency(displayCurrency, displayPrices),
-		DisplayPrices:    displayPrices,
-		IsDefault:        item.IsDefault,
-		Availability:     availabilityForVariant(item, productAvailable, fulfillmentMode),
-		OptionGroupRules: publicProductOptionGroupVariantRules(item.OptionGroupRules),
-		OptionValueRules: publicProductOptionValueVariantRules(item.OptionValueRules),
+		ID:                     item.ID,
+		SKU:                    item.SKU,
+		Title:                  item.Title,
+		OptionValues:           item.OptionValues,
+		CarbonRimSpecification: item.CarbonRimSpecification,
+		WeightGrams:            item.Weight,
+		Currency:               item.Currency,
+		PriceDecimal:           price,
+		DisplayPrice:           displayPriceForCurrency(displayCurrency, displayPrices),
+		DisplayPrices:          displayPrices,
+		IsDefault:              item.IsDefault,
+		Availability:           availabilityForVariant(item, productAvailable, fulfillmentMode),
+		OptionGroupRules:       publicProductOptionGroupVariantRules(item.OptionGroupRules),
+		OptionValueRules:       publicProductOptionValueVariantRules(item.OptionValueRules),
 	}
 }
 

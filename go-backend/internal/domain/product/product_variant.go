@@ -11,6 +11,7 @@ import (
 )
 
 type ProductVariant struct {
+	CarbonRimSpecification   *CarbonRimVariantSpecification   `gorm:"serializer:json;type:jsonb" json:"carbon_rim_specification,omitempty"`
 	ID                       uint                             `gorm:"primarykey" json:"id"`
 	ProductID                uint                             `gorm:"not null;index;uniqueIndex:idx_product_variant_options" json:"product_id"`
 	MasterVariantID          *uint                            `gorm:"index" json:"master_variant_id,omitempty"`
@@ -64,12 +65,20 @@ func (v *ProductVariant) AfterFind(tx *gorm.DB) error {
 		return nil
 	}
 	var master struct {
-		Stock int
+		Stock                  int
+		CarbonRimSpecification *CarbonRimVariantSpecification `gorm:"serializer:json;type:jsonb"`
 	}
-	if err := tx.Model(&ProductVariant{}).Select("stock").Where("id = ?", *v.MasterVariantID).First(&master).Error; err != nil {
+	columns := []string{"stock"}
+	if v.CarbonRimSpecification != nil {
+		columns = append(columns, "carbon_rim_specification")
+	}
+	if err := tx.Model(&ProductVariant{}).Select(columns).Where("id = ?", *v.MasterVariantID).First(&master).Error; err != nil {
 		return err
 	}
 	v.Stock = master.Stock
+	if v.CarbonRimSpecification != nil {
+		v.CarbonRimSpecification = master.CarbonRimSpecification
+	}
 	return nil
 }
 

@@ -49,6 +49,7 @@ func TestOrderEvidenceAttachmentServiceUploadsAndScopesObject(t *testing.T) {
 		storageService,
 	)
 
+	attachmentService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	fileHeader := newEvidencePNGFileHeader(t, "identity.png")
 	attachment, err := attachmentService.Upload(
 		context.Background(),
@@ -108,6 +109,7 @@ func TestOrderEvidenceAttachmentServiceAcceptsCarrierPODPDF(t *testing.T) {
 	require.NoError(t, err)
 	attachmentService := NewConfiguredOrderEvidenceAttachmentService(txManager, evidenceRepo, storageService)
 
+	attachmentService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	attachment, err := attachmentService.Upload(context.Background(), snapshot.OrderID, pod.ID, newEvidencePDFFileHeader(t, "carrier-pod.pdf"), 7)
 	require.NoError(t, err)
 	require.Equal(t, "application/pdf", attachment.MimeType)
@@ -140,6 +142,7 @@ func TestOrderEvidenceAttachmentServiceDeletesReferenceRetainsObjectAndRejectsLo
 		storageService,
 	)
 
+	attachmentService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	fileHeader := newEvidencePNGFileHeader(t, "wrong-identity.png")
 	raw := mustReadEvidenceFileHeader(t, fileHeader)
 	attachment, err := attachmentService.Upload(

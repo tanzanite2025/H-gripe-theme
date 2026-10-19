@@ -89,6 +89,13 @@
               <AdminFormField label="重量（克）">
                 <Input v-model.number="defaultSpokeRepairKitSalesVariant.weight_grams" type="number" min="0" step="1" />
               </AdminFormField>
+              <AdminFormField label="线路计费模板" description="仅用于这个 SKU，可选择一个或多个模板。">
+                <ProductShippingBillingTemplateSelectionDialog
+                  v-model="defaultSpokeRepairKitSalesVariant.shipping_template_ids"
+                  :shipping-templates="shippingTemplates"
+                  :selection-context="`SKU ${defaultSpokeRepairKitSalesVariant.sku || '修补包'}`"
+                />
+              </AdminFormField>
               <AdminFormField label="库存" required :error="errors.variants">
                 <Input v-model.number="defaultSpokeRepairKitSalesVariant.stock" type="number" min="0" step="1" @input="clearSpokeRepairKitFormError('variants')" />
               </AdminFormField>
@@ -126,12 +133,10 @@
 
           <ProductPublishingSection
             :form="form"
-            :shipping-templates="shippingTemplates"
             :after-sales-templates="afterSalesTemplates"
             :packaging-templates="packagingTemplates"
             id-prefix="spoke-repair-kit"
             description="控制商品的公开状态、物流资料、售后资料和前台精选展示。"
-            @product-shipping-template-select="setSpokeRepairKitProductShippingTemplates"
             @product-information-template-select="(...args) => setSpokeRepairKitInformationTemplate(...args)"
           />
         </div>
@@ -161,6 +166,7 @@ import ProductDescriptionEditor from '@/components/admin/product/ProductDescript
 import ProductMediaSection from '@/components/admin/product/ProductMediaSection.vue'
 import ProductProfitabilitySection from '@/components/admin/product/ProductProfitabilitySection.vue'
 import ProductPublishingSection from '@/components/admin/product/ProductPublishingSection.vue'
+import ProductShippingBillingTemplateSelectionDialog from '@/components/admin/product/ProductShippingBillingTemplateSelectionDialog.vue'
 import SpokeRepairKitModelPicker from '@/components/admin/product/SpokeRepairKitModelPicker.vue'
 import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
 import { Button } from '@/components/ui/button'
@@ -263,7 +269,6 @@ const form = reactive<any>({
   product_specification_template_id: null,
   product_category_id: null,
   brand_id: null,
-  shipping_template_ids: [],
   after_sales_template_id: null,
   packaging_template_id: null,
   customs_classification_profile_id: null,
@@ -334,7 +339,6 @@ const populateSpokeRepairKitProductForm = (product: Record<string, any> | null):
     product_specification_template_id: null,
     product_category_id: props.categoryId || null,
     brand_id: product?.brand_id ?? product?.brand?.id ?? null,
-    shipping_template_ids: Array.isArray(product?.shipping_template_ids) ? [...product.shipping_template_ids] : [],
     after_sales_template_id: product?.after_sales_template_id ?? product?.after_sales_template?.id ?? null,
     packaging_template_id: product?.packaging_template_id ?? product?.packaging_template?.id ?? null,
     customs_classification_profile_id: product?.customs_classification_profile_id ?? product?.customs_classification_profile?.id ?? null,
@@ -355,10 +359,10 @@ const populateSpokeRepairKitProductForm = (product: Record<string, any> | null):
       : [],
     variant_option_values: [],
     option_value_relations: [],
-    media: buildProductMediaFormValues(product),
+    media: buildProductMediaFormValues(product || {}),
     variants: [createEmptySpokeRepairKitSalesVariant({
       id: variant?.id || null,
-      shipping_template_ids: Array.isArray(variant?.shipping_template_ids) ? [...variant.shipping_template_ids] : [],
+      shipping_template_ids: Array.isArray(variant.shipping_template_ids) ? [...variant.shipping_template_ids] : [],
       sku: String(variant?.sku || product?.sku || ''),
       title: String(variant?.title || ''),
       option_values: parseSpokeRepairKitVariantOptionValues(variant?.option_values),
@@ -420,9 +424,6 @@ const availableSpokeRepairKitCustomsClassifications = computed(() => props.custo
 )))
 
 const setSpokeRepairKitProductBrand = (value: unknown): void => { form.brand_id = value === '__none__' ? null : Number(value) }
-const setSpokeRepairKitProductShippingTemplates = (values: unknown): void => {
-  form.shipping_template_ids = Array.from(new Set((Array.isArray(values) ? values : []).map(Number).filter((id: number) => Number.isInteger(id) && id > 0)))
-}
 const setSpokeRepairKitInformationTemplate = (field: 'after_sales_template_id' | 'packaging_template_id', value: unknown): void => { form[field] = value === '__none__' ? null : Number(value) }
 const handleSpokeRepairKitCustomsClassificationSelect = (value: unknown): void => {
   if (value === '__none__') {
@@ -495,7 +496,6 @@ const submitSpokeRepairKitProductForm = async (): Promise<void> => {
     product_specification_template_id: null,
     product_category_id: Number(props.categoryId),
     brand_id: form.brand_id ? Number(form.brand_id) : null,
-    shipping_template_ids: [...form.shipping_template_ids],
     after_sales_template_id: form.after_sales_template_id,
     packaging_template_id: form.packaging_template_id,
     customs_classification_profile_id: form.customs_classification_profile_id || null,

@@ -3,6 +3,7 @@ package admin
 import (
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/service"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,10 @@ func (h *WebsiteProfileHandler) Update(c *gin.Context) {
 
 	settings, err := h.websiteProfileService.Update(request)
 	if err != nil {
+		if errors.Is(err, service.ErrSettingInvalid) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update website profile settings"})
 		return
 	}

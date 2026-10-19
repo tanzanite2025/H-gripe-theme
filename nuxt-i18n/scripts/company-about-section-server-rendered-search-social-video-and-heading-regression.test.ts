@@ -4,6 +4,7 @@ import { parse, parseFragment, type DefaultTreeAdapterMap } from 'parse5'
 import { companyAboutTabs } from '../app/utils/pageSubNavigationData.ts'
 import { holePatternAutomatedDrillingVideoMetadata } from '../app/data/company/holePatternAutomatedDrillingVideoMetadata.ts'
 import { carbonRimLogoLaserEngravingVideoMetadata } from '../app/data/company/carbonRimLogoLaserEngravingVideoMetadata.ts'
+import { carbonRimDrillingAndLacingPhotoWallImages } from '../app/data/company/carbonRimDrillingAndLacingPhotoWallImages.ts'
 import localeManifest from '../app/i18n/locales.manifest.ts'
 
 // Run against a running storefront; the default is the repository's development port.
@@ -31,6 +32,7 @@ function readCompanyAboutServerRenderedText(node: CompanyAboutRenderedNode): str
 interface CompanyAboutSectionRegressionMessages {
   title: string
   seo: { title: string; description: string; imageAlt: string; videoName?: string }
+  lacingPhotoWall?: { title: string }
 }
 
 const companyAboutSectionMessageNamespaces = {
@@ -111,6 +113,10 @@ for (const locale of ['en', 'zh_cn', 'fr']) {
     assert.equal(new URL(breadcrumbs[0].itemListElement[0].item).pathname, localePrefix || '/')
     const videos = structuredData.filter(data => data['@type'] === 'VideoObject')
     assert.equal(videos.length, sectionId === 'factory' ? 0 : 1)
+    const imageGalleries = structuredData.filter(data => data['@type'] === 'ImageGallery')
+    const photoImageObjects = structuredData.filter(data => data['@type'] === 'ImageObject')
+    assert.equal(imageGalleries.length, sectionId === 'hole-patterns' ? 1 : 0, `${routePath}: gallery belongs to its own section`)
+    assert.equal(photoImageObjects.length, sectionId === 'hole-patterns' ? carbonRimDrillingAndLacingPhotoWallImages.length : 0)
     const entityIds = structuredData.map(data => data['@id']).filter(Boolean)
     assert.equal(new Set(entityIds).size, entityIds.length, `${routePath}: no duplicate schema entities`)
     const faqs = structuredData.filter(data => data['@type'] === 'FAQPage')
@@ -163,6 +169,43 @@ for (const locale of ['en', 'zh_cn', 'fr']) {
     }
 
     if (sectionId === 'hole-patterns') {
+      const galleryElementId = 'hole-pattern-drilled-rim-lacing-photo-gallery'
+      const visibleGallery = elements.find(element => readCompanyAboutServerRenderedAttribute(element, 'id') === galleryElementId)
+      assert.ok(visibleGallery)
+      const galleryElements = collectCompanyAboutServerRenderedElements(visibleGallery)
+      const galleryPhotos = galleryElements.filter(element => element.tagName === 'img')
+      const galleryCaptions = galleryElements.filter(element => element.tagName === 'figcaption')
+      assert.equal(galleryPhotos.length, carbonRimDrillingAndLacingPhotoWallImages.length,
+        `${routePath}: every photo, including later groups, is present without JavaScript`)
+      assert.equal(galleryCaptions.length, galleryPhotos.length)
+      const gallery = imageGalleries[0]
+      assert.equal(gallery['@id'], `${canonicalUrl}#${galleryElementId}`)
+      assert.equal(gallery.name, messages.lacingPhotoWall?.title)
+      assert.equal(gallery.inLanguage, pages[0].inLanguage)
+      assert.equal(gallery.isPartOf['@id'], pages[0]['@id'])
+      assert.equal(pages[0].hasPart['@id'], gallery['@id'])
+      assert.deepEqual(pages[0].image, gallery.associatedMedia)
+      assert.deepEqual(gallery.associatedMedia.map((photo: { '@id': string }) => photo['@id']),
+        photoImageObjects.map(photo => photo['@id']))
+
+      for (const [photoIndex, photo] of carbonRimDrillingAndLacingPhotoWallImages.entries()) {
+        const renderedPhoto = galleryPhotos[photoIndex]!
+        const renderedCaption = readCompanyAboutServerRenderedText(galleryCaptions[photoIndex]!).trim()
+        assert.ok(readCompanyAboutServerRenderedAttribute(renderedPhoto, 'src').includes(photo.src.split('/').at(-1)!))
+        assert.equal(readCompanyAboutServerRenderedAttribute(renderedPhoto, 'alt'), photo.alt[contentLocale])
+        assert.equal(renderedCaption, photo.caption[contentLocale])
+        const imageObject = photoImageObjects[photoIndex]
+        assert.equal(imageObject.contentUrl, new URL(photo.src, canonicalUrl).toString())
+        assert.equal(imageObject.url, imageObject.contentUrl)
+        assert.equal(imageObject.name, renderedCaption)
+        assert.equal(imageObject.caption, renderedCaption)
+        assert.equal(imageObject.description, readCompanyAboutServerRenderedAttribute(renderedPhoto, 'alt'))
+        assert.equal(imageObject.width, photo.width)
+        assert.equal(imageObject.height, photo.height)
+        assert.equal(imageObject.encodingFormat, photo.mimeType)
+        assert.equal(imageObject.inLanguage, pages[0].inLanguage)
+        assert.equal(imageObject.isPartOf['@id'], gallery['@id'])
+      }
       const previews = elements.filter(element => element.tagName === 'video')
       assert.equal(previews.length, 0, 'The video player loads only after clicking its static poster')
       const posterImages = elements.filter(element => element.tagName === 'img'
@@ -185,9 +228,10 @@ for (const locale of ['en', 'zh_cn', 'fr']) {
 for (const mediaPath of [
   holePatternAutomatedDrillingVideoMetadata.contentPath, holePatternAutomatedDrillingVideoMetadata.poster.path,
   carbonRimLogoLaserEngravingVideoMetadata.contentPath, carbonRimLogoLaserEngravingVideoMetadata.poster.path,
+  ...carbonRimDrillingAndLacingPhotoWallImages.map(photo => photo.src),
 ]) {
   const response = await fetch(new URL(mediaPath, companyAboutStorefrontOrigin), { method: 'HEAD' })
   assert.equal(response.status, 200, mediaPath)
   assert.match(response.headers.get('content-type') || '', mediaPath.endsWith('.webm') ? /^video\/webm/ : mediaPath.endsWith('.mp4') ? /^video\/mp4/ : /^image\/webp/)
 }
-console.log('PASS both manufacturing videos and their posters are directly accessible')
+console.log('PASS manufacturing videos, posters and all lacing gallery photographs are directly accessible')

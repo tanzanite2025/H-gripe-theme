@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -20,6 +21,7 @@ import (
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
+	"gorm.io/gorm"
 
 	xdraw "golang.org/x/image/draw"
 	_ "golang.org/x/image/webp"
@@ -131,6 +133,8 @@ func (s *MediaService) generateAssetDerivatives(ctx context.Context, asset *medi
 	}, presets)
 }
 
+// Public results are registered before returning by the write-ahead receipt
+// transaction. Private results retain their existing leased registration flow.
 func (s *MediaService) generateAssetDerivativesFromSource(
 	ctx context.Context,
 	asset *mediadomain.MediaAsset,
@@ -142,6 +146,16 @@ func (s *MediaService) generateAssetDerivativesFromSource(
 	}
 	if asset.MediaType != "image" || len(presets) == 0 {
 		return nil, nil
+	}
+	// Draft uploads preallocate and register their inline derivatives together.
+	// Rebuilds start only after business commit, so expiry cannot race new IO.
+	if err := s.repo.ValidateBusinessDraftMediaDerivativeGenerationIsPermanentlyBound(asset); err != nil {
+		return nil, err
+	}
+	if asset.Visibility != "private" {
+		return s.generateAndPersistPublicMediaDerivativesWithPrecommittedExactKeyReceipts(ctx, asset, openSource, presets, func(repo *repository.MediaRepository, _ *gorm.DB, derivatives []mediadomain.MediaAssetDerivative) error {
+			return repo.CreateAssetDerivatives(derivatives)
+		})
 	}
 	writeContext, releaseWriteLease, err := s.acquireCustomerServicePrivateDerivativeWriteLease(ctx, asset)
 	if err != nil {
@@ -171,14 +185,16 @@ func (s *MediaService) generateAssetDerivativesFromSource(
 		resized := resizeImageToMaxWidth(decoded, preset.MaxWidth)
 		payload, filename, mimeType, width, height, err := encodeDerivativeImage(asset, resized, preset, preserveAlpha)
 		if err != nil {
-			deleteUploadedMediaObjectsBestEffort(ctx, s.storage, uploadedURLs)
-			return nil, err
+			return nil, errors.Join(err, s.persistFailedMediaUploadCompensationBeforeAttemptingExactObjectCleanup(ctx, asset, uploadedURLs))
 		}
 
 		url, err := uploadMediaDerivativeObjectUsingAssetAccessPolicy(ctx, s.storage, asset, bytes.NewReader(payload), filename, preset.Name, mediaDerivativePresetVersion(preset))
 		if err != nil {
-			deleteUploadedMediaObjectsBestEffort(ctx, s.storage, uploadedURLs)
-			return nil, fmt.Errorf("%w: upload %s derivative: %v", ErrMediaDerivativeGenerationFailed, preset.Name, err)
+			if strings.TrimSpace(url) != "" {
+				uploadedURLs = append(uploadedURLs, url)
+			}
+			return nil, errors.Join(fmt.Errorf("%w: upload %s derivative: %v", ErrMediaDerivativeGenerationFailed, preset.Name, err),
+				s.persistFailedMediaUploadCompensationBeforeAttemptingExactObjectCleanup(ctx, asset, uploadedURLs))
 		}
 		uploadedURLs = append(uploadedURLs, url)
 
@@ -502,13 +518,6 @@ func imageHasAlpha(img image.Image) bool {
 	return false
 }
 
-func uploadDerivativeObject(ctx context.Context, storageService storage.StorageService, reader *bytes.Reader, filename string, prefix string) (string, error) {
-	if uploader, ok := storageService.(storage.CacheControlledReaderUploader); ok {
-		return uploader.UploadFromReaderWithPrefixAndCacheControl(ctx, reader, filename, prefix, mediaDerivativeCacheControl)
-	}
-	return storageService.UploadFromReaderWithPrefix(ctx, reader, filename, prefix)
-}
-
 func storageObjectKey(storageService storage.StorageService, reference string) string {
 	if storageService != nil {
 		if key, err := storageService.ObjectKey(reference); err == nil && key != "" {
@@ -528,18 +537,6 @@ func derivativeFilename(asset *mediadomain.MediaAsset, preset string, width int,
 		base = fmt.Sprintf("asset-%d", asset.ID)
 	}
 	return fmt.Sprintf("%s-%s-%d%s", base, preset, width, ext)
-}
-
-func deleteUploadedMediaObjectsBestEffort(ctx context.Context, storageService storage.StorageService, urls []string) {
-	if storageService == nil {
-		return
-	}
-	for _, url := range urls {
-		if strings.TrimSpace(url) == "" {
-			continue
-		}
-		_ = storageService.Delete(ctx, url)
-	}
 }
 
 func IsMediaDerivativeStorageKey(key string) bool {
@@ -639,6 +636,10 @@ func (s *MediaService) ProductMediaImageVariants(assetID uint) (map[string]produ
 	if err != nil {
 		return nil, "", err
 	}
+	return s.productMediaImageVariantsUsingPresetDefinitions(assetID, presets)
+}
+
+func (s *MediaService) productMediaImageVariantsUsingPresetDefinitions(assetID uint, presets []MediaDerivativePresetDefinition) (map[string]productdomain.ProductMediaImageVariant, string, error) {
 	required := mediaDerivativePresetVersionMap(presets)
 	derivatives, err := s.repo.FindAssetDerivatives(assetID)
 	if err != nil {

@@ -313,7 +313,11 @@ func TestCustomerServiceRetiredAssetCleanupRejectsForeignDerivativeMetadataBefor
 	retention := configureCustomerServiceManagedAttachmentRetirementTestService(t, env)
 	ageCustomerServiceUploadSessionBeyondWriteAndReceiptDeadlines(t, env, asset.PendingCustomerServiceUploadSessionID)
 	derivative := asset.Derivatives[0]
-	require.NoError(t, env.db.Model(&derivative).Update("storage_key", env.asset.Derivatives[0].StorageKey).Error)
+	// Use an unregistered object in a foreign namespace so this still exercises
+	// namespace validation independently of the earlier registration guard.
+	foreignKey := fmt.Sprintf("%s/%d/card/unregistered.png", storage.CustomerServiceConversationAttachmentDerivativesPrefix, env.asset.ID)
+	writeMediaCleanupOwnershipConflictTestObjects(t, env.privateRoot, foreignKey)
+	require.NoError(t, env.db.Model(&derivative).Update("storage_key", foreignKey).Error)
 	result, err := retention.ExpireUnboundCustomerServiceAttachmentUploads(t.Context(), 10)
 	require.NoError(t, err)
 	require.Equal(t, 1, result.Retired)
@@ -321,7 +325,7 @@ func TestCustomerServiceRetiredAssetCleanupRejectsForeignDerivativeMetadataBefor
 	require.NoError(t, env.db.Where("event_type = ?", outbox.EventTypeObjectStorageCleanup).First(&event).Error)
 	handler := NewObjectStorageCleanupOutboxHandler(env.mediaService, nil, nil, nil)
 	require.ErrorContains(t, handler.Handle(t.Context(), event), "does not belong to its asset")
-	for _, key := range append([]string{asset.StorageKey, env.asset.Derivatives[0].StorageKey}, asset.Derivatives[0].StorageKey, asset.Derivatives[1].StorageKey, asset.Derivatives[2].StorageKey) {
+	for _, key := range append([]string{asset.StorageKey, foreignKey, env.asset.Derivatives[0].StorageKey}, asset.Derivatives[0].StorageKey, asset.Derivatives[1].StorageKey, asset.Derivatives[2].StorageKey) {
 		_, err = os.Stat(filepath.Join(env.privateRoot, filepath.FromSlash(key)))
 		require.NoError(t, err, key)
 	}
@@ -332,5 +336,7 @@ func TestCustomerServiceRetiredAssetCleanupRejectsForeignDerivativeMetadataBefor
 	require.NoError(t, env.db.Model(&derivative).Update("storage_key", asset.Derivatives[0].StorageKey).Error)
 	require.NoError(t, handler.Handle(t.Context(), event))
 	_, err = os.Stat(filepath.Join(env.privateRoot, filepath.FromSlash(env.asset.Derivatives[0].StorageKey)))
+	require.NoError(t, err)
+	_, err = os.Stat(filepath.Join(env.privateRoot, filepath.FromSlash(foreignKey)))
 	require.NoError(t, err)
 }

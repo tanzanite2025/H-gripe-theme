@@ -104,7 +104,6 @@
       @schwalbe-tire-model-select="setSchwalbeTireCatalogModel"
       @retry-schwalbe-tire-catalog="fetchSchwalbeTireCatalog"
       @product-brand-select="setProductBrand"
-      @product-shipping-template-select="setProductShippingTemplates"
       @product-information-template-select="setProductInformationTemplate"
       @customs-classification-select="handleCustomsClassificationSelect"
       @customs-classification-manual-edit="clearCustomsClassification"
@@ -245,7 +244,6 @@ const {
   getSpecLabel,
   specSelectValue,
   setSpecSelectValue,
-  setProductShippingTemplates,
   setProductBrand,
   setProductInformationTemplate,
   applyCustomsClassification,

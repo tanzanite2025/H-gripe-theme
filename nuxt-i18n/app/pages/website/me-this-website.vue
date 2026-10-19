@@ -26,6 +26,8 @@
       </div>
     </section>
 
+    <MeThisWebsitePhotoCarouselWithGreenDotNavigation />
+
     <section class="website-statement" aria-labelledby="website-statement-title">
       <div class="website-section-heading">
         <p class="website-eyebrow">{{ copy.statementEyebrow }}</p>
@@ -65,6 +67,7 @@
 import { computed } from 'vue'
 import { definePageMeta, useHead, useI18n, useLocalePath } from '#imports'
 import { useWebsiteProfileSettings } from '~/composables/useWebsiteProfileSettings'
+import MeThisWebsitePhotoCarouselWithGreenDotNavigation from '~/components/website/MeThisWebsitePhotoCarouselWithGreenDotNavigation.vue'
 
 const { locale } = useI18n()
 const localePath = useLocalePath()

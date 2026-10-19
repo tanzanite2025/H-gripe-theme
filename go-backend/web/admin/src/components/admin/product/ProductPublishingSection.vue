@@ -14,19 +14,6 @@
           </SelectContent>
         </Select>
       </AdminFormField>
-      <AdminFormField label="线路计费模板">
-        <select
-          class="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm"
-          multiple
-          :value="shippingTemplateIDs"
-          @change="handleShippingTemplateSelection"
-        >
-          <option v-for="template in shippingTemplates" :key="template.id" :value="String(template.id)">
-            {{ template.name }}{{ template.enabled === false ? '（停用）' : '' }}
-          </option>
-        </select>
-        <p class="mt-1 text-[11px] text-muted-foreground">可多选；Checkout 会为这些模板生成可选运输方案。</p>
-      </AdminFormField>
       <AdminFormField label="After-sales 模板">
         <Select :model-value="afterSalesTemplateSelectValue" @update:model-value="emit('product-information-template-select', 'after_sales_template_id', $event)">
           <SelectTrigger class="w-full"><SelectValue placeholder="未设置" /></SelectTrigger>
@@ -78,14 +65,12 @@ interface TemplateRecord {
 
 const props = withDefaults(defineProps<{
   form: Record<string, any>
-  shippingTemplates?: TemplateRecord[]
   afterSalesTemplates?: TemplateRecord[]
   packagingTemplates?: TemplateRecord[]
   idPrefix?: string
   description?: string
   notice?: string
 }>(), {
-  shippingTemplates: () => [],
   afterSalesTemplates: () => [],
   packagingTemplates: () => [],
   idPrefix: 'product',
@@ -94,15 +79,9 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (event: 'product-shipping-template-select', value: unknown): void
   (event: 'product-information-template-select', field: 'after_sales_template_id' | 'packaging_template_id', value: unknown): void
 }>()
 
-const shippingTemplateIDs = computed(() => (Array.isArray(props.form.shipping_template_ids) ? props.form.shipping_template_ids : []).map((value: any) => String(value)))
-const handleShippingTemplateSelection = (event: Event) => {
-  const target = event.target as HTMLSelectElement
-  emit('product-shipping-template-select', Array.from(target.selectedOptions).map(option => option.value))
-}
 const afterSalesTemplateSelectValue = computed(() => props.form.after_sales_template_id ? String(props.form.after_sales_template_id) : '__none__')
 const packagingTemplateSelectValue = computed(() => props.form.packaging_template_id ? String(props.form.packaging_template_id) : '__none__')
 </script>

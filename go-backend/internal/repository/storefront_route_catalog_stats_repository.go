@@ -24,7 +24,7 @@ func (r *StorefrontRouteCatalogRepository) StatsForLocaleAndScope(locale, proble
 		return seodomain.StorefrontRouteCatalogStats{}, errors.New("storefront route catalog repository is unavailable")
 	}
 
-	query := r.db.Model(&seodomain.StorefrontRouteCatalogEntry{})
+	query := r.db.Model(&seodomain.StorefrontRouteCatalogEntry{}).Where("entry_status <> ?", seodomain.RouteEntryStatusStale)
 	if locale != "" && locale != "all" {
 		query = query.Where("locale = ?", locale)
 	}

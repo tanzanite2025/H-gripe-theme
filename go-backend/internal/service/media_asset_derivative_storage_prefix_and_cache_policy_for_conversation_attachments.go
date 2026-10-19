@@ -33,5 +33,6 @@ func uploadMediaDerivativeObjectUsingAssetAccessPolicy(ctx context.Context, stor
 		}
 		return uploader.UploadPrivateObjectFromReaderWithPrefixAndCacheControl(ctx, reader, filename, prefix, cacheControl)
 	}
-	return uploadDerivativeObject(ctx, storageService, reader, filename, prefix)
+	// Public generations must use the precommitted batch receipt protocol.
+	return "", ErrMediaStorageUnavailable
 }

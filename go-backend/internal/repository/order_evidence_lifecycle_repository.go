@@ -64,6 +64,9 @@ func (r *OrderEvidenceRepository) UpdateItemAndRefreshPackage(
 	var updatedPackage orderevidence.OrderEvidencePackage
 	var completeness orderevidence.EvidenceCompleteness
 	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := acquireDedicatedPublicObjectNamespaceLockWithinTransaction(tx, orderEvidenceAttachmentLifecycleNamespace); err != nil {
+			return err
+		}
 		var storedItem orderevidence.OrderEvidenceItem
 		if err := tx.First(&storedItem, item.ID).Error; err != nil {
 			return err
@@ -80,6 +83,15 @@ func (r *OrderEvidenceRepository) UpdateItemAndRefreshPackage(
 		}
 		if err := pkg.EnsureMutable(); err != nil {
 			return err
+		}
+		if item.Status == orderevidence.EvidenceItemStatusComplete && orderEvidenceItemRequiresImmutableAttachment(item.ItemType) {
+			attachments, err := r.WithTx(tx).ListAttachmentsByItemID(item.ID)
+			if err != nil {
+				return err
+			}
+			if len(attachments) == 0 {
+				return errors.New("complete evidence item requires an active attachment")
+			}
 		}
 
 		itemToSave := *item
@@ -127,6 +139,9 @@ func (r *OrderEvidenceRepository) LockPackage(
 	var lockedPackage orderevidence.OrderEvidencePackage
 	var completeness orderevidence.EvidenceCompleteness
 	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := acquireDedicatedPublicObjectNamespaceLockWithinTransaction(tx, orderEvidenceAttachmentLifecycleNamespace); err != nil {
+			return err
+		}
 		var pkg orderevidence.OrderEvidencePackage
 		if err := tx.First(&pkg, packageID).Error; err != nil {
 			return err
@@ -180,6 +195,9 @@ func (r *OrderEvidenceRepository) CreateRevision(
 
 	var revision orderevidence.OrderEvidencePackage
 	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := acquireDedicatedPublicObjectNamespaceLockWithinTransaction(tx, orderEvidenceAttachmentLifecycleNamespace); err != nil {
+			return err
+		}
 		var source orderevidence.OrderEvidencePackage
 		if err := tx.Preload("Items.Attachments").
 			Preload("Items", func(db *gorm.DB) *gorm.DB {

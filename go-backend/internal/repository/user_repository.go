@@ -2,6 +2,7 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/user"
+	"context"
 	"strings"
 	"time"
 
@@ -9,11 +10,27 @@ import (
 )
 
 type UserRepository struct {
-	db *gorm.DB
+	db                                         *gorm.DB
+	validateCustomerServiceAvatarBeforeBinding func(context.Context, string) error
+}
+
+func (r *UserRepository) WithContext(ctx context.Context) *UserRepository {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	copy := *r
+	copy.db = r.db.WithContext(ctx)
+	return &copy
 }
 
 func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
+}
+
+func (r *UserRepository) WithTx(tx *gorm.DB) *UserRepository {
+	copy := *r
+	copy.db = tx
+	return &copy
 }
 
 // Create 创建用户
@@ -210,11 +227,30 @@ func (r *UserRepository) FindCustomerServiceAgentProfileByAgentID(agentID string
 }
 
 func (r *UserRepository) CreateCustomerServiceAgentProfile(profile *user.AgentProfile) error {
+	if profile == nil || strings.TrimSpace(profile.Avatar) != "" {
+		return ErrCustomerServiceAvatarMustUseOwningLifecycle
+	}
 	return r.db.Create(profile).Error
 }
 
 func (r *UserRepository) UpdateCustomerServiceAgentProfile(profile *user.AgentProfile) error {
-	return r.db.Save(profile).Error
+	if profile == nil || profile.ID == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	// A previously read profile may carry an avatar that has since been removed
+	// or replaced. Contact/status edits never restore that stale object binding.
+	result := r.db.Model(&user.AgentProfile{}).Where("id = ?", profile.ID).Updates(map[string]any{
+		"agent_id": profile.AgentID, "user_id": profile.UserID, "name": profile.Name,
+		"email": profile.Email, "whats_app": profile.WhatsApp, "status": profile.Status,
+		"online_status": profile.OnlineStatus, "last_active_at": profile.LastActiveAt, "last_login": profile.LastLogin,
+	})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected != 1 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *UserRepository) FindCustomerServiceAgentGroups(limit int, includeInactive bool) ([]user.AgentGroup, error) {

@@ -1,6 +1,6 @@
 <template>
   <div class="spoke-smart-search w-full max-w-2xl mx-auto">
-    <div class="spoke-smart-search__header relative mb-6">
+    <form class="spoke-smart-search__header relative mb-6" role="search" @submit.prevent="submitRecordedBuildSearch">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         <svg class="h-5 w-5 tz-text-muted" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
@@ -8,15 +8,36 @@
       </div>
       <input
         v-model="query"
-        type="text"
+        type="search"
+        enterkeyhint="search"
+        :aria-label="t('resourcesSpokeCalculator.search.title')"
+        :aria-busy="loading"
         :placeholder="t('resourcesSpokeCalculator.search.placeholder')"
         class="spoke-smart-search__input block w-full pl-10 pr-4 py-3"
       />
-      <div v-if="query.length > 1 && matchingConfigs.length > 0" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-        <span class="spoke-smart-search__badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
-          {{ t('resourcesSpokeCalculator.search.buildsFound', { count: matchingConfigs.length }) }}
-        </span>
+    </form>
+
+    <div class="mb-4" role="status" aria-live="polite" aria-atomic="true">
+      <p v-if="loading" class="tz-caption tz-text-muted">
+        {{ t('resourcesSpokeCalculator.search.loading') }}
+      </p>
+      <div v-else-if="error" class="spoke-smart-search__empty p-4">
+        <p class="tz-caption tz-text-secondary">{{ t('resourcesSpokeCalculator.search.loadError') }}</p>
+        <button type="button" class="spoke-smart-search__retry mt-2" @click="loadResults">
+          {{ t('resourcesSpokeCalculator.search.retry') }}
+        </button>
       </div>
+      <p v-else-if="query.trim().length === 1" class="tz-caption tz-text-muted">
+        {{ t('resourcesSpokeCalculator.search.minimumQueryLength') }}
+      </p>
+      <p v-else-if="hasSearchCriteria && matchingConfigs.length" class="tz-caption tz-text-secondary">
+        {{ t('resourcesSpokeCalculator.search.buildsFound', { count: matchingConfigs.length }) }}
+      </p>
+      <p v-else-if="hasSearchCriteria" class="spoke-smart-search__empty p-4 tz-caption tz-text-muted">
+        {{ query.trim()
+          ? t('resourcesSpokeCalculator.search.empty', { query: query.trim() })
+          : t('resourcesSpokeCalculator.search.emptySelection') }}
+      </p>
     </div>
 
     <TransitionGroup 
@@ -25,7 +46,7 @@
       class="space-y-4"
     >
       <div 
-        v-for="config in matchingConfigs" 
+        v-for="config in visibleRecordedBuilds"
         :key="config.id"
         class="spoke-smart-search__card group relative overflow-hidden transition-all duration-300"
       >
@@ -68,27 +89,18 @@
           </div>
         </div>
       </div>
-      
-      <div 
-        v-if="query.length > 1 && matchingConfigs.length === 0"
-        class="spoke-smart-search__empty text-center py-12 tz-text-muted"
-      >
-        <p class="text-sm">
-          {{ t('resourcesSpokeCalculator.search.empty', { query }) }}
-        </p>
-      </div>
-
     </TransitionGroup>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from '#imports'
 import type { SpokeRecordedResult } from '~/data/spoke-calculator/database'
 import { useSpokeCalculatorCatalog } from '~/composables/useSpokeCalculatorCatalog'
 import { useSpokeCalculatorRecordedResults } from '~/composables/useSpokeCalculatorRecordedResults'
 import type { SpokeWheelCatalogSelection } from '~/types/spokeCalculator'
+import { filterSpokeRecordedBuildsBySearchQueryAndWheelCatalogSelections } from '~/utils/filterSpokeRecordedBuildsBySearchQueryAndWheelCatalogSelections'
 
 const props = defineProps<{
   frontSelection?: SpokeWheelCatalogSelection | null
@@ -97,8 +109,12 @@ const props = defineProps<{
 
 const query = ref('')
 const { t } = useI18n()
-const { options: catalogOptions } = useSpokeCalculatorCatalog()
-const { presets } = useSpokeCalculatorRecordedResults()
+const { catalog, options: catalogOptions, source: catalogSource, loadCatalog } = useSpokeCalculatorCatalog()
+const { presets, loading, error, source, loadResults } = useSpokeCalculatorRecordedResults()
+
+onMounted(() => {
+  if (catalogSource.value !== 'api') void loadCatalog()
+})
 
 interface LengthCell {
   label: string
@@ -121,27 +137,23 @@ const activeCatalogSelections = computed(() => (
     ))
 ))
 
-const matchesCatalogSelection = (preset: SpokeRecordedResult) => (
-  activeCatalogSelections.value.every(selection => (
-    (!selection.rimBrandId || preset.rimBrandId === selection.rimBrandId)
-    && (!selection.rimModelId || preset.rimModelId === selection.rimModelId)
-    && (!selection.hubBrandId || preset.hubBrandId === selection.hubBrandId)
-    && (!selection.hubModelId || preset.hubModelId === selection.hubModelId)
-  ))
-)
+const hasSearchCriteria = computed(() => (
+  query.value.trim().length >= 2 || (query.value.trim().length === 0 && activeCatalogSelections.value.length > 0)
+))
 
-const matchingConfigs = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  if (q.length < 2) return [] // Minimum 2 chars to search
+const matchingConfigs = computed(() => filterSpokeRecordedBuildsBySearchQueryAndWheelCatalogSelections(
+  presets.value,
+  query.value,
+  { front: props.frontSelection, rear: props.rearSelection },
+  catalog.value,
+))
 
-  return presets.value.filter(preset => {
-    if (actualResultCells(preset).length === 0) return false
-    if (!matchesCatalogSelection(preset)) return false
-    const matchName = preset.name.toLowerCase().includes(q)
-    const matchKeywords = preset.keywords.some(k => k.toLowerCase().includes(q))
-    return matchName || matchKeywords
-  })
-})
+const visibleRecordedBuilds = computed(() => loading.value || error.value ? [] : matchingConfigs.value)
+
+async function submitRecordedBuildSearch(): Promise<void> {
+  if (query.value.trim().length < 2) return
+  if (source.value !== 'api') await loadResults()
+}
 
 function resultCells(preset: SpokeRecordedResult): LengthCell[] {
   return actualResultCells(preset)
@@ -205,10 +217,13 @@ function nippleTypeLabel(value: SpokeRecordedResult['nippleType']) {
   box-shadow: 0 0 0 1px var(--tz-form-control-focus-ring) !important;
 }
 
-.spoke-smart-search__badge {
-  border: 1px solid var(--tz-border-subtle);
-  background: var(--tz-surface-subtle);
-  color: var(--tz-text-secondary);
+.spoke-smart-search__retry {
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--tz-form-control-border);
+  border-radius: 0.5rem;
+  color: var(--tz-text-primary);
+  background: var(--tz-form-control-surface);
 }
 
 .spoke-smart-search__card {

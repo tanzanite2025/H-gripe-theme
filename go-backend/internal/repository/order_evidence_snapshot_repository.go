@@ -7,7 +7,8 @@ import (
 )
 
 type OrderEvidenceSnapshotRepository struct {
-	db *gorm.DB
+	db                     *gorm.DB
+	mediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 func NewOrderEvidenceSnapshotRepository(db *gorm.DB) *OrderEvidenceSnapshotRepository {
@@ -15,14 +16,22 @@ func NewOrderEvidenceSnapshotRepository(db *gorm.DB) *OrderEvidenceSnapshotRepos
 }
 
 func (r *OrderEvidenceSnapshotRepository) WithTx(tx *gorm.DB) *OrderEvidenceSnapshotRepository {
-	return &OrderEvidenceSnapshotRepository{db: tx}
+	return &OrderEvidenceSnapshotRepository{db: tx, mediaReferenceResolver: r.mediaReferenceResolver}
 }
 
 func (r *OrderEvidenceSnapshotRepository) Create(snapshot *orderevidence.OrderEvidenceSnapshot) error {
 	if r == nil || r.db == nil {
 		return gorm.ErrInvalidDB
 	}
-	return r.db.Create(snapshot).Error
+	if snapshot == nil {
+		return gorm.ErrInvalidData
+	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := admitImmutableOrderEvidenceSnapshotMediaReferencesWithinTransaction(tx, r.mediaReferenceResolver, snapshot.SnapshotData, immutableOrderEvidenceSnapshotMediaAdmissionScope{orderID: snapshot.OrderID}); err != nil {
+			return err
+		}
+		return tx.Create(snapshot).Error
+	}, mediaObjectOwnershipReadCommittedTransactionOptions(r.db)...)
 }
 
 func (r *OrderEvidenceSnapshotRepository) FindByOrderID(orderID uint) (*orderevidence.OrderEvidenceSnapshot, error) {
@@ -34,4 +43,8 @@ func (r *OrderEvidenceSnapshotRepository) FindByOrderID(orderID uint) (*orderevi
 		return nil, err
 	}
 	return &snapshot, nil
+}
+
+func (r *OrderEvidenceSnapshotRepository) ConfigureImmutableSnapshotMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {
+	r.mediaReferenceResolver = resolver
 }

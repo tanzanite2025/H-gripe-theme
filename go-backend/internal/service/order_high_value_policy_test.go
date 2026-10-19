@@ -169,23 +169,21 @@ func seedHighValuePolicyProductWithCategory(
 
 	shippingTemplateID := seedOrderTestShippingTemplateID(t, db)
 	record := productdomain.Product{
-		ProductCategoryID:   &categoryID,
-		ShippingTemplateIDs: []uint{*shippingTemplateID},
-		SKU:                 sku,
-		Name:                name,
-		Slug:                slugForHighValuePolicyTest(sku),
-		Currency:            "USD",
-		PriceMinor:          priceMinor,
-		Stock:               stock,
-		Status:              "active",
-		Locale:              "en",
+		ProductCategoryID: &categoryID,
+		SKU:               sku,
+		Name:              name,
+		Slug:              slugForHighValuePolicyTest(sku),
+		Currency:          "USD",
+		PriceMinor:        priceMinor,
+		Stock:             stock,
+		Status:            "active",
+		Locale:            "en",
 	}
 	if categoryID == 0 {
 		record.ProductCategoryID = nil
 	}
 	require.NoError(t, db.Create(&record).Error)
-	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(record.ID, nil, []uint{*shippingTemplateID}))
-	require.NoError(t, db.Create(&productdomain.ProductVariant{
+	variant := productdomain.ProductVariant{
 		ProductID:    record.ID,
 		SKU:          sku,
 		Title:        "Default",
@@ -196,7 +194,11 @@ func seedHighValuePolicyProductWithCategory(
 		Weight:       9000,
 		IsDefault:    true,
 		IsActive:     true,
-	}).Error)
+	}
+	require.NoError(t, db.Create(&variant).Error)
+	variant.ShippingTemplateIDs = []uint{*shippingTemplateID}
+	require.NoError(t, repository.NewProductRepository(db).ReplaceSkuShippingTemplateBindings(record.ID, variant.ID, variant.ShippingTemplateIDs))
+	record.Variants = []productdomain.ProductVariant{variant}
 	return record
 }
 

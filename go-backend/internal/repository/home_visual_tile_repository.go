@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -12,11 +13,61 @@ import (
 )
 
 type HomeVisualTileRepository struct {
-	db *gorm.DB
+	db                    *gorm.DB
+	validateImageBindings func(*gorm.DB, []homevisualtile.Tile, []homevisualtile.Tile) error
 }
+
+var ErrVisualShowcaseTransactionalImageBindingValidationUnavailable = errors.New("transactional visual showcase image binding validation is unavailable")
 
 func NewHomeVisualTileRepository(db *gorm.DB) *HomeVisualTileRepository {
 	return &HomeVisualTileRepository{db: db}
+}
+
+func (r *HomeVisualTileRepository) WithTx(tx *gorm.DB) *HomeVisualTileRepository {
+	copy := *r
+	copy.db = tx
+	return &copy
+}
+
+func (r *HomeVisualTileRepository) ConfigureTransactionalVisualShowcaseImageBindingValidation(validate func(*gorm.DB, []homevisualtile.Tile, []homevisualtile.Tile) error) {
+	r.validateImageBindings = validate
+}
+
+func (r *HomeVisualTileRepository) WithContext(ctx context.Context) *HomeVisualTileRepository {
+	copy := *r
+	copy.db = r.db.WithContext(ctx)
+	return &copy
+}
+
+func (r *HomeVisualTileRepository) WithLockedVisualShowcaseReferencesForObjectCleanup(ctx context.Context, operation func(*HomeVisualTileRepository, *MediaRepository) error) error {
+	return runDedicatedPublicObjectPhysicalCleanupTransactionHoldingNamespaceLockUntilProviderReturns(ctx, r.db, dedicatedHomeVisualObjectNamespace, func(tx *gorm.DB) error {
+		return operation(NewHomeVisualTileRepository(tx), NewMediaRepository(tx))
+	})
+}
+
+// VisitActiveVisualShowcaseImageReferences includes drafts for retention. Public
+// visibility follows the existing hero contract and scheduled publication rules.
+func (r *HomeVisualTileRepository) VisitActiveVisualShowcaseImageReferences(publicOnly bool, visit func(homevisualtile.Tile) bool) error {
+	for afterID := uint(0); ; {
+		var items []homevisualtile.Tile
+		query := r.db.Where("id > ?", afterID)
+		if publicOnly {
+			now := time.Now()
+			query = query.Where("showcase_key = ? OR (is_published = ? AND (published_from IS NULL OR published_from <= ?) AND (published_until IS NULL OR published_until >= ?))", "home-hero", true, now, now)
+		}
+		if err := query.Order("id ASC").Limit(256).Find(&items).Error; err != nil {
+			return err
+		}
+		for _, item := range items {
+			if !visit(item) {
+				return nil
+			}
+		}
+		if len(items) < 256 {
+			return nil
+		}
+		afterID = items[len(items)-1].ID
+	}
 }
 
 func (r *HomeVisualTileRepository) ListItems(tileSetKey, locale string, publishedOnly bool) ([]homevisualtile.Tile, error) {
@@ -64,23 +115,31 @@ func (r *HomeVisualTileRepository) ReplaceItems(
 	key := strings.TrimSpace(tileSetKey)
 	normalizedLocale := strings.TrimSpace(locale)
 
-	return r.db.Transaction(func(tx *gorm.DB) error {
+	return runWithDedicatedPublicObjectNamespaceTransactionLock(r.db.Statement.Context, r.db, dedicatedHomeVisualObjectNamespace, func(tx *gorm.DB) error {
 		var previous []homevisualtile.Tile
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("showcase_key = ? AND locale = ?", key, normalizedLocale).
-			Find(&previous).Error; err != nil {
+			Order("id ASC").Find(&previous).Error; err != nil {
 			return err
+		}
+		for index := range items {
+			items[index].ID = 0
+			items[index].TileSetKey = key
+			items[index].Locale = normalizedLocale
+			items[index].DeletedAt = gorm.DeletedAt{}
+		}
+		if r.validateImageBindings != nil {
+			if err := r.validateImageBindings(tx, items, previous); err != nil {
+				return err
+			}
+		} else if len(items) > 0 {
+			return ErrVisualShowcaseTransactionalImageBindingValidationUnavailable
 		}
 		if err := tx.Where("showcase_key = ? AND locale = ?", key, normalizedLocale).
 			Delete(&homevisualtile.Tile{}).Error; err != nil {
 			return err
 		}
 
-		for index := range items {
-			items[index].ID = 0
-			items[index].TileSetKey = key
-			items[index].Locale = normalizedLocale
-		}
 		if len(items) > 0 {
 			if err := tx.Create(&items).Error; err != nil {
 				return err
@@ -105,7 +164,7 @@ func (r *HomeVisualTileRepository) SaveSingleVisualShowcaseItem(
 		return gorm.ErrInvalidData
 	}
 
-	return r.db.Transaction(func(tx *gorm.DB) error {
+	return runWithDedicatedPublicObjectNamespaceTransactionLock(r.db.Statement.Context, r.db, dedicatedHomeVisualObjectNamespace, func(tx *gorm.DB) error {
 		var current homevisualtile.Tile
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("showcase_key = ? AND locale = ? AND desktop_order = ?", tile.TileSetKey, tile.Locale, tile.DesktopOrder).
@@ -115,15 +174,39 @@ func (r *HomeVisualTileRepository) SaveSingleVisualShowcaseItem(
 		}
 
 		var previous *homevisualtile.Tile
+		var previousItems []homevisualtile.Tile
 		if err == nil {
 			previousCopy := current
 			previous = &previousCopy
 			tile.ID = current.ID
 			tile.CreatedAt = current.CreatedAt
+			previousItems = append(previousItems, current)
+		} else {
+			tile.ID = 0
+			tile.CreatedAt = time.Time{}
 		}
 
-		if err := tx.Save(tile).Error; err != nil {
-			return err
+		tile.DeletedAt = gorm.DeletedAt{}
+		if r.validateImageBindings != nil {
+			if err := r.validateImageBindings(tx, []homevisualtile.Tile{*tile}, previousItems); err != nil {
+				return err
+			}
+		} else {
+			return ErrVisualShowcaseTransactionalImageBindingValidationUnavailable
+		}
+		if previous == nil {
+			if err := tx.Create(tile).Error; err != nil {
+				return err
+			}
+		} else {
+			result := tx.Model(&homevisualtile.Tile{}).Where("id = ?", current.ID).
+				Select("ImageURL", "ThumbnailURL", "StorageKey", "Title", "Caption", "AltText", "DesktopOrder", "MobilePairIndex", "TargetURL", "TargetLabel", "LayoutVariant", "IsPublished", "PublishedFrom", "PublishedUntil", "Width", "Height").Updates(tile)
+			if result.Error != nil {
+				return result.Error
+			}
+			if result.RowsAffected != 1 {
+				return gorm.ErrRecordNotFound
+			}
 		}
 		if afterSave != nil {
 			return afterSave(tx, previous)

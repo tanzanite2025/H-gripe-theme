@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
-export type ProductCreationType = 'standard' | 'spoke-repair-kit'
+export type ProductCreationType = 'standard' | 'spoke-repair-kit' | 'carbon-rim'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -51,6 +51,7 @@ const emit = defineEmits<{
 }>()
 
 const options: Array<{ value: ProductCreationType; title: string; description: string }> = [
+  { value: 'carbon-rim', title: '碳纤维车圈', description: '单只碟刹车圈：填写截面规格、孔数与涂装，分别维护各销售 SKU 的价格和库存。' },
   {
     value: 'standard',
     title: '普通商品',

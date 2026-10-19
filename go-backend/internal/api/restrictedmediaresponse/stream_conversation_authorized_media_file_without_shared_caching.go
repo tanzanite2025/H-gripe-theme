@@ -51,6 +51,10 @@ func StreamConversationAuthorizedMediaFile(c *gin.Context, file *service.MediaAs
 	}
 	c.Header("Content-Type", mimeType)
 	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%q", file.Filename))
+	if file.ByteRangeSource != nil {
+		streamConversationAuthorizedRemoteVideoByteRange(c, file.ByteRangeSource)
+		return
+	}
 	if seekable, ok := file.ReadCloser.(io.ReadSeeker); ok {
 		http.ServeContent(conversationAttachmentPrivateHTTPResponseWriter{c.Writer}, c.Request, file.Filename, file.ModTime, seekable)
 		return

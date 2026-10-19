@@ -72,13 +72,15 @@ type ListAfterSalesCasesInput struct {
 }
 
 type AfterSalesService struct {
-	caseRepo          *repository.AfterSalesCaseRepository
-	orderRepo         *repository.OrderRepository
-	refundReviewRepo  *repository.AfterSalesRefundReviewRepository
-	txManager         *repository.TxManager
-	userRepo          *repository.UserRepository
-	attachmentStorage storage.StorageService
-	returnWindowDays  int
+	privateAttachmentUploads                   *PrivateOrderBusinessAttachmentUploadService
+	acceptPreallocatedPrivateAttachmentBinding bool
+	caseRepo                                   *repository.AfterSalesCaseRepository
+	orderRepo                                  *repository.OrderRepository
+	refundReviewRepo                           *repository.AfterSalesRefundReviewRepository
+	txManager                                  *repository.TxManager
+	userRepo                                   *repository.UserRepository
+	attachmentStorage                          storage.StorageService
+	returnWindowDays                           int
 }
 
 type AfterSalesCarrierWebhookInput struct {
@@ -350,7 +352,7 @@ func (s *AfterSalesService) CreateCase(input CreateAfterSalesCaseInput) (*afters
 // CreateCustomerRequest creates a neutral customer-originated after-sales
 // case. It only records the request for review; it never creates a refund or
 // calls a payment provider.
-func (s *AfterSalesService) CreateCustomerRequest(input CreateCustomerAfterSalesRequestInput) (*aftersales.AfterSalesCase, error) {
+func (s *AfterSalesService) createCustomerRequestAfterPrivateAttachmentNamespaceLock(input CreateCustomerAfterSalesRequestInput) (*aftersales.AfterSalesCase, error) {
 	if s == nil || s.caseRepo == nil || s.orderRepo == nil {
 		return nil, errors.New("after-sales service is not configured")
 	}

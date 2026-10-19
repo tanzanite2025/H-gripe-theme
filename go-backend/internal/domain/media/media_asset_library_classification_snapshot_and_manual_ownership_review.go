@@ -28,6 +28,7 @@ type MediaAssetLibraryOwnershipReview struct {
 	ReferenceCategoryCounts         map[string]int                          `json:"reference_category_counts"`
 	RetainedDeletedParentReferences int                                     `json:"retained_deleted_parent_references"`
 	MissingParentReferences         int                                     `json:"missing_parent_references"`
+	HasRestrictedReferences         bool                                    `json:"has_restricted_references"`
 }
 
 func CreateMediaAssetLibraryClassificationSnapshot(asset *MediaAsset) MediaAssetLibraryClassificationSnapshot {

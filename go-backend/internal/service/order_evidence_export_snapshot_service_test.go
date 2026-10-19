@@ -122,13 +122,12 @@ func newOrderEvidenceExportServiceFixture(t *testing.T, requiresQC bool) orderEv
 
 	items, err := evidenceRepo.ListItemsByPackageID(pkg.ID)
 	require.NoError(t, err)
-	attachmentService := NewOrderEvidenceAttachmentService()
 	for _, item := range items {
 		if item.ItemType == orderevidence.EvidenceItemTypeConfigurationConfirmation {
 			continue
 		}
 		hash := fmt.Sprintf("%064d", item.ID)
-		_, err = attachmentService.RegisterReference(
+		_, err = createHistoricalOrderEvidenceAttachmentFixtureWithoutUploading(t,
 			repository.TxRepositories{OrderEvidence: evidenceRepo},
 			OrderEvidenceAttachmentReferenceInput{
 				EvidenceItemID:   item.ID,

@@ -10,7 +10,12 @@ import (
 )
 
 type ProductCategoryRepository struct {
-	db *gorm.DB
+	db                             *gorm.DB
+	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
+}
+
+func (r *ProductCategoryRepository) ConfigurePublicBusinessMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {
+	r.businessMediaReferenceResolver = resolver
 }
 
 func NewProductCategoryRepository(db *gorm.DB) *ProductCategoryRepository {
@@ -145,7 +150,7 @@ func (r *ProductCategoryRepository) ListProductIDs(categoryIDs []uint) ([]uint, 
 
 func (r *ProductCategoryRepository) Create(category *product.ProductCategory) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := lockValidateAndResolveCategoryImageFromRegisteredAsset(tx, category); err != nil {
+		if err := r.lockValidateAndResolveCategoryImageFromRegisteredAsset(tx, category); err != nil {
 			return err
 		}
 		return tx.Select("*").Create(category).Error
@@ -158,7 +163,7 @@ func (r *ProductCategoryRepository) Update(category *product.ProductCategory, de
 		if err := tx.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&current, category.ID).Error; err != nil {
 			return err
 		}
-		if err := lockValidateAndResolveCategoryImageFromRegisteredAsset(tx, category); err != nil {
+		if err := r.lockValidateAndResolveCategoryImageFromRegisteredAsset(tx, category, current); err != nil {
 			return err
 		}
 		if err := tx.Model(&product.ProductCategory{}).Where("id = ?", category.ID).Updates(map[string]interface{}{

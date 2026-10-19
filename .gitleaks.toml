@@ -61,6 +61,17 @@ id = "generic-api-key"
     '''strings\.HasPrefix\(normalizedKey,\s*normalizedPrefix\+"/"\)''',
   ]
 
+  [[rules.allowlists]]
+  description = "Literal warranty storage prefix comparison, not a credential."
+  condition = "AND"
+  regexTarget = "line"
+  paths = [
+    '''(^|/)go-backend/internal/service/private_order_business_attachment_authorized_record_selection_and_file_reading\.go$''',
+  ]
+  regexes = [
+    '''return !strings\.HasPrefix\(key, "warranty/shipment/"\)''',
+  ]
+
 [[rules]]
 id = "linkedin-client-id"
 

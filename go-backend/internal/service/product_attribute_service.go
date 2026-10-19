@@ -133,6 +133,9 @@ func (s *ProductService) GetProductSpecificationTemplate(id uint) (*product.Prod
 }
 
 func (s *ProductService) CreateProductSpecificationTemplate(input ProductSpecificationTemplateInput) (*product.ProductSpecificationTemplate, error) {
+	if product.IsRetiredCarbonRimSpecificationTemplateSlug(input.Slug) {
+		return nil, fmt.Errorf("%w: rim specification templates are retired", ErrProductSpecificationTemplateInvalid)
+	}
 	productSpecificationTemplate, err := normalizeProductSpecificationTemplateInput(input)
 	if err != nil {
 		return nil, err
@@ -157,6 +160,9 @@ func (s *ProductService) UpdateProductSpecificationTemplate(id uint, input Produ
 	existing, err := s.GetProductSpecificationTemplate(id)
 	if err != nil {
 		return nil, err
+	}
+	if product.IsRetiredCarbonRimSpecificationTemplateSlug(existing.Slug) || product.IsRetiredCarbonRimSpecificationTemplateSlug(input.Slug) {
+		return nil, fmt.Errorf("%w: retired rim templates are read-only", ErrProductSpecificationTemplateInvalid)
 	}
 
 	productSpecificationTemplate, err := normalizeProductSpecificationTemplateInput(input)

@@ -67,6 +67,20 @@ for (const locale of ['en', 'zh_cn']) {
 
     const faqSections = elements.filter(element => freehubFaqServerRenderedElementHasClass(element, 'page-faq'))
     assert.equal(faqSections.length, 1, 'The layout inserts one backend-configured FAQ module')
+    const faqSlots = elements.filter(element => freehubFaqServerRenderedElementHasClass(element, 'page-faq-slot'))
+    const feedbackSlots = elements.filter(element => freehubFaqServerRenderedElementHasClass(element, 'page-feedback-slot'))
+    assert.equal(faqSlots.length, 1, 'The tool renders one FAQ slot')
+    assert.equal(feedbackSlots.length, 1, 'The tool retains its message board')
+    assert.ok(collectFreehubFaqServerRenderedElements(faqSlots[0]!).includes(faqSections[0]!))
+    assert.equal(faqSlots[0]!.parentNode, feedbackSlots[0]!.parentNode, 'FAQ and message board share the page content container')
+    const pageContentSections = faqSlots[0]!.parentNode!.childNodes.filter(
+      (node): node is FreehubFaqRenderedElement => 'tagName' in node,
+    )
+    assert.equal(
+      pageContentSections[pageContentSections.indexOf(faqSlots[0]!) + 1],
+      feedbackSlots[0],
+      'The backend-configured FAQ must appear immediately above the message board',
+    )
     const faqElements = collectFreehubFaqServerRenderedElements(faqSections[0]!)
     const faqHeadings = faqElements.filter(element => freehubFaqServerRenderedElementHasClass(element, 'page-faq__title'))
     assert.equal(faqHeadings.length, 1)

@@ -101,10 +101,10 @@
  <section class="min-h-0 rounded-xl border border-dashed border-border/80">
  <div class="flex flex-col gap-2 border-b border-dashed border-border/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
- <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">CHECK HISTORY</p>
- <h3 class="mt-1 text-sm font-black">检查历史</h3>
+ <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">LATEST CHECK</p>
+ <h3 class="mt-1 text-sm font-black">最近检查结果</h3>
             </div>
- <span class="font-mono text-[10px] text-muted-foreground">共 {{ historyPagination.total }} 次</span>
+ <span class="font-mono text-[10px] text-muted-foreground">只保留最近一次</span>
           </div>
  <div class="max-h-64 overflow-auto">
  <Table class="min-w-[760px]">

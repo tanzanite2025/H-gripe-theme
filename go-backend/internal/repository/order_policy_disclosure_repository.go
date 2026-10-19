@@ -19,7 +19,12 @@ func (r *OrderPolicyDisclosureRepository) WithTx(tx *gorm.DB) *OrderPolicyDisclo
 }
 
 func (r *OrderPolicyDisclosureRepository) Create(disclosure *order.PolicyDisclosure) error {
-	return r.db.Create(disclosure).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := lockBusinessDraftMediaBeforeCapturingImmutableOrderPolicyDisclosure(tx, disclosure); err != nil {
+			return err
+		}
+		return tx.Create(disclosure).Error
+	}, mediaObjectOwnershipReadCommittedTransactionOptions(r.db)...)
 }
 
 func (r *OrderPolicyDisclosureRepository) FindByOrderID(orderID uint) (*order.PolicyDisclosure, error) {

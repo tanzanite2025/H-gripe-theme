@@ -117,6 +117,15 @@ export const claimImages = (claim?: WarrantyClaimLike | null): string[] => {
   }
 }
 
+export const claimImageAttachmentIndicesFromOriginalStoredReferences = (claim?: WarrantyClaimLike | null): number[] => {
+  try {
+    const references: unknown = JSON.parse(claim?.images || '[]')
+    return Array.isArray(references)
+      ? references.flatMap((reference, index) => typeof reference === 'string' && reference.trim() ? [index] : [])
+      : []
+  } catch { return [] }
+}
+
 export const orderItemLabel = (item?: OrderItemLike | null): string => {
   if (!item) return '未绑定订单行'
   const variant = item.variant_id ? ` / variant ${item.variant_id}` : ''

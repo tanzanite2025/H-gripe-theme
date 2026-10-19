@@ -7,12 +7,15 @@ import (
 	"strings"
 	"time"
 
+	"commerce-platform/internal/repository"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type Repository struct {
-	db *gorm.DB
+	db                             *gorm.DB
+	businessMediaReferenceResolver repository.PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 func NewRepository(db *gorm.DB) *Repository {
@@ -20,7 +23,7 @@ func NewRepository(db *gorm.DB) *Repository {
 }
 
 func (r *Repository) WithTx(tx *gorm.DB) *Repository {
-	return &Repository{db: tx}
+	return &Repository{db: tx, businessMediaReferenceResolver: r.businessMediaReferenceResolver}
 }
 
 func (r *Repository) List(input ListInput) ([]FeedEntry, int64, error) {
@@ -124,11 +127,32 @@ func (r *Repository) NextEntryNumber() (string, error) {
 	return fmt.Sprintf("LOG-%03d", latest.ID+1), nil
 }
 
-func (r *Repository) Create(entry *FeedEntry) error {
-	return r.db.Create(entry).Error
+func (r *Repository) createEntryFieldsWithoutAssociations(entry *FeedEntry) error {
+	return r.db.Omit(clause.Associations).Create(entry).Error
 }
 
-func (r *Repository) ReplaceChildren(entryID uint, media []FeedMedia, products []TaggedProduct) error {
+// Service owns the transaction and locks the active parent before calling this.
+func (r *Repository) replaceChildrenWithValidatedMediaWithinTransaction(entryID uint, media []FeedMedia, products []TaggedProduct) error {
+	var previous []FeedMedia
+	if err := r.db.Where("entry_id = ?", entryID).Find(&previous).Error; err != nil {
+		return err
+	}
+	paths, previousPaths := make([]string, len(media)), make([]string, len(previous))
+	for index := range media {
+		paths[index] = media[index].FilePath
+	}
+	for index := range previous {
+		previousPaths[index] = previous[index].FilePath
+	}
+	if err := repository.ValidateAndCanonicalizeWorkbenchFeedImagePathsWithinTransaction(r.db, r.businessMediaReferenceResolver, paths, previousPaths); err != nil {
+		if errors.Is(err, repository.ErrProductMediaReferenceInvalid) {
+			return fmt.Errorf("%w: %v", ErrMediaReferenceInvalid, err)
+		}
+		return err
+	}
+	for index := range media {
+		media[index].FilePath = paths[index]
+	}
 	if err := r.db.Where("entry_id = ?", entryID).Delete(&FeedMedia{}).Error; err != nil {
 		return err
 	}
@@ -156,12 +180,16 @@ func (r *Repository) ReplaceChildren(entryID uint, media []FeedMedia, products [
 	return nil
 }
 
-func (r *Repository) Update(entry *FeedEntry) error {
-	return r.db.Save(entry).Error
+func (r *Repository) updateEntryFieldsWithoutAssociations(entry *FeedEntry) error {
+	return r.db.Model(&FeedEntry{}).Where("id = ?", entry.ID).
+		Select("*").Omit(clause.Associations, "id", "created_at", "created_by", "deleted_at").Updates(entry).Error
 }
 
 func (r *Repository) Delete(id uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if _, err := r.WithTx(tx).findActiveEntryWithMediaForUpdate(id); err != nil {
+			return err
+		}
 		if err := tx.Where("id = ?", id).Delete(&FeedEntry{}).Error; err != nil {
 			return err
 		}

@@ -138,7 +138,7 @@ func (s *PostService) ListPublicByCategory(locale, categorySlug string, page, pa
 
 func (s *PostService) Create(p *post.Post) error {
 	if err := s.postRepo.Create(p); err != nil {
-		return err
+		return mapPostRepositoryWriteErrorToServiceError(err)
 	}
 	s.invalidateStorefrontHTMLCache("post create")
 	return nil
@@ -151,7 +151,7 @@ func (s *PostService) Update(p *post.Post) error {
 	}
 
 	if err := s.postRepo.Update(p); err != nil {
-		return err
+		return mapPostRepositoryWriteErrorToServiceError(err)
 	}
 
 	s.clearPostCache(previousPost)

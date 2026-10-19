@@ -187,6 +187,27 @@ func (r *ShipmentRecordRepository) UpsertDetailsForOrder(
 	warrantyStartAt time.Time,
 	warrantyExpires time.Time,
 ) (*shippingdomain.ShipmentRecord, error) {
+	var result *shippingdomain.ShipmentRecord
+	err := r.WithPrivateOrderBusinessAttachmentMutationLock(func(tx *gorm.DB) error {
+		var err error
+		result, err = r.WithTx(tx).upsertShipmentDetailsAfterPrivateAttachmentNamespaceLock(orderID, note, images, productCodes, warrantyMonths, warrantyStartAt, warrantyExpires)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (r *ShipmentRecordRepository) upsertShipmentDetailsAfterPrivateAttachmentNamespaceLock(
+	orderID uint,
+	note string,
+	images []string,
+	productCodes []string,
+	warrantyMonths int,
+	warrantyStartAt time.Time,
+	warrantyExpires time.Time,
+) (*shippingdomain.ShipmentRecord, error) {
 	orderRecord, err := r.findShippedOrderByID(orderID, true)
 	if err != nil {
 		return nil, err

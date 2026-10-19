@@ -9,7 +9,7 @@ import (
 )
 
 func customerServiceMessageMetadataWithoutDuplicateAttachmentURLs(value string) string {
-	var metadata map[string]interface{}
+	var metadata map[string]json.RawMessage
 	if json.Unmarshal([]byte(value), &metadata) != nil || metadata == nil {
 		return value
 	}

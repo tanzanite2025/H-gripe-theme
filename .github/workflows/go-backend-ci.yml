@@ -5,12 +5,16 @@ on:
     branches: [ master, main, develop ]
     paths:
       - 'go-backend/**'
+      - 'deployment/**'
+      - 'compose.prod.yml'
       - '.gitleaks.toml'
       - '.github/workflows/go-backend-ci.yml'
   pull_request:
     branches: [ master, main, develop ]
     paths:
       - 'go-backend/**'
+      - 'deployment/**'
+      - 'compose.prod.yml'
       - '.gitleaks.toml'
       - '.github/workflows/go-backend-ci.yml'
 
@@ -77,6 +81,13 @@ jobs:
       - name: Install dependencies
         working-directory: go-backend
         run: go mod download
+
+      - name: Prepare production Nginx upload cache boundary test
+        run: |
+          production_nginx_image="$(awk '$1 == "FROM" { print $2; exit }' deployment/docker/web.Dockerfile)"
+          test -n "$production_nginx_image"
+          docker pull "$production_nginx_image"
+          echo "PRODUCTION_NGINX_UPLOAD_CACHE_BOUNDARY_TEST_IMAGE=$production_nginx_image" >> "$GITHUB_ENV"
 
       - name: Run tests
         working-directory: go-backend

@@ -1,7 +1,10 @@
 package warranty
 
 import (
+	"commerce-platform/internal/api/privateattachment"
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -15,6 +18,7 @@ import (
 )
 
 func (h *Handler) GetWarrantyStatus(c *gin.Context) {
+	privateattachment.SetPrivateAttachmentResponseHeaders(c)
 	orderNumber := strings.TrimSpace(c.Param("order_number"))
 	if orderNumber == "" {
 		apierror.RespondBadRequest(c, "Order number is required")
@@ -97,7 +101,14 @@ func shipmentWarrantyStatusResponse(record *shippingdomain.ShipmentRecord) gin.H
 		}
 	}
 
+	var storedImages []string
+	_ = json.Unmarshal(record.ShippingImages, &storedImages)
+	imagePaths := make([]string, 0, len(storedImages))
+	for index := range storedImages {
+		imagePaths = append(imagePaths, fmt.Sprintf("/warranty/orders/%s/images/%d", url.PathEscape(record.OrderNumber), index))
+	}
 	return gin.H{
+		"shipping_images": imagePaths,
 		"order_number":    record.OrderNumber,
 		"product_type":    gin.H{"code": "order-shipment", "name": "Order shipment", "name_zh": "订单发货"},
 		"product_name":    firstProductName,

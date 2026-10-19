@@ -77,26 +77,28 @@ const (
 )
 
 type Event struct {
-	ID             uint           `gorm:"primarykey" json:"id"`
-	EventKey       string         `gorm:"size:160;uniqueIndex;not null" json:"event_key"`
-	EventType      string         `gorm:"size:80;not null;index" json:"event_type"`
-	AggregateType  string         `gorm:"size:80;not null;index" json:"aggregate_type"`
-	AggregateID    string         `gorm:"size:80;not null;index" json:"aggregate_id"`
-	Payload        datatypes.JSON `gorm:"not null" json:"payload"`
-	Status         string         `gorm:"size:20;not null;default:'pending';index" json:"status"`
-	Attempts       int            `gorm:"not null;default:0" json:"attempts"`
-	MaxAttempts    int            `gorm:"not null;default:10" json:"max_attempts"`
-	AvailableAt    time.Time      `gorm:"not null;index" json:"available_at"`
-	LockedAt       *time.Time     `gorm:"index" json:"locked_at"`
-	LockedBy       string         `gorm:"size:128;index" json:"locked_by"`
-	ProcessedAt    *time.Time     `gorm:"index" json:"processed_at"`
-	LastAttemptAt  *time.Time     `gorm:"index" json:"last_attempt_at"`
-	UncertainAt    *time.Time     `gorm:"index" json:"uncertain_at"`
-	ReconcileAfter *time.Time     `gorm:"index" json:"reconcile_after"`
-	LastError      string         `gorm:"type:text" json:"last_error"`
-	CreatedAt      time.Time      `json:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+	ID                                uint           `gorm:"primarykey" json:"id"`
+	EventKey                          string         `gorm:"size:160;uniqueIndex;not null" json:"event_key"`
+	EventType                         string         `gorm:"size:80;not null;index" json:"event_type"`
+	AggregateType                     string         `gorm:"size:80;not null;index" json:"aggregate_type"`
+	AggregateID                       string         `gorm:"size:80;not null;index" json:"aggregate_id"`
+	Payload                           datatypes.JSON `gorm:"not null" json:"payload"`
+	Status                            string         `gorm:"size:20;not null;default:'pending';index" json:"status"`
+	Attempts                          int            `gorm:"not null;default:0" json:"attempts"`
+	MaxAttempts                       int            `gorm:"not null;default:10" json:"max_attempts"`
+	AvailableAt                       time.Time      `gorm:"not null;index" json:"available_at"`
+	LockedAt                          *time.Time     `gorm:"index" json:"locked_at"`
+	LockedBy                          string         `gorm:"size:128;index" json:"locked_by"`
+	ProcessedAt                       *time.Time     `gorm:"index" json:"processed_at"`
+	LastAttemptAt                     *time.Time     `gorm:"index" json:"last_attempt_at"`
+	UncertainAt                       *time.Time     `gorm:"index" json:"uncertain_at"`
+	ReconcileAfter                    *time.Time     `gorm:"index" json:"reconcile_after"`
+	StorageCleanupLastReconciledAt    *time.Time     `json:"storage_cleanup_last_reconciled_at,omitempty"`
+	StorageCleanupReconciliationError string         `gorm:"type:text;not null;default:''" json:"storage_cleanup_reconciliation_error,omitempty"`
+	LastError                         string         `gorm:"type:text" json:"last_error"`
+	CreatedAt                         time.Time      `json:"created_at"`
+	UpdatedAt                         time.Time      `json:"updated_at"`
+	DeletedAt                         gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (Event) TableName() string {
@@ -417,10 +419,11 @@ type CustomerServiceRealtimeActor struct {
 	Anonymous bool   `json:"anonymous,omitempty"`
 }
 
-// CustomerServiceAvatarCleanupPayload contains only a first-party URL. The
-// cleanup handler re-validates its dedicated storage namespace before delete.
+// CustomerServiceAvatarCleanupPayload identifies a first-party URL; optional
+// bytes are accounting only. Cleanup re-validates its namespace before delete.
 type CustomerServiceAvatarCleanupPayload struct {
-	URL string `json:"url"`
+	URL                 string `json:"url"`
+	ExpectedUploadBytes *int64 `json:"expected_upload_bytes,omitempty"`
 }
 
 // CustomerServiceRetentionCleanupPayload contains the external cleanup work
@@ -441,4 +444,6 @@ type ObjectStorageCleanupPayload struct {
 	ResourceID   string    `json:"resource_id"`
 	ObjectKeys   []string  `json:"object_keys,omitempty"`
 	RequestedAt  time.Time `json:"requested_at"`
+	// Optional accounting evidence, never an addition to ObjectKeys deletion authority.
+	ExpectedUploadObjectBytes map[string]int64 `json:"expected_upload_object_bytes,omitempty"`
 }

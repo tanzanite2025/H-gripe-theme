@@ -19,7 +19,7 @@ import (
 func createFAQTransactionalMediaBindingTestServices(t *testing.T) (*gorm.DB, *FAQService, *MediaService) {
 	t.Helper()
 	db, faqs := newTestFAQService(t)
-	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &media.MediaAssetDerivative{}))
+	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &media.MediaAssetDerivative{}, &media.BusinessDraftMediaUploadReceipt{}))
 	assets := newMediaDeleteTestService(t, db, t.TempDir())
 	assets.siteURL = "https://shop.example.test"
 	faqs.ConfigureMediaService(assets)
@@ -52,7 +52,7 @@ func TestFAQRegisteredUploadReusesOneAssetAcrossAnswersAndDetachingNeverDeletesT
 	require.Equal(t, string(upload.SpecFAQAnswerImage), asset.UploadPurpose)
 	require.EqualValues(t, 42, asset.UploaderID)
 	require.Equal(t, media.MediaUploadActorAdministrator, asset.UploaderActorType)
-	require.True(t, strings.HasPrefix(asset.StorageKey, "content/page-media/"))
+	require.True(t, strings.HasPrefix(asset.StorageKey, storage.BusinessDraftMediaObjectPrefix+"/"))
 	require.Equal(t, 800, asset.Width)
 	require.Equal(t, 800, asset.Height)
 	first := createFAQInputWithAnswerImageForMediaBindingTest("/uploads/" + asset.StorageKey + "?v=1")

@@ -20,6 +20,7 @@ import (
 	"gorm.io/gorm/logger"
 
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -34,10 +35,12 @@ func createMediaLibraryPartitionHTTPTestEnvironment(t *testing.T) (*gorm.DB, *Me
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &media.MediaAssetDerivative{}))
+	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &media.MediaAssetDerivative{}, &outbox.Event{}))
 	store, err := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: t.TempDir(), PrivateLocalPath: t.TempDir(), BaseURL: "https://shop.example.test"})
 	require.NoError(t, err)
-	return db, NewMediaHandler(service.NewMediaService(repository.NewMediaRepository(db), store, nil, "https://shop.example.test", 20<<30))
+	mediaService := service.NewMediaService(repository.NewMediaRepository(db), store, nil, "https://shop.example.test", 20<<30)
+	mediaService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
+	return db, NewMediaHandler(mediaService)
 }
 
 func createMediaLibraryPartitionHTTPRouterWithActualRegisteredPermissions(handler *MediaHandler, role string) *gin.Engine {

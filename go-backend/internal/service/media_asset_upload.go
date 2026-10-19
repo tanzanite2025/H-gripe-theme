@@ -37,7 +37,7 @@ type MediaUploadInput struct {
 	Width               int
 	Height              int
 	// StoragePrefix scopes an upload to a feature-owned storage directory.
-	// Empty keeps the legacy storage layout unchanged.
+	// Permanent originals use a unique preallocated subdirectory within this scope.
 	StoragePrefix string
 	// Internal-only prepared receipt. The session and exact private object key
 	// must already exist before writing bytes; callers cannot select visibility.
@@ -46,6 +46,12 @@ type MediaUploadInput struct {
 }
 
 func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) (*media.MediaAsset, error) {
+	if s == nil || s.repo == nil || s.storage == nil {
+		return nil, ErrMediaStorageUnavailable
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if input.File == nil {
 		return nil, ErrMediaUploadFileRequired
 	}
@@ -55,6 +61,9 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 		return nil, err
 	}
 	input.MediaType = mediaType
+	if prefix := strings.TrimSpace(input.StoragePrefix); prefix == storage.BusinessDraftMediaObjectPrefix || strings.HasPrefix(prefix, storage.BusinessDraftMediaObjectPrefix+"/") {
+		return nil, ErrMediaAssetForbidden
+	}
 	input.UploadPurpose = strings.TrimSpace(input.UploadPurpose)
 	if mediaType == "video" {
 		input.UploadPurpose = ""
@@ -89,34 +98,31 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 		return nil, err
 	}
 
-	var url string
-	if input.PreparedCustomerServiceUploadSessionID != "" {
-		if !storage.IsCustomerServiceConversationAttachmentOriginalObjectKey(input.PreparedCustomerServiceOriginalObjectKey) {
-			return nil, ErrMediaAssetForbidden
-		}
-		writer, ok := s.storage.(storage.PreallocatedPrivateObjectWriter)
-		if !ok {
-			return nil, ErrMediaStorageUnavailable
-		}
-		session, sessionErr := s.repo.FindCustomerServiceMediaUploadSession(ctx, input.PreparedCustomerServiceUploadSessionID)
-		if sessionErr != nil || session.ObjectKey != input.PreparedCustomerServiceOriginalObjectKey || session.Status != "uploading" || session.UploadActorIdentity() != identity ||
-			!session.ExpiresAt.After(time.Now().UTC()) || !session.CustomerServiceAttachmentUploadWriteDeadline().After(time.Now().UTC()) {
-			return nil, repository.ErrCustomerServiceAttachmentBindingUnavailable
-		}
-		var cancelPreparedUpload context.CancelFunc
-		ctx, cancelPreparedUpload = context.WithDeadline(ctx, session.CustomerServiceAttachmentUploadWriteDeadline())
-		defer cancelPreparedUpload()
-		source, openErr := input.File.Open()
-		if openErr != nil {
-			return nil, openErr
-		}
-		url, err = writer.WritePrivateObjectAtPreallocatedKey(ctx, source, session.ObjectKey)
-		_ = source.Close()
-	} else if prefix := strings.TrimSpace(input.StoragePrefix); prefix != "" {
-		url, err = s.storage.UploadWithPrefix(ctx, input.File, prefix)
-	} else {
-		url, err = s.storage.Upload(ctx, input.File)
+	if input.PreparedCustomerServiceUploadSessionID == "" {
+		return s.uploadPermanentMediaOriginalWithPrecommittedReceiptAndAtomicAssetRegistration(ctx, input, classification, trustedMimeType, contentSHA256)
 	}
+
+	if !storage.IsCustomerServiceConversationAttachmentOriginalObjectKey(input.PreparedCustomerServiceOriginalObjectKey) {
+		return nil, ErrMediaAssetForbidden
+	}
+	writer, ok := s.storage.(storage.PreallocatedPrivateObjectWriter)
+	if !ok {
+		return nil, ErrMediaStorageUnavailable
+	}
+	session, sessionErr := s.repo.FindCustomerServiceMediaUploadSession(ctx, input.PreparedCustomerServiceUploadSessionID)
+	if sessionErr != nil || session.ObjectKey != input.PreparedCustomerServiceOriginalObjectKey || session.Status != "uploading" || session.UploadActorIdentity() != identity ||
+		!session.ExpiresAt.After(time.Now().UTC()) || !session.CustomerServiceAttachmentUploadWriteDeadline().After(time.Now().UTC()) {
+		return nil, repository.ErrCustomerServiceAttachmentBindingUnavailable
+	}
+	var cancelPreparedUpload context.CancelFunc
+	ctx, cancelPreparedUpload = context.WithDeadline(ctx, session.CustomerServiceAttachmentUploadWriteDeadline())
+	defer cancelPreparedUpload()
+	source, openErr := input.File.Open()
+	if openErr != nil {
+		return nil, openErr
+	}
+	url, err := writer.WritePrivateObjectAtPreallocatedKey(ctx, source, session.ObjectKey)
+	_ = source.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +132,8 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 
 	copyrightClaim, err := s.buildCopyrightClaim(input, contentSHA256)
 	if err != nil {
-		_ = s.storage.Delete(ctx, url)
+		// Prepared private originals already have a durable upload receipt;
+		// their owning expiry lifecycle handles failed registration.
 		return nil, err
 	}
 
@@ -148,27 +155,30 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 		UploaderActorType:           identity.ActorType,
 		UploaderVisitorSessionHash:  identity.VisitorSessionHash,
 		Status:                      "active",
-		Visibility:                  "public",
+		Visibility:                  "private",
 		LibraryPartition:            classification.partition,
 		UploadOrigin:                classification.origin,
 		ClassificationMethod:        classification.method,
 		CustomerServiceMediaPurpose: classification.customerServicePurpose,
 		UploadPurpose:               strings.TrimSpace(input.UploadPurpose),
 	}
-	if input.PreparedCustomerServiceUploadSessionID != "" {
-		asset.Visibility = "private"
-	}
 
 	if err := s.repo.CreateAssetWithinUploadActorStorageQuota(ctx, asset, s.storageQuotaBytesForMediaUploadActor(identity), input.PreparedCustomerServiceUploadSessionID); err != nil {
-		_ = s.storage.Delete(ctx, url)
 		if errors.Is(err, repository.ErrMediaUploadActorStorageQuotaExceeded) {
-			return nil, mediaStorageQuotaExceededErrorForUploadActor(identity)
+			err = mediaStorageQuotaExceededErrorForUploadActor(identity)
 		}
 		return nil, err
 	}
 
+	return s.finishRegisteredMediaAssetUploadWithBestEffortDerivatives(ctx, input, asset)
+}
+
+func (s *MediaService) finishRegisteredMediaAssetUploadWithBestEffortDerivatives(ctx context.Context, input MediaUploadInput, asset *media.MediaAsset) (*media.MediaAsset, error) {
 	derivatives, err := s.generateAssetDerivatives(ctx, asset, input.File)
 	if err != nil {
+		if errors.Is(err, ErrObjectStorageCleanupUnavailable) || errors.Is(err, ErrPublicMediaDerivativeRegistrationExchangeFailed) {
+			return nil, err
+		}
 		// Derivative conversion is best-effort. Keep the original asset and its
 		// database record intact when conversion times out or fails; a rebuild
 		// worker can generate missing variants later without losing the upload.
@@ -176,15 +186,19 @@ func (s *MediaService) UploadAsset(ctx context.Context, input MediaUploadInput) 
 		return asset, nil
 	}
 	if len(derivatives) > 0 {
+		if asset.Visibility != "private" {
+			asset.Derivatives = derivatives
+			s.hydrateAssetAccessURL(asset)
+			return asset, nil
+		}
 		if err := s.repo.CreateAssetDerivatives(derivatives); err != nil {
 			derivativeURLs := make([]string, 0, len(derivatives))
 			for _, derivative := range derivatives {
 				derivativeURLs = append(derivativeURLs, derivative.URL)
 			}
-			deleteUploadedMediaObjectsBestEffort(ctx, s.storage, derivativeURLs)
 			// Preserve the source asset even when derivative metadata persistence
-			// fails; cleanup of derivative objects is still attempted above.
-			return nil, err
+			// fails; persist compensation before attempting object cleanup.
+			return nil, errors.Join(err, s.persistFailedMediaUploadCompensationBeforeAttemptingExactObjectCleanup(ctx, asset, derivativeURLs))
 		}
 		asset.Derivatives = derivatives
 	}

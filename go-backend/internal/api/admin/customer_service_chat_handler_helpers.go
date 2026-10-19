@@ -194,6 +194,7 @@ func respondAdminCustomerServiceError(c *gin.Context, err error) {
 	case errors.Is(err, service.ErrCustomerServiceInvalidStatusTransition):
 		apierror.RespondConflict(c, err.Error())
 	case errors.Is(err, service.ErrCustomerServiceInvalidStatus),
+		errors.Is(err, service.ErrCustomerServiceMessageMediaReferenceInvalid),
 		errors.Is(err, service.ErrCustomerServiceStatusVersionRequired),
 		errors.Is(err, service.ErrCustomerServiceStatusReasonTooLong),
 		errors.Is(err, service.ErrCustomerServiceBulkArchiveLimitExceeded):
@@ -285,6 +286,7 @@ func adminCustomerServiceMessageResponse(item ticket.TicketMessage, attachmentAc
 	var attachmentMedia []service.CustomerServiceMessageAttachmentAccessDescription
 	if len(attachmentAccessServices) > 0 {
 		attachments, attachmentMedia = attachmentAccessServices[0].DescribeAgentCustomerServiceMessageAttachments(item)
+		item.Metadata = attachmentAccessServices[0].MetadataWithAuthorizedProtectedMediaURLsForAgentMessage(item, attachmentMedia)
 		attachmentURL = ""
 		if len(attachments) > 0 {
 			attachmentURL = attachments[0]
@@ -340,7 +342,9 @@ func parseAdminCustomerServiceMessageMetadata(value string) interface{} {
 		return nil
 	}
 	var payload interface{}
-	if err := json.Unmarshal([]byte(value), &payload); err != nil {
+	decoder := json.NewDecoder(strings.NewReader(value))
+	decoder.UseNumber()
+	if !json.Valid([]byte(value)) || decoder.Decode(&payload) != nil {
 		return nil
 	}
 	return payload

@@ -42,6 +42,7 @@ export interface VisualShowcaseAdministrationImageUploadResponse {
   height: number
   filename?: string
   original_filename?: string
+  draft_expires_at?: string
 }
 
 export interface VisualShowcaseAdministrationItemFormState {

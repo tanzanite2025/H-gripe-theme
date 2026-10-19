@@ -2,7 +2,6 @@ package service
 
 import (
 	"commerce-platform/internal/domain/gallery"
-	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/repository"
 	"errors"
 	"strings"
@@ -10,15 +9,14 @@ import (
 
 var (
 	ErrGalleryMediaAssetRequired    = errors.New("gallery image media asset is required")
-	ErrGalleryMediaAssetNotFound    = errors.New("gallery image media asset not found")
-	ErrGalleryMediaAssetInvalid     = errors.New("gallery image media asset is not usable")
+	ErrGalleryMediaAssetNotFound    = repository.ErrGalleryMediaAssetNotFound
+	ErrGalleryMediaAssetInvalid     = repository.ErrGalleryMediaReferenceInvalid
 	ErrGalleryMediaAssetUnavailable = errors.New("gallery media asset repository is unavailable")
 	ErrGalleryImageTitleRequired    = errors.New("gallery image title is required")
 )
 
 type GalleryService struct {
-	repo      *repository.GalleryRepository
-	mediaRepo *repository.MediaRepository
+	repo *repository.GalleryRepository
 }
 
 type GalleryAdminCreateInput struct {
@@ -52,12 +50,15 @@ type GalleryImageAdminUpdateInput struct {
 	Order        *int
 }
 
-func NewGalleryService(repo *repository.GalleryRepository, mediaRepos ...*repository.MediaRepository) *GalleryService {
-	var mediaRepo *repository.MediaRepository
-	if len(mediaRepos) > 0 {
-		mediaRepo = mediaRepos[0]
+// The optional repository argument is retained for existing callers. Asset validation belongs to the gallery transaction.
+func NewGalleryService(repo *repository.GalleryRepository, _ ...*repository.MediaRepository) *GalleryService {
+	return &GalleryService{repo: repo}
+}
+
+func (s *GalleryService) ConfigureMediaService(assets *MediaService) {
+	if s != nil && s.repo != nil {
+		s.repo.ConfigurePublicBusinessMediaReferenceIdentityResolver(assets)
 	}
-	return &GalleryService{repo: repo, mediaRepo: mediaRepo}
 }
 
 // Gallery 相关方法
@@ -144,10 +145,10 @@ func (s *GalleryService) UpdateAdminGallery(id uint, input GalleryAdminUpdateInp
 	}
 
 	if input.ProductIDs != nil {
-		if err := s.repo.UpdateGalleryWithProductLinks(existingGallery, *input.ProductIDs); err != nil {
+		if err := s.repo.UpdateGalleryWithProductLinks(existingGallery, *input.ProductIDs, repository.GalleryMediaFieldMutation{}); err != nil {
 			return nil, err
 		}
-	} else if err := s.repo.UpdateGallery(existingGallery); err != nil {
+	} else if err := s.repo.UpdateGallery(existingGallery, repository.GalleryMediaFieldMutation{}); err != nil {
 		return nil, err
 	}
 
@@ -173,14 +174,6 @@ func (s *GalleryService) CreateGalleryImage(img *gallery.GalleryImage) error {
 	if img.MediaAssetID == nil || *img.MediaAssetID == 0 {
 		return ErrGalleryMediaAssetRequired
 	}
-	asset, err := s.findUsableMediaAsset(*img.MediaAssetID)
-	if err != nil {
-		return err
-	}
-	img.URL = asset.URL
-	if img.Thumbnail == "" {
-		img.Thumbnail = asset.URL
-	}
 	return s.repo.CreateGalleryImage(img)
 }
 
@@ -198,16 +191,9 @@ func (s *GalleryService) prepareAdminGalleryImages(inputs []GalleryImageAdminCre
 			return nil, ErrGalleryImageTitleRequired
 		}
 
-		asset, err := s.findUsableMediaAsset(input.MediaAssetID)
-		if err != nil {
-			return nil, err
-		}
-
 		mediaAssetID := input.MediaAssetID
 		images = append(images, gallery.GalleryImage{
 			MediaAssetID: &mediaAssetID,
-			URL:          asset.URL,
-			Thumbnail:    asset.URL,
 			Title:        strings.TrimSpace(input.Title),
 			Description:  input.Description,
 			Tags:         input.Tags,
@@ -286,13 +272,8 @@ func (s *GalleryService) updateAdminGalleryImage(existingImage *gallery.GalleryI
 		if *input.MediaAssetID == 0 {
 			return nil, ErrGalleryMediaAssetRequired
 		}
-		asset, err := s.findUsableMediaAsset(*input.MediaAssetID)
-		if err != nil {
-			return nil, err
-		}
 		existingImage.MediaAssetID = input.MediaAssetID
-		existingImage.URL = asset.URL
-		existingImage.Thumbnail = asset.URL
+		existingImage.URL, existingImage.Thumbnail = "", ""
 	}
 	if input.Tags != nil {
 		existingImage.Tags = *input.Tags
@@ -301,37 +282,11 @@ func (s *GalleryService) updateAdminGalleryImage(existingImage *gallery.GalleryI
 		existingImage.Order = *input.Order
 	}
 
-	if err := s.UpdateGalleryImage(existingImage); err != nil {
+	if err := s.repo.UpdateGalleryImage(existingImage, repository.GalleryImageMediaFieldMutation{UpdateOriginalImage: input.MediaAssetID != nil, UpdateThumbnail: input.MediaAssetID != nil}); err != nil {
 		return nil, err
 	}
 
 	return existingImage, nil
-}
-
-func (s *GalleryService) findUsableMediaAsset(id uint) (*media.MediaAsset, error) {
-	if s.mediaRepo == nil {
-		return nil, ErrGalleryMediaAssetUnavailable
-	}
-	asset, err := s.mediaRepo.FindAssetByID(id)
-	if err != nil {
-		if IsRecordNotFound(err) {
-			return nil, ErrGalleryMediaAssetNotFound
-		}
-		return nil, err
-	}
-	if asset.MediaType != "" && asset.MediaType != "image" {
-		return nil, ErrGalleryMediaAssetInvalid
-	}
-	if asset.Status != "" && asset.Status != "active" {
-		return nil, ErrGalleryMediaAssetInvalid
-	}
-	if asset.Visibility != "" && asset.Visibility != "public" {
-		return nil, ErrGalleryMediaAssetInvalid
-	}
-	if asset.URL == "" {
-		return nil, ErrGalleryMediaAssetInvalid
-	}
-	return asset, nil
 }
 
 // UpdateImageOrder 更新图片排序

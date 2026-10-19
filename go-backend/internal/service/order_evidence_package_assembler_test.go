@@ -36,7 +36,7 @@ func TestOrderEvidencePackageAssemblerIncludesAttachmentHashAndCurrentTracking(t
 	require.NotZero(t, identity.ID)
 
 	const attachmentSHA256 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	_, err = NewOrderEvidenceAttachmentService().RegisterReference(
+	_, err = createHistoricalOrderEvidenceAttachmentFixtureWithoutUploading(t,
 		repository.TxRepositories{OrderEvidence: evidenceRepo},
 		OrderEvidenceAttachmentReferenceInput{
 			EvidenceItemID:   identity.ID,

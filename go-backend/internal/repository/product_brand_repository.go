@@ -5,10 +5,12 @@ import (
 	spokedomain "commerce-platform/internal/domain/spoke"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ProductBrandRepository struct {
-	db *gorm.DB
+	db                             *gorm.DB
+	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 func NewProductBrandRepository(db *gorm.DB) *ProductBrandRepository {
@@ -16,7 +18,11 @@ func NewProductBrandRepository(db *gorm.DB) *ProductBrandRepository {
 }
 
 func (r *ProductBrandRepository) WithTx(tx *gorm.DB) *ProductBrandRepository {
-	return &ProductBrandRepository{db: tx}
+	return &ProductBrandRepository{db: tx, businessMediaReferenceResolver: r.businessMediaReferenceResolver}
+}
+
+func (r *ProductBrandRepository) ConfigurePublicBusinessMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {
+	r.businessMediaReferenceResolver = resolver
 }
 
 func (r *ProductBrandRepository) List(includeDisabled bool) ([]product.ProductBrand, error) {
@@ -69,19 +75,36 @@ func (r *ProductBrandRepository) CountSpokeRimBrands(id uint) (int64, error) {
 }
 
 func (r *ProductBrandRepository) Create(brand *product.ProductBrand) error {
-	return r.db.Select("*").Create(brand).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.validateAndCanonicalizeProductBrandLogoUnderMediaAssetRetirementLock(tx, brand, ""); err != nil {
+			return err
+		}
+		return tx.Select("*").Create(brand).Error
+	})
 }
 
-func (r *ProductBrandRepository) Update(brand *product.ProductBrand) error {
-	return r.db.Model(&product.ProductBrand{}).Where("id = ?", brand.ID).Updates(map[string]interface{}{
-		"name":        brand.Name,
-		"slug":        brand.Slug,
-		"description": brand.Description,
-		"logo_url":    brand.LogoURL,
-		"website_url": brand.WebsiteURL,
-		"is_enabled":  brand.IsEnabled,
-		"sort_order":  brand.SortOrder,
-	}).Error
+func (r *ProductBrandRepository) Update(brand *product.ProductBrand, mutations ...ProductBrandLogoFieldMutation) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var current product.ProductBrand
+		if err := tx.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&current, brand.ID).Error; err != nil {
+			return err
+		}
+		if len(mutations) > 0 && !mutations[0].UpdateLogo {
+			brand.LogoURL = current.LogoURL
+		}
+		if err := r.validateAndCanonicalizeProductBrandLogoUnderMediaAssetRetirementLock(tx, brand, current.LogoURL); err != nil {
+			return err
+		}
+		return tx.Model(&product.ProductBrand{}).Where("id = ?", brand.ID).Updates(map[string]interface{}{
+			"name":        brand.Name,
+			"slug":        brand.Slug,
+			"description": brand.Description,
+			"logo_url":    brand.LogoURL,
+			"website_url": brand.WebsiteURL,
+			"is_enabled":  brand.IsEnabled,
+			"sort_order":  brand.SortOrder,
+		}).Error
+	})
 }
 
 func (r *ProductBrandRepository) Delete(id uint) error {

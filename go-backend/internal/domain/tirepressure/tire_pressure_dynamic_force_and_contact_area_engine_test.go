@@ -14,6 +14,68 @@ func baseRequest() Request {
 	}
 }
 
+func TestValidateTirePressureDynamicCalculationRequestAcceptsCatalogWideTiresAndRejectsWidthsOutsideExpandedRange(t *testing.T) {
+	for _, width := range []float64{20, 80, 100, 120} {
+		req := baseRequest()
+		req.NominalTireWidthMm = width
+		if err := ValidateTirePressureDynamicCalculationRequest(req); err != nil {
+			t.Fatalf("supported nominal width %v: %v", width, err)
+		}
+	}
+	for _, width := range []float64{19, 120.1, math.NaN(), math.Inf(1)} {
+		req := baseRequest()
+		req.NominalTireWidthMm = width
+		validationErr, ok := ValidateTirePressureDynamicCalculationRequest(req).(*ValidationError)
+		if !ok || validationErr.Field != "nominal_tire_width_mm" {
+			t.Fatalf("unsupported width %v must fail nominal-width validation, got %v", width, validationErr)
+		}
+	}
+}
+
+func TestCalculateTirePressureWideTireDynamicsPreservesPressureAreaAndGroundFrameForceRelationships(t *testing.T) {
+	for _, width := range []float64{100, 120} {
+		req := baseRequest()
+		req.NominalTireWidthMm = width
+		pressure, lean := 10.0, 30.0
+		req.FrontOperatingPsi, req.RearOperatingPsi = &pressure, &pressure
+		req.LeanAngleDeg = &lean
+		loads, err := ResolveTirePressureWheelLoads(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lowPressureDynamics, err := CalculateTirePressureGroundFrameCorneringDynamics(req, loads)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pressure = 20
+		highPressureDynamics, err := CalculateTirePressureGroundFrameCorneringDynamics(req, loads)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if lowPressureDynamics.TireWidthMm != width || lowPressureDynamics.TireWidthSource != TireWidthSourceNominalUncorrected {
+			t.Fatalf("catalog tire width was replaced: %+v", lowPressureDynamics)
+		}
+		for _, wheels := range [][2]WheelDynamics{{lowPressureDynamics.Front, highPressureDynamics.Front}, {lowPressureDynamics.Rear, highPressureDynamics.Rear}} {
+			lowPressureWheel, highPressureWheel := wheels[0], wheels[1]
+			if lowPressureWheel.EstimatedStaticContactCm2 == nil || highPressureWheel.EstimatedStaticContactCm2 == nil || lowPressureWheel.EstimatedContactPatchWidthMm == nil || lowPressureWheel.EstimatedContactPatchLengthMm == nil {
+				t.Fatalf("wide tire is missing pressure/area/footprint output: %+v", lowPressureWheel)
+			}
+			if math.Abs(*lowPressureWheel.EstimatedStaticContactCm2-2**highPressureWheel.EstimatedStaticContactCm2) > 0.02 {
+				t.Fatal("doubling pressure must halve the estimated static area")
+			}
+			if *lowPressureWheel.EstimatedContactPatchWidthMm > width || *lowPressureWheel.EstimatedContactPatchLengthMm <= 0 {
+				t.Fatalf("invalid wide-tire footprint geometry: %+v", lowPressureWheel)
+			}
+			if lowPressureWheel.VerticalLoadN != highPressureWheel.VerticalLoadN || lowPressureWheel.LateralDemandN != highPressureWheel.LateralDemandN || lowPressureWheel.IdealizedGripLimitN != highPressureWheel.IdealizedGripLimitN {
+				t.Fatal("pressure/area changes must preserve the fixed-friction force relationship")
+			}
+			if lowPressureWheel.VerticalDeformation != nil || lowPressureWheel.VerticalDeformationDataStatus != WideTireVerticalDeformationReferenceUnavailable {
+				t.Fatal("wide tires must report unavailable matching deformation data")
+			}
+		}
+	}
+}
+
 func TestResolveTirePressureWheelLoadsUsesMeasuredLoads(t *testing.T) {
 	front, rear := 37.8, 42.7
 	req := baseRequest()

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/domain/setting"
 	sitelogodomain "commerce-platform/internal/domain/site_logo"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
@@ -30,6 +31,7 @@ func TestSiteLogoUploadCurrentReplacesAndDestroysPrevious(t *testing.T) {
 
 	logos := NewSiteLogoService(repository.NewSiteLogoRepository(db), storageService, "https://shop.example.test")
 	logos.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
+	logos.ConfigureSettingService(NewSettingService(repository.NewSettingRepository(db), nil, 60))
 	first, err := logos.UploadCurrent(context.Background(), createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "first.webp"), 11)
 	if err != nil {
 		t.Fatalf("upload first logo: %v", err)
@@ -91,6 +93,7 @@ func TestSiteLogoDeleteCurrentDestroysObjectAndRow(t *testing.T) {
 
 	logos := NewSiteLogoService(repository.NewSiteLogoRepository(db), storageService, "https://shop.example.test")
 	logos.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
+	logos.ConfigureSettingService(NewSettingService(repository.NewSettingRepository(db), nil, 60))
 	current, err := logos.UploadCurrent(context.Background(), createSiteLogoAndFaviconLifecycleMultipartHeaderFromBackendOwnedWebPFixture(t, "current.webp"), 11)
 	if err != nil {
 		t.Fatalf("upload current logo: %v", err)
@@ -124,13 +127,14 @@ func TestPublicUploadAccessAllowsOnlyCurrentSiteLogo(t *testing.T) {
 	db := newSiteLogoTestDB(t)
 	repo := repository.NewSiteLogoRepository(db)
 	logos := NewSiteLogoService(repo, nil, "https://shop.example.test")
-	_, err := repo.ReplaceCurrent(&sitelogodomain.Asset{
+	err := db.Create(&sitelogodomain.Asset{
+		ID:         sitelogodomain.CurrentAssetID,
 		StorageKey: "site-logo/current.webp",
 		URL:        "https://shop.example.test/uploads/site-logo/current.webp",
 		MimeType:   "image/webp",
 		Width:      512,
 		Height:     512,
-	}, nil)
+	}).Error
 	if err != nil {
 		t.Fatalf("seed current logo: %v", err)
 	}
@@ -170,7 +174,7 @@ func newSiteLogoTestDB(t *testing.T) *gorm.DB {
 		_ = sqlDB.Close()
 	})
 
-	if err := db.AutoMigrate(&sitelogodomain.Asset{}, &outbox.Event{}); err != nil {
+	if err := db.AutoMigrate(&sitelogodomain.Asset{}, &outbox.Event{}, &setting.Setting{}); err != nil {
 		t.Fatalf("migrate site logo assets: %v", err)
 	}
 	return db

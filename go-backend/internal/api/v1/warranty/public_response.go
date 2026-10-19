@@ -3,7 +3,9 @@ package warranty
 import (
 	"commerce-platform/internal/api/v1/publicmedia"
 	domainwarranty "commerce-platform/internal/domain/warranty"
-	"commerce-platform/internal/service"
+	"encoding/json"
+	"fmt"
+	"strings"
 )
 
 func publicWarrantyClaimFromDomain(
@@ -11,8 +13,20 @@ func publicWarrantyClaimFromDomain(
 	resolver publicmedia.Resolver,
 ) domainwarranty.WarrantyClaim {
 	result := item
-	result.Images = service.CanonicalPublicMediaURLsJSON(resolver, item.Images)
-	result.VideoURL = publicmedia.URL(resolver, item.VideoURL)
+	var images []string
+	_ = json.Unmarshal([]byte(item.Images), &images)
+	paths := make([]string, 0, len(images))
+	for index, reference := range images {
+		if strings.TrimSpace(reference) != "" {
+			paths = append(paths, fmt.Sprintf("/warranty/claims/%d/attachments/images/%d", item.ID, index))
+		}
+	}
+	encodedPaths, _ := json.Marshal(paths)
+	result.Images = string(encodedPaths)
+	result.VideoURL = ""
+	if strings.TrimSpace(item.VideoURL) != "" {
+		result.VideoURL = fmt.Sprintf("/warranty/claims/%d/attachments/video/0", item.ID)
+	}
 
 	return result
 }

@@ -19,6 +19,7 @@ import (
 
 	"commerce-platform/internal/domain/faq"
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -34,12 +35,14 @@ func createFAQManagedMediaHTTPContractTestHandler(t *testing.T, quota int64) (*g
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
 	t.Cleanup(func() { _ = sqlDB.Close() })
-	require.NoError(t, db.AutoMigrate(&faq.FAQ{}, &faq.FAQPage{}, &media.MediaAsset{}, &media.MediaAssetDerivative{}))
+	require.NoError(t, db.AutoMigrate(&faq.FAQ{}, &faq.FAQPage{}, &media.MediaAsset{}, &media.MediaAssetDerivative{}, &media.BusinessDraftMediaUploadReceipt{}, &outbox.Event{}))
 	root := t.TempDir()
 	files, err := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: root, BaseURL: "https://shop.example.test"})
 	require.NoError(t, err)
 	faqs := service.NewFAQService(repository.NewFAQRepository(db))
-	faqs.ConfigureMediaService(service.NewMediaService(repository.NewMediaRepository(db), files, nil, "https://shop.example.test", quota))
+	mediaService := service.NewMediaService(repository.NewMediaRepository(db), files, nil, "https://shop.example.test", quota)
+	mediaService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
+	faqs.ConfigureMediaService(mediaService)
 	require.NoError(t, db.Create(&faq.FAQPage{PageID: "media-test", Locale: "en", RoutePath: "/support/media", Title: "Media", Status: "active"}).Error)
 	return db, NewFAQHandler(faqs), root
 }

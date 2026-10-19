@@ -53,6 +53,14 @@ func (r *MediaRepository) matchesExactRegisteredOrTrustedMediaReference(query me
 			return true
 		}
 	}
+	if query.IncludeAllExactObjectRegistrations {
+		// Physical retention recognizes configured private origins too. This
+		// branch does not authorize public reuse or expose attachment bytes.
+		key := r.resolveRegisteredMediaObjectKeyForCleanupOwnership(reference)
+		if key != "" && registeredMediaReferenceQueryContainsExactObjectKey(query, key) {
+			return true
+		}
+	}
 	key, err := storage.TrustedBusinessMediaReferenceObjectKey(reference, nil, "")
 	if err == nil && r.businessMediaReferenceResolver != nil {
 		key, err = r.businessMediaReferenceResolver.ResolveTrustedMediaObjectKeyForPublicBusinessReference(reference)

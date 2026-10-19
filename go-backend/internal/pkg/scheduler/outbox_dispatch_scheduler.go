@@ -94,6 +94,18 @@ func (s *OutboxDispatchScheduler) Stop() {
 }
 
 func (s *OutboxDispatchScheduler) dispatchOnce(ctx context.Context) {
+	// Run independently of normal dispatch: a poison event or dispatch database
+	// failure must not permanently suppress completed cleanup reconciliation.
+	defer func() {
+		result, err := s.outboxService.ReconcileOriginalObjectStorageCleanupReceiptsForLateWrites(ctx, time.Now().UTC(), s.batchLimit)
+		if err != nil {
+			logger.Error("object storage cleanup reconciliation failed", zap.Error(err))
+			return
+		}
+		if result.Claimed > 0 {
+			logger.Info("object storage cleanup reconciliation completed", zap.Int("claimed", result.Claimed), zap.Int("reconciled", result.Reconciled), zap.Int("deferred", result.Deferred))
+		}
+	}()
 	result, err := s.outboxService.ProcessPending(ctx, time.Now().UTC(), s.batchLimit)
 	if err != nil {
 		logger.Error("outbox dispatch failed", zap.Error(err))

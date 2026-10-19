@@ -57,16 +57,16 @@ func TestPublicAfterSalesCaseResponseExposesProgressWithoutInternalIDs(t *testin
 			ShippedAt:        &reviewedAt,
 		}},
 		RefundReview: &aftersales.AfterSalesRefundReview{
-			ID:             31,
-			CaseID:         caseID,
-			Status:         aftersales.RefundReviewStatusApproved,
+			ID:                  31,
+			CaseID:              caseID,
+			Status:              aftersales.RefundReviewStatusApproved,
 			ProposedAmountMinor: 90000,
-			Currency:       "USD",
-			RequestNotes:   "Refund the paid amount.",
-			DecisionNotes:  "Approved.",
-			CreatedBy:      operatorID,
-			ReviewedByID:   &operatorID,
-			ReviewedAt:     &reviewedAt,
+			Currency:            "USD",
+			RequestNotes:        "Refund the paid amount.",
+			DecisionNotes:       "Approved.",
+			CreatedBy:           operatorID,
+			ReviewedByID:        &operatorID,
+			ReviewedAt:          &reviewedAt,
 		},
 	}
 
@@ -104,4 +104,17 @@ func TestPublicAfterSalesCaseResponseExposesProgressWithoutInternalIDs(t *testin
 			t.Fatalf("public return shipment leaked %s: %s", forbidden, payload)
 		}
 	}
+}
+
+func TestCustomerAfterSalesAttachmentResponseUsesValidatedOrderNumberWithoutStorageURLOrInternalIDs(t *testing.T) {
+	record := aftersales.AfterSalesCase{ID: 31, OrderID: 71, OrderNumber: "stale-projection", Attachments: []aftersales.AfterSalesCaseAttachment{{ID: 91, CaseID: 31, Kind: "image", Filename: "proof.png", StorageURL: "https://private.example.test/after-sales/pending/proof.png"}}}
+	result := publicAfterSalesCaseFromDomain(record, "CUSTOMER-ORDER")
+	require.Len(t, result.Attachments, 1)
+	require.True(t, strings.HasPrefix(result.Attachments[0].DownloadPath, "/orders/CUSTOMER-ORDER/after-sales/attachments/"))
+	payload, err := json.Marshal(result.Attachments[0])
+	require.NoError(t, err)
+	for _, forbidden := range []string{"storage_url", "case_id", "\"id\"", "private.example.test", "stale-projection"} {
+		require.NotContains(t, string(payload), forbidden)
+	}
+	require.Equal(t, "https://private.example.test/after-sales/pending/proof.png", record.Attachments[0].StorageURL)
 }

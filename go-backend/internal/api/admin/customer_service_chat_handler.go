@@ -346,7 +346,7 @@ func (h *TicketHandler) CreateCustomerServiceConversationMessage(c *gin.Context)
 	var req struct {
 		Message          string                                                       `json:"message" binding:"required"`
 		MessageType      string                                                       `json:"message_type"`
-		Metadata         interface{}                                                  `json:"metadata"`
+		Metadata         json.RawMessage                                              `json:"metadata"`
 		AttachmentURL    string                                                       `json:"attachment_url"`
 		Attachments      []string                                                     `json:"attachments"`
 		MediaAttachments []ticket.CustomerServiceMessageMediaAttachmentBindingRequest `json:"media_attachments"`

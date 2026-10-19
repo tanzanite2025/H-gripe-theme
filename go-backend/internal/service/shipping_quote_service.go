@@ -54,7 +54,7 @@ func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, e
 			return nil, fmt.Errorf("shipping weight is missing for configured SKU %s", variant.SKU)
 		}
 
-		templateIDs, err := resolveProductShippingTemplateIDs(s.productRepo, product, variant)
+		templateIDs, err := resolveRequiredSkuShippingTemplateIDs(s.productRepo, product, variant)
 		if err != nil {
 			return nil, err
 		}

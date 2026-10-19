@@ -124,13 +124,11 @@ func (r *StorefrontURLIssueRepository) Stats() (urlmanagementdomain.StorefrontUR
 	return stats, err
 }
 
-// AutomaticallyVerifyIssuesNoLongerDetectedForRouteEntry closes historical
-// active issues after a later route check or source snapshot no longer reports
-// their issue type. The issue row and timeline event remain for auditability.
-func (r *StorefrontURLIssueRepository) AutomaticallyVerifyIssuesNoLongerDetectedForRouteEntry(
+// DeleteIssuesNoLongerDetectedForRouteEntry keeps only problems present in the
+// current observation. Recovered problems and their timelines are removed.
+func (r *StorefrontURLIssueRepository) DeleteIssuesNoLongerDetectedForRouteEntry(
 	routeEntryID uint,
 	detectedIssueTypes []string,
-	verifiedAt time.Time,
 ) (int64, error) {
 	if r == nil || r.db == nil {
 		return 0, errors.New("storefront URL issue repository is unavailable")
@@ -138,96 +136,34 @@ func (r *StorefrontURLIssueRepository) AutomaticallyVerifyIssuesNoLongerDetected
 	if routeEntryID == 0 {
 		return 0, errors.New("route entry ID is required")
 	}
-	if verifiedAt.IsZero() {
-		verifiedAt = time.Now().UTC()
-	}
-
-	verifiedCount := int64(0)
+	var removedCount int64
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		var routeEntry seodomain.StorefrontRouteCatalogEntry
-		if err := tx.Select("entry_status", "last_check_status").First(&routeEntry, routeEntryID).Error; err != nil {
+		var entry seodomain.StorefrontRouteCatalogEntry
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&entry, routeEntryID).Error; err != nil {
 			return err
 		}
-		query := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("route_entry_id = ?", routeEntryID).
-			Where("state IN ?", []string{
-				urlmanagementdomain.URLIssueStateOpen,
-				urlmanagementdomain.URLIssueStateAcknowledged,
-				urlmanagementdomain.URLIssueStateResolved,
-				urlmanagementdomain.URLIssueStateSuppressed,
-			})
+		obsoleteIssues := tx.Model(&urlmanagementdomain.StorefrontURLIssue{}).Where("route_entry_id = ?", routeEntryID)
 		if len(detectedIssueTypes) > 0 {
-			query = query.Where("issue_type NOT IN ?", detectedIssueTypes)
+			obsoleteIssues = obsoleteIssues.Where("issue_type NOT IN ?", detectedIssueTypes)
 		}
-
-		var issues []urlmanagementdomain.StorefrontURLIssue
-		if err := query.Find(&issues).Error; err != nil {
+		var issueIDs []uint
+		if err := obsoleteIssues.Pluck("id", &issueIDs).Error; err != nil {
 			return err
 		}
-		for _, issue := range issues {
-			resolutionType := urlmanagementdomain.URLIssueResolutionRuntimeFixed
-			resolutionNote := "后续 URL 检查已恢复正常，系统自动验证关闭"
-			eventType := urlmanagementdomain.URLIssueEventVerificationPassed
-			if issue.IssueType == urlmanagementdomain.URLIssueTypeStaleRoute &&
-				routeEntry.EntryStatus == seodomain.RouteEntryStatusStale &&
-				routeEntry.LastCheckStatus == seodomain.RouteCheckStatusNotFound {
-				resolutionType = urlmanagementdomain.URLIssueResolutionRetired
-				resolutionNote = "复检确认该失效路径已返回 404，系统自动标记为已退役并关闭"
-				eventType = urlmanagementdomain.URLIssueEventStaleRouteRetired
-			}
-
-			updates := map[string]interface{}{
-				"state":              urlmanagementdomain.URLIssueStateVerified,
-				"verified_at":        verifiedAt,
-				"suppressed_until":   nil,
-				"suppression_reason": "",
-				"updated_at":         verifiedAt,
-			}
-			if issue.ResolvedAt == nil {
-				updates["resolved_at"] = verifiedAt
-			}
-			// Keep a human-recorded resolution when the issue was already
-			// waiting for verification; otherwise record the automatic fix.
-			if issue.State != urlmanagementdomain.URLIssueStateResolved || issue.ResolutionType == "" {
-				updates["resolution_type"] = resolutionType
-				updates["resolution_note"] = resolutionNote
-			}
-			if resolutionType == urlmanagementdomain.URLIssueResolutionRetired {
-				updates["resolution_type"] = resolutionType
-				updates["resolution_note"] = resolutionNote
-			}
-			if err := tx.Model(&urlmanagementdomain.StorefrontURLIssue{}).
-				Where("id = ?", issue.ID).
-				Updates(updates).Error; err != nil {
-				return err
-			}
-			if err := r.createEvent(
-				tx,
-				issue.ID,
-				eventType,
-				0,
-				resolutionNote,
-				map[string]interface{}{
-					"automatic":       true,
-					"route_entry_id":  routeEntryID,
-					"previous_state":  issue.State,
-					"issue_type":      issue.IssueType,
-					"resolution_type": resolutionType,
-					"verified_at":     verifiedAt,
-				},
-				verifiedAt,
-			); err != nil {
-				return err
-			}
-			verifiedCount++
+		if len(issueIDs) == 0 {
+			return nil
 		}
-		return nil
+		if err := tx.Where("issue_id IN ?", issueIDs).Delete(&urlmanagementdomain.StorefrontURLIssueEvent{}).Error; err != nil {
+			return err
+		}
+		result := tx.Where("id IN ?", issueIDs).Delete(&urlmanagementdomain.StorefrontURLIssue{})
+		removedCount = result.RowsAffected
+		return result.Error
 	})
-	return verifiedCount, err
+	return removedCount, err
 }
 
-// RetireAllActiveStaleRouteIssues marks stale catalog paths as intentionally
-// retired in one audited operation. The historical issue rows remain intact.
+// RetireAllActiveStaleRouteIssues removes legacy routes and their issue records.
 func (r *StorefrontURLIssueRepository) RetireAllActiveStaleRouteIssues(
 	actorUserID uint,
 	retiredAt time.Time,
@@ -235,57 +171,23 @@ func (r *StorefrontURLIssueRepository) RetireAllActiveStaleRouteIssues(
 	if r == nil || r.db == nil {
 		return 0, errors.New("storefront URL issue repository is unavailable")
 	}
-	if retiredAt.IsZero() {
-		retiredAt = time.Now().UTC()
-	}
-
-	retiredCount := int64(0)
+	var removedCount int64
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		var issues []urlmanagementdomain.StorefrontURLIssue
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			Joins(`JOIN storefront_route_catalog_entries AS route_catalog_entry
-				ON route_catalog_entry.id = storefront_url_issues.route_entry_id`).
-			Where("route_catalog_entry.entry_status = ?", seodomain.RouteEntryStatusStale).
-			Where("storefront_url_issues.issue_type = ?", urlmanagementdomain.URLIssueTypeStaleRoute).
-			Where("storefront_url_issues.state <> ?", urlmanagementdomain.URLIssueStateVerified).
-			Find(&issues).Error; err != nil {
+		var routeEntryIDs []uint
+		if err := tx.Model(&seodomain.StorefrontRouteCatalogEntry{}).
+			Where("entry_status = ?", seodomain.RouteEntryStatusStale).Pluck("id", &routeEntryIDs).Error; err != nil {
 			return err
 		}
-		for _, issue := range issues {
-			if err := tx.Model(&urlmanagementdomain.StorefrontURLIssue{}).
-				Where("id = ?", issue.ID).
-				Updates(map[string]interface{}{
-					"state":              urlmanagementdomain.URLIssueStateVerified,
-					"resolution_type":    urlmanagementdomain.URLIssueResolutionRetired,
-					"resolution_note":    "批量清理：该路径已从当前 URL 台账退役",
-					"resolved_at":        retiredAt,
-					"verified_at":        retiredAt,
-					"suppressed_until":   nil,
-					"suppression_reason": "",
-					"updated_at":         retiredAt,
-				}).Error; err != nil {
-				return err
-			}
-			if err := r.createEvent(
-				tx,
-				issue.ID,
-				urlmanagementdomain.URLIssueEventStaleRouteRetired,
-				actorUserID,
-				"批量清理：该路径已从当前 URL 台账退役",
-				map[string]interface{}{
-					"automatic":      false,
-					"route_entry_id": issue.RouteEntryID,
-					"retired_at":     retiredAt,
-				},
-				retiredAt,
-			); err != nil {
-				return err
-			}
-			retiredCount++
+		if len(routeEntryIDs) == 0 {
+			return nil
 		}
-		return nil
+		if err := tx.Model(&urlmanagementdomain.StorefrontURLIssue{}).
+			Where("route_entry_id IN ?", routeEntryIDs).Count(&removedCount).Error; err != nil {
+			return err
+		}
+		return deleteStorefrontRoutesAbsentFromCurrentSnapshot(tx, routeEntryIDs)
 	})
-	return retiredCount, err
+	return removedCount, err
 }
 
 func (r *StorefrontURLIssueRepository) FindByID(

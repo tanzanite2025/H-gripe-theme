@@ -7,11 +7,13 @@ import (
 )
 
 type PublicUploadAccessService struct {
-	media                 *MediaService
-	showcase              *UGCShowcaseService
-	customerServiceAvatar *CustomerServiceAvatarService
-	siteLogo              *SiteLogoService
-	siteFavicon           *SiteFaviconService
+	media                          *MediaService
+	showcase                       *UGCShowcaseService
+	customerServiceAvatar          *CustomerServiceAvatarService
+	siteLogo                       *SiteLogoService
+	siteFavicon                    *SiteFaviconService
+	homeVisual                     *HomeVisualTileService
+	suggestionAndPayPalAttachments *SuggestionAndPayPalAttachmentUploadService
 }
 
 func NewPublicUploadAccessService(
@@ -44,6 +46,12 @@ func (s *PublicUploadAccessService) ConfigureSiteFaviconService(siteFaviconServi
 	s.siteFavicon = siteFaviconService
 }
 
+func (s *PublicUploadAccessService) ConfigureHomeVisualTileService(homeVisualService *HomeVisualTileService) {
+	if s != nil {
+		s.homeVisual = homeVisualService
+	}
+}
+
 func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, key string) (bool, error) {
 	normalizedKey, ok := storage.NormalizeObjectKey(key)
 	if !ok {
@@ -57,6 +65,12 @@ func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, ke
 	}
 	if IsAfterSalesEvidenceStorageKey(normalizedKey) {
 		return false, nil
+	}
+	if namespace := storage.DedicatedPublicObjectNamespaceForStorageKey(normalizedKey); namespace == storage.SuggestionFeedbackAttachmentNamespace || namespace == storage.PayPalDisputeInvoiceAttachmentNamespace {
+		if s == nil {
+			return false, nil
+		}
+		return s.suggestionAndPayPalAttachments.canServeOwnedSuggestionOrPayPalAttachment(ctx, normalizedKey)
 	}
 
 	// Showcase owns its namespace. Resolve it before the generic media library
@@ -93,6 +107,13 @@ func (s *PublicUploadAccessService) CanServePublicUpload(ctx context.Context, ke
 			return false, nil
 		}
 		return s.siteFavicon.CanServePublicFavicon(ctx, normalizedKey)
+	}
+
+	if IsHomeVisualTileStorageKey(normalizedKey) {
+		if s == nil || s.homeVisual == nil {
+			return false, nil
+		}
+		return s.homeVisual.CanServePublicVisualShowcaseImage(ctx, normalizedKey)
 	}
 
 	if s != nil && s.media != nil {

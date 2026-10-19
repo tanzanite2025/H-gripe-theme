@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useState } from '#imports'
 import { useApiRequest } from '~/composables/useApiRequest'
 import type { SpokeRecordedResult } from '~/data/spoke-calculator/database'
@@ -42,7 +42,7 @@ export const useSpokeCalculatorRecordedResults = () => {
   }
 
   const loadResults = async (): Promise<SpokeRecordedResult[]> => {
-    if (state.value.loading && inFlightLoads[baseURL]) {
+    if (inFlightLoads[baseURL]) {
       return inFlightLoads[baseURL]!
     }
 
@@ -73,9 +73,13 @@ export const useSpokeCalculatorRecordedResults = () => {
     return loadRequest
   }
 
-  if (!state.value.loading && state.value.source === 'empty') {
-    void loadResults()
-  }
+  // Load this interactive search after hydration. An unawaited server request
+  // can otherwise serialize loading=true without a browser request to finish it.
+  onMounted(() => {
+    if (state.value.source !== 'api') {
+      void loadResults()
+    }
+  })
 
   return {
     presets: computed(() => state.value.presets),

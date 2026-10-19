@@ -15,16 +15,22 @@ import (
 type CustomerServiceAvatarCleanupHandler struct {
 	userRepo *repository.UserRepository
 	storage  storage.StorageService
+	siteURL  string
 }
 
 func NewCustomerServiceAvatarCleanupHandler(
 	userRepo *repository.UserRepository,
 	storageSvc storage.StorageService,
+	siteURLs ...string,
 ) *CustomerServiceAvatarCleanupHandler {
-	return &CustomerServiceAvatarCleanupHandler{
+	handler := &CustomerServiceAvatarCleanupHandler{
 		userRepo: userRepo,
 		storage:  storageSvc,
 	}
+	if len(siteURLs) > 0 {
+		handler.siteURL = strings.TrimSpace(siteURLs[0])
+	}
+	return handler
 }
 
 func (h *CustomerServiceAvatarCleanupHandler) Handle(ctx context.Context, event outbox.Event) error {
@@ -46,25 +52,25 @@ func (h *CustomerServiceAvatarCleanupHandler) Handle(ctx context.Context, event 
 		return fmt.Errorf("decode customer-service avatar cleanup event: %w", err)
 	}
 	payload.URL = strings.TrimSpace(payload.URL)
-	key, err := h.storage.ObjectKey(payload.URL)
-	if err != nil || !IsCustomerServiceAvatarStorageKey(key) {
+	key, err := resolveCanonicalDedicatedUploadedObjectKeyFromOwningProvider(h.storage, CustomerServiceAvatarStoragePrefix, payload.URL)
+	if err != nil {
 		// A malformed or foreign URL must never be passed to storage.Delete.
 		// Mark it processed so a corrupted event cannot retry forever.
 		return nil
 	}
 
-	current, err := h.userRepo.IsCurrentCustomerServiceAgentAvatarURL(h.storage.GetURL(key))
-	if err != nil {
-		return fmt.Errorf("check customer-service avatar ownership: %w", err)
-	}
-	if current {
-		// The object became current again or an event was stale. Preserve the
-		// active avatar and let this cleanup event finish harmlessly.
+	return h.userRepo.WithLockedCustomerServiceAvatarNamespaceForPhysicalCleanup(ctx, func(repo *repository.MediaRepository) error {
+		repo.ConfigurePublicBusinessMediaReferenceIdentityResolver(&MediaService{storage: h.storage, siteURL: h.siteURL})
+		references, err := repo.FindExactMediaObjectReferencesBeforePhysicalCleanup(key, h.storage.GetURL(key), 0)
+		if err != nil {
+			return fmt.Errorf("check retained customer-service avatar references: %w", err)
+		}
+		if len(references) > 0 {
+			return &MediaAssetInUseError{References: references}
+		}
+		if err := h.storage.Delete(ctx, payload.URL); err != nil {
+			return fmt.Errorf("delete customer-service avatar: %w", err)
+		}
 		return nil
-	}
-
-	if err := h.storage.Delete(ctx, payload.URL); err != nil {
-		return fmt.Errorf("delete customer-service avatar: %w", err)
-	}
-	return nil
+	})
 }

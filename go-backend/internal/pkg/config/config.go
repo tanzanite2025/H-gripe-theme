@@ -451,9 +451,10 @@ type FeedbackRateLimitConfig struct {
 }
 
 type MediaUploadConfig struct {
-	CustomerServicePrivateAttachmentsEnabled bool  `mapstructure:"customer_service_private_attachments_enabled"`
-	AccountStorageQuotaBytes                 int64 `mapstructure:"account_storage_quota_bytes"`
-	VisitorSessionStorageQuotaBytes          int64 `mapstructure:"visitor_session_storage_quota_bytes"`
+	ReviewedHistoricalCustomerServiceAttachmentOrigins string `mapstructure:"reviewed_historical_customer_service_attachment_origins"`
+	CustomerServicePrivateAttachmentsEnabled           bool   `mapstructure:"customer_service_private_attachments_enabled"`
+	AccountStorageQuotaBytes                           int64  `mapstructure:"account_storage_quota_bytes"`
+	VisitorSessionStorageQuotaBytes                    int64  `mapstructure:"visitor_session_storage_quota_bytes"`
 }
 
 type ShowcaseUploadProtectionConfig struct {
@@ -1166,6 +1167,7 @@ func bindEnvironment() {
 	_ = viper.BindEnv("media_upload.account_storage_quota_bytes", "MEDIA_UPLOAD_ACCOUNT_STORAGE_QUOTA_BYTES")
 	_ = viper.BindEnv("media_upload.visitor_session_storage_quota_bytes", "MEDIA_UPLOAD_VISITOR_SESSION_STORAGE_QUOTA_BYTES")
 	_ = viper.BindEnv("media_upload.customer_service_private_attachments_enabled", "MEDIA_UPLOAD_CUSTOMER_SERVICE_PRIVATE_ATTACHMENTS_ENABLED")
+	_ = viper.BindEnv("media_upload.reviewed_historical_customer_service_attachment_origins", "MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS")
 
 	_ = viper.BindEnv("showcase_upload_protection.enabled", "SHOWCASE_UPLOAD_PROTECTION_ENABLED")
 	_ = viper.BindEnv("showcase_upload_protection.window_seconds", "SHOWCASE_UPLOAD_WINDOW_SECONDS")

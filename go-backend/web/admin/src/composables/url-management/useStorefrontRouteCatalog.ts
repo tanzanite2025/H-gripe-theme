@@ -1,7 +1,6 @@
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { storefrontRouteCatalogApi } from '@/modules/url-management/routeCatalog'
-import { storefrontURLIssuesApi, type StorefrontURLIssueStats } from '@/modules/url-management/urlIssues'
 import type { SEOResourcePagination } from '@/modules/seo/types'
 import type {
   StorefrontRouteCatalogEntry,
@@ -52,17 +51,6 @@ const errorMessage = (error: unknown): string => {
 export function useStorefrontRouteCatalog(canEdit: boolean) {
   const urlOperationStore = useURLOperationStore()
   const stats = ref<StorefrontRouteCatalogStats>(defaultStorefrontRouteCatalogStats())
-  const issueStats = ref<StorefrontURLIssueStats>({
-    active: 0,
-    open: 0,
-    acknowledged: 0,
-    resolved: 0,
-    verified: 0,
-    suppressed: 0,
-    critical: 0,
-    high: 0,
-    stale_route: 0,
-  })
   const items = ref<StorefrontRouteCatalogEntry[]>([])
   const loading = ref(false)
   const statsLoading = ref(false)
@@ -96,7 +84,6 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
   const latestHistoryItem = computed(() => historyItems.value[0] || null)
   let loadRequestSequence = 0
   let statsRequestSequence = 0
-  let issueStatsRequestSequence = 0
   let liveRefreshTimer: number | null = null
   let liveRefreshInFlight = false
 
@@ -156,24 +143,8 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
     }
   }
 
-  const loadIssueStats = async (): Promise<void> => {
-    const requestSequence = ++issueStatsRequestSequence
-    try {
-      // The issue queue is the human workflow source of truth for "待处理".
-      // Route observations remain useful for the other health counters, but
-      // must not make this card drift after an issue is suppressed/resolved.
-      const nextStats = await storefrontURLIssuesApi.summary()
-      if (requestSequence === issueStatsRequestSequence) {
-        issueStats.value = { ...issueStats.value, ...nextStats }
-      }
-    } catch (error) {
-      console.error('Failed to load storefront URL issue stats:', error)
-      toast.error('URL 问题统计加载失败')
-    }
-  }
-
   const refreshAll = async (): Promise<void> => {
-    await Promise.all([loadStats(), load(), loadIssueStats()])
+    await Promise.all([loadStats(), load()])
   }
 
   const refreshCatalogData = async (silent = false): Promise<void> => {
@@ -263,16 +234,18 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
 
   const syncCatalog = async (): Promise<void> => {
     if (!canEdit || syncing.value || checking.value || checkingSelected.value) return
+    if (!filters.locale || filters.locale === 'all') {
+      toast.error('请先选择检查语言')
+      return
+    }
     syncing.value = true
     try {
-      const summary = await storefrontRouteCatalogApi.sync()
-      toast.success(`URL 已同步：${summary.entries || 0} 条，重复 ${summary.duplicates || 0} 条`)
+      // The check endpoint synchronizes the manifest before starting its task.
+      // Check every current URL in this language, including aliases, regardless
+      // of display filters so previously failing URLs are checked again.
+      await urlOperationStore.run({ locale: filters.locale, include_aliases: true, batch_size: 200 }, filters.locale)
       pagination.page = 1
       await refreshAll()
-    } catch (error) {
-      console.error('Failed to sync storefront route catalog:', error)
-      const detail = errorMessage(error)
-      toast.error(detail ? `URL 同步失败：${detail}` : 'URL 同步失败，请检查 STOREFRONT_INTERNAL_ORIGIN 和 manifest')
     } finally {
       syncing.value = false
     }
@@ -361,7 +334,6 @@ export function useStorefrontRouteCatalog(canEdit: boolean) {
   return {
     mode,
     stats,
-    issueStats,
     items,
     loading,
     statsLoading,

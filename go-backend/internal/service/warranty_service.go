@@ -6,12 +6,14 @@ import (
 )
 
 type WarrantyService struct {
-	txManager       *repository.EmailChallengeTxManager
-	warrantyRepo    *repository.WarrantyRepository
-	orderRepo       *repository.OrderRepository
-	challengeSecret string
-	baseURL         string
-	shipmentRepo    *repository.ShipmentRecordRepository
+	privateAttachmentUploads                   *PrivateOrderBusinessAttachmentUploadService
+	acceptPreallocatedPrivateAttachmentBinding bool
+	txManager                                  *repository.EmailChallengeTxManager
+	warrantyRepo                               *repository.WarrantyRepository
+	orderRepo                                  *repository.OrderRepository
+	challengeSecret                            string
+	baseURL                                    string
+	shipmentRepo                               *repository.ShipmentRecordRepository
 }
 
 func NewWarrantyService(

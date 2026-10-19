@@ -141,12 +141,12 @@ export const storefrontURLIssuesApi = {
     return response.data?.data || {}
   },
 
-  async recheck(id: number): Promise<{ issue: StorefrontURLIssue; check_result?: StorefrontRouteCheckResult }> {
+  async recheck(id: number): Promise<{ issue: StorefrontURLIssue | null; cleared?: boolean; check_result?: StorefrontRouteCheckResult }> {
     const response = await axios.post(`/api/admin/urls/issues/${id}/recheck`)
     return response.data?.data || {}
   },
 
-  async verify(id: number): Promise<{ issue: StorefrontURLIssue; check_result?: StorefrontRouteCheckResult }> {
+  async verify(id: number): Promise<{ issue: StorefrontURLIssue | null; cleared?: boolean; check_result?: StorefrontRouteCheckResult }> {
     const response = await axios.post(`/api/admin/urls/issues/${id}/verify`)
     return response.data?.data || {}
   },

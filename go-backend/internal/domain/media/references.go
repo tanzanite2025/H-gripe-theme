@@ -3,11 +3,12 @@ package media
 type ReferenceCategory string
 
 const (
-	ReferenceCategoryCatalog   ReferenceCategory = "catalog"
-	ReferenceCategoryContent   ReferenceCategory = "content"
-	ReferenceCategoryCommunity ReferenceCategory = "community"
-	ReferenceCategoryCustomer  ReferenceCategory = "customer"
-	ReferenceCategorySupport   ReferenceCategory = "support"
+	ReferenceCategoryCatalog      ReferenceCategory = "catalog"
+	ReferenceCategoryContent      ReferenceCategory = "content"
+	ReferenceCategoryCommunity    ReferenceCategory = "community"
+	ReferenceCategoryCustomer     ReferenceCategory = "customer"
+	ReferenceCategorySupport      ReferenceCategory = "support"
+	ReferenceCategoryRegistration ReferenceCategory = "registration"
 )
 
 // AssetReference identifies one persisted record that currently uses a media

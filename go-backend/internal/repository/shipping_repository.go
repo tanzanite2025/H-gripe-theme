@@ -474,7 +474,7 @@ func (r *ShippingRepository) DeleteTemplate(id uint) error {
 			return err
 		}
 		if bindingCount > 0 {
-			return errors.New("customer billing template is referenced by products or SKUs")
+			return errors.New("customer billing template is referenced by SKUs")
 		}
 		if tx.Migrator().HasTable(&shipping.ShippingDisplayPriceSnapshot{}) {
 			if err := tx.Where("template_id = ?", id).Delete(&shipping.ShippingDisplayPriceSnapshot{}).Error; err != nil {

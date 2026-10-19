@@ -434,13 +434,19 @@ func DetectContentType(file *multipart.FileHeader) (string, error) {
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
 		return "", fmt.Errorf("failed to inspect uploaded file: %w", err)
 	}
-	contentType := http.DetectContentType(header[:n])
+	return DetectContentTypeFromHeaderIncludingVideoFormats(header[:n]), nil
+}
+
+// DetectContentTypeFromHeaderIncludingVideoFormats applies the same MIME rules to uploaded and stored bytes.
+// Callers supply at most the first 512 bytes.
+func DetectContentTypeFromHeaderIncludingVideoFormats(header []byte) string {
+	contentType := http.DetectContentType(header)
 	if contentType == "application/octet-stream" {
-		if videoContentType := sniffVideoContentType(header[:n]); videoContentType != "" {
-			return videoContentType, nil
+		if videoContentType := sniffVideoContentType(header); videoContentType != "" {
+			return videoContentType
 		}
 	}
-	return contentType, nil
+	return contentType
 }
 
 func sniffVideoContentType(header []byte) string {

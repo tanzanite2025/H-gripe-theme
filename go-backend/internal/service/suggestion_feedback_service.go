@@ -3,6 +3,7 @@ package service
 import (
 	"commerce-platform/internal/domain/suggestionfeedback"
 	"commerce-platform/internal/repository"
+	"context"
 	"errors"
 	"strings"
 )
@@ -10,12 +11,14 @@ import (
 const defaultSuggestionAttachmentLevel = "silver"
 
 var (
-	ErrSuggestionFeedbackMissingMessage = errors.New("message is required")
-	ErrSuggestionFeedbackInvalidStatus  = errors.New("invalid suggestion feedback status")
+	ErrSuggestionFeedbackMissingMessage        = errors.New("message is required")
+	ErrSuggestionFeedbackInvalidStatus         = errors.New("invalid suggestion feedback status")
+	ErrSuggestionFeedbackAttachmentEligibility = errors.New("your current membership level does not support image uploads")
 )
 
 type SuggestionFeedbackService struct {
-	suggestionRepo *repository.SuggestionFeedbackRepository
+	suggestionRepo    *repository.SuggestionFeedbackRepository
+	attachmentUploads *SuggestionAndPayPalAttachmentUploadService
 }
 
 type SuggestionEligibility struct {
@@ -61,6 +64,10 @@ func (s *SuggestionFeedbackService) GetEligibility(userID uint, loggedIn bool) (
 }
 
 func (s *SuggestionFeedbackService) Create(item *suggestionfeedback.SuggestionFeedback, attachments []suggestionfeedback.Attachment) error {
+	return s.CreateWithAuthorizedSuggestionAttachmentReceipts(context.Background(), item, attachments)
+}
+
+func (s *SuggestionFeedbackService) CreateWithAuthorizedSuggestionAttachmentReceipts(ctx context.Context, item *suggestionfeedback.SuggestionFeedback, attachments []suggestionfeedback.Attachment) error {
 	item.FullName = strings.TrimSpace(item.FullName)
 	item.Email = strings.TrimSpace(item.Email)
 	item.Country = strings.TrimSpace(item.Country)
@@ -81,30 +88,7 @@ func (s *SuggestionFeedbackService) Create(item *suggestionfeedback.SuggestionFe
 	if item.MemberLevelRequired == "" {
 		item.MemberLevelRequired = defaultSuggestionAttachmentLevel
 	}
-	if !item.MemberLevelMet {
-		attachments = []suggestionfeedback.Attachment{}
-	}
-	item.Attachments = suggestionfeedback.JSONFromAttachments(cleanSuggestionAttachments(attachments))
-
-	return s.suggestionRepo.Create(item)
-}
-
-func cleanSuggestionAttachments(attachments []suggestionfeedback.Attachment) []suggestionfeedback.Attachment {
-	clean := make([]suggestionfeedback.Attachment, 0, len(attachments))
-	for _, attachment := range attachments {
-		if strings.TrimSpace(attachment.URL) == "" {
-			continue
-		}
-		clean = append(clean, suggestionfeedback.Attachment{
-			Name: strings.TrimSpace(attachment.Name),
-			URL:  strings.TrimSpace(attachment.URL),
-			Size: attachment.Size,
-		})
-		if len(clean) == 3 {
-			break
-		}
-	}
-	return clean
+	return s.createSuggestionWithExactUploaderReceiptsAndAtomicAttachmentBinding(ctx, item, attachments)
 }
 
 func memberLevelMeetsRequirement(userLevel, requiredLevel string) bool {

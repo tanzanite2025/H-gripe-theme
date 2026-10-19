@@ -29,6 +29,13 @@ jobs:
           go-version-file: go-backend/go.mod
           cache-dependency-path: go-backend/go.sum
 
+      - name: Prepare production Nginx upload cache boundary test
+        run: |
+          production_nginx_image="$(awk '$1 == "FROM" { print $2; exit }' deployment/docker/web.Dockerfile)"
+          test -n "$production_nginx_image"
+          docker pull "$production_nginx_image"
+          echo "PRODUCTION_NGINX_UPLOAD_CACHE_BOUNDARY_TEST_IMAGE=$production_nginx_image" >> "$GITHUB_ENV"
+
       - name: Test backend
         working-directory: go-backend
         run: go test ./...
@@ -67,7 +74,11 @@ jobs:
       - name: Validate production Compose
         env:
           IMAGE_TAG: sha-${{ github.sha }}
-        run: docker compose --env-file deployment/production.env.example -f compose.prod.yml config --quiet
+          ALLOW_EXAMPLE_ENV: "true"
+          CHECK_CONNECTIVITY: "false"
+        run: |
+          docker compose --env-file deployment/production.env.example -f compose.prod.yml config --quiet
+          bash deployment/verify-vps-release-boundary.sh
 
       - name: Scan full Git history for secrets
         id: gitleaks

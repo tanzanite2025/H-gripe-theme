@@ -19,11 +19,12 @@ type CustomerServiceMessageAttachmentDerivativeAccessDescription struct {
 }
 
 type CustomerServiceMessageAttachmentAccessDescription struct {
-	AttachmentIndex int                                                           `json:"attachment_index"`
-	AssetID         uint                                                          `json:"asset_id"`
-	MediaType       string                                                        `json:"media_type"`
-	AccessURL       string                                                        `json:"access_url"`
-	Derivatives     []CustomerServiceMessageAttachmentDerivativeAccessDescription `json:"derivatives,omitempty"`
+	RequiresConversationAccess bool                                                          `json:"-"`
+	AttachmentIndex            int                                                           `json:"attachment_index"`
+	AssetID                    uint                                                          `json:"asset_id"`
+	MediaType                  string                                                        `json:"media_type"`
+	AccessURL                  string                                                        `json:"access_url"`
+	Derivatives                []CustomerServiceMessageAttachmentDerivativeAccessDescription `json:"derivatives,omitempty"`
 }
 
 // Descriptions are generated only for messages already authorized by their
@@ -90,9 +91,11 @@ func (s *CustomerServiceConversationMessageAttachmentAccessService) describeAuth
 			compatibleURLs = append(compatibleURLs, compatiblePublicReference)
 			continue
 		}
+		_ = s.media.projectHistoricalTicketAttachmentConversationAccess(asset)
 		accessURL := fmt.Sprintf("%s/%d/file", routePrefix, attachmentIndex)
 		description := CustomerServiceMessageAttachmentAccessDescription{
 			AttachmentIndex: attachmentIndex, AssetID: asset.ID, MediaType: asset.MediaType, AccessURL: accessURL,
+			RequiresConversationAccess: asset.Visibility == "private" || asset.RequiresConversationAccess,
 		}
 		asset.Derivatives, _ = s.media.repo.FindAssetDerivatives(asset.ID)
 		for _, derivative := range asset.Derivatives {
@@ -104,7 +107,7 @@ func (s *CustomerServiceConversationMessageAttachmentAccessService) describeAuth
 			})
 		}
 		descriptions = append(descriptions, description)
-		if asset.Visibility == "private" {
+		if asset.Visibility == "private" || asset.RequiresConversationAccess {
 			compatibleURLs = append(compatibleURLs, accessURL)
 		} else {
 			compatibleURLs = append(compatibleURLs, compatiblePublicReference)

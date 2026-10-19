@@ -74,6 +74,19 @@ func (r *ProductRepository) lockValidateAndCanonicalizeProductMediaAssetBindings
 				return fmt.Errorf("%w: managed media file is not registered; select or upload an active asset", ErrProductMediaReferenceInvalid)
 			}
 		}
+		for _, field := range []struct {
+			requested, previous string
+			main                bool
+		}{{item.URL, existing.URL, true}, {item.ThumbnailURL, existing.ThumbnailURL, false}, {item.PosterURL, existing.PosterURL, false}} {
+			candidate := field.requested
+			binding := publicBusinessMediaReferenceBinding{URL: &candidate, PreviousURL: field.previous, RetainsExistingPlacement: retained, ExpectedMediaType: "image"}
+			if field.main {
+				binding.AssetID, binding.PreviousAssetID, binding.ExpectedMediaType = &item.MediaAssetID, existing.MediaAssetID, item.MediaType
+			}
+			if err := resolved.validateAndCanonicalizePublicBusinessMediaReferenceBinding(binding); err != nil {
+				return err
+			}
+		}
 		// A registered URL-only reference acquires the existing placement's asset
 		// ID. Static/external URLs stay unmanaged; old unregistered upload paths
 		// may only remain on the same existing placement, in the same field.
@@ -89,10 +102,14 @@ func (r *ProductRepository) lockValidateAndCanonicalizeProductMediaAssetBindings
 			}
 			assetID := main.AssetID
 			item.MediaAssetID = &assetID
-			if !preserveExistingUnresolvedMainURL {
+			dedicatedMain := resolved.dedicatedObjectNamespaceForResolvedPublicMediaReference(item.URL, main.AssetID) != ""
+			if dedicatedMain {
+				item.ImageVariantData = existing.ImageVariantData
+			}
+			if !preserveExistingUnresolvedMainURL && !dedicatedMain {
 				item.URL = asset.URL
 			}
-			if item.MediaType == "image" && r.mediaAssetBindingResolver != nil {
+			if item.MediaType == "image" && r.mediaAssetBindingResolver != nil && !dedicatedMain {
 				variants, thumbnail, err := r.mediaAssetBindingResolver.ProductMediaImageVariantsWithinProductTransaction(tx, assetID)
 				if err != nil {
 					return err
@@ -112,6 +129,9 @@ func (r *ProductRepository) lockValidateAndCanonicalizeProductMediaAssetBindings
 			asset := lockedAssets[identity.AssetID]
 			if asset.MediaType != "image" {
 				return fmt.Errorf("%w: thumbnails and posters must reference image assets", ErrProductMediaReferenceInvalid)
+			}
+			if resolved.dedicatedObjectNamespaceForResolvedPublicMediaReference(*address, identity.AssetID) != "" {
+				continue
 			}
 			// Independently selected derivatives use their original image's stable
 			// address. Their display derivatives can be rebuilt without breaking a

@@ -22,6 +22,8 @@ export interface ProductSeoShippingDetailsInput {
 }
 
 export interface ProductSeoVariantInput {
+  additionalProperties?: ProductSeoPropertyValue[]
+  weightGrams?: number
   id?: number | string | null
   name?: string | null
   sku?: string | null
@@ -33,7 +35,19 @@ export interface ProductSeoVariantInput {
   shippingDetails?: ProductSeoShippingDetailsInput | null
 }
 
+export interface ProductSeoPropertyValue {
+  '@type': 'PropertyValue'
+  propertyID: string
+  name: string
+  value: string
+  unitText?: string
+}
+
 export interface ProductSeoInput {
+  size?: string
+  material?: string
+  weightGrams?: number
+  additionalProperties?: ProductSeoPropertyValue[]
   name?: string | null
   brand?: string | null
   metaTitle?: string | null
@@ -97,6 +111,11 @@ export interface ProductSeoShippingDetails {
 }
 
 export interface ProductSeoSchema {
+  size?: string
+  material?: string
+  weight?: { '@type': 'QuantitativeValue'; value: number; unitCode: 'GRM' }
+  isVariantOf?: { '@id': string }
+  additionalProperty?: ProductSeoPropertyValue[]
   '@context': 'https://schema.org'
   '@type': 'Product'
   name: string
@@ -113,6 +132,10 @@ export interface ProductSeoSchema {
 }
 
 export interface ProductSeoProductGroupSchema {
+  size?: string
+  material?: string
+  '@id'?: string
+  additionalProperty?: ProductSeoPropertyValue[]
   '@context': 'https://schema.org'
   '@type': 'ProductGroup'
   name: string

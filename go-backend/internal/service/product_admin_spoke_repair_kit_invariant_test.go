@@ -11,7 +11,7 @@ import (
 
 func TestGenericProductCannotBeConvertedIntoSpokeRepairKitByGenericUpdate(t *testing.T) {
 	db, productService := newTestProductService(t)
-	template := seedCarbonRimType(t, db)
+	template := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	created := createProductWithSpecs(
 		t,
 		productService,

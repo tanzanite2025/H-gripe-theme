@@ -29,7 +29,7 @@ import (
 
 func TestProductServiceCreateAdminProductPersistsTemplateSpecs(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
@@ -98,7 +98,7 @@ func TestProductServiceKeepsSpokeRepairKitProductTypeOnDedicatedChain(t *testing
 	})
 	require.ErrorIs(t, err, ErrSpokeRepairKitProductTypeImmutable)
 
-	template := seedCarbonRimType(t, db)
+	template := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	_, err = productService.UpdateAdminProduct(productRecord.ID, ProductUpdateInput{
 		ProductSpecificationTemplateID:       &template.ID,
 		UpdateProductSpecificationTemplateID: true,
@@ -469,7 +469,7 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 	wheelsetCategory := seedProductCategoryForProductServiceTest(t, db, "Wheelsets", "wheelset", nil)
 	childCategory := seedProductCategoryForProductServiceTest(t, db, "Carbon Wheelsets", "carbon-wheelsets", &wheelsetCategory.ID)
 	otherCategory := seedProductCategoryForProductServiceTest(t, db, "Tires", "tires", nil)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	_, err := productService.CreateAdminProduct(ProductCreateInput{
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
@@ -915,7 +915,7 @@ func TestProductServiceCreateAdminProductPersistsProductScopedVisualVariantOptio
 
 func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantOptionValue(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	brakeSpec := findSpecDefinitionBySlug(t, db, productSpecificationTemplate.ID, "brake_type")
 
 	sourceProduct, err := productService.CreateAdminProduct(ProductCreateInput{
@@ -989,7 +989,7 @@ func TestProductServiceCreateAdminProductRejectsMediaBoundToOtherProductVariantO
 
 func TestProductServiceCreateAdminProductRejectsInvalidMediaLocale(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
@@ -1025,7 +1025,7 @@ func TestProductServiceCreateAdminProductRejectsInvalidMediaLocale(t *testing.T)
 
 func TestProductServiceCreateAdminProductNormalizesMediaLocaleAlias(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}))
 	createRegisteredPublicImageForProductMediaBindingTest(t, db, "products/media-locale-alias.webp")
 
@@ -1231,7 +1231,7 @@ func TestProductServiceAuditsBackendEntryCurrencyMismatches(t *testing.T) {
 
 func TestProductServiceCreateAdminProductRejectsInvalidTemplateSpec(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
@@ -1265,7 +1265,7 @@ func TestProductServiceCreateAdminProductRejectsInvalidTemplateSpec(t *testing.T
 
 func TestProductServiceUpdateAdminProductAllowsKeepingDisabledInformationTemplate(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-DISABLED-TEMPLATE", "disabled-template-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
@@ -1303,7 +1303,7 @@ func TestProductServiceUpdateAdminProductAllowsKeepingDisabledInformationTemplat
 
 func TestProductServiceUpdateAdminProductRejectsSwitchingToDisabledInformationTemplate(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-NEW-DISABLED-TEMPLATE", "new-disabled-template-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
@@ -1335,7 +1335,7 @@ func TestProductServiceUpdateAdminProductRejectsSwitchingToDisabledInformationTe
 
 func TestProductServiceUpdateAdminProductRejectsLocaleChange(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-LOCALE-LOCK", "locale-lock-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
@@ -1355,7 +1355,7 @@ func TestProductServiceUpdateAdminProductRejectsLocaleChange(t *testing.T) {
 
 func TestProductServiceUpdateAdminProductAcceptsSameLocaleAlias(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-LOCALE-ALIAS", "locale-alias-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
@@ -1372,7 +1372,7 @@ func TestProductServiceUpdateAdminProductAcceptsSameLocaleAlias(t *testing.T) {
 
 func TestProductServiceUpdateAdminProductPreservesInactiveVariantWhenAnotherVariantIsActive(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-INACTIVE", "inactive-rim", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
@@ -1426,7 +1426,7 @@ func TestProductServiceUpdateAdminProductPreservesInactiveVariantWhenAnotherVari
 
 func TestProductServiceCreateAdminProductRejectsAllInactiveVariants(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	inactive := false
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
@@ -1460,7 +1460,7 @@ func TestProductServiceCreateAdminProductRejectsAllInactiveVariants(t *testing.T
 
 func TestProductServiceCreateAdminProductRequiresVariant(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
@@ -1483,7 +1483,7 @@ func TestProductServiceCreateAdminProductRequiresVariant(t *testing.T) {
 
 func TestProductServiceSearchPublicFiltersByTemplateSpec(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	discRim := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-DISC", "disc-rim", map[string]string{
 		"outer_width_mm": "30",
@@ -1510,7 +1510,7 @@ func TestProductServiceSearchPublicFiltersByTemplateSpec(t *testing.T) {
 
 func TestProductServiceSearchPublicLookaheadUsesNominalPageSizeForOffset(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	baseTime := time.Date(2026, 9, 3, 9, 0, 0, 0, time.UTC)
 	orderedIDs := make([]uint, 0, 8)
 
@@ -1568,7 +1568,7 @@ func TestProductServiceSearchPublicLookaheadUsesNominalPageSizeForOffset(t *test
 
 func TestProductServiceListNormalizesInvalidPagination(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	createdProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-LIST-PAGINATION", "list-pagination", map[string]string{
 		"outer_width_mm": "30",
 	}, map[string]string{"brake_type": "disc"})
@@ -1604,7 +1604,7 @@ func TestProductServiceListNormalizesInvalidPagination(t *testing.T) {
 
 func TestProductServicePublicAccessOnlyReturnsActiveProducts(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	activeProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-PUBLIC-ACTIVE", "public-active", map[string]string{
 		"outer_width_mm": "30",
@@ -1637,7 +1637,7 @@ func TestProductServicePublicAccessOnlyReturnsActiveProducts(t *testing.T) {
 
 func TestProductRepositoryPurchasableVariantRejectsInactiveProduct(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	inactiveProduct := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-NOT-BUYABLE", "not-buyable", map[string]string{
 		"outer_width_mm": "30",
@@ -1650,7 +1650,7 @@ func TestProductRepositoryPurchasableVariantRejectsInactiveProduct(t *testing.T)
 
 func TestProductServicePublicCatalogRespectsProductLocale(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	createdProduct, err := productService.CreateAdminProduct(ProductCreateInput{
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
 		Name:                           "Unified Rim",
@@ -1727,7 +1727,7 @@ func TestProductServicePublicCatalogRespectsProductLocale(t *testing.T) {
 
 func TestProductServicePublicProductReturnsOnlyActiveTranslationRoutes(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	root := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-TRANSLATION-EN", "translation-rim", map[string]string{
 		"outer_width_mm": "30",
@@ -1762,7 +1762,7 @@ func TestProductServicePublicProductReturnsOnlyActiveTranslationRoutes(t *testin
 
 func TestProductServiceValidatesProductTranslationRelationships(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	root := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-RELATION-EN", "relation-rim", map[string]string{
 		"outer_width_mm": "30",
@@ -1808,7 +1808,7 @@ func TestProductServiceValidatesProductTranslationRelationships(t *testing.T) {
 
 func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSlugAndSKU(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}))
 	createRegisteredPublicImageForProductMediaBindingTest(t, db, "products/source-rim.webp")
 	brakeSpec := findSpecDefinitionBySlug(t, db, productSpecificationTemplate.ID, "brake_type")
@@ -1915,7 +1915,7 @@ func TestProductServiceCopyAdminProductTranslationCreatesGroupedCopyWithUniqueSl
 
 func TestProductServiceCopyAdminProductTranslationRejectsExistingGroupLocale(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 
 	root := createProductWithSpecs(t, productService, productSpecificationTemplate.ID, "RIM-COPY-EXISTS-EN", "copy-exists-rim", map[string]string{
 		"outer_width_mm": "30",
@@ -1993,12 +1993,12 @@ func newTestProductService(t *testing.T) (*gorm.DB, *ProductService) {
 	return db, productService
 }
 
-func seedCarbonRimType(t *testing.T, db *gorm.DB) product.ProductSpecificationTemplate {
+func seedGenericTemplateForProductSpecificationAndVariantRegression(t *testing.T, db *gorm.DB) product.ProductSpecificationTemplate {
 	t.Helper()
 
 	productSpecificationTemplate := product.ProductSpecificationTemplate{
-		Name:      "Carbon Rim",
-		Slug:      "carbon_rim",
+		Name:      "Generic Component",
+		Slug:      "generic_component",
 		IsEnabled: true,
 	}
 	require.NoError(t, db.Create(&productSpecificationTemplate).Error)

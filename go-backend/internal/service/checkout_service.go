@@ -328,7 +328,7 @@ func (s *CheckoutService) quote(input CheckoutQuoteInput, repos checkoutReposito
 		if configuredWeightGrams <= 0 {
 			return nil, fmt.Errorf("shipping weight is missing for SKU %s", variant.SKU)
 		}
-		shippingTemplateIDs, err := resolveProductShippingTemplateIDs(repos.productRepo, product, variant)
+		shippingTemplateIDs, err := resolveRequiredSkuShippingTemplateIDs(repos.productRepo, product, variant)
 		if err != nil {
 			return nil, err
 		}

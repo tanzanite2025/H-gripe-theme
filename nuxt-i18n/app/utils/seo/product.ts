@@ -168,6 +168,10 @@ export const buildProductJsonLd = (
   }
 
   if (description) schema.description = description
+  if (input.additionalProperties?.length) schema.additionalProperty = input.additionalProperties
+  if (cleanText(input.size)) schema.size = cleanText(input.size)
+  if (cleanText(input.material)) schema.material = cleanText(input.material)
+  if (Number.isFinite(input.weightGrams) && Number(input.weightGrams) > 0) schema.weight = { '@type': 'QuantitativeValue', value: input.weightGrams!, unitCode: 'GRM' }
   if (productSku) schema.sku = productSku
 
   if (/^\d+(?:\.\d+)?$/.test(price) && Number(price) > 0 && currency && availability) {
@@ -213,6 +217,7 @@ export const buildProductGroupJsonLd = (
   const description = resolveProductMetaDescription(input)
   const images = normalizeImages(input.imageUrls, context)
   const group: ProductSeoProductGroupSchema = {
+    '@id': `${toAbsoluteSeoUrl(context.siteOrigin, context.localizedPath)}#product-group`,
     '@context': 'https://schema.org',
     '@type': 'ProductGroup',
     name: productName,
@@ -230,6 +235,9 @@ export const buildProductGroupJsonLd = (
     }
   }
   if (description) group.description = description
+  if (input.additionalProperties?.length) group.additionalProperty = input.additionalProperties
+  if (cleanText(input.size)) group.size = cleanText(input.size)
+  if (cleanText(input.material)) group.material = cleanText(input.material)
   const aggregateRating = buildAggregateRating(input.aggregateRating)
   if (aggregateRating) group.aggregateRating = aggregateRating
   const variesBy = (input.variesBy || []).map(cleanText).filter(Boolean)
@@ -244,6 +252,8 @@ export const buildProductGroupJsonLd = (
           ...input,
           name: variantName,
           sku: variant.sku,
+          additionalProperties: [...(input.additionalProperties || []), ...(variant.additionalProperties || [])],
+          weightGrams: variant.weightGrams,
           imageUrls: variant.imageUrls?.length ? variant.imageUrls : input.imageUrls,
           offer: variantOfferInput(variant),
           shippingDetails: variant.shippingDetails,
@@ -254,6 +264,7 @@ export const buildProductGroupJsonLd = (
           localizedPath: cleanText(variant.localizedPath),
         },
       )
+      if (variantSchema) variantSchema.isVariantOf = { '@id': group['@id']! }
       return variantSchema
     })
     .filter((variant): variant is ProductSeoSchema => {

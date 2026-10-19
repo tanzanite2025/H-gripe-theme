@@ -27,6 +27,8 @@ func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
 	}
 
 	router.GET("/uploads/*key", func(c *gin.Context) {
+		// Authorization failures must never inherit an immutable/public cache.
+		c.Header("Cache-Control", "private, no-store")
 		key, ok := sanitizePublicUploadKey(c.Param("key"))
 		if !ok {
 			c.Status(http.StatusNotFound)
@@ -50,6 +52,12 @@ func registerLocalUploadsRoute(router *gin.Engine, deps *app.Dependencies) {
 		if !allowed {
 			c.Status(http.StatusNotFound)
 			return
+		}
+		c.Header("Cache-Control", "")
+		if namespace := storage.DedicatedPublicObjectNamespaceForStorageKey(key); namespace == storage.SuggestionFeedbackAttachmentNamespace || namespace == storage.PayPalDisputeInvoiceAttachmentNamespace {
+			c.Header("Cache-Control", "private, no-store")
+			c.Header("X-Content-Type-Options", "nosniff")
+			c.Header("Referrer-Policy", "no-referrer")
 		}
 		if service.IsCustomerServiceAvatarStorageKey(key) {
 			// Avatar URLs are immutable because every replacement receives a new

@@ -11,6 +11,7 @@ interface WarrantyRemaining {
 }
 
 interface WarrantyResult {
+  shipping_images?: string[]
   order_number?: string
   product_type: {
     code: string

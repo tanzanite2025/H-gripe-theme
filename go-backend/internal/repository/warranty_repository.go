@@ -21,7 +21,7 @@ func (r *WarrantyRepository) WithTx(tx *gorm.DB) *WarrantyRepository {
 
 // CreateWarrantyClaim 创建保修申请
 func (r *WarrantyRepository) CreateWarrantyClaim(claim *warranty.WarrantyClaim) error {
-	return r.db.Create(claim).Error
+	return runWithDedicatedPublicObjectNamespaceTransactionLock(r.db.Statement.Context, r.db, privateOrderBusinessAttachmentLifecycleNamespace, func(tx *gorm.DB) error { return tx.Create(claim).Error })
 }
 
 // FindWarrantyClaimByID 根据ID查找保修申请
@@ -80,7 +80,7 @@ func (r *WarrantyRepository) FindAllWarrantyClaims(page, pageSize int, status st
 
 // UpdateWarrantyClaim 更新保修申请
 func (r *WarrantyRepository) UpdateWarrantyClaim(claim *warranty.WarrantyClaim) error {
-	return r.db.Save(claim).Error
+	return runWithDedicatedPublicObjectNamespaceTransactionLock(r.db.Statement.Context, r.db, privateOrderBusinessAttachmentLifecycleNamespace, func(tx *gorm.DB) error { return tx.Save(claim).Error })
 }
 
 // UpdateWarrantyClaimStatus 更新保修申请状态

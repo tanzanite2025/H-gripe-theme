@@ -10,11 +10,12 @@ import (
 
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 )
 
 const objectCleanupResourceCustomerServiceUnregisteredUpload = "customer_service_unregistered_upload"
 
-func (s *MediaService) cleanupRetiredCustomerServiceAttachmentDerivativeNamespace(ctx context.Context, asset *media.MediaAsset) error {
+func (s *MediaService) cleanupRetiredCustomerServiceAttachmentDerivativeNamespace(ctx context.Context, asset *media.MediaAsset, referencesRepository *repository.MediaRepository) error {
 	if asset.Visibility != "private" || !storage.IsCustomerServiceConversationAttachmentOriginalObjectKey(assetStorageKey(asset)) {
 		return nil
 	}
@@ -51,6 +52,20 @@ func (s *MediaService) cleanupRetiredCustomerServiceAttachmentDerivativeNamespac
 			if !valid || normalized != key || !strings.HasPrefix(key, prefix) {
 				return fmt.Errorf("private derivative listing returned a foreign storage key")
 			}
+			references, err := referencesRepository.FindExactMediaObjectReferencesBeforePhysicalCleanup(key, s.storage.GetURL(key), 0)
+			if err != nil {
+				return err
+			}
+			retained := references[:0]
+			for _, reference := range references {
+				if reference.ResourceType == "media_derivative_registration" && reference.ParentResourceID == asset.ID {
+					continue
+				}
+				retained = append(retained, reference)
+			}
+			if len(retained) > 0 {
+				return &MediaAssetInUseError{References: retained}
+			}
 			if err := s.storage.Delete(ctx, key); err != nil {
 				return err
 			}
@@ -65,18 +80,31 @@ func (s *MediaService) cleanupRetiredUnregisteredCustomerServiceUploadOriginal(c
 	if len(keys) != 1 {
 		return fmt.Errorf("unregistered customer-service cleanup requires its exact original key")
 	}
-	key := keys[0]
-	if !storage.IsCustomerServiceConversationAttachmentOriginalObjectKey(key) {
+	key, valid := storage.NormalizeObjectKey(keys[0])
+	if !valid || key != keys[0] || !storage.IsCustomerServiceConversationAttachmentOriginalObjectKey(key) {
 		return fmt.Errorf("unregistered customer-service cleanup requires the private original namespace")
 	}
-	claimed, err := s.repo.HasCustomerServiceUploadOrRegisteredMediaAssetAtStorageKey(key)
-	if err != nil {
-		return err
+	if ctx == nil {
+		ctx = context.Background()
 	}
-	if claimed {
-		return ErrMediaAssetInUse
-	}
-	return s.storage.Delete(ctx, key)
+	return s.withinMediaPhysicalCleanupTransactionHoldingLocksUntilProviderReturns(ctx, func(repo *repository.MediaRepository, _ *gorm.DB) error {
+		// No asset row belongs to this receipt. Take only the exact object
+		// lock, then read committed claims/references without locking rows.
+		if err := repo.LockExactMediaObjectBeforePhysicalCleanupWithinTransaction(key); err != nil {
+			return err
+		}
+		references, err := repo.FindExactMediaObjectReferencesBeforePhysicalCleanup(key, s.storage.GetURL(key), 0)
+		if err != nil {
+			return err
+		}
+		if len(references) > 0 {
+			return &MediaAssetInUseError{References: references}
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return s.storage.Delete(ctx, key)
+	})
 }
 
 func (s *CustomerServiceRetentionService) shouldPreserveRegisteredAttachmentObjectDuringLegacyProjectionCleanup(reference string) (bool, error) {

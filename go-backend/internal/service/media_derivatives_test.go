@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	mediadomain "commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 	productdomain "commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
@@ -42,6 +43,8 @@ func TestMediaUploadGeneratesPersistentImageDerivatives(t *testing.T) {
 	})
 	require.NoError(t, err)
 	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "https://shop.example.test", 20<<30)
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}))
+	service.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
 		File:       multipartFileHeader(t, "wheel.png", "image/png", testOpaquePNG(t, 900, 600)),
@@ -105,6 +108,8 @@ func TestMediaDerivativeBackfillUpgradesLegacyAssetAndProductMedia(t *testing.T)
 	})
 	require.NoError(t, err)
 	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "https://shop.example.test", 20<<30)
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}))
+	service.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 
 	payload := testOpaquePNG(t, 900, 600)
 	originalURL, err := storageService.UploadFromReader(context.Background(), bytes.NewReader(payload), "legacy-wheel.png")
@@ -187,6 +192,8 @@ func TestMediaDerivativeBackfillRegeneratesVersionedPreset(t *testing.T) {
 	})
 	require.NoError(t, err)
 	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "https://shop.example.test", 20<<30)
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}))
+	service.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	service.ConfigureDerivativePresetRepository(presetRepo)
 
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
@@ -299,6 +306,8 @@ func TestMediaImageDimensionReconcileRepairsLegacyAsset(t *testing.T) {
 	})
 	require.NoError(t, err)
 	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "https://shop.example.test", 20<<30)
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}))
+	service.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	engine := NewMediaImageDimensionEngine(service)
 
 	payload := testOpaquePNG(t, 900, 600)

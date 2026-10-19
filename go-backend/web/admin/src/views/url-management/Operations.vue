@@ -11,7 +11,7 @@
         </Button>
         <Button variant="outline" :disabled="syncing || !canEdit" @click="syncCatalog">
  <RefreshCw :class="['size-4', syncing ? 'animate-spin': '']" />
-          同步 URL
+          同步 URL 并检查
         </Button>
         <Button :disabled="checking || !canEdit || pagination.total === 0" @click="checkCatalog">
  <CircleCheck :class="['size-4', checking ? 'animate-spin': '']" />
@@ -30,7 +30,7 @@
     />
 
     <p class="text-xs text-muted-foreground">
-      当前检查范围：{{ selectedLocaleLabel }}（{{ filters.locale }}）。同步 URL 会更新全量语言；检查会自动分批处理当前筛选范围内的全部可检查 URL；待处理卡片为全站工单汇总。
+      当前检查范围：{{ selectedLocaleLabel }}（{{ filters.locale }}）。同步会更新路由清单并检查当前语言全部 URL；检查结果覆盖上一次，恢复的问题和移出的 URL 自动清理。
     </p>
 
     <AdminStatsGrid :items="statItems" />
@@ -54,7 +54,6 @@ const supportedLanguages = useSupportedLanguages()
 const languageOptions = supportedLanguages.languageOptions
 const {
   stats,
-  issueStats,
   loading,
   syncing,
   checking,
@@ -78,8 +77,7 @@ const selectLocale = (locale: string | number): void => {
 const statItems = computed(() => [
   { key: 'checked', label: '已检查', value: stats.value.checked, icon: CircleCheck, tone: 'green' },
   { key: 'unchecked', label: '未检查', value: stats.value.unchecked, icon: RefreshCw, tone: stats.value.unchecked ? 'amber' : 'gray' },
-  { key: 'attention', label: '全站未关闭工单', value: issueStats.value.active, icon: TriangleAlert, tone: issueStats.value.active ? 'coral' : 'gray' },
-  { key: 'stale', label: '失效快照', value: stats.value.stale, icon: TriangleAlert, tone: stats.value.stale ? 'amber' : 'gray' },
+  { key: 'attention', label: '当前异常路由', value: stats.value.needs_attention, icon: TriangleAlert, tone: stats.value.needs_attention ? 'coral' : 'gray' },
 ])
 
 onMounted(() => {

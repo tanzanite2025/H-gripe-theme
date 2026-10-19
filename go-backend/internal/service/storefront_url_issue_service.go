@@ -70,9 +70,8 @@ func (s *StorefrontURLIssueService) ListEvents(
 	return s.issues.ListEvents(issueID, page, pageSize)
 }
 
-// ReconcileCatalog projects current route observations into durable issue work
-// items. It keeps current checks for unchanged routes and updates source-based
-// issues when the route catalog snapshot changes.
+// ReconcileCatalog keeps the problem queue aligned with current observations.
+// Problems absent from the latest observation are deleted with their timelines.
 func (s *StorefrontURLIssueService) ReconcileCatalog(ctx context.Context) error {
 	if s == nil || s.catalog == nil {
 		return errors.New("storefront route catalog is unavailable")
@@ -118,10 +117,9 @@ func (s *StorefrontURLIssueService) ReconcileEntry(
 			return err
 		}
 	}
-	if _, err := s.issues.AutomaticallyVerifyIssuesNoLongerDetectedForRouteEntry(
+	if _, err := s.issues.DeleteIssuesNoLongerDetectedForRouteEntry(
 		entry.ID,
 		detectedIssueTypes,
-		time.Now().UTC(),
 	); err != nil {
 		return err
 	}

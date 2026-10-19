@@ -6,9 +6,48 @@ import (
 	"strings"
 
 	"commerce-platform/internal/domain/media"
+	"gorm.io/gorm"
 )
 
 var ErrRegisteredMediaObjectOwnershipAmbiguous = errors.New("media address has ambiguous registered ownership")
+
+// Exact registered legacy origins remain usable without trusting another host
+// with the same /uploads suffix. Tombstones and duplicate identities fail closed.
+func (r *MediaRepository) FindUniquelyRegisteredMediaObjectByExactURLOrTrustedKey(reference, trustedKey string) (*media.MediaAsset, *media.MediaAssetDerivative, error) {
+	return r.findUniqueRegisteredMediaObjectWithExplicitRetiredDerivativeReadPolicy(reference, trustedKey, false)
+}
+
+// For existing consumers only. New bindings must continue using the strict
+// method above. Active parents and unambiguous ownership remain mandatory.
+func (r *MediaRepository) FindUniquelyRegisteredMediaObjectForExistingConsumerReadIncludingRetiredDerivative(reference, trustedKey string) (*media.MediaAsset, *media.MediaAssetDerivative, error) {
+	return r.findUniqueRegisteredMediaObjectWithExplicitRetiredDerivativeReadPolicy(reference, trustedKey, true)
+}
+
+func (r *MediaRepository) findUniqueRegisteredMediaObjectWithExplicitRetiredDerivativeReadPolicy(reference, trustedKey string, allowRetiredDerivative bool) (*media.MediaAsset, *media.MediaAssetDerivative, error) {
+	identity, err := r.resolveRegisteredBusinessMediaObjectIdentity(reference, trustedKey, r.hasTable("media_assets"), r.hasAssetDerivativesTable())
+	if err != nil {
+		return nil, nil, err
+	}
+	if identity.AssetID == 0 || (identity.Retired && (!allowRetiredDerivative || identity.DerivativeID == 0)) {
+		return nil, nil, gorm.ErrRecordNotFound
+	}
+	asset, err := r.FindAssetByID(identity.AssetID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if identity.DerivativeID == 0 {
+		return asset, nil, nil
+	}
+	var derivative media.MediaAssetDerivative
+	query := r.db
+	if allowRetiredDerivative {
+		query = query.Unscoped()
+	}
+	if err := query.First(&derivative, identity.DerivativeID).Error; err != nil {
+		return nil, nil, err
+	}
+	return asset, &derivative, nil
+}
 
 type registeredBusinessMediaObjectIdentity struct {
 	AssetID      uint

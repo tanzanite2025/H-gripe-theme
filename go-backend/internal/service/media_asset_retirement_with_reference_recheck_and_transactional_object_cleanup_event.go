@@ -20,6 +20,16 @@ func (s *MediaService) retireUnreferencedMediaAssetWithinTransaction(repo *repos
 	if s.objectCleanupOutbox == nil {
 		return ErrObjectStorageCleanupUnavailable
 	}
+	// Replaced derivatives can retain physical objects and historical identity.
+	// The caller already holds the asset lock; include their tombstones too.
+	cleanupSnapshot, err := repo.FindAssetByIDUnscoped(asset.ID)
+	if err != nil {
+		return err
+	}
+	asset = cleanupSnapshot
+	if err := s.validateSharedMediaCleanupDoesNotOwnDedicatedPublicObjects(asset); err != nil {
+		return err
+	}
 	if asset.CustomerServiceDerivativeWriteExpiresAt != nil && asset.CustomerServiceDerivativeWriteExpiresAt.After(time.Now().UTC()) {
 		return ErrCustomerServiceAttachmentWritesInProgress
 	}
@@ -55,7 +65,10 @@ func (s *MediaService) retireUnreferencedMediaAssetWithinTransaction(repo *repos
 			return fmt.Errorf("mark media asset deleted: %w", err)
 		}
 	}
-	return s.objectCleanupOutbox.WithTx(tx).CreateEvent(event)
+	if err := s.objectCleanupOutbox.WithTx(tx).CreateEvent(event); err != nil {
+		return err
+	}
+	return repo.RemoveBusinessDraftMediaUploadReceiptWithinRetirementTransaction(asset)
 }
 
 func (s *MediaService) mediaAssetOriginalStorageKeyForDurableCleanup(asset *media.MediaAsset) (string, error) {

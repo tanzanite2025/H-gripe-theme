@@ -20,7 +20,8 @@ func TestPostgreSQLMediaLibraryPartitionCountsAndReusableSelectionExcludeLegacyC
 		{Filename: "customer-submission.png", URL: "https://media.example/uploads/customer-submission.png", LibraryPartition: media.MediaLibraryPartitionCustomerSubmissions},
 	}
 	for index := range assets {
-		require.NoError(t, repo.CreateAsset(&assets[index]))
+		// Historical inventory fixtures intentionally have no physical objects.
+		require.NoError(t, repo.db.Create(&assets[index]).Error)
 	}
 	filter := MediaAssetFilter{ExcludeConversationAttachments: true, Page: 1, PageSize: 1}
 	visible, total, err := repo.ListAssets(filter)

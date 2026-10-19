@@ -70,6 +70,9 @@ func (s *CustomerServiceConversationMessageAttachmentAccessService) OpenAgentCus
 }
 
 func (s *CustomerServiceConversationMessageAttachmentAccessService) openRegisteredCustomerServiceMessageAttachment(ctx context.Context, message ticket.TicketMessage, attachmentIndex int, preset string) (*MediaAssetFile, error) {
+	if file, handled, err := s.openStructuredMetadataMediaAtMembershipIndex(ctx, message, attachmentIndex, preset); handled || err != nil {
+		return file, err
+	}
 	if message.AttachmentReferenceFormat == ticket.TicketMessageMediaAssetBindings {
 		asset, key, err := s.resolveBoundCustomerServiceMessageAttachment(ctx, message, attachmentIndex)
 		if err != nil {
@@ -118,6 +121,19 @@ func (s *CustomerServiceConversationMessageAttachmentAccessService) openCustomer
 	}
 	// Every supported production provider has ObjectOpener. Require a stream:
 	// a public redirect or bearer URL must not bypass conversation authorization.
+	if asset.MediaType == "video" && preset == "" {
+		if rangeOpener, ok := s.media.storage.(storage.ObjectByteRangeSourceOpener); ok {
+			source, err := rangeOpener.OpenObjectByteRangeSource(ctx, key)
+			if err != nil {
+				return nil, err
+			}
+			if source == nil {
+				return nil, ErrMediaStorageUnavailable
+			}
+			metadata := source.Metadata()
+			return &MediaAssetFile{ReadCloser: source, ByteRangeSource: source, Filename: filename, MimeType: mimeType, Size: metadata.Size, ModTime: metadata.ModTime}, nil
+		}
+	}
 	opener, ok := s.media.storage.(storage.ObjectOpener)
 	if !ok {
 		return nil, ErrMediaStorageUnavailable
@@ -138,7 +154,7 @@ func (s *CustomerServiceConversationMessageAttachmentAccessService) resolveRegis
 	}
 	value := strings.TrimSpace(reference)
 	parsed, err := url.Parse(value)
-	if err != nil || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
+	if err != nil || parsed.User != nil || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" {
 		return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
 	}
 	if parsed.Host != "" && parsed.Scheme != "http" && parsed.Scheme != "https" {
@@ -146,24 +162,42 @@ func (s *CustomerServiceConversationMessageAttachmentAccessService) resolveRegis
 	}
 	key, err := s.media.storage.ObjectKey(value)
 	if err != nil {
-		// Persisted public chat URLs may use the storefront origin instead of
-		// the object-storage origin. Accept that configured origin explicitly.
-		if parsed.Host == "" || s.media.siteURL == "" || !sameAttachmentReferenceHost(parsed.Host, s.media.siteURL) ||
-			!strings.HasPrefix(parsed.Path, "/uploads/") {
-			return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
-		}
-		key = strings.TrimPrefix(parsed.Path, "/uploads/")
+		key, err = s.media.ResolveTrustedMediaObjectKeyForPublicBusinessReference(value)
 	}
-	key, ok := storage.NormalizeObjectKey(key)
-	if !ok {
+	if err != nil {
 		return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
 	}
-	asset, err := s.media.repo.FindAssetByStorageKey(key)
+	usedReviewedHistoricalOrigin := false
+	if key == "" {
+		key = s.media.reviewedHistoricalCustomerServiceAttachmentObjectKey(value)
+		usedReviewedHistoricalOrigin = key != ""
+	}
+	asset, derivative, err := s.media.repo.FindUniquelyRegisteredMediaObjectByExactURLOrTrustedKey(value, key)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
 		}
 		return nil, "", err
+	}
+	if derivative != nil {
+		return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
+	}
+	if usedReviewedHistoricalOrigin && !media.IsUnclassifiedHistoricalMediaAssetWithUnknownUploadProvenance(asset) {
+		return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
+	}
+	if key == "" {
+		// An exact registered URL can predate the configured origin. This
+		// grants access only through this already authorized message endpoint.
+		key = assetStorageKey(asset)
+		// The old URL identifies the registration, but its physical shared key
+		// must also have one owner, including retained registrations.
+		asset, derivative, err = s.media.repo.FindUniquelyRegisteredMediaObjectByExactURLOrTrustedKey(value, key)
+		if err != nil {
+			return nil, "", err
+		}
+		if derivative != nil {
+			return nil, "", ErrCustomerServiceMessageAttachmentUnavailable
+		}
 	}
 	return validateRegisteredCustomerServiceAttachmentAsset(asset, key)
 }

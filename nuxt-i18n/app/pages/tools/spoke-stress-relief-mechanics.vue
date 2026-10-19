@@ -890,7 +890,7 @@ const synchronizeStainlessSteelSpokeCustomAreaSelection = () => {
   --spoke-rose-bg: #fff1f2;
   --spoke-rose-border: #fecdd3;
   width: 100%;
-  max-width: 1680px;
+  max-width: none;
   margin: 0 auto;
   color: var(--spoke-text);
   font-size: 0.95rem;

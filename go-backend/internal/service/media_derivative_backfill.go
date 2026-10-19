@@ -2,11 +2,15 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"strconv"
 
 	mediadomain "commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
+	"gorm.io/gorm"
 )
 
 const mediaDerivativeBackfillBatchSize = 25
@@ -85,39 +89,83 @@ func (s *MediaService) ensureAssetDerivatives(
 		return result, err
 	}
 	missingPresets := missingMediaDerivativePresets(asset.Derivatives, presets)
+	var retiredDerivatives []mediadomain.MediaAssetDerivative
 	if len(missingPresets) > 0 {
+		if s.objectCleanupOutbox == nil {
+			return result, ErrObjectStorageCleanupUnavailable
+		}
 		openSource, err := s.openMediaDerivativeSource(ctx, asset)
 		if err != nil {
 			return result, err
 		}
 
-		generated, err := s.generateAssetDerivativesFromSource(ctx, asset, openSource, missingPresets)
-		if err != nil {
-			return result, err
+		persistGenerated := func(repo *repository.MediaRepository, _ *gorm.DB, generated []mediadomain.MediaAssetDerivative) error {
+			return repo.ReplaceAssetDerivativesAndRecordRetiredObjectsWithinTransaction(generated, func(tx *gorm.DB, retired []mediadomain.MediaAssetDerivative) error {
+				if err := s.recordRetiredMediaDerivativeCleanupEventsWithinReplacementTransaction(tx, retired); err != nil {
+					return err
+				}
+				// Snapshot replacement shares the metadata/event commit. Otherwise a
+				// failed snapshot update makes the next missing-generation backfill
+				// skip this asset and leaves its consumers permanently on old URLs.
+				transactionService := *s
+				transactionService.repo = s.repo.WithTx(tx)
+				variants, thumbnail, err := transactionService.productMediaImageVariantsUsingPresetDefinitions(asset.ID, presets)
+				if err != nil {
+					return err
+				}
+				rows, err := transactionService.repo.UpdateProductMediaImageVariantsForAsset(asset.ID, variants, thumbnail)
+				if err != nil {
+					return err
+				}
+				result.UpdatedProductMediaRows = rows
+				retiredDerivatives = retired
+				return nil
+			})
 		}
-		replacedURLs, err := s.repo.ReplaceAssetDerivatives(generated)
-		if err != nil {
-			uploadedURLs := make([]string, 0, len(generated))
-			for _, derivative := range generated {
-				uploadedURLs = append(uploadedURLs, derivative.URL)
+		var generated []mediadomain.MediaAssetDerivative
+		if asset.Visibility != "private" {
+			generated, err = s.generateAndPersistPublicMediaDerivativesWithPrecommittedExactKeyReceipts(ctx, asset, openSource, missingPresets, persistGenerated)
+			if err != nil {
+				return result, err
 			}
-			deleteUploadedMediaObjectsBestEffort(ctx, s.storage, uploadedURLs)
-			return result, fmt.Errorf("persist generated derivatives: %w", err)
+		} else {
+			generated, err = s.generateAssetDerivativesFromSource(ctx, asset, openSource, missingPresets)
+			if err != nil {
+				return result, err
+			}
+			err = persistGenerated(s.repo, nil, generated)
+			if err != nil {
+				uploadedURLs := make([]string, 0, len(generated))
+				for _, derivative := range generated {
+					uploadedURLs = append(uploadedURLs, derivative.URL)
+				}
+				return result, errors.Join(fmt.Errorf("persist generated derivatives: %w", err), s.persistFailedMediaUploadCompensationBeforeAttemptingExactObjectCleanup(ctx, asset, uploadedURLs))
+			}
 		}
-		deleteUploadedMediaObjectsBestEffort(ctx, s.storage, replacedURLs)
 		asset.Derivatives = replaceMediaAssetDerivatives(asset.Derivatives, generated)
 		result.GeneratedDerivatives = len(generated)
 	}
 
-	variants, thumbnail, err := s.ProductMediaImageVariants(asset.ID)
-	if err != nil {
-		return result, fmt.Errorf("resolve generated image variants: %w", err)
+	if len(missingPresets) == 0 {
+		variants, thumbnail, err := s.ProductMediaImageVariants(asset.ID)
+		if err != nil {
+			return result, fmt.Errorf("resolve generated image variants: %w", err)
+		}
+		rows, err := s.repo.UpdateProductMediaImageVariantsForAsset(asset.ID, variants, thumbnail)
+		if err != nil {
+			return result, fmt.Errorf("update product media image variants: %w", err)
+		}
+		result.UpdatedProductMediaRows = rows
 	}
-	rows, err := s.repo.UpdateProductMediaImageVariantsForAsset(asset.ID, variants, thumbnail)
-	if err != nil {
-		return result, fmt.Errorf("update product media image variants: %w", err)
+	for _, retired := range retiredDerivatives {
+		key, err := s.exactRegisteredDerivativeStorageKeyForCleanup(retired)
+		if err == nil {
+			// Synchronize storefront snapshots first. The committed event remains
+			// the retry path if any historical snapshot or other consumer remains.
+			_ = s.cleanupUnregisteredOrRetiredMediaObjectFromDurableEvent(ctx, objectCleanupResourceRetiredMediaDerivative,
+				strconv.FormatUint(uint64(retired.ID), 10), []string{key})
+		}
 	}
-	result.UpdatedProductMediaRows = rows
 	return result, nil
 }
 

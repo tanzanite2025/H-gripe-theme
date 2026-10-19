@@ -35,15 +35,7 @@ func (r *MediaRepository) FindCustomerServiceUploadSessionForUpdate(ctx context.
 }
 
 func (r *MediaRepository) FindCustomerServiceAttachmentAssetUnscopedForUpdate(id uint) (*media.MediaAsset, error) {
-	var asset media.MediaAsset
-	query := r.db.Unscoped().Clauses(clause.Locking{Strength: "UPDATE"})
-	if r.hasAssetDerivativesTable() {
-		query = query.Preload("Derivatives", func(db *gorm.DB) *gorm.DB { return db.Unscoped() })
-	}
-	if err := query.First(&asset, id).Error; err != nil {
-		return nil, err
-	}
-	return &asset, nil
+	return r.FindAssetByIDUnscopedForUpdate(id)
 }
 
 func (r *MediaRepository) CountCustomerServiceMessageBindingsForUploadSession(id string) (int64, error) {
@@ -99,29 +91,13 @@ func (r *TicketRepository) DeleteCustomerServiceConversationManagedAttachmentsAn
 	return r.db.Where("ticket_id = ?", ticketID).Delete(&ticket.TicketMessage{}).Error
 }
 
-func (r *MediaRepository) HasCustomerServiceUploadOrRegisteredMediaAssetAtStorageKey(key string) (bool, error) {
-	var count int64
-	if err := r.db.Unscoped().Model(&media.MediaAsset{}).Where("storage_key = ?", key).Count(&count).Error; err != nil {
-		return false, err
-	}
-	if count > 0 {
-		return true, nil
-	}
-	if r.hasTable("media_upload_sessions") {
-		if err := r.db.Model(&media.MediaUploadSession{}).Where("object_key = ?", key).Count(&count).Error; err != nil {
-			return false, err
-		}
-	}
-	return count > 0, nil
-}
-
 func (r *MediaRepository) ReleaseCustomerServiceDerivativeWriteLease(ctx context.Context, assetID uint, token string) error {
 	return r.db.WithContext(ctx).Model(&media.MediaAsset{}).Where("id = ? AND customer_service_derivative_write_token = ?", assetID, token).
 		Updates(map[string]interface{}{"customer_service_derivative_write_token": "", "customer_service_derivative_write_expires_at": nil}).Error
 }
 
 func (r *MediaRepository) WithinMediaAssetTransactionWithRequestContext(ctx context.Context, operation func(*MediaRepository, *gorm.DB) error) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error { return operation(r.WithTx(tx), tx) })
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error { return operation(r.WithTx(tx), tx) }, mediaObjectOwnershipReadCommittedTransactionOptions(r.db)...)
 }
 
 func (r *TicketRepository) HasCustomerServiceConversationAttachmentWritesInProgress(ticketID uint, now time.Time) (bool, error) {

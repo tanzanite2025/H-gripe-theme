@@ -97,12 +97,6 @@
 
         </div>
 
-        <div class="mt-10">
-          <UserFeedbackThread
-            threadKey="guides-spokeguides-spoke-length-calculator"
-            :title="t('resourcesSpokeCalculator.feedbackTitle')"
-          />
-        </div>
       </section>
 
 
@@ -119,7 +113,6 @@ import SpokeNippleStep from '~/components/SpokeNippleStep.vue'
 import SpokePCDStep from '~/components/SpokePCDStep.vue'
 import SpokePhysicalCorrectionsStep from '~/components/SpokePhysicalCorrectionsStep.vue'
 import SpokeRimGeometryStep from '~/components/SpokeRimGeometryStep.vue'
-import UserFeedbackThread from '~/components/UserFeedbackThread.vue'
 
 import { useStorefrontSeoRouteOverride } from '~/composables/seo/useStorefrontSeoLinks'
 import { usePageMessages } from '~/composables/usePageMessages'
@@ -342,6 +335,9 @@ definePageMeta({
   breadcrumbLabelFallback: 'Spoke Length Calculator',
   footerLabelKey: 'toolsNavigation.spokeLengthCalculatorLabel',
   footerLabelFallback: 'Spoke length calculator',
+  feedbackThreadKey: 'guides-spokeguides-spoke-length-calculator',
+  feedbackTitleKey: 'resourcesSpokeCalculator.feedbackTitle',
+  pageTitleKey: 'resourcesSpokeCalculator.title',
 })
 
 useHead(() => ({
@@ -477,5 +473,111 @@ useHead(() => ({
    width: 100%;
    max-width: none;
  }
+
+@media (max-width: 767px) {
+  .spoke-page :deep(.spoke-step-navigation) {
+    grid-template-areas:
+      "progress progress"
+      "previous trailing";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .spoke-page :deep(.spoke-step-navigation__spacer) {
+    display: none;
+  }
+
+  .spoke-page :deep(.spoke-step-navigation > .spoke-step-progress) {
+    grid-area: progress;
+    width: 100%;
+    justify-content: center;
+    gap: calc(0.2rem + 5px);
+  }
+
+  .spoke-page :deep(.spoke-step-navigation__button--previous) {
+    grid-area: previous;
+    justify-self: start;
+  }
+
+  .spoke-page :deep(.spoke-step-navigation__trailing) {
+    grid-area: trailing;
+    justify-content: flex-end;
+  }
+
+  .spoke-page :deep(.spoke-step-navigation__button) {
+    width: auto;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    height: auto;
+    padding-inline: 1rem;
+    font-size: 1.125rem;
+  }
+
+  .spoke-page :deep(.spoke-step-navigation__label) {
+    display: inline;
+    font-size: 0.8125rem;
+  }
+
+  .spoke-page :deep(.spoke-calculator__calculate-button) {
+    min-height: 2.75rem;
+  }
+
+  .spoke-page :deep(.spoke-step-progress__item) {
+    width: 35px;
+    height: 35px;
+  }
+
+  .spoke-page :deep(.spoke-step-progress__button) {
+    width: 35px;
+    height: 35px;
+    font-size: 0.75rem;
+  }
+
+  .spoke-page :deep(.spoke-head-step),
+  .spoke-page :deep(.spoke-rim-geometry-step),
+  .spoke-page :deep(.spoke-pcd-step),
+  .spoke-page :deep(.spoke-physical-corrections-step),
+  .spoke-page :deep(.spoke-nipple-step),
+  .spoke-page :deep(.spoke-calculator),
+  .spoke-page :deep(.spoke-catalog-system) {
+    padding-inline: 10px;
+  }
+
+  .spoke-page :deep(.spoke-head-step__option),
+  .spoke-page :deep(.spoke-head-step__explanation),
+  .spoke-page :deep(.spoke-head-measurement-guide),
+  .spoke-page :deep(.spoke-head-measurement-guide__legend),
+  .spoke-page :deep(.spoke-rim-geometry-step__input-group),
+  .spoke-page :deep(.spoke-erd-step__measurement),
+  .spoke-page :deep(.spoke-alternating-step__wheel-card),
+  .spoke-page :deep(.spoke-alternating-step__guidance),
+  .spoke-page :deep(.spoke-pcd-step__input-panel),
+  .spoke-page :deep(.spoke-pcd-step__wheel-card),
+  .spoke-page :deep(.spoke-hole-step__input-panel),
+  .spoke-page :deep(.spoke-hole-step__wheel-card),
+  .spoke-page :deep(.spoke-interlacing-step__input-panel),
+  .spoke-page :deep(.spoke-interlacing-step__wheel-card),
+  .spoke-page :deep(.spoke-nipple-step__input-panel),
+  .spoke-page :deep(.spoke-nipple-step__wheel-card),
+  .spoke-page :deep(.spoke-physics-diagrams),
+  .spoke-page :deep(.spoke-physics-diagrams .canvas-viewport),
+  .spoke-page :deep(.spoke-physics-diagrams .schematic-legend-panel),
+  .spoke-page :deep(.spoke-nipple-guide .main-blueprint-card),
+  .spoke-page :deep(.spoke-nipple-guide .svg-viewport-wrapper),
+  .spoke-page :deep(.spoke-nipple-guide .schematic-legend-panel),
+  .spoke-page :deep(.spoke-nipple-guide .calculator-action-banner),
+  .spoke-page :deep(.spoke-nipple-guide .spec-table-container),
+  .spoke-page :deep(.spoke-calculator__results-shell),
+  .spoke-page :deep(.spoke-catalog-system__selection-card) {
+    padding-inline: 8px;
+  }
+
+  .spoke-page :deep(.spoke-hole-step--embedded),
+  .spoke-page :deep(.spoke-interlacing-step--embedded) {
+    padding-inline: 0;
+  }
+}
 
 </style>

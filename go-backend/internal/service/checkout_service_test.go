@@ -49,9 +49,9 @@ func TestCheckoutMemberDiscountUsesExactMinorUnitRounding(t *testing.T) {
 func TestCheckoutQuoteAppliesMerchandiseDiscountsBeforeShippingAndTax(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	productRecord := seedProduct(t, db, 1000, 5)
-	require.NotEmpty(t, productRecord.ShippingTemplateIDs)
+	require.NotEmpty(t, productRecord.Variants[0].ShippingTemplateIDs)
 	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).
-		Where("id = ?", productRecord.ShippingTemplateIDs[0]).
+		Where("id = ?", productRecord.Variants[0].ShippingTemplateIDs[0]).
 		Update("free_shipping", false).Error)
 	seedUserLoyalty(t, db, 42, 100000)
 	seedCoupon(t, db, "WATERFALL-900", "fixed", 900, 0)
@@ -142,8 +142,8 @@ func TestCheckoutAndOrderCreationRejectAddressWithoutConfiguredTaxRule(t *testin
 func TestCheckoutSystemFreeShippingPreservesTaxAndRejectsMissingTaxRule(t *testing.T) {
 	db, orderService := newTestOrderService(t)
 	item := seedProduct(t, db, 100, 5)
-	require.NotEmpty(t, item.ShippingTemplateIDs)
-	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).Where("id = ?", item.ShippingTemplateIDs[0]).Update("free_shipping", false).Error)
+	require.NotEmpty(t, item.Variants[0].ShippingTemplateIDs)
+	require.NoError(t, db.Model(&shippingdomain.ShippingTemplate{}).Where("id = ?", item.Variants[0].ShippingTemplateIDs[0]).Update("free_shipping", false).Error)
 	require.NoError(t, db.Create(&taxratedomain.TaxRate{Name: "CA tax", Country: "US", State: "CA", PostalCode: "90001", RateDecimal: "10", Enabled: true}).Error)
 	input := CheckoutQuoteInput{UserID: 42, Items: []order.OrderItem{{ProductID: item.ID, Quantity: 1}}, ShippingAddress: testAddress()}
 	paid, err := orderService.checkout.Quote(input)
@@ -153,7 +153,7 @@ func TestCheckoutSystemFreeShippingPreservesTaxAndRejectsMissingTaxRule(t *testi
 
 	freeTemplate := shippingdomain.ShippingTemplate{Name: "US system free shipping", TemplateKind: shippingdomain.ShippingTemplateKindSystemFreeShipping, Type: shippingdomain.ShippingTemplateTypeSystemFreeShipping, FreeShippingCountries: `["US"]`, Currency: "USD", Enabled: true}
 	require.NoError(t, db.Create(&freeTemplate).Error)
-	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(item.ID, nil, []uint{freeTemplate.ID}))
+	require.NoError(t, repository.NewProductRepository(db).ReplaceSkuShippingTemplateBindings(item.ID, item.Variants[0].ID, []uint{freeTemplate.ID}))
 	free, err := orderService.checkout.Quote(input)
 	require.NoError(t, err)
 	assert.Zero(t, free.ShippingFeeMinor)

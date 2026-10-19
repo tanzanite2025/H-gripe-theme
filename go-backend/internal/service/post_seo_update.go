@@ -20,17 +20,8 @@ func (s *PostService) UpdatePostSEO(id uint, input PostSEOUpdateInput) (*post.Po
 	if err != nil {
 		return nil, err
 	}
-	if input.MetaTitle != nil {
-		existingPost.MetaTitle = *input.MetaTitle
-	}
-	if input.MetaDescription != nil {
-		existingPost.MetaDesc = *input.MetaDescription
-	}
-	if input.CanonicalURL != nil {
-		existingPost.CanonicalURL = *input.CanonicalURL
-	}
-	if err := s.postRepo.Update(existingPost); err != nil {
-		return nil, err
+	if err := s.postRepo.UpdatePostSEOMetadataFields(id, input.MetaTitle, input.MetaDescription, input.CanonicalURL); err != nil {
+		return nil, mapPostRepositoryWriteErrorToServiceError(err)
 	}
 
 	s.clearPostCache(existingPost)

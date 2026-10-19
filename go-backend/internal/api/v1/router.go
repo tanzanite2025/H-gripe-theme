@@ -506,6 +506,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 				"/:order_number/after-sales",
 				orderHandler.ListAfterSalesRequests,
 			)
+			orderGroup.GET("/:order_number/after-sales/attachments/:attachment_locator", orderHandler.ServeAfterSalesAttachmentForCurrentOrderOwner)
 			orderGroup.GET("/:order_number", orderHandler.GetOrder)
 			orderGroup.POST("/:order_number/cancel", orderHandler.CancelOrder)
 		}
@@ -718,6 +719,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			warrantyGroup.POST("/claim", middleware.RateLimit(1), warrantyHandler.SubmitWarrantyClaim)
 			// Claim details may be viewed by an authenticated owner or by a guest
 			// presenting the signed access token returned after submission.
+			warrantyGroup.GET("/claims/:id/attachments/:attachment_kind/:attachment_index", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(30), warrantyHandler.ServeWarrantyClaimAttachmentForAuthorizedViewer)
 			warrantyGroup.GET("/claims/:id", middleware.OptionalAuthMiddleware(authService), middleware.RateLimit(10), warrantyHandler.GetWarrantyClaim)
 
 			// 需要认证的端点
@@ -725,6 +727,7 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 			authWarranty.Use(middleware.AuthMiddleware(authService))
 			{
 				authWarranty.GET("/orders/:order_number", warrantyHandler.GetWarrantyStatus)
+				authWarranty.GET("/orders/:order_number/images/:attachment_index", warrantyHandler.ServeShipmentImageForCurrentOrderOwner)
 			}
 		}
 

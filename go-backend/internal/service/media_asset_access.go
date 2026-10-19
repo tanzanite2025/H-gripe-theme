@@ -13,6 +13,7 @@ import (
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/ugc"
+	"commerce-platform/internal/repository"
 
 	"gorm.io/gorm"
 )
@@ -24,12 +25,13 @@ const protectedMediaSignedURLTTL = 10 * time.Minute
 var publicMediaAttachmentExtensions = []string{".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".mov", ".webm"}
 
 type MediaAssetFile struct {
-	ReadCloser  io.ReadCloser
-	RedirectURL string
-	Filename    string
-	MimeType    string
-	Size        int64
-	ModTime     time.Time
+	ByteRangeSource storage.ObjectByteRangeSource
+	ReadCloser      io.ReadCloser
+	RedirectURL     string
+	Filename        string
+	MimeType        string
+	Size            int64
+	ModTime         time.Time
 }
 
 type PublicUploadAssetAccess struct {
@@ -106,29 +108,28 @@ func (s *MediaService) PublicUploadAssetAccess(key string) (PublicUploadAssetAcc
 	if s == nil || s.repo == nil {
 		return PublicUploadAssetAccess{}, nil
 	}
-	asset, err := s.repo.FindAssetByStorageKey(normalizedKey)
+	asset, derivative, err := s.repo.FindUniquelyRegisteredMediaObjectForExistingConsumerReadIncludingRetiredDerivative("/uploads/"+normalizedKey, normalizedKey)
 	if err != nil {
+		if errors.Is(err, repository.ErrRegisteredMediaObjectOwnershipAmbiguous) {
+			return PublicUploadAssetAccess{Found: true}, nil
+		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			derivative, derivativeErr := s.repo.FindDerivativeByStorageKey(normalizedKey)
-			if derivativeErr != nil {
-				if errors.Is(derivativeErr, gorm.ErrRecordNotFound) {
-					return PublicUploadAssetAccess{}, nil
-				}
-				return PublicUploadAssetAccess{}, derivativeErr
-			}
-			if derivative.Asset == nil {
-				return PublicUploadAssetAccess{Found: true, Allowed: false}, nil
-			}
-			return PublicUploadAssetAccess{
-				Found:   true,
-				Allowed: derivative.Asset.Status == "active" && derivative.Asset.Visibility == "public",
-			}, nil
+			return PublicUploadAssetAccess{}, nil
 		}
 		return PublicUploadAssetAccess{}, err
 	}
+	if err := s.projectHistoricalTicketAttachmentConversationAccess(asset); err != nil {
+		return PublicUploadAssetAccess{Found: true}, err
+	}
+	if derivative != nil && derivative.DeletedAt.Valid {
+		published, err := s.repo.HasPublishedBusinessConsumerForExactMediaObject(normalizedKey, derivative.URL)
+		if err != nil || !published {
+			return PublicUploadAssetAccess{Found: true}, err
+		}
+	}
 	return PublicUploadAssetAccess{
 		Found:   true,
-		Allowed: !asset.DeletedAt.Valid && asset.Status == "active" && asset.Visibility == "public",
+		Allowed: !asset.RequiresConversationAccess && !asset.DeletedAt.Valid && asset.Status == "active" && asset.Visibility == "public",
 	}, nil
 }
 
@@ -196,14 +197,23 @@ func (s *MediaService) CanonicalPublicImageUploadURL(reference string) (string, 
 		return "", ErrMediaAssetURLUnavailable
 	}
 
-	asset, err := s.repo.FindAssetByStorageKey(refs[0].StorageKey)
+	asset, derivative, err := s.repo.FindUniquelyRegisteredMediaObjectByExactURLOrTrustedKey(reference, refs[0].StorageKey)
 	if err != nil {
+		if errors.Is(err, repository.ErrRegisteredMediaObjectOwnershipAmbiguous) {
+			return "", ErrMediaAssetForbidden
+		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", ErrMediaAssetNotFound
 		}
 		return "", err
 	}
-	if asset.DeletedAt.Valid || asset.Status != "active" || asset.Visibility != "public" {
+	if derivative != nil {
+		return "", ErrMediaAssetForbidden
+	}
+	if err := s.projectHistoricalTicketAttachmentConversationAccess(asset); err != nil {
+		return "", err
+	}
+	if asset.RequiresConversationAccess || asset.DeletedAt.Valid || asset.Status != "active" || asset.Visibility != "public" {
 		return "", ErrMediaAssetForbidden
 	}
 	if strings.ToLower(strings.TrimSpace(asset.MediaType)) != "image" || !allowedPublicImageAttachmentMimeType(asset.MimeType) {
@@ -231,14 +241,23 @@ func (s *MediaService) CanonicalPublicMediaAttachmentURL(reference string) (stri
 		return "", ErrMediaAssetURLUnavailable
 	}
 
-	asset, err := s.repo.FindAssetByStorageKey(refs[0].StorageKey)
+	asset, derivative, err := s.repo.FindUniquelyRegisteredMediaObjectByExactURLOrTrustedKey(reference, refs[0].StorageKey)
 	if err != nil {
+		if errors.Is(err, repository.ErrRegisteredMediaObjectOwnershipAmbiguous) {
+			return "", ErrMediaAssetForbidden
+		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return "", ErrMediaAssetNotFound
 		}
 		return "", err
 	}
-	if asset.DeletedAt.Valid || asset.Status != "active" || asset.Visibility != "public" {
+	if derivative != nil {
+		return "", ErrMediaAssetForbidden
+	}
+	if err := s.projectHistoricalTicketAttachmentConversationAccess(asset); err != nil {
+		return "", err
+	}
+	if asset.RequiresConversationAccess || asset.DeletedAt.Valid || asset.Status != "active" || asset.Visibility != "public" {
 		return "", ErrMediaAssetForbidden
 	}
 	switch strings.ToLower(strings.TrimSpace(asset.MediaType)) {
@@ -382,6 +401,12 @@ func (s *MediaService) hydrateAssetListAccessURL(assets []media.MediaAsset) {
 
 func (s *MediaService) hydrateAssetAccessURL(asset *media.MediaAsset) {
 	if asset == nil {
+		return
+	}
+	asset.BusinessDraftUploadExpiresAt = s.repo.FindUnboundBusinessDraftMediaUploadExpiryForAsset(asset)
+	_ = s.projectHistoricalTicketAttachmentConversationAccess(asset)
+	if asset.RequiresConversationAccess {
+		asset.AccessURL = ""
 		return
 	}
 	if storage.IsCustomerServiceConversationAttachmentOriginalObjectKey(assetStorageKey(asset)) {

@@ -100,6 +100,24 @@ func TestDynamicsReturnsGroundFrameDemoModel(t *testing.T) {
 	}
 }
 
+func TestDynamicsAcceptsAlMightyWidthAndExplicitOperatingPressureWithoutInventedMinimumOrDeformation(t *testing.T) {
+	recorder := requestPath(testRouter(), "/dynamics", `{"rider_weight_kg":70,"bike_weight_kg":8.5,"nominal_tire_width_mm":120,"riding_position":"AGGRESSIVE_RACE","surface_condition":"FLAT_ROAD","lean_angle_deg":0,"speed_kmh":30,"front_operating_pressure_psi":10,"rear_operating_pressure_psi":10}`)
+	body := recorder.Body.String()
+	if recorder.Code != http.StatusOK || !strings.Contains(body, `"tire_width_mm":120`) || !strings.Contains(body, `"estimated_static_contact_area_cm2"`) || !strings.Contains(body, `"estimated_contact_patch_width_mm"`) || !strings.Contains(body, `"vertical_deformation_data_status":"NO_MATCHING_WIDE_TIRE_REFERENCE"`) {
+		t.Fatalf("status=%d body=%s", recorder.Code, body)
+	}
+	if strings.Contains(body, `"vertical_deformation":`) || strings.Contains(body, `"pressure_contact_area_comparison":`) || strings.Contains(body, `"wet_pressure_compensation":`) {
+		t.Fatalf("unsupported reference outputs must not be inferred: %s", body)
+	}
+}
+
+func TestDynamicsRejectsNominalWidthBeyondExpandedCatalogRange(t *testing.T) {
+	recorder := requestPath(testRouter(), "/dynamics", `{"rider_weight_kg":70,"bike_weight_kg":8.5,"nominal_tire_width_mm":121,"riding_position":"AGGRESSIVE_RACE"}`)
+	if recorder.Code != http.StatusUnprocessableEntity || !strings.Contains(recorder.Body.String(), `"nominal_tire_width_mm"`) {
+		t.Fatalf("status=%d body=%s", recorder.Code, recorder.Body.String())
+	}
+}
+
 func TestDynamicsReturnsWetEquivalentPressureCompensation(t *testing.T) {
 	recorder := requestPath(testRouter(), "/dynamics", `{"rider_weight_kg":72,"bike_weight_kg":8.5,"nominal_tire_width_mm":28,"riding_position":"AGGRESSIVE_RACE","surface_condition":"FLAT_ROAD","lean_angle_deg":30,"speed_kmh":30,"front_operating_pressure_psi":48,"rear_operating_pressure_psi":52,"front_minimum_pressure_psi":43,"rear_minimum_pressure_psi":47,"wet_pressure_demonstration_enabled":true,"water_film_depth_mm":1}`)
 	body := recorder.Body.String()

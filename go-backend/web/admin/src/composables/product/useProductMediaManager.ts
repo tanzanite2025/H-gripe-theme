@@ -89,11 +89,11 @@ export const useProductMediaManager = (productForm: any, options: Record<string,
         formData.append('file', file)
         formData.append('media_type', type)
         if (type === 'image') formData.append('image_purpose', 'product_image')
-        const asset = await mediaApi.uploadAsset(formData, 'catalog')
+        const asset = await mediaApi.uploadBusinessDraftAsset(formData, 'catalog')
         appendUploadedMedia(asset, type)
       }
       clearFieldError('media')
-      toast.success(`${files.length} 个商品媒体已上传`)
+      toast.success(`${files.length} 个商品媒体已上传，请在 24 小时内保存商品`)
     } catch (error) {
       console.error('Failed to upload product media:', error)
       toast.error('商品媒体上传失败，请检查文件类型和大小')

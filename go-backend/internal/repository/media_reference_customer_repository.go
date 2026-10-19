@@ -1,142 +1,59 @@
 package repository
 
-import (
-	"commerce-platform/internal/domain/media"
-	"fmt"
-	"strings"
-)
+import "commerce-platform/internal/domain/media"
 
 func (r *MediaRepository) warrantyClaimReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
-	if !r.hasTable("warranty_claims") {
-		return []media.AssetReference{}, nil
-	}
-
-	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"images"}, query.URLs)
-	type row struct {
-		ID       uint
-		Images   string
-		VideoURL string
-	}
-	var rows []row
-	args := append([]interface{}{query.URLs}, containsArgs...)
-	if err := r.db.Table("warranty_claims").
-		Select("id, images, video_url").
-		Where("deleted_at IS NULL AND (video_url IN ? OR "+containsSQL+")", args...).
-		Find(&rows).Error; err != nil {
-		return nil, err
-	}
-
-	references := make([]media.AssetReference, 0, len(rows))
-	for _, item := range rows {
-		fields := make([]string, 0, 2)
-		if containsMediaReferenceURL(query.URLs, item.VideoURL) {
-			fields = append(fields, "video_url")
-		}
-		if containsMediaReferenceURLInText(query.URLs, item.Images) {
-			fields = append(fields, "images")
-		}
-		references = append(references, newMediaReference(
-			media.ReferenceCategoryCustomer,
-			"warranty_claim",
-			item.ID,
-			0,
-			fmt.Sprintf("保修申请 #%d", item.ID),
-			strings.Join(fields, ", "),
-		))
-	}
-	return references, nil
+	return r.scanDecodedLegacyJSONAndDirectMediaReferenceRows(query, legacyJSONAndDirectMediaReferenceSource{
+		Table: "warranty_claims", ResourceType: "warranty_claim", Category: media.ReferenceCategoryCustomer,
+		JSONColumn: "images", DirectMediaColumn: "video_url", ParentColumn: "0", HasSoftDeletion: true,
+	})
 }
 
 func (r *MediaRepository) suggestionFeedbackReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
-	if !r.hasTable("suggestion_feedback") {
-		return []media.AssetReference{}, nil
-	}
-
-	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"attachments"}, query.URLs)
-	type row struct {
-		ID uint
-	}
-	var rows []row
-	if err := r.db.Table("suggestion_feedback").
-		Select("id").
-		Where("deleted_at IS NULL AND ("+containsSQL+")", containsArgs...).
-		Find(&rows).Error; err != nil {
-		return nil, err
-	}
-
-	references := make([]media.AssetReference, 0, len(rows))
-	for _, item := range rows {
-		references = append(references, newMediaReference(
-			media.ReferenceCategoryCustomer,
-			"suggestion_feedback",
-			item.ID,
-			0,
-			fmt.Sprintf("建议反馈 #%d", item.ID),
-			"attachments",
-		))
-	}
-	return references, nil
+	return r.scanDecodedLegacyJSONAndDirectMediaReferenceRows(query, legacyJSONAndDirectMediaReferenceSource{
+		Table: "suggestion_feedback", ResourceType: "suggestion_feedback", Category: media.ReferenceCategoryCustomer,
+		JSONColumn: "attachments", ParentColumn: "0", HasSoftDeletion: true,
+	})
 }
 
 func (r *MediaRepository) ticketAutoReplyReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
-	if !r.hasTable("ticket_auto_replies") {
-		return []media.AssetReference{}, nil
+	var attachments []media.AssetReference
+	var err error
+	if r.hasTable("ticket_auto_replies") && r.db.Migrator().HasColumn("ticket_auto_replies", "attachments") {
+		attachments, err = r.scanDecodedLegacyJSONAndDirectMediaReferenceRows(query, legacyJSONAndDirectMediaReferenceSource{
+			Table: "ticket_auto_replies", ResourceType: "ticket_auto_reply", Category: media.ReferenceCategorySupport,
+			JSONColumn: "attachments", ParentColumn: "0",
+		})
 	}
-
-	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"attachments"}, query.URLs)
-	type row struct {
-		ID uint
-	}
-	var rows []row
-	if err := r.db.Table("ticket_auto_replies").
-		Select("id").
-		Where(containsSQL, containsArgs...).
-		Find(&rows).Error; err != nil {
+	if err != nil {
 		return nil, err
 	}
-
-	references := make([]media.AssetReference, 0, len(rows))
-	for _, item := range rows {
-		references = append(references, newMediaReference(
-			media.ReferenceCategorySupport,
-			"ticket_auto_reply",
-			item.ID,
-			0,
-			fmt.Sprintf("客服自动回复 #%d", item.ID),
-			"attachments",
-		))
-	}
-	return references, nil
+	metadata, err := r.ticketStructuredMetadataReferences(query, "ticket_auto_replies", "ticket_auto_reply")
+	return mergeTicketAttachmentAndStructuredMetadataReferences(attachments, metadata), err
 }
 
 func (r *MediaRepository) ticketMessageReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
-	if !r.hasTable("ticket_messages") {
-		return []media.AssetReference{}, nil
+	var attachments []media.AssetReference
+	var err error
+	if r.hasTable("ticket_messages") && r.db.Migrator().HasColumn("ticket_messages", "attachments") {
+		parentColumn := "0"
+		if r.db.Migrator().HasColumn("ticket_messages", "ticket_id") {
+			parentColumn = "ticket_id"
+		}
+		attachments, err = r.scanDecodedLegacyJSONAndDirectMediaReferenceRows(query, legacyJSONAndDirectMediaReferenceSource{
+			Table: "ticket_messages", ResourceType: "ticket_message", Category: media.ReferenceCategorySupport,
+			JSONColumn: "attachments", ParentColumn: parentColumn,
+		})
 	}
-
-	containsSQL, containsArgs := r.mediaReferenceContainsCondition([]string{"attachments"}, query.URLs)
-	type row struct {
-		ID       uint
-		TicketID uint
-	}
-	var rows []row
-	if err := r.db.Table("ticket_messages").
-		Select("id, ticket_id").
-		Where(containsSQL, containsArgs...).
-		Find(&rows).Error; err != nil {
+	if err != nil {
 		return nil, err
 	}
-
-	references := make([]media.AssetReference, 0, len(rows))
-	for _, item := range rows {
-		references = append(references, newMediaReference(
-			media.ReferenceCategorySupport,
-			"ticket_message",
-			item.ID,
-			item.TicketID,
-			fmt.Sprintf("工单 #%d 的消息 #%d", item.TicketID, item.ID),
-			"attachments",
-		))
+	if r.hasTable("ticket_messages") && r.db.Migrator().HasColumn("ticket_messages", "ticket_id") {
+		attachments, err = r.applyCustomerServiceConversationParentRetentionStates(attachments)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return references, nil
+	metadata, err := r.ticketStructuredMetadataReferences(query, "ticket_messages", "ticket_message")
+	return mergeTicketAttachmentAndStructuredMetadataReferences(attachments, metadata), err
 }

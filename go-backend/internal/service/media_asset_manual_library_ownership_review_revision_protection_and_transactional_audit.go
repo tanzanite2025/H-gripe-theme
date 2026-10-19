@@ -56,6 +56,14 @@ func manualOperationalMediaLibraryOwnershipChoices() []media.MediaAssetLibraryOw
 }
 
 func (s *MediaService) ReviewMediaAssetLibraryOwnershipForManualClassification(ctx context.Context, id uint) (*media.MediaAssetLibraryOwnershipReview, error) {
+	return s.reviewMediaAssetLibraryOwnershipWithOptionalReferencePresentationScope(ctx, id, nil)
+}
+
+func (s *MediaService) ReviewMediaAssetLibraryOwnershipWithPermissionScopedReferencePresentation(ctx context.Context, id uint, scope MediaUsageSummaryAccessScope) (*media.MediaAssetLibraryOwnershipReview, error) {
+	return s.reviewMediaAssetLibraryOwnershipWithOptionalReferencePresentationScope(ctx, id, &scope)
+}
+
+func (s *MediaService) reviewMediaAssetLibraryOwnershipWithOptionalReferencePresentationScope(ctx context.Context, id uint, scope *MediaUsageSummaryAccessScope) (*media.MediaAssetLibraryOwnershipReview, error) {
 	scopedRepository := s.repo.WithContextForMediaLibraryClassification(ctx)
 	asset, err := scopedRepository.FindAssetByID(id)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -76,10 +84,15 @@ func (s *MediaService) ReviewMediaAssetLibraryOwnershipForManualClassification(c
 	if err != nil {
 		return nil, err
 	}
-	review.RecognizedReferenceTotal = len(references)
 	for _, reference := range references {
+		if scope != nil && !scope.AllowedReferenceTypes[reference.ResourceType] {
+			review.HasRestrictedReferences = true
+			continue
+		}
+		review.RecognizedReferenceTotal++
 		review.ReferenceCategoryCounts[string(reference.Category)]++
-		if reference.UsageState == "retained_deleted_parent" {
+		// Keep the existing API counter compatible while including deleted image records.
+		if reference.UsageState == "retained_deleted_parent" || reference.UsageState == "retained_deleted_placement" {
 			review.RetainedDeletedParentReferences++
 		}
 		if reference.UsageState == "missing_parent" {
@@ -87,7 +100,7 @@ func (s *MediaService) ReviewMediaAssetLibraryOwnershipForManualClassification(c
 		}
 	}
 	// Uses are a review hint, never evidence of the original upload source.
-	if asset.LibraryPartition == media.MediaLibraryPartitionUnclassified && len(review.ReferenceCategoryCounts) == 1 && review.MissingParentReferences == 0 {
+	if !review.HasRestrictedReferences && asset.LibraryPartition == media.MediaLibraryPartitionUnclassified && len(review.ReferenceCategoryCounts) == 1 && review.MissingParentReferences == 0 {
 		var suggested media.MediaAssetLibraryPartition
 		if review.ReferenceCategoryCounts[string(media.ReferenceCategoryCatalog)] > 0 {
 			suggested = media.MediaLibraryPartitionCatalog

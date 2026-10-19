@@ -13,6 +13,8 @@ import (
 	seodomain "commerce-platform/internal/domain/seo"
 	sitequalitydomain "commerce-platform/internal/domain/sitequality"
 	"commerce-platform/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 type SiteQualityPlanResult struct {
@@ -150,6 +152,10 @@ func (s *SiteQualityEngineService) SyncTargetFromRouteEntry(
 		}
 	}
 	entry, err := s.routeCatalog.FindByID(routeEntryID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		now := time.Now().UTC()
+		return s.targets.DisableByRouteEntryID(routeEntryID, "route removed from current catalog", marker, now, now)
+	}
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package orderevidence
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,9 +73,7 @@ func (s OrderEvidenceExportSnapshot) Validate() error {
 }
 
 func (s OrderEvidenceExportSnapshot) VerifyIntegrity() error {
-	hash := sha256.Sum256(s.SnapshotData)
-	expected := hex.EncodeToString(hash[:])
-	if !strings.EqualFold(strings.TrimSpace(s.SnapshotSHA256), expected) {
+	if !immutableSnapshotDigestMatchesDocumentOrVerifiedLegacySerialization(s.SnapshotData, s.SnapshotSHA256, &OrderEvidenceExportSnapshotPayload{}) {
 		return errors.New("order evidence export snapshot sha256 does not match snapshot data")
 	}
 	return nil

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/ticket"
 	"errors"
 	"strconv"
@@ -14,7 +15,8 @@ import (
 var ErrTicketStatusVersionConflict = errors.New("ticket status version conflict")
 
 type TicketRepository struct {
-	db *gorm.DB
+	db                             *gorm.DB
+	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 type CustomerServiceConversationFilters struct {
@@ -40,7 +42,7 @@ func NewTicketRepository(db *gorm.DB) *TicketRepository {
 }
 
 func (r *TicketRepository) WithTx(tx *gorm.DB) *TicketRepository {
-	return &TicketRepository{db: tx}
+	return &TicketRepository{db: tx, businessMediaReferenceResolver: r.businessMediaReferenceResolver}
 }
 
 // WithinTx is used by customer-service command paths that must persist a
@@ -431,7 +433,9 @@ func (r *TicketRepository) AssignTicket(id, assignedTo uint) error {
 
 // CreateTicketMessage 创建工单消息
 func (r *TicketRepository) CreateTicketMessage(m *ticket.TicketMessage) error {
-	return r.db.Create(m).Error
+	return r.WithinTx(func(repo *TicketRepository, tx *gorm.DB) error {
+		return repo.CreateCustomerServiceMessageAndBindMediaWithinTransaction(m, media.MediaUploadActorIdentity{})
+	})
 }
 
 func (r *TicketRepository) TouchTicket(id uint, updatedAt time.Time) error {
@@ -870,6 +874,7 @@ func (r *TicketRepository) CreateAutoReplyMessageIfNotRecentWithTx(
 	dedupeKey, content string,
 	since time.Time,
 	afterCreate func(*TicketRepository, *gorm.DB) error,
+	authoritativeRules ...*ticket.AutoReplyRule,
 ) (bool, error) {
 	if message == nil {
 		return false, gorm.ErrInvalidData
@@ -877,11 +882,12 @@ func (r *TicketRepository) CreateAutoReplyMessageIfNotRecentWithTx(
 
 	created := false
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if r.db.Dialector.Name() == "postgres" {
-			var conversation ticket.Ticket
-			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-				Select("id").
-				First(&conversation, message.TicketID).Error; err != nil {
+		var conversation ticket.Ticket
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("id").First(&conversation, message.TicketID).Error; err != nil {
+			return err
+		}
+		if len(authoritativeRules) > 0 {
+			if err := r.WithTx(tx).validateSelectedAutoReplyRuleStillCurrentUnderRowLock(authoritativeRules[0]); err != nil {
 				return err
 			}
 		}
@@ -904,7 +910,7 @@ func (r *TicketRepository) CreateAutoReplyMessageIfNotRecentWithTx(
 		if err != gorm.ErrRecordNotFound {
 			return err
 		}
-		if err := tx.Create(message).Error; err != nil {
+		if err := r.WithTx(tx).CreateCustomerServiceMessageAndBindMediaWithinTransaction(message, media.MediaUploadActorIdentity{}); err != nil {
 			return err
 		}
 		if afterCreate != nil {
@@ -956,15 +962,42 @@ func (r *TicketRepository) FindAutoReplyRuleByID(id uint) (*ticket.AutoReplyRule
 
 // CreateAutoReplyRule persists an admin-authored rule.
 func (r *TicketRepository) CreateAutoReplyRule(rule *ticket.AutoReplyRule) error {
-	return r.db.Create(rule).Error
+	return r.WithinTx(func(repo *TicketRepository, tx *gorm.DB) error {
+		if err := repo.validateAndCanonicalizeAutoReplyRuleMediaWithinTransaction(rule, nil); err != nil {
+			return err
+		}
+		if err := tx.Omit(clause.Associations).Create(rule).Error; err != nil {
+			return err
+		}
+		// Read database timestamp precision before this snapshot can be sent.
+		return tx.First(rule, rule.ID).Error
+	})
 }
 
 // UpdateAutoReplyRule persists an admin-authored rule update.
 func (r *TicketRepository) UpdateAutoReplyRule(rule *ticket.AutoReplyRule) error {
-	return r.db.Save(rule).Error
+	return r.WithinTx(func(repo *TicketRepository, tx *gorm.DB) error {
+		var previous ticket.AutoReplyRule
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&previous, rule.ID).Error; err != nil {
+			return err
+		}
+		if err := repo.validateAndCanonicalizeAutoReplyRuleMediaWithinTransaction(rule, &previous); err != nil {
+			return err
+		}
+		if err := tx.Model(&ticket.AutoReplyRule{}).Where("id = ?", rule.ID).Select("*").Omit(clause.Associations, "id", "created_at").Updates(rule).Error; err != nil {
+			return err
+		}
+		return tx.First(rule, rule.ID).Error
+	})
 }
 
 // DeleteAutoReplyRule deletes one rule.
 func (r *TicketRepository) DeleteAutoReplyRule(id uint) error {
-	return r.db.Delete(&ticket.AutoReplyRule{}, id).Error
+	return r.WithinTx(func(repo *TicketRepository, tx *gorm.DB) error {
+		var rule ticket.AutoReplyRule
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&rule, id).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&rule).Error
+	})
 }

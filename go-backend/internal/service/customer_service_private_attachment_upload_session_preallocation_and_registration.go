@@ -31,11 +31,14 @@ func (s *CustomerServiceConversationAttachmentUploadService) UploadVerifiedAgent
 	if s == nil || s.media == nil || s.tickets == nil {
 		return nil, ErrMediaStorageUnavailable
 	}
+	if agentUserID == 0 {
+		return nil, ErrCustomerServiceAgentAccessDenied
+	}
 	conversation, err := s.tickets.GetCustomerServiceConversationForAgent(ticketID, agentUserID, canViewAll)
 	if err != nil {
 		return nil, err
 	}
-	mediaType, width, height, err := validateAgentCustomerServiceAttachmentForCurrentPrivateUploadRollout(file, s.media.CustomerServicePrivateAttachmentUploadsEnabled())
+	mediaType, width, height, err := validateAgentCustomerServiceImageOrVideoAttachmentByDetectedContent(file)
 	if err != nil {
 		return nil, err
 	}
@@ -44,13 +47,18 @@ func (s *CustomerServiceConversationAttachmentUploadService) UploadVerifiedAgent
 		return s.media.UploadAsset(ctx, MediaUploadInput{File: file, MediaType: mediaType, UploadActorIdentity: identity, Width: width, Height: height,
 			UploadOrigin: media.MediaUploadOriginCustomerServiceConversation, UploadPurpose: string(upload.SpecCustomerServiceAttachment)})
 	}
-	return s.uploadPreparedPrivateCustomerServiceConversationAttachment(ctx, conversation, identity, file, width, height, CustomerServiceOwner{}, agentUserID, canViewAll)
+	return s.uploadPreparedPrivateCustomerServiceConversationAttachment(ctx, conversation, identity, file, mediaType, width, height, CustomerServiceOwner{}, agentUserID, canViewAll)
 }
 
 func (s *CustomerServiceConversationAttachmentUploadService) uploadPreparedPrivateCustomerServiceConversationAttachment(
-	ctx context.Context, conversation *ticket.Ticket, identity media.MediaUploadActorIdentity, file *multipart.FileHeader, width, height int,
+	ctx context.Context, conversation *ticket.Ticket, identity media.MediaUploadActorIdentity, file *multipart.FileHeader, mediaType string, width, height int,
 	owner CustomerServiceOwner, agentUserID uint, canViewAll bool,
 ) (*media.MediaAsset, error) {
+	// Customer uploads stay image-only. A private video can originate only from
+	// the authenticated agent path, whose conversation permission is rechecked below.
+	if mediaType != "image" && (mediaType != "video" || identity.ActorType != media.MediaUploadActorAdministrator || agentUserID == 0) {
+		return nil, ErrUnsupportedMediaType
+	}
 	if _, ok := s.media.storage.(storage.PreallocatedPrivateObjectWriter); !ok {
 		return nil, ErrMediaStorageUnavailable
 	}
@@ -63,7 +71,7 @@ func (s *CustomerServiceConversationAttachmentUploadService) uploadPreparedPriva
 	}
 	session := media.MediaUploadSession{ID: uuid.NewString(), BusinessContextType: media.MediaUploadSessionCustomerServiceContext,
 		BusinessContextID: conversation.ID, UploadActorType: identity.ActorType, UploadActorAccountID: identity.AccountID,
-		UploadActorVisitorSessionHash: identity.VisitorSessionHash, ObjectKey: key, Status: "uploading", ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}
+		UploadActorVisitorSessionHash: identity.VisitorSessionHash, ObjectKey: key, ExpectedUploadBytes: &file.Size, Status: "uploading", ExpiresAt: time.Now().UTC().Add(24 * time.Hour)}
 	err = s.tickets.ticketRepo.WithinTx(func(repo *repository.TicketRepository, tx *gorm.DB) error {
 		current, lookupErr := repo.FindTicketByIDForUpdate(conversation.ID)
 		if lookupErr != nil {
@@ -81,7 +89,7 @@ func (s *CustomerServiceConversationAttachmentUploadService) uploadPreparedPriva
 	if err != nil {
 		return nil, err
 	}
-	asset, err := s.media.UploadAsset(ctx, MediaUploadInput{File: file, MediaType: "image", Alt: "Customer service attachment", UploadActorIdentity: identity, Width: width, Height: height,
+	asset, err := s.media.UploadAsset(ctx, MediaUploadInput{File: file, MediaType: mediaType, Alt: "Customer service attachment", UploadActorIdentity: identity, Width: width, Height: height,
 		UploadOrigin: media.MediaUploadOriginCustomerServiceConversation, UploadPurpose: string(upload.SpecCustomerServiceAttachment),
 		PreparedCustomerServiceUploadSessionID: session.ID, PreparedCustomerServiceOriginalObjectKey: key})
 	if err != nil {

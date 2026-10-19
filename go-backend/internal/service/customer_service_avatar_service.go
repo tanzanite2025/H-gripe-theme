@@ -15,6 +15,7 @@ import (
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/repository"
+	"github.com/google/uuid"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -39,58 +40,53 @@ type CustomerServiceAvatarService struct {
 	userRepo *repository.UserRepository
 	storage  storage.StorageService
 	outbox   *repository.OutboxRepository
+	siteURL  string
 }
 
 func NewCustomerServiceAvatarService(
 	userRepo *repository.UserRepository,
 	storageSvc storage.StorageService,
 	outboxRepo *repository.OutboxRepository,
+	siteURLs ...string,
 ) *CustomerServiceAvatarService {
-	return &CustomerServiceAvatarService{
+	service := &CustomerServiceAvatarService{
 		userRepo: userRepo,
 		storage:  storageSvc,
 		outbox:   outboxRepo,
 	}
+	if len(siteURLs) > 0 {
+		service.siteURL = strings.TrimSpace(siteURLs[0])
+	}
+	if userRepo != nil {
+		userRepo.ConfigureTransactionalCustomerServiceAvatarBindingValidation(func(ctx context.Context, reference string) error {
+			key, err := resolveCanonicalDedicatedUploadedObjectKeyFromOwningProvider(service.storage, CustomerServiceAvatarStoragePrefix, reference)
+			if err != nil {
+				return err
+			}
+			return (&MediaService{storage: service.storage}).ValidateMediaObjectExistsBeforeRegisteringOwnership(ctx, key)
+		})
+	}
+	return service
 }
 
 func (s *CustomerServiceAvatarService) Upload(ctx context.Context, userID uint, file *multipart.FileHeader) (string, error) {
-	if s == nil || s.storage == nil {
+	if s == nil || s.storage == nil || s.outbox == nil {
 		return "", ErrCustomerServiceAvatarStorageUnavailable
 	}
 	if err := upload.ValidateSpecFile(file, string(upload.SpecCustomerServiceAvatar)); err != nil {
 		return "", err
 	}
-	profileID, err := s.requireProfile(userID)
+	profileID, err := s.requireProfile(ctx, userID)
 	if err != nil {
 		return "", err
 	}
 
-	avatarURL, err := s.uploadAvatarObject(ctx, file)
-	if err != nil {
-		return "", fmt.Errorf("upload customer-service avatar: %w", err)
-	}
-
-	_, err = s.replaceAvatarReference(userID, avatarURL)
-	if err != nil {
-		if cleanupErr := s.cleanupUnattachedAvatar(ctx, profileID, avatarURL); cleanupErr != nil {
-			return "", errors.Join(err, cleanupErr)
-		}
-		return "", err
-	}
-
-	return avatarURL, nil
-}
-
-func (s *CustomerServiceAvatarService) uploadAvatarObject(ctx context.Context, file *multipart.FileHeader) (string, error) {
-	if cacheControlled, ok := s.storage.(storage.CacheControlledObjectUploader); ok {
-		return cacheControlled.UploadWithPrefixAndCacheControl(
-			ctx,
-			file,
-			CustomerServiceAvatarStoragePrefix,
-			CustomerServiceAvatarCacheControl,
-		)
-	}
-	return s.storage.UploadWithPrefix(ctx, file, CustomerServiceAvatarStoragePrefix)
+	return uploadDedicatedImmediateOwnerObjectWithWriteAheadCleanupReceiptAndTransactionalBinding(ctx, s.outbox, s.storage, CustomerServiceAvatarStoragePrefix, profileID, file, func(tx *gorm.DB, avatarURL, _ string) error {
+		transactionalService := *s
+		transactionalService.userRepo = s.userRepo.WithTx(tx)
+		_, err := transactionalService.replaceAvatarReference(tx.Statement.Context, userID, avatarURL)
+		return err
+	})
 }
 
 func (s *CustomerServiceAvatarService) Remove(ctx context.Context, userID uint) error {
@@ -98,7 +94,7 @@ func (s *CustomerServiceAvatarService) Remove(ctx context.Context, userID uint) 
 		return ErrCustomerServiceAvatarStorageUnavailable
 	}
 
-	_, err := s.replaceAvatarReference(userID, "")
+	_, err := s.replaceAvatarReference(ctx, userID, "")
 	if err != nil {
 		return err
 	}
@@ -120,22 +116,27 @@ func (s *CustomerServiceAvatarService) CanServePublicAvatar(ctx context.Context,
 	if !IsCustomerServiceAvatarStorageKey(key) {
 		return false, nil
 	}
-	return s.userRepo.IsCurrentCustomerServiceAgentAvatarURL(s.storage.GetURL(key))
+	normalized, valid := storage.NormalizeObjectKey(key)
+	if !valid {
+		return false, nil
+	}
+	return s.userRepo.WithContext(ctx).HasLiveCustomerServiceAgentAvatarReferenceForExactObject(normalized, s.storage.GetURL(normalized), &MediaService{storage: s.storage, siteURL: s.siteURL})
 }
 
-func (s *CustomerServiceAvatarService) replaceAvatarReference(userID uint, avatarURL string) (string, error) {
+func (s *CustomerServiceAvatarService) replaceAvatarReference(ctx context.Context, userID uint, avatarURL string) (string, error) {
 	if s == nil || s.userRepo == nil || s.outbox == nil {
 		return "", ErrCustomerServiceAvatarStorageUnavailable
 	}
 
-	previousAvatarURL, err := s.userRepo.ReplaceCustomerServiceAgentAvatar(
+	previousAvatarURL, err := s.userRepo.WithContext(ctx).ReplaceCustomerServiceAgentAvatar(
 		userID,
 		avatarURL,
 		func(tx *gorm.DB, profileID uint, previousAvatarURL string) error {
 			if !s.isManagedAvatarURL(previousAvatarURL) {
 				return nil
 			}
-			return s.enqueueCleanup(s.outbox.WithTx(tx), profileID, previousAvatarURL)
+			_, err := s.enqueueCleanup(s.outbox.WithTx(tx), profileID, previousAvatarURL)
+			return err
 		},
 	)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -144,27 +145,11 @@ func (s *CustomerServiceAvatarService) replaceAvatarReference(userID uint, avata
 	return previousAvatarURL, err
 }
 
-func (s *CustomerServiceAvatarService) cleanupUnattachedAvatar(ctx context.Context, profileID uint, avatarURL string) error {
-	if !s.isManagedAvatarURL(avatarURL) {
-		return nil
-	}
-	if err := s.storage.Delete(ctx, avatarURL); err == nil {
-		return nil
-	} else if s.outbox == nil {
-		return fmt.Errorf("delete unattached customer-service avatar: %w", err)
-	}
-
-	if err := s.enqueueCleanup(s.outbox, profileID, avatarURL); err != nil {
-		return fmt.Errorf("schedule unattached customer-service avatar cleanup: %w", err)
-	}
-	return nil
-}
-
-func (s *CustomerServiceAvatarService) requireProfile(userID uint) (uint, error) {
+func (s *CustomerServiceAvatarService) requireProfile(ctx context.Context, userID uint) (uint, error) {
 	if s == nil || s.userRepo == nil || userID == 0 {
 		return 0, ErrCustomerServiceAvatarProfileNotFound
 	}
-	profile, err := s.userRepo.FindCustomerServiceAgentProfileByUserID(userID)
+	profile, err := s.userRepo.WithContext(ctx).FindCustomerServiceAgentProfileByUserID(userID)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return 0, ErrCustomerServiceAvatarProfileNotFound
 	}
@@ -178,21 +163,21 @@ func (s *CustomerServiceAvatarService) isManagedAvatarURL(avatarURL string) bool
 	if s == nil || s.storage == nil || strings.TrimSpace(avatarURL) == "" {
 		return false
 	}
-	key, err := s.storage.ObjectKey(avatarURL)
-	return err == nil && IsCustomerServiceAvatarStorageKey(key)
+	_, err := resolveCanonicalDedicatedUploadedObjectKeyFromOwningProvider(s.storage, CustomerServiceAvatarStoragePrefix, avatarURL)
+	return err == nil
 }
 
-func (s *CustomerServiceAvatarService) enqueueCleanup(repo *repository.OutboxRepository, profileID uint, avatarURL string) error {
+func (s *CustomerServiceAvatarService) enqueueCleanup(repo *repository.OutboxRepository, profileID uint, avatarURL string) (*outbox.Event, error) {
 	if repo == nil || profileID == 0 || !s.isManagedAvatarURL(avatarURL) {
-		return nil
+		return nil, ErrObjectStorageCleanupUnavailable
 	}
 
 	payload, err := json.Marshal(outbox.CustomerServiceAvatarCleanupPayload{URL: strings.TrimSpace(avatarURL)})
 	if err != nil {
-		return fmt.Errorf("encode customer-service avatar cleanup payload: %w", err)
+		return nil, fmt.Errorf("encode customer-service avatar cleanup payload: %w", err)
 	}
 	now := time.Now().UTC()
-	return repo.CreateEvent(&outbox.Event{
+	event := &outbox.Event{
 		EventKey:      customerServiceAvatarCleanupEventKey(profileID, avatarURL),
 		EventType:     outbox.EventTypeCustomerServiceAvatarCleanup,
 		AggregateType: outbox.AggregateTypeCustomerServiceAgentProfile,
@@ -200,7 +185,28 @@ func (s *CustomerServiceAvatarService) enqueueCleanup(repo *repository.OutboxRep
 		Payload:       datatypes.JSON(payload),
 		MaxAttempts:   customerServiceAvatarCleanupMaxAttempts,
 		AvailableAt:   now,
-	})
+	}
+	return event, repo.CreateEvent(event)
+}
+
+func (s *CustomerServiceAvatarService) persistFailedAvatarUploadCompensationBeforeOwnerCheckedDeletion(ctx context.Context, profileID uint, reference string) error {
+	if _, err := resolveCanonicalDedicatedUploadedObjectKeyFromOwningProvider(s.storage, CustomerServiceAvatarStoragePrefix, reference); err != nil {
+		return fmt.Errorf("%w: %w", ErrObjectStorageCleanupUnavailable, err)
+	}
+	if s.outbox == nil {
+		return ErrObjectStorageCleanupUnavailable
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	cleanupContext, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+	defer cancel()
+	event, err := s.enqueueCleanup(s.outbox.WithContext(cleanupContext), profileID, reference)
+	if err != nil {
+		return fmt.Errorf("%w: persist customer-service avatar compensation: %w", ErrObjectStorageCleanupUnavailable, err)
+	}
+	_ = NewCustomerServiceAvatarCleanupHandler(s.userRepo, s.storage, s.siteURL).Handle(cleanupContext, *event)
+	return nil
 }
 
 func IsCustomerServiceAvatarStorageKey(value string) bool {
@@ -212,6 +218,8 @@ func IsCustomerServiceAvatarStorageKey(value string) bool {
 }
 
 func customerServiceAvatarCleanupEventKey(profileID uint, avatarURL string) string {
-	digest := sha256.Sum256([]byte(strings.TrimSpace(avatarURL)))
+	// A completed event for an earlier same-key detachment must never swallow
+	// a later failed upload or detachment. This task's retries keep its identity.
+	digest := sha256.Sum256([]byte(strings.TrimSpace(avatarURL) + "\x00" + uuid.NewString()))
 	return fmt.Sprintf("%s:%d:%x", outbox.EventTypeCustomerServiceAvatarCleanup, profileID, digest[:])
 }

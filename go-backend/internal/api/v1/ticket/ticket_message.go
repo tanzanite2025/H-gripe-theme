@@ -18,6 +18,7 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 	var attachmentMedia []service.CustomerServiceMessageAttachmentAccessDescription
 	if len(attachmentAccessServices) > 0 {
 		attachments, attachmentMedia = attachmentAccessServices[0].DescribePublicCustomerServiceMessageAttachments(item, conversationID)
+		item.Metadata = attachmentAccessServices[0].MetadataWithAuthorizedProtectedMediaURLsForPublicMessage(item, attachmentMedia, conversationID)
 	}
 	attachmentURL := firstTicketMessageAttachment(attachments)
 
@@ -140,7 +141,9 @@ func parseTicketMessageMetadata(value string) interface{} {
 		return nil
 	}
 	var payload interface{}
-	if err := json.Unmarshal([]byte(value), &payload); err != nil {
+	decoder := json.NewDecoder(strings.NewReader(value))
+	decoder.UseNumber()
+	if !json.Valid([]byte(value)) || decoder.Decode(&payload) != nil {
 		return nil
 	}
 	return payload

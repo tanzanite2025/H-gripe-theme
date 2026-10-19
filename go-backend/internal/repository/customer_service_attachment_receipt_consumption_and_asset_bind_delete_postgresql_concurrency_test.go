@@ -26,6 +26,9 @@ func createIsolatedPostgreSQLCustomerServiceAttachmentBindingRepository(t *testi
 	migration, err := os.ReadFile(filepath.Join("..", "..", "migrations", "420_add_customer_service_message_media_asset_bindings_and_pending_upload_sessions.up.sql"))
 	require.NoError(t, err)
 	require.NoError(t, repo.db.Exec(string(migration)).Error)
+	capacityMigration, err := os.ReadFile(filepath.Join("..", "..", "migrations", "428_add_pending_customer_service_upload_expected_capacity_bytes.up.sql"))
+	require.NoError(t, err)
+	require.NoError(t, repo.db.Exec(string(capacityMigration)).Error)
 	return repo
 }
 

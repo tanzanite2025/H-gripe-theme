@@ -20,54 +20,15 @@ var (
 	ErrOrderEvidenceSubmissionSnapshotInvalid          = errors.New("order evidence submission snapshot is invalid")
 )
 
-type disputeEvidenceSnapshotEnvelope struct {
-	SchemaVersion          int                                `json:"schema_version"`
-	Provider               string                             `json:"provider"`
-	LocalDisputeID         uint                               `json:"local_dispute_id"`
-	ExternalDisputeID      string                             `json:"external_dispute_id"`
-	OrderID                uint                               `json:"order_id"`
-	EvidencePackageID      *uint                              `json:"evidence_package_id,omitempty"`
-	EvidencePackageVersion int                                `json:"evidence_package_version"`
-	EvidencePackageStatus  string                             `json:"evidence_package_status,omitempty"`
-	AssembledAt            time.Time                          `json:"assembled_at"`
-	Completeness           orderevidence.EvidenceCompleteness `json:"completeness"`
-	TrackingContext        *OrderEvidenceTrackingContext      `json:"tracking_context,omitempty"`
-	Sources                []OrderEvidenceSourceReference     `json:"sources"`
-	EvidenceChecklist      DisputeEvidenceChecklist           `json:"evidence_checklist"`
-	Warnings               []string                           `json:"warnings"`
-}
+type disputeEvidenceSnapshotEnvelope = orderevidence.DisputeEvidenceSnapshotEnvelope
 
-type stripeDisputeEvidenceSnapshotRequest struct {
-	IncludeCustomerCommunication bool                       `json:"include_customer_communication"`
-	AdditionalStatement          string                     `json:"additional_statement,omitempty"`
-	ShippingDocumentationFileID  string                     `json:"shipping_documentation_file_id,omitempty"`
-	CustomerCommunicationFileID  string                     `json:"customer_communication_file_id,omitempty"`
-	ReceiptFileID                string                     `json:"receipt_file_id,omitempty"`
-	UncategorizedFileID          string                     `json:"uncategorized_file_id,omitempty"`
-	Evidence                     StripeDisputeEvidenceDraft `json:"evidence"`
-}
+type stripeDisputeEvidenceSnapshotRequest = orderevidence.StripeDisputeEvidenceSnapshotRequest
 
-type stripeDisputeEvidenceSnapshotPayload struct {
-	disputeEvidenceSnapshotEnvelope
-	Request stripeDisputeEvidenceSnapshotRequest `json:"request"`
-}
+type stripeDisputeEvidenceSnapshotPayload = orderevidence.StripeDisputeEvidenceSnapshotPayload
 
-type paypalDisputeEvidenceSnapshotRequest struct {
-	AdditionalStatement string                          `json:"additional_statement,omitempty"`
-	OverrideWarnings    bool                            `json:"override_warnings"`
-	Evidence            PayPalDisputeEvidenceDraft      `json:"evidence"`
-	Notes               string                          `json:"notes"`
-	TrackingCarrierName string                          `json:"tracking_carrier_name,omitempty"`
-	TrackingNumber      string                          `json:"tracking_number,omitempty"`
-	Documents           []PayPalDisputeEvidenceDocument `json:"documents,omitempty"`
-	DocumentWarnings    []string                        `json:"document_warnings,omitempty"`
-	SubmissionWarnings  []string                        `json:"submission_warnings,omitempty"`
-}
+type paypalDisputeEvidenceSnapshotRequest = orderevidence.PayPalDisputeEvidenceSnapshotRequest
 
-type paypalDisputeEvidenceSnapshotPayload struct {
-	disputeEvidenceSnapshotEnvelope
-	Request paypalDisputeEvidenceSnapshotRequest `json:"request"`
-}
+type paypalDisputeEvidenceSnapshotPayload = orderevidence.PayPalDisputeEvidenceSnapshotPayload
 
 func (s *PaymentService) findLatestEvidenceSubmissionSnapshot(
 	provider string,
@@ -147,6 +108,10 @@ func buildLockedEvidenceSubmissionSnapshot(
 	if err != nil {
 		return nil, fmt.Errorf("%w: marshal payload: %v", ErrOrderEvidenceSubmissionSnapshotInvalid, err)
 	}
+	payloadBytes, err = orderevidence.CanonicalSubmissionSnapshotJSONForStorageIndependentIntegrity(payloadBytes)
+	if err != nil {
+		return nil, fmt.Errorf("%w: canonicalize submission payload: %v", ErrOrderEvidenceSubmissionSnapshotInvalid, err)
+	}
 	hash := sha256.Sum256(payloadBytes)
 
 	var evidencePackageID *uint
@@ -189,7 +154,7 @@ func wrapEvidenceSubmissionSnapshotPayload(
 			)
 		}
 		return stripeDisputeEvidenceSnapshotPayload{
-			disputeEvidenceSnapshotEnvelope: envelope,
+			DisputeEvidenceSnapshotEnvelope: envelope,
 			Request:                         value,
 		}, nil
 	case paypalDisputeEvidenceSnapshotRequest:
@@ -201,7 +166,7 @@ func wrapEvidenceSubmissionSnapshotPayload(
 			)
 		}
 		return paypalDisputeEvidenceSnapshotPayload{
-			disputeEvidenceSnapshotEnvelope: envelope,
+			DisputeEvidenceSnapshotEnvelope: envelope,
 			Request:                         value,
 		}, nil
 	default:

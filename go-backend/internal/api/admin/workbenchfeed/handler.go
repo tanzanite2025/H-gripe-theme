@@ -275,7 +275,7 @@ func respondError(c *gin.Context, err error) {
 	case errors.Is(err, feed.ErrEntryNotFound), errors.Is(err, gorm.ErrRecordNotFound):
 		c.JSON(http.StatusNotFound, gin.H{"error": "workbench feed entry not found"})
 	case errors.Is(err, feed.ErrInvalidEntry), errors.Is(err, feed.ErrInvalidStatus), errors.Is(err, feed.ErrInvalidDirectAction),
-		errors.Is(err, feed.ErrMediaLimit), errors.Is(err, feed.ErrProductLimit), errors.Is(err, feed.ErrProductNotFound):
+		errors.Is(err, feed.ErrMediaLimit), errors.Is(err, feed.ErrProductLimit), errors.Is(err, feed.ErrProductNotFound), errors.Is(err, feed.ErrMediaReferenceInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "workbench feed operation failed"})

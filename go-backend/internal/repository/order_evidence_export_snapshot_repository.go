@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 
 	"commerce-platform/internal/domain/orderevidence"
 
@@ -10,7 +11,8 @@ import (
 )
 
 type OrderEvidenceExportSnapshotRepository struct {
-	db *gorm.DB
+	db                     *gorm.DB
+	mediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 func NewOrderEvidenceExportSnapshotRepository(db *gorm.DB) *OrderEvidenceExportSnapshotRepository {
@@ -18,7 +20,7 @@ func NewOrderEvidenceExportSnapshotRepository(db *gorm.DB) *OrderEvidenceExportS
 }
 
 func (r *OrderEvidenceExportSnapshotRepository) WithTx(tx *gorm.DB) *OrderEvidenceExportSnapshotRepository {
-	return &OrderEvidenceExportSnapshotRepository{db: tx}
+	return &OrderEvidenceExportSnapshotRepository{db: tx, mediaReferenceResolver: r.mediaReferenceResolver}
 }
 
 // CreateOrGetForPackage creates the first immutable export manifest for a
@@ -41,12 +43,18 @@ func (r *OrderEvidenceExportSnapshotRepository) CreateOrGetForPackage(
 
 	var result *orderevidence.OrderEvidenceExportSnapshot
 	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := acquireDedicatedPublicObjectNamespaceLockWithinTransaction(tx, fmt.Sprintf("immutable-evidence-export-selection/%d", snapshot.EvidencePackageID)); err != nil {
+			return err
+		}
 		var existing orderevidence.OrderEvidenceExportSnapshot
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("evidence_package_id = ?", snapshot.EvidencePackageID).
 			Order("version DESC, id DESC").
 			First(&existing).Error
 		if err == nil {
+			if existing.OrderID != snapshot.OrderID || existing.EvidencePackageVersion != snapshot.EvidencePackageVersion {
+				return ErrImmutableOrderEvidenceSnapshotMediaReferenceUnavailable
+			}
 			if validateErr := existing.Validate(); validateErr != nil {
 				return validateErr
 			}
@@ -57,6 +65,9 @@ func (r *OrderEvidenceExportSnapshotRepository) CreateOrGetForPackage(
 			return err
 		}
 
+		if err := admitImmutableOrderEvidenceSnapshotMediaReferencesWithinTransaction(tx, r.mediaReferenceResolver, snapshot.SnapshotData, immutableOrderEvidenceSnapshotMediaAdmissionScope{orderID: snapshot.OrderID}); err != nil {
+			return err
+		}
 		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(snapshot).Error; err != nil {
 			return err
 		}
@@ -73,7 +84,7 @@ func (r *OrderEvidenceExportSnapshotRepository) CreateOrGetForPackage(
 		}
 		result = &canonical
 		return nil
-	})
+	}, mediaObjectOwnershipReadCommittedTransactionOptions(r.db)...)
 	if err != nil {
 		return nil, err
 	}
@@ -118,4 +129,8 @@ func (r *OrderEvidenceExportSnapshotRepository) FindLatestByOrderID(
 		return nil, err
 	}
 	return &snapshot, nil
+}
+
+func (r *OrderEvidenceExportSnapshotRepository) ConfigureImmutableSnapshotMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {
+	r.mediaReferenceResolver = resolver
 }

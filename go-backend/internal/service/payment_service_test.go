@@ -25,6 +25,7 @@ import (
 	ticketdomain "commerce-platform/internal/domain/ticket"
 	userdomain "commerce-platform/internal/domain/user"
 	"commerce-platform/internal/pkg/invoice"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -2174,7 +2175,7 @@ func TestSubmitPayPalDisputeEvidenceDoesNotAttachCommercialInvoicePDFWhenDisable
 	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
 	fakeStorage := &fakePayPalDisputeDocumentStorage{url: "https://cdn.example.test/evidence/commercial-invoice.pdf"}
 	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(fakeSubmitter)
-	paymentService.ConfigurePayPalDisputeEvidenceDocumentStorage(fakeStorage)
+	configurePayPalInvoiceDurableStorageForRegression(t, db, paymentService, fakeStorage)
 	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
 		Seller: invoice.SellerProfile{
 			Name:    "Commerce Platform Factory",
@@ -2211,7 +2212,7 @@ func TestSubmitPayPalDisputeEvidenceAttachesCommercialInvoicePDF(t *testing.T) {
 	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
 	fakeStorage := &fakePayPalDisputeDocumentStorage{url: "https://cdn.example.test/evidence/commercial-invoice.pdf"}
 	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(fakeSubmitter)
-	paymentService.ConfigurePayPalDisputeEvidenceDocumentStorage(fakeStorage)
+	configurePayPalInvoiceDurableStorageForRegression(t, db, paymentService, fakeStorage)
 	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
 		Seller: invoice.SellerProfile{
 			Name:    "Commerce Platform Factory",
@@ -2234,14 +2235,14 @@ func TestSubmitPayPalDisputeEvidenceAttachesCommercialInvoicePDF(t *testing.T) {
 	require.NotNil(t, fakeSubmitter.params)
 	require.NotNil(t, fakeSubmitter.params.Evidences)
 	require.Len(t, fakeSubmitter.params.Evidences.Documents, 1)
-	assert.Equal(t, "https://cdn.example.test/evidence/commercial-invoice.pdf", fakeSubmitter.params.Evidences.Documents[0].URL)
+	assert.Equal(t, fakeStorage.url, fakeSubmitter.params.Evidences.Documents[0].URL)
 	assert.Contains(t, fakeSubmitter.params.Evidences.Documents[0].Name, "CI-ORD-PAYPAL-INVOICE-1")
 	require.True(t, bytes.HasPrefix(fakeStorage.data, []byte("%PDF-")))
 
 	var saved paymentdomain.PayPalDispute
 	require.NoError(t, db.First(&saved, disputeRecord.ID).Error)
 	assert.Contains(t, saved.EvidenceSubmissionPayload, "commercial_invoice")
-	assert.Contains(t, saved.EvidenceSubmissionPayload, "https://cdn.example.test/evidence/commercial-invoice.pdf")
+	assert.Contains(t, saved.EvidenceSubmissionPayload, fakeStorage.url)
 }
 
 func TestPayPalDisputeEvidenceAttachesCarrierPODPDFFromPrivateStorage(t *testing.T) {
@@ -2275,7 +2276,7 @@ func TestSubmitPayPalDisputeEvidenceUsesCompactInvoiceWhenCommercialInvoiceExcee
 	fakeSubmitter := &fakePayPalDisputeEvidenceSubmitter{}
 	fakeStorage := &fakePayPalDisputeDocumentStorage{url: "https://cdn.example.test/evidence/commercial-invoice-budget.pdf"}
 	paymentService.ConfigurePayPalDisputeEvidenceSubmitter(fakeSubmitter)
-	paymentService.ConfigurePayPalDisputeEvidenceDocumentStorage(fakeStorage)
+	configurePayPalInvoiceDurableStorageForRegression(t, db, paymentService, fakeStorage)
 	paymentService.ConfigurePayPalDisputeInvoiceOptions(PayPalDisputeInvoiceOptions{
 		Seller: invoice.SellerProfile{
 			Name:    "Commerce Platform Factory",
@@ -2304,7 +2305,7 @@ func TestSubmitPayPalDisputeEvidenceUsesCompactInvoiceWhenCommercialInvoiceExcee
 	require.NotNil(t, fakeSubmitter.params)
 	require.NotNil(t, fakeSubmitter.params.Evidences)
 	require.Len(t, fakeSubmitter.params.Evidences.Documents, 1)
-	assert.Equal(t, "https://cdn.example.test/evidence/commercial-invoice-budget.pdf", fakeSubmitter.params.Evidences.Documents[0].URL)
+	assert.Equal(t, fakeStorage.url, fakeSubmitter.params.Evidences.Documents[0].URL)
 	require.Equal(t, []byte("%PDF-compact"), fakeStorage.data)
 
 	var saved paymentdomain.PayPalDispute
@@ -2354,6 +2355,7 @@ func (f *fakePayPalDisputeEvidenceSubmitter) ProvideEvidence(_ context.Context, 
 }
 
 type fakePayPalDisputeDocumentStorage struct {
+	storage.StorageService
 	url      string
 	filename string
 	data     []byte

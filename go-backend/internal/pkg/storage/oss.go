@@ -425,11 +425,11 @@ func (s *ossStorageImpl) CopyObject(ctx context.Context, sourceKey, destKey stri
 	}
 	var err error
 	if sourceBucket == destBucket {
-		_, err = sourceBucket.CopyObject(normalizedSourceKey, normalizedDestKey)
+		_, err = sourceBucket.CopyObject(normalizedSourceKey, normalizedDestKey, oss.WithContext(ctx))
 	} else if sourceBucket == s.privateBucket {
-		_, err = destBucket.CopyObjectFrom(s.config.PrivateBucket, normalizedSourceKey, normalizedDestKey)
+		_, err = destBucket.CopyObjectFrom(s.config.PrivateBucket, normalizedSourceKey, normalizedDestKey, oss.WithContext(ctx))
 	} else {
-		_, err = destBucket.CopyObjectFrom(s.config.Bucket, normalizedSourceKey, normalizedDestKey)
+		_, err = destBucket.CopyObjectFrom(s.config.Bucket, normalizedSourceKey, normalizedDestKey, oss.WithContext(ctx))
 	}
 	if err != nil {
 		return fmt.Errorf("failed to copy object: %w", err)

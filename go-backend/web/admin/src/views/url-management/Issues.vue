@@ -2,7 +2,7 @@
  <div class="space-y-4">
     <AdminPageHeader
       title="URL 管理 / 问题队列"
-      description="刷新列表只读取已保存结果；重新扫描会先更新 URL 来源清单，再分批检查全部待处理 URL。修复后会自动验证关闭，历史记录仍保留。"
+      description="刷新列表只读取已保存结果；重新扫描会先更新 URL 来源清单，再分批检查全部待处理 URL。重新检查确认恢复后，问题及其处理记录自动删除。"
     >
       <template #actions>
         <Button variant="outline" title="只重新读取已保存的问题结果，不会访问 URL" :disabled="loading || scanning || syncing || retiringStaleRoutes" @click="refreshIssueQueueList">
@@ -41,7 +41,6 @@
           <SelectItem value="open">未认领</SelectItem>
           <SelectItem value="acknowledged">处理中</SelectItem>
           <SelectItem value="resolved">待验证</SelectItem>
-          <SelectItem value="verified">已验证</SelectItem>
           <SelectItem value="suppressed">已抑制</SelectItem>
           <SelectItem value="all">全部状态</SelectItem>
         </SelectContent>
@@ -531,7 +530,7 @@ const canCreateRedirect = computed(() => (
 ))
 
 const statItems = computed(() => [
-  { key: 'active', label: '未关闭工单', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'amber' : 'gray' },
+  { key: 'active', label: '当前待处理问题', value: issueStats.value.active, icon: RefreshCw, tone: issueStats.value.active ? 'amber' : 'gray' },
   { key: 'open', label: '未认领', value: issueStats.value.open, icon: UserCheck, tone: issueStats.value.open ? 'coral' : 'gray' },
   { key: 'acknowledged', label: '处理中', value: issueStats.value.acknowledged, icon: RefreshCw, tone: issueStats.value.acknowledged ? 'blue' : 'gray' },
   { key: 'resolved', label: '待验证', value: issueStats.value.resolved, icon: BadgeCheck, tone: issueStats.value.resolved ? 'blue' : 'gray' },
@@ -619,13 +618,13 @@ const synchronizeStorefrontUrlCatalog = async (showSuccessMessage = true): Promi
 const retireAllActiveStaleRouteIssues = async (): Promise<void> => {
   const staleRouteCount = Number(issueStats.value.stale_route || 0)
   if (!canEdit || staleRouteCount < 1 || retiringStaleRoutes.value) return
-  if (!window.confirm(`确认清理 ${staleRouteCount} 条失效路径吗？系统会保留历史记录，并将它们标记为“已验证 / 已退役”。`)) return
+  if (!window.confirm(`确认清理 ${staleRouteCount} 条失效路径吗？系统会删除这些旧路径、检查结果和问题记录。`)) return
   retiringStaleRoutes.value = true
   try {
     const retiredCount = await storefrontURLIssuesApi.retireAllActiveStaleRouteIssues()
     detailOpen.value = false
     await refreshIssueQueueList()
-    toast.success(retiredCount ? `已清理 ${retiredCount} 条失效路径，历史记录已保留` : '没有需要清理的失效路径')
+    toast.success(retiredCount ? `已清理 ${retiredCount} 条失效路径及相关记录` : '没有需要清理的失效路径')
   } catch (error) {
     console.error('Failed to retire stale storefront URL issues:', error)
     toast.error('失效路径清理失败')
@@ -699,14 +698,14 @@ watch(detailOpen, (open) => {
 })
 
 const refreshSelectedIssue = async (
-  issue: StorefrontURLIssue,
+  issue: StorefrontURLIssue | null,
   expectedDetailSequence = detailRequestSequence,
 ): Promise<void> => {
-  if (expectedDetailSequence !== detailRequestSequence || selectedIssue.value?.id !== issue.id) {
+  if (expectedDetailSequence !== detailRequestSequence || (issue && selectedIssue.value?.id !== issue.id)) {
     await refreshIssueQueueList()
     return
   }
-  if (issue.state === 'verified') {
+  if (!issue || issue.state === 'verified') {
     detailOpen.value = false
     selectedIssue.value = null
     await Promise.all([load(), loadSummary()])
@@ -799,8 +798,8 @@ const recheck = async (): Promise<void> => {
   try {
     const result = await storefrontURLIssuesApi.recheck(issueID)
     await refreshSelectedIssue(result.issue, detailSequence)
-    toast.success(result.issue.state === 'verified'
-      ? '已确认恢复，问题已自动关闭并从待处理列表移除'
+    toast.success(!result.issue || result.issue.state === 'verified'
+      ? '已确认恢复，问题及处理记录已删除'
       : '复检完成，问题仍未恢复')
   } catch (error) {
     console.error('Failed to recheck storefront URL issue:', error)
@@ -819,7 +818,7 @@ const verify = async (): Promise<void> => {
   try {
     const result = await storefrontURLIssuesApi.verify(issueID)
     await refreshSelectedIssue(result.issue, detailSequence)
-    toast.success(result.issue.state === 'verified' ? 'URL 问题已验证关闭' : '验证未通过，问题已重新打开')
+    toast.success(!result.issue || result.issue.state === 'verified' ? '已确认恢复，问题及处理记录已删除' : '验证未通过，问题已重新打开')
   } catch (error) {
     console.error('Failed to verify storefront URL issue:', error)
     const detail = requestErrorMessage(error)

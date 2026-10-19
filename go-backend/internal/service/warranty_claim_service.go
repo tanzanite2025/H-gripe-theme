@@ -139,7 +139,7 @@ func (s *WarrantyService) ValidateWarrantyOrderToken(token string) error {
 	return nil
 }
 
-func (s *WarrantyService) CreateWarrantyClaimForOrder(input WarrantyClaimByOrderInput) (*warranty.WarrantyClaim, error) {
+func (s *WarrantyService) createWarrantyClaimAfterPrivateAttachmentNamespaceLock(input WarrantyClaimByOrderInput) (*warranty.WarrantyClaim, error) {
 	if s == nil || s.txManager == nil {
 		return nil, ErrEmailChallengeUnavailable
 	}

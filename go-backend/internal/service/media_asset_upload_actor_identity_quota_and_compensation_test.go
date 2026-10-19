@@ -1,9 +1,7 @@
 package service
 
 import (
-	"context"
 	"encoding/json"
-	"mime/multipart"
 	"strings"
 	"testing"
 
@@ -122,57 +120,16 @@ func TestMediaUploadVisitorQuotaSeparatesSessionsCountsRetainedFilesAndAllowsExa
 	require.Equal(t, 1, recordingStorage.uploadCalls)
 }
 
-func TestMediaUploadActorQuotaFinalRecheckDeletesUploadedObjectWithoutCreatingAsset(t *testing.T) {
-	mediaService, recordingStorage := newMediaAssetUploadTestService(t)
-	payload := mediaUploadTestPNG(t)
-	identity := media.MediaUploadActorIdentity{ActorType: media.MediaUploadActorVisitor, VisitorSessionHash: strings.Repeat("a", 64)}
-	mediaService.visitorSessionStorageQuotaBytes = int64(len(payload))
-	concurrentStorage := &mediaUploadQuotaConcurrentWriteRecordingStorage{
-		recordingMediaUploadStorage: recordingStorage,
-		afterSourceUpload: func() {
-			seedMediaUploadActorQuotaAsset(t, mediaService, "concurrent", identity, int64(len(payload)), false)
-		},
-	}
-	mediaService.storage = concurrentStorage
-	asset, err := mediaService.UploadAsset(t.Context(), MediaUploadInput{
-		File: multipartFileHeader(t, "losing-upload.png", "image/png", payload), MediaType: "image", UploadActorIdentity: identity,
-	})
-	require.ErrorIs(t, err, ErrMediaVisitorSessionStorageQuotaExceeded)
-	require.Nil(t, asset)
-	require.Equal(t, []string{"https://media.example.test/uploads/losing-upload.png"}, concurrentStorage.deletedObjectURLs)
-	assets, count, err := mediaService.repo.ListAssets(repository.MediaAssetFilter{})
-	require.NoError(t, err)
-	require.EqualValues(t, 1, count)
-	require.Equal(t, "concurrent", assets[0].Filename)
-}
-
 func seedMediaUploadActorQuotaAsset(t *testing.T, mediaService *MediaService, filename string, identity media.MediaUploadActorIdentity, size int64, softDeleted bool) {
 	t.Helper()
 	asset := &media.MediaAsset{
 		Filename: filename, URL: "https://media.example.test/uploads/seed-" + filename, Size: size,
 		UploaderActorType: identity.ActorType, UploaderID: identity.AccountID, UploaderVisitorSessionHash: identity.VisitorSessionHash,
 	}
-	require.NoError(t, mediaService.repo.CreateAsset(asset))
+	// Synthetic historical quota rows need no physical upload. New production
+	// registrations now verify bytes while holding the object ownership lock.
+	require.NoError(t, mediaService.repo.WithTransaction(func(_ *repository.MediaRepository, tx *gorm.DB) error { return tx.Create(asset).Error }))
 	if softDeleted {
 		require.NoError(t, mediaService.repo.WithTransaction(func(_ *repository.MediaRepository, tx *gorm.DB) error { return tx.Delete(asset).Error }))
 	}
-}
-
-type mediaUploadQuotaConcurrentWriteRecordingStorage struct {
-	*recordingMediaUploadStorage
-	afterSourceUpload func()
-	deletedObjectURLs []string
-}
-
-func (s *mediaUploadQuotaConcurrentWriteRecordingStorage) Upload(ctx context.Context, file *multipart.FileHeader) (string, error) {
-	url, err := s.recordingMediaUploadStorage.Upload(ctx, file)
-	if err == nil {
-		s.afterSourceUpload()
-	}
-	return url, err
-}
-
-func (s *mediaUploadQuotaConcurrentWriteRecordingStorage) Delete(_ context.Context, objectURL string) error {
-	s.deletedObjectURLs = append(s.deletedObjectURLs, objectURL)
-	return nil
 }

@@ -430,7 +430,7 @@ func TestStorefrontRouteCatalogRepositoryStatsFiltersByLocale(t *testing.T) {
 
 	allStats, err := repo.Stats()
 	require.NoError(t, err)
-	require.Equal(t, int64(4), allStats.Total)
+	require.Equal(t, int64(3), allStats.Total)
 	require.Equal(t, int64(3), allStats.Checkable)
 
 	enStats, err := repo.StatsForLocale("en")
@@ -444,10 +444,10 @@ func TestStorefrontRouteCatalogRepositoryStatsFiltersByLocale(t *testing.T) {
 
 	zhStats, err := repo.StatsForLocale("zh_cn")
 	require.NoError(t, err)
-	require.Equal(t, int64(2), zhStats.Total)
+	require.Equal(t, int64(1), zhStats.Total)
 	require.Equal(t, int64(1), zhStats.Unchecked)
 	require.Equal(t, int64(1), zhStats.Checkable)
-	require.Equal(t, int64(1), zhStats.Stale)
+	require.Zero(t, zhStats.Stale)
 }
 
 func TestStatsForLocaleAndScopeRestrictsCanonicalMetrics(t *testing.T) {
@@ -475,7 +475,7 @@ func TestStatsForLocaleAndScopeRestrictsCanonicalMetrics(t *testing.T) {
 	require.Equal(t, int64(3), allStats.Total)
 }
 
-func TestUpsertSnapshotClearsCheckProjectionWhenPathChangesAndPreservesHistory(t *testing.T) {
+func TestUpsertSnapshotDeletesPreviousChecksWhenRoutePathChanges(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -536,7 +536,7 @@ func TestUpsertSnapshotClearsCheckProjectionWhenPathChangesAndPreservesHistory(t
 	require.NoError(t, db.Model(&seodomain.StorefrontRouteCheckResult{}).
 		Where("route_entry_id = ?", entry.ID).
 		Count(&historyCount).Error)
-	require.Equal(t, int64(1), historyCount)
+	require.Zero(t, historyCount)
 }
 
 func TestUpsertSnapshotPreservesCheckProjectionWhenCheckedRouteIsUnchanged(t *testing.T) {
@@ -586,7 +586,7 @@ func TestUpsertSnapshotPreservesCheckProjectionWhenCheckedRouteIsUnchanged(t *te
 	require.WithinDuration(t, checkedAt, *refreshed.LastCheckedAt, time.Second)
 }
 
-func TestUpsertSnapshotClearsCheckProjectionForStaleEntries(t *testing.T) {
+func TestUpsertSnapshotDeletesRoutesAbsentFromCurrentManifest(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -613,9 +613,5 @@ func TestUpsertSnapshotClearsCheckProjectionForStaleEntries(t *testing.T) {
 	require.NoError(t, NewStorefrontRouteCatalogRepository(db).UpsertSnapshot(nil, seenAt))
 
 	var refreshed seodomain.StorefrontRouteCatalogEntry
-	require.NoError(t, db.First(&refreshed, entry.ID).Error)
-	require.Equal(t, seodomain.RouteEntryStatusStale, refreshed.EntryStatus)
-	require.Empty(t, refreshed.LastCheckStatus)
-	require.Zero(t, refreshed.LastHTTPStatus)
-	require.Nil(t, refreshed.LastCheckedAt)
+	require.ErrorIs(t, db.First(&refreshed, entry.ID).Error, gorm.ErrRecordNotFound)
 }

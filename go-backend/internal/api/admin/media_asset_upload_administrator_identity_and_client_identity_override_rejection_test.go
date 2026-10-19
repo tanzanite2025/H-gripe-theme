@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -34,11 +35,13 @@ func TestMediaUploadAdministratorIdentityComesOnlyFromAuthenticatedContext(t *te
 			require.NoError(t, err)
 			sqlDB.SetMaxOpenConns(1)
 			t.Cleanup(func() { _ = sqlDB.Close() })
-			require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &media.MediaAssetDerivative{}))
+			require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &media.MediaAssetDerivative{}, &outbox.Event{}))
 			uploadRoot := t.TempDir()
 			storageService, err := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: uploadRoot, BaseURL: "https://shop.example.test"})
 			require.NoError(t, err)
-			handler := NewMediaHandler(service.NewMediaService(repository.NewMediaRepository(db), storageService, nil, "https://shop.example.test", 20<<30))
+			mediaService := service.NewMediaService(repository.NewMediaRepository(db), storageService, nil, "https://shop.example.test", 20<<30)
+			mediaService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
+			handler := NewMediaHandler(mediaService)
 			var payload bytes.Buffer
 			writer := multipart.NewWriter(&payload)
 			require.NoError(t, writer.WriteField("media_type", "image"))

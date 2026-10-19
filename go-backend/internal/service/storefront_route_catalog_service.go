@@ -124,8 +124,8 @@ const (
 )
 
 // StorefrontRouteCatalogCheckTask is the process-local task projection used
-// by the admin polling API. Check evidence remains persisted in the catalog
-// repository, so a task restart cannot rewrite route history.
+// by the admin polling API. The catalog persists only the latest result for
+// each current URL, independently of the lifetime of this progress tracker.
 type StorefrontRouteCatalogCheckTask struct {
 	ID        string                             `json:"task_id"`
 	Status    string                             `json:"status"`

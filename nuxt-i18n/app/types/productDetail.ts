@@ -71,7 +71,36 @@ export interface ProductSpecValue {
   definition?: SpecDefinition
 }
 
+export interface CarbonRimProductSpecification {
+  wheel_size?: string
+  material?: 'carbon_fiber'
+  material_details?: string
+  riding_uses?: string[]
+  schema_version: 1
+  model: string
+  bead_seat_diameter_mm: number
+  depth_mm: number
+  internal_width_mm: number
+  external_width_mm: number
+  bead_structure: 'hooked' | 'hookless'
+  tubeless_ready: boolean
+  rim_tape_required?: boolean | null
+  valve_hole_diameter_mm?: number | null
+  asymmetric_offset_mm: number
+  technical_notes?: string
+}
+
+export interface CarbonRimVariantSpecification {
+  spoke_hole_count: number
+  drilling_pattern: string
+  finish_code: string
+  erd_mm?: number | null
+  erd_measurement_notes?: string
+  net_weight_grams: number
+}
+
 export interface ProductVariant {
+  carbon_rim_specification?: CarbonRimVariantSpecification
   id: number
   sku?: string
   title?: string
@@ -202,6 +231,8 @@ export interface ProductBreadcrumb {
 }
 
 export interface GoProduct {
+  carbon_rim_specification?: CarbonRimProductSpecification
+  product_type?: string
   id: number
   product_specification_template_id?: number
   product_specification_template?: ProductSpecificationTemplate

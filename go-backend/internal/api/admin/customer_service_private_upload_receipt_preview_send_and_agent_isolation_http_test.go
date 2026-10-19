@@ -54,6 +54,7 @@ func TestAdminCustomerServicePrivateUploadPreviewAndSendEnforceUploaderAssignmen
 	mediaService := service.NewMediaService(repository.NewMediaRepository(db), store, nil, "https://shop.example.test", 20<<30)
 	tickets := service.NewTicketService(repository.NewTicketRepository(db), repository.NewUserRepository(db))
 	tickets.ConfigureCustomerServiceRealtimeOutbox(repository.NewOutboxRepository(db))
+	mediaService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	handler := NewTicketHandler(tickets, nil, nil, nil, mediaService)
 	createRouter := func(agentID uint, role string) *gin.Engine {
 		router := gin.New()
@@ -138,10 +139,21 @@ func TestAdminCustomerServicePrivateUploadPreviewAndSendEnforceUploaderAssignmen
 	mediaService.ConfigureCustomerServicePrivateAttachmentUploads(true)
 	recorder = httptest.NewRecorder()
 	router.ServeHTTP(recorder, createAgentConversationVideoMultipartRequest())
-	require.Equal(t, http.StatusUnsupportedMediaType, recorder.Code, recorder.Body.String())
+	require.Equal(t, http.StatusCreated, recorder.Code, recorder.Body.String())
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &videoResponse))
+	require.Equal(t, "video", videoResponse.Asset.MediaType)
+	var privateVideoReceipt struct {
+		Asset struct {
+			URL             string
+			UploadSessionID string `json:"upload_session_id"`
+		}
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &privateVideoReceipt))
+	require.NotEmpty(t, privateVideoReceipt.Asset.UploadSessionID)
+	require.NotContains(t, recorder.Body.String(), "private.example.test")
 	var beforeUploads int64
 	require.NoError(t, db.Model(&media.MediaUploadSession{}).Count(&beforeUploads).Error)
-	require.Zero(t, beforeUploads)
+	require.EqualValues(t, 1, beforeUploads)
 	recorder = httptest.NewRecorder()
 	router.ServeHTTP(recorder, uploadRequest())
 	require.Equal(t, http.StatusCreated, recorder.Code, recorder.Body.String())
@@ -199,4 +211,38 @@ func TestAdminCustomerServicePrivateUploadPreviewAndSendEnforceUploaderAssignmen
 	createRouter(agent.ID+100, "manager").ServeHTTP(recorder, httptest.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("%s/%d/attachments/0/file", messagePath, message.ID), nil))
 	require.Equal(t, http.StatusOK, recorder.Code, recorder.Body.String())
 	require.Equal(t, photoBytes.Bytes(), recorder.Body.Bytes())
+	// The video follows the same receipt -> authorized preview -> atomic binding
+	// flow, and the existing UI's preview URL must be removed from stored metadata.
+	videoPreview := httptest.NewRequest(http.MethodGet, privateVideoReceipt.Asset.URL, nil)
+	videoPreview.Header.Set("Range", "bytes=4-7")
+	recorder = httptest.NewRecorder()
+	router.ServeHTTP(recorder, videoPreview)
+	require.Equal(t, http.StatusPartialContent, recorder.Code, recorder.Body.String())
+	require.Equal(t, "ftyp", recorder.Body.String())
+	require.Equal(t, "private, no-store", recorder.Header().Get("Cache-Control"))
+	videoPayload, err := json.Marshal(gin.H{"message": "[视频]", "message_type": "video", "attachments": []string{privateVideoReceipt.Asset.URL},
+		"metadata": gin.H{"kind": "video_reference", "title": "Agent video", "url": privateVideoReceipt.Asset.URL, "media_type": "video"}})
+	require.NoError(t, err)
+	videoSend := httptest.NewRequest(http.MethodPost, messagePath, bytes.NewReader(videoPayload))
+	videoSend.Header.Set("Content-Type", "application/json")
+	recorder = httptest.NewRecorder()
+	router.ServeHTTP(recorder, videoSend)
+	require.Equal(t, http.StatusCreated, recorder.Code, recorder.Body.String())
+	var videoMessage ticket.TicketMessage
+	require.NoError(t, db.Where("ticket_id = ? AND message_type = ?", conversation.ID, "video").First(&videoMessage).Error)
+	require.Equal(t, ticket.TicketMessageMediaAssetBindings, videoMessage.AttachmentReferenceFormat)
+	require.Empty(t, videoMessage.Attachments)
+	require.NotContains(t, videoMessage.Metadata, "/attachment-uploads/")
+	session = media.MediaUploadSession{}
+	require.NoError(t, db.First(&session, "id = ?", privateVideoReceipt.Asset.UploadSessionID).Error)
+	require.Equal(t, "bound", session.Status)
+	recorder = httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, privateVideoReceipt.Asset.URL, nil))
+	require.Equal(t, http.StatusNotFound, recorder.Code)
+	videoRead := httptest.NewRequest(http.MethodGet, fmt.Sprintf("%s/%d/attachments/0/file", messagePath, videoMessage.ID), nil)
+	videoRead.Header.Set("Range", "bytes=4-7")
+	recorder = httptest.NewRecorder()
+	createRouter(agent.ID+100, "manager").ServeHTTP(recorder, videoRead)
+	require.Equal(t, http.StatusPartialContent, recorder.Code, recorder.Body.String())
+	require.Equal(t, "ftyp", recorder.Body.String())
 }

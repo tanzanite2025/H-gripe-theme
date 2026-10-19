@@ -1,7 +1,6 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -22,6 +21,7 @@ import (
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/pkg/invoice"
 	pgateway "commerce-platform/internal/pkg/payment"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 
 	paypalapi "github.com/plutov/paypal/v4"
@@ -99,27 +99,9 @@ type PayPalDisputeEvidencePackage struct {
 	CanSubmit             bool                                  `json:"can_submit"`
 }
 
-type PayPalDisputeEvidenceDraft struct {
-	CustomerName           string `json:"customer_name"`
-	CustomerEmailAddress   string `json:"customer_email_address"`
-	ShippingAddress        string `json:"shipping_address"`
-	ProductDescription     string `json:"product_description"`
-	ShippingCarrier        string `json:"shipping_carrier"`
-	ShippingDate           string `json:"shipping_date"`
-	ShippingTrackingNumber string `json:"shipping_tracking_number"`
-	DeliveredAt            string `json:"delivered_at"`
-	InvoiceSummary         string `json:"invoice_summary"`
-	ProofOfDeliverySummary string `json:"proof_of_delivery_summary"`
-	CommunicationSummary   string `json:"communication_summary"`
-	Notes                  string `json:"notes"`
-}
+type PayPalDisputeEvidenceDraft = orderevidence.PayPalDisputeEvidenceDraft
 
-type PayPalDisputeEvidenceDocument struct {
-	Type   string `json:"type"`
-	Name   string `json:"name"`
-	URL    string `json:"url"`
-	SHA256 string `json:"sha256,omitempty"`
-}
+type PayPalDisputeEvidenceDocument = orderevidence.PayPalDisputeEvidenceDocument
 
 type SubmitPayPalDisputeEvidenceInput struct {
 	DisputeID           uint
@@ -393,7 +375,7 @@ func (s *PaymentService) loadPayPalEvidenceSubmissionSnapshot(
 	if err != nil {
 		return nil, nil, err
 	}
-	snapshot, err = s.createOrGetEvidenceSubmissionSnapshot(snapshot)
+	snapshot, err = s.createCanonicalPayPalSubmissionSnapshotAndBindNewInvoiceReceipts(ctx, snapshot, documents)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -425,7 +407,13 @@ func (s *PaymentService) paypalDisputeEvidenceDocuments(ctx context.Context, pkg
 				warnings = append(warnings, "Commercial invoice PDF was not rendered: "+renderErr.Error())
 			} else if len(pdfBytes) > 0 {
 				name := paypalEvidenceDocumentName(document.DocumentNumber, "commercial-invoice")
-				uploadedURL, uploadErr := s.paypalDisputeDocumentStorage.UploadFromReader(ctx, bytes.NewReader(pdfBytes), name)
+				var uploadedURL string
+				var uploadErr error
+				if pkg.Dispute == nil {
+					uploadErr = ErrPayPalDisputeInvoiceUnavailable
+				} else {
+					uploadedURL, uploadErr = s.paypalDisputeAttachmentUploads.uploadSuggestionOrPayPalAttachmentBytesWithDurableReceipt(ctx, storage.PayPalDisputeInvoiceAttachmentNamespace, pkg.Dispute.ID, name, pdfBytes)
+				}
 				if uploadErr != nil {
 					warnings = append(warnings, "Commercial invoice PDF upload failed: "+uploadErr.Error())
 				} else if !paypalEvidenceDocumentURLUsable(uploadedURL) {

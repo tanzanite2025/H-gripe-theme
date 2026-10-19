@@ -35,13 +35,14 @@
           <TableCell class="text-right font-mono text-xs font-bold tabular-nums">{{ variantSpecCount(template) }}</TableCell>
           <TableCell>
             <AdminStatusBadge :tone="template.is_enabled ? 'green' : 'gray'">
-              {{ template.is_enabled ? '已启用' : '已停用' }}
+              {{ isRetiredCarbonRimTemplate(template.slug) ? '已废弃 · 车圈专用入口' : (template.is_enabled ? '已启用' : '已停用') }}
             </AdminStatusBadge>
           </TableCell>
           <TableCell class="text-right font-mono text-xs font-bold tabular-nums">{{ template.sort_order || 0 }}</TableCell>
           <TableCell class="font-mono text-[10px] text-muted-foreground/80">{{ formatDate(template.updated_at) }}</TableCell>
           <TableCell class="text-right">
-            <DropdownMenu>
+              <span v-if="isRetiredCarbonRimTemplate(template.slug)" class="text-xs text-muted-foreground">历史记录，只读</span>
+              <DropdownMenu v-else>
               <DropdownMenuTrigger as-child>
                 <Button variant="ghost" size="icon" :aria-label="`管理商品规格模板 ${template.name}`">
                   <MoreHorizontal class="size-4" />
@@ -76,6 +77,7 @@
 </template>
 
 <script setup lang="ts">
+const isRetiredCarbonRimTemplate = (slug: string): boolean => ['rim', 'carbon_rim', 'carbon-rim'].includes(String(slug).trim().toLowerCase())
 import { CircleCheck, CircleOff, MoreHorizontal, Pencil, Tags, Trash2 } from '@lucide/vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'

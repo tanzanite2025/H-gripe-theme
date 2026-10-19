@@ -9,7 +9,8 @@ import (
 )
 
 type GalleryRepository struct {
-	db *gorm.DB
+	db                             *gorm.DB
+	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 func NewGalleryRepository(db *gorm.DB) *GalleryRepository {
@@ -20,7 +21,16 @@ func NewGalleryRepository(db *gorm.DB) *GalleryRepository {
 
 // CreateGallery 创建图片库
 func (r *GalleryRepository) CreateGallery(g *gallery.Gallery) error {
-	return r.db.Create(g).Error
+	var productIDs *[]uint
+	if len(g.ProductLinks) > 0 {
+		ids := make([]uint, 0, len(g.ProductLinks))
+		for _, link := range g.ProductLinks {
+			ids = append(ids, link.ProductID)
+		}
+		productIDs = &ids
+	}
+	_, _, err := r.saveGalleryWithOptionalProductLinksAndAppendedImagesInOneTransaction(g, galleryTransactionalSaveOptions{CreateNewGallery: true, ProductIDs: productIDs, NewImages: g.Images})
+	return err
 }
 
 func (r *GalleryRepository) CreateGalleryWithProductLinks(g *gallery.Gallery, productIDs []uint) error {
@@ -28,21 +38,14 @@ func (r *GalleryRepository) CreateGalleryWithProductLinks(g *gallery.Gallery, pr
 }
 
 func (r *GalleryRepository) CreateGalleryWithProductLinksAndImages(g *gallery.Gallery, productIDs []uint, images []gallery.GalleryImage) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(g).Error; err != nil {
-			return err
-		}
-		if err := r.replaceGalleryProductLinksTx(tx, g.ID, productIDs); err != nil {
-			return err
-		}
-		if len(images) == 0 {
-			return nil
-		}
-		for i := range images {
-			images[i].GalleryID = g.ID
-		}
-		return tx.Create(&images).Error
-	})
+	if len(g.Images) > 0 && len(images) > 0 {
+		return gorm.ErrInvalidData
+	}
+	if len(images) == 0 {
+		images = g.Images
+	}
+	_, _, err := r.saveGalleryWithOptionalProductLinksAndAppendedImagesInOneTransaction(g, galleryTransactionalSaveOptions{CreateNewGallery: true, ProductIDs: &productIDs, NewImages: images})
+	return err
 }
 
 // FindGalleryByID 根据ID查找图片库
@@ -127,39 +130,27 @@ func (r *GalleryRepository) FindAllGalleriesByStatus(status string, page, pageSi
 }
 
 // UpdateGallery 更新图片库
-func (r *GalleryRepository) UpdateGallery(g *gallery.Gallery) error {
-	return r.db.Save(g).Error
+func (r *GalleryRepository) UpdateGallery(g *gallery.Gallery, mutations ...GalleryMediaFieldMutation) error {
+	var mutation *GalleryMediaFieldMutation
+	if len(mutations) > 0 {
+		mutation = &mutations[0]
+	}
+	_, _, err := r.saveGalleryWithOptionalProductLinksAndAppendedImagesInOneTransaction(g, galleryTransactionalSaveOptions{MediaMutation: mutation})
+	return err
 }
 
-func (r *GalleryRepository) UpdateGalleryWithProductLinks(g *gallery.Gallery, productIDs []uint) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Save(g).Error; err != nil {
-			return err
-		}
-		return r.replaceGalleryProductLinksTx(tx, g.ID, productIDs)
-	})
+func (r *GalleryRepository) UpdateGalleryWithProductLinks(g *gallery.Gallery, productIDs []uint, mutations ...GalleryMediaFieldMutation) error {
+	var mutation *GalleryMediaFieldMutation
+	if len(mutations) > 0 {
+		mutation = &mutations[0]
+	}
+	_, _, err := r.saveGalleryWithOptionalProductLinksAndAppendedImagesInOneTransaction(g, galleryTransactionalSaveOptions{ProductIDs: &productIDs, MediaMutation: mutation})
+	return err
 }
 
 // DeleteGallery 删除图片库
 func (r *GalleryRepository) DeleteGallery(id uint) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("gallery_id = ?", id).Delete(&gallery.GalleryImage{}).Error; err != nil {
-			return err
-		}
-		if tx.Migrator().HasTable(&gallery.GalleryProductLink{}) {
-			if err := tx.Where("gallery_id = ?", id).Delete(&gallery.GalleryProductLink{}).Error; err != nil {
-				return err
-			}
-		}
-		result := tx.Delete(&gallery.Gallery{}, id)
-		if result.Error != nil {
-			return result.Error
-		}
-		if result.RowsAffected == 0 {
-			return gorm.ErrRecordNotFound
-		}
-		return nil
-	})
+	return r.deleteGalleryAndRetainItsSoftDeletedImageRecords(id)
 }
 
 func (r *GalleryRepository) FindGalleryBySlugAndStatus(slug, status string) (*gallery.Gallery, error) {
@@ -179,7 +170,12 @@ func (r *GalleryRepository) FindGalleryBySlugAndStatus(slug, status string) (*ga
 
 // CreateGalleryImage 创建图片
 func (r *GalleryRepository) CreateGalleryImage(img *gallery.GalleryImage) error {
-	return r.db.Create(img).Error
+	images := []gallery.GalleryImage{*img}
+	if err := r.createGalleryImagesWithParentAndAssetLocks(images); err != nil {
+		return err
+	}
+	*img = images[0]
+	return nil
 }
 
 // FindGalleryImageByID 根据ID查找图片
@@ -280,79 +276,39 @@ func (r *GalleryRepository) FindImagesByTagsInPublishedGalleries(tags []string, 
 }
 
 // UpdateGalleryImage 更新图片
-func (r *GalleryRepository) UpdateGalleryImage(img *gallery.GalleryImage) error {
-	return r.db.Save(img).Error
+func (r *GalleryRepository) UpdateGalleryImage(img *gallery.GalleryImage, mutations ...GalleryImageMediaFieldMutation) error {
+	return r.updateGalleryImageWithParentAndAssetLocks(img, mutations...)
 }
 
 // UpdateImageOrder 更新图片排序
 func (r *GalleryRepository) UpdateImageOrder(id uint, order int) error {
-	return r.db.Model(&gallery.GalleryImage{}).Where("id = ?", id).
-		Update("order", order).Error
+	return r.updateGalleryImageOrderWithLockedParent(id, order)
 }
 
 // DeleteGalleryImage 删除图片
 func (r *GalleryRepository) DeleteGalleryImage(id uint) error {
-	return r.db.Delete(&gallery.GalleryImage{}, id).Error
+	_, err := r.deleteGalleryImagesWithLockedParentsAndOwnershipCheck(nil, []uint{id})
+	return err
 }
 
 func (r *GalleryRepository) DeleteGalleryImageByIDAndGalleryID(imageID, galleryID uint) error {
-	result := r.db.
-		Where("id = ? AND gallery_id = ?", imageID, galleryID).
-		Delete(&gallery.GalleryImage{})
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
-	return nil
+	_, err := r.deleteGalleryImagesWithLockedParentsAndOwnershipCheck(&galleryID, []uint{imageID})
+	return err
 }
 
 // BatchCreateImages 批量创建图片
 func (r *GalleryRepository) BatchCreateImages(images []gallery.GalleryImage) error {
-	return r.db.Create(&images).Error
+	return r.createGalleryImagesWithParentAndAssetLocks(images)
 }
 
 // BatchDeleteImages 批量删除图片
 func (r *GalleryRepository) BatchDeleteImages(ids []uint) error {
-	return r.db.Delete(&gallery.GalleryImage{}, ids).Error
+	_, err := r.deleteGalleryImagesWithLockedParentsAndOwnershipCheck(nil, ids)
+	return err
 }
 
 func (r *GalleryRepository) BatchDeleteImagesByGalleryID(galleryID uint, ids []uint) (int64, error) {
-	if len(ids) == 0 {
-		return 0, nil
-	}
-
-	uniqueIDs := make([]uint, 0, len(ids))
-	seen := make(map[uint]struct{}, len(ids))
-	for _, id := range ids {
-		if id == 0 {
-			continue
-		}
-		if _, ok := seen[id]; ok {
-			continue
-		}
-		seen[id] = struct{}{}
-		uniqueIDs = append(uniqueIDs, id)
-	}
-	if len(uniqueIDs) == 0 {
-		return 0, gorm.ErrRecordNotFound
-	}
-
-	var matchingCount int64
-	if err := r.db.Model(&gallery.GalleryImage{}).
-		Where("gallery_id = ? AND id IN ?", galleryID, uniqueIDs).
-		Count(&matchingCount).Error; err != nil {
-		return 0, err
-	}
-	if matchingCount != int64(len(uniqueIDs)) {
-		return 0, gorm.ErrRecordNotFound
-	}
-
-	result := r.db.
-		Where("gallery_id = ? AND id IN ?", galleryID, uniqueIDs).
-		Delete(&gallery.GalleryImage{})
-	return result.RowsAffected, result.Error
+	return r.deleteGalleryImagesWithLockedParentsAndOwnershipCheck(&galleryID, ids)
 }
 
 func (r *GalleryRepository) ReplaceGalleryProductLinks(galleryID uint, productIDs []uint) error {
@@ -361,6 +317,9 @@ func (r *GalleryRepository) ReplaceGalleryProductLinks(galleryID uint, productID
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := lockActiveGalleryParentWithinMutation(tx, galleryID, &gallery.Gallery{}); err != nil {
+			return err
+		}
 		return r.replaceGalleryProductLinksTx(tx, galleryID, productIDs)
 	})
 }

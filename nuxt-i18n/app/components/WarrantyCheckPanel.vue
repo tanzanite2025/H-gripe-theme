@@ -119,6 +119,7 @@
         </div>
 
         <!-- 服务记录 -->
+        <AuthorizedPrivateOrderAttachmentPreviewAndDownload v-for="(path, index) in result.shipping_images || []" :key="path" :path="path" :label="$t('privateOrderAttachments.shipmentImage', 'Shipment image') + ' ' + (index + 1)" :filename="`shipment-${result.order_number}-${index + 1}`" />
         <div v-if="result.records && result.records.length > 0" class="warranty-check__records">
           <h4>{{ $t('supportWarrantyCheck.records.title') }}</h4>
           <ul class="warranty-check__records-list">
@@ -159,6 +160,7 @@
 </template>
 
 <script setup lang="ts">
+import AuthorizedPrivateOrderAttachmentPreviewAndDownload from '~/components/AuthorizedPrivateOrderAttachmentPreviewAndDownload.vue'
 import { computed, watch } from 'vue'
 import { useWarrantyCheck } from '~/composables/useWarrantyCheck'
 import { usePageMessages } from '~/composables/usePageMessages'

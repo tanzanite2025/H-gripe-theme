@@ -276,6 +276,8 @@ def environment_value(service, key):
 
 
 api = services.get("api") or {}
+if environment_value(api, "MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS") is None:
+    errors.append("api must pass through MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS, allowing an empty default")
 web_ingress = service_network_endpoint(web, "api_ingress")
 if web_ingress.get("ipv4_address") != "172.30.0.10":
     errors.append("web api_ingress address must be pinned to 172.30.0.10")

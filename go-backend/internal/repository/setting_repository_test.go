@@ -77,8 +77,10 @@ func TestSetReturnsLookupErrorInsteadOfSaving(t *testing.T) {
 	defer cleanup()
 
 	dbErr := errors.New("database unavailable")
+	mock.ExpectBegin()
 	mock.ExpectQuery(`SELECT .* FROM "settings"`).
 		WillReturnError(dbErr)
+	mock.ExpectRollback()
 
 	err := repo.Set(&setting.Setting{
 		Key:    "refund_cancellation_policy",

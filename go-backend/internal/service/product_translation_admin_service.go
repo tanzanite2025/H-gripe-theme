@@ -66,6 +66,9 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := s.rejectNewBindingToRetiredCarbonRimTemplate(source.ProductSpecificationTemplateID, nil); err != nil {
+		return nil, nil, err
+	}
 
 	locale, err := requireSupportedLocale(targetLocale)
 	if err != nil {
@@ -105,6 +108,8 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 	}
 	parentID := rootID
 	target := &product.Product{
+		ProductType:                    source.ProductType,
+		CarbonRimSpecification:         source.CarbonRimSpecification,
 		ProductSpecificationTemplateID: source.ProductSpecificationTemplateID,
 		ProductCategoryID:              source.ProductCategoryID,
 		BrandID:                        source.BrandID,

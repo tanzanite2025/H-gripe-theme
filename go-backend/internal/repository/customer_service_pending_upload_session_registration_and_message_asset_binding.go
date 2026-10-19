@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"commerce-platform/internal/domain/media"
@@ -15,8 +16,36 @@ import (
 
 var ErrCustomerServiceAttachmentBindingUnavailable = errors.New("customer-service attachment is unavailable for binding")
 
+type resolvedCustomerServiceMessageAttachmentRequest struct {
+	assetID   uint
+	sessionID string
+}
+
+type resolvedCustomerServiceMessageAttachmentPlan struct {
+	requests []resolvedCustomerServiceMessageAttachmentRequest
+	assetIDs []uint
+}
+
 func (r *MediaRepository) CreateCustomerServicePendingUploadSession(ctx context.Context, session *media.MediaUploadSession) error {
-	return r.db.WithContext(ctx).Create(session).Error
+	if r == nil || r.db == nil {
+		return gorm.ErrInvalidDB
+	}
+	if session == nil {
+		return ErrCustomerServiceAttachmentBindingUnavailable
+	}
+	key, valid := storage.NormalizeObjectKey(session.ObjectKey)
+	if !valid || key != session.ObjectKey || !storage.IsCustomerServiceConversationAttachmentOriginalObjectKey(key) {
+		return ErrCustomerServiceAttachmentBindingUnavailable
+	}
+	return r.WithinMediaAssetTransactionWithRequestContext(ctx, func(repo *MediaRepository, tx *gorm.DB) error {
+		// A receipt precedes the first byte, so admission shares cleanup's
+		// object lock without requiring an already-existing provider object.
+		// The enclosing conversation transaction must commit before upload.
+		if err := repo.lockMediaObjectKeysAndPrivateDerivativeNamespacesWithinTransaction([]string{key}, nil); err != nil {
+			return err
+		}
+		return tx.Create(session).Error
+	})
 }
 
 func (r *MediaRepository) FindCustomerServiceMediaUploadSession(ctx context.Context, id string) (*media.MediaUploadSession, error) {
@@ -63,41 +92,50 @@ func (r *TicketRepository) FindCustomerServiceMessageMediaAssetBindings(messageI
 func (r *TicketRepository) BindCustomerServiceMessageMediaAssetsWithinTransaction(
 	conversationID, messageID uint, identity media.MediaUploadActorIdentity, requests []ticket.CustomerServiceMessageMediaAttachmentBindingRequest,
 ) error {
+	plan, err := r.resolveCustomerServiceMessageAttachmentRequestsWithinTransaction(identity, requests)
+	if err != nil {
+		return err
+	}
+	return r.bindResolvedCustomerServiceMessageAttachmentsWithinTransaction(conversationID, messageID, identity, plan)
+}
+
+func (r *TicketRepository) resolveCustomerServiceMessageAttachmentRequestsWithinTransaction(identity media.MediaUploadActorIdentity, requests []ticket.CustomerServiceMessageMediaAttachmentBindingRequest) (*resolvedCustomerServiceMessageAttachmentPlan, error) {
 	if len(requests) == 0 || len(requests) > 4 {
-		return ErrCustomerServiceAttachmentBindingUnavailable
+		return nil, ErrCustomerServiceAttachmentBindingUnavailable
 	}
 	if identity.ActorType == media.MediaUploadActorVisitor && len(requests) > 1 {
-		return ErrCustomerServiceAttachmentBindingUnavailable
+		return nil, ErrCustomerServiceAttachmentBindingUnavailable
 	}
-	type resolvedRequest struct {
-		assetID   uint
-		sessionID string
-	}
-	resolved := make([]resolvedRequest, len(requests))
+	resolved := make([]resolvedCustomerServiceMessageAttachmentRequest, len(requests))
 	assetIDs := make([]uint, 0, len(requests))
 	seen := make(map[uint]bool, len(requests))
 	for index, request := range requests {
 		if (request.MediaAssetID == 0) == (request.UploadSessionID == "") {
-			return ErrCustomerServiceAttachmentBindingUnavailable
+			return nil, ErrCustomerServiceAttachmentBindingUnavailable
 		}
-		resolved[index] = resolvedRequest{assetID: request.MediaAssetID, sessionID: request.UploadSessionID}
+		resolved[index] = resolvedCustomerServiceMessageAttachmentRequest{assetID: request.MediaAssetID, sessionID: request.UploadSessionID}
 		if request.UploadSessionID != "" {
 			var session media.MediaUploadSession
 			if err := r.db.First(&session, "id = ?", request.UploadSessionID).Error; err != nil {
-				return ErrCustomerServiceAttachmentBindingUnavailable
+				return nil, ErrCustomerServiceAttachmentBindingUnavailable
 			}
 			if session.MediaAssetID == nil {
-				return ErrCustomerServiceAttachmentBindingUnavailable
+				return nil, ErrCustomerServiceAttachmentBindingUnavailable
 			}
 			resolved[index].assetID = *session.MediaAssetID
 		}
 		if seen[resolved[index].assetID] {
-			return ErrCustomerServiceAttachmentBindingUnavailable
+			return nil, ErrCustomerServiceAttachmentBindingUnavailable
 		}
 		seen[resolved[index].assetID] = true
 		assetIDs = append(assetIDs, resolved[index].assetID)
 	}
 	sort.Slice(assetIDs, func(i, j int) bool { return assetIDs[i] < assetIDs[j] })
+	return &resolvedCustomerServiceMessageAttachmentPlan{requests: resolved, assetIDs: assetIDs}, nil
+}
+
+func (r *TicketRepository) bindResolvedCustomerServiceMessageAttachmentsWithinTransaction(conversationID, messageID uint, identity media.MediaUploadActorIdentity, plan *resolvedCustomerServiceMessageAttachmentPlan) error {
+	assetIDs, resolved := plan.assetIDs, plan.requests
 	assets := make(map[uint]media.MediaAsset, len(assetIDs))
 	for _, assetID := range assetIDs {
 		var asset media.MediaAsset

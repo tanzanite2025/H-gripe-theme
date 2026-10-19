@@ -1,5 +1,5 @@
 <template>
-  <Dialog :open="open" @update:open="emit('update:open', $event)">
+  <Dialog :open="open" @update:open="requestProductEditorOpenChange">
     <DialogContent
       size="full"
       data-product-editor-dialog
@@ -9,8 +9,8 @@
     >
       <form class="flex min-h-0 min-w-0 flex-1 flex-col" @submit.prevent="emit('submit')">
         <DialogHeader class="shrink-0 border-b px-5 py-4 pr-12">
-          <DialogTitle>{{ mode === 'create' ? '添加商品' : '编辑商品' }}</DialogTitle>
-          <DialogDescription>先录入商品基础识别信息，再绑定商品规格模板；模板决定下方商品字段和 SKU 选项列。</DialogDescription>
+          <DialogTitle>{{ mode === 'create' ? (isDedicatedCarbonRim ? '添加碳纤维车圈' : '添加商品') : (isDedicatedCarbonRim ? '编辑碳纤维车圈' : '编辑商品') }}</DialogTitle>
+          <DialogDescription>{{ isDedicatedCarbonRim ? '录入单只碟刹车圈的型号、尺寸和实际销售规格，再维护图片、物流及发布信息。' : '先录入商品基础识别信息，再绑定商品规格模板；模板决定下方商品字段和 SKU 选项列。' }}</DialogDescription>
         </DialogHeader>
 
         <div
@@ -21,16 +21,20 @@
         >
           <ol class="grid gap-1.5 rounded-lg border border-dashed bg-muted/20 p-2 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
             <li
-              v-for="step in editorSteps"
+              v-for="step in (isDedicatedCarbonRim ? carbonRimEditorSteps : editorSteps)"
               :key="step.no"
               class="flex min-w-0 items-center gap-2 rounded-md bg-background/70 px-2.5 py-1.5"
             >
               <span class="font-mono text-[10px] font-black text-primary">{{ step.no }}</span>
-              <strong class="min-w-0 truncate text-foreground">{{ step.label }}</strong>
+              <button v-if="isDedicatedCarbonRim" type="button" class="min-w-0 truncate text-left font-semibold text-foreground" @click="navigateToCarbonRimEditorSection(step.no)">{{ step.label }}</button>
+              <strong v-else class="min-w-0 truncate text-foreground">{{ step.label }}</strong>
             </li>
           </ol>
 
-          <AdminFormSection title="基础信息" description="这里不放规格字段；规格字段必须先通过商品规格模板统一定义，再在下方录入具体值。">
+          <div v-if="Object.keys(errors).length" role="alert" class="rounded-lg border border-destructive/40 p-3 text-sm text-destructive">
+            <p v-for="(message, key) in errors" :key="key">{{ message }}</p>
+          </div>
+          <AdminFormSection id="product-basic-information" title="基础信息" :description="isDedicatedCarbonRim ? '填写品牌、名称与销售文案；车圈工程参数在下一分区维护。' : '规格字段通过商品规格模板定义。'">
             <div class="grid gap-4 md:grid-cols-3">
               <AdminFormField label="商品名称" required :error="errors.name">
                 <Input v-model="form.name" placeholder="请输入商品名称" @input="emit('clear-error', 'name')" />
@@ -109,7 +113,8 @@
             @clear-error="emit('clear-error', $event)"
           />
 
-          <AdminFormSection title="绑定商品规格模板" description="选择模板后，下方才会出现对应的商品参数字段和 SKU 选项列。">
+          <CarbonRimDedicatedProductSpecificationFields v-if="isDedicatedCarbonRim" :specification="form.carbon_rim_specification" :locked="Boolean(form.parent_id)" :error="errors.carbon_rim_specification" />
+          <AdminFormSection v-if="!isDedicatedCarbonRim" title="绑定商品规格模板" description="选择模板后，下方才会出现对应的商品参数字段和 SKU 选项列。">
             <div class="grid gap-3 2xl:grid-cols-[minmax(20rem,0.68fr)_minmax(0,1.32fr)]">
               <div class="grid gap-3 rounded-xl border bg-muted/20 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end 2xl:block 2xl:space-y-3">
                 <AdminFormField label="商品规格模板">
@@ -213,7 +218,7 @@
             </div>
           </AdminFormSection>
 
-          <AdminFormSection
+          <AdminFormSection v-if="!isDedicatedCarbonRim"
             title="商品参数（来自模板）"
             :description="selectedProductSpecTemplate?.slug === 'schwalbe_tire' ? '每个 Article No. 单独建商品，并保留一个默认销售 SKU；不同 Article No. 或尺寸要分成不同商品，不能做成同一商品的 SKU 变体。官网未提供的字段留空。' : selectedSpecDefinitions.length ? '这里填写当前商品自己的参数值；字段来源于已绑定商品规格模板。' : '当前模板没有商品级参数字段；可以直接继续维护 SKU。'"
           >
@@ -301,9 +306,11 @@
             </div>
           </AdminFormSection>
 
-          <AdminFormSection title="SKU 变体矩阵" description="SKU 选项列来自商品规格模板；价格、重量和库存永远按每一行 SKU 独立维护，前台按用户选中的 SKU 显示对应重量。">
+          <AdminFormSection id="product-sales-variants" :title="isDedicatedCarbonRim ? '销售规格与库存' : 'SKU 变体矩阵'" :description="isDedicatedCarbonRim ? '每行代表一种实际销售的孔数、钻孔和涂装组合。已保存组合保持稳定；停卖请取消启用。重量按单只录入。' : 'SKU 选项列来自商品规格模板；价格、重量和库存按每一行维护。'">
             <div class="min-w-0 rounded-lg border">
               <ProductVariantEditor
+                :dedicated-carbon-rim="isDedicatedCarbonRim"
+                :engineering-facts-locked="Boolean(form.parent_id)"
                 :variants="form.variants"
                 :spec-definitions="variantSpecDefinitions"
                 :option-values="form.variant_option_values"
@@ -337,7 +344,7 @@
             @retry="emit('retry-supplier-cost')"
           />
 
-          <ProductMediaSection
+          <ProductMediaSection id="product-media-section"
             :media-items="form.media"
             :variants="form.variants"
             :variant-option-values="form.variant_option_values"
@@ -352,22 +359,23 @@
             @remove="emit('remove-media', $event)"
           />
 
-          <ProductPublishingSection
+          <ProductPublishingSection id="product-publishing-section"
             :form="form"
-            :shipping-templates="shippingTemplates"
             :after-sales-templates="afterSalesTemplates"
             :packaging-templates="packagingTemplates"
             description="控制商品的公开状态和前台可见性。"
-            notice="重量现在只在 SKU 变体里维护，前台会按当前选中的 SKU 显示对应重量。"
-            @product-shipping-template-select="emit('product-shipping-template-select', $event)"
+            notice="重量和线路计费模板按 SKU 独立维护，请在销售规格中设置。"
             @product-information-template-select="(...args) => emit('product-information-template-select', ...args)"
           />
 
         </div>
 
+        <div v-if="isDedicatedCarbonRim" id="carbon-rim-save-review" class="shrink-0 border-t px-5 py-2 text-xs text-muted-foreground">
+          单只碳纤维碟刹车圈 · {{ form.carbon_rim_specification?.model || '型号待填写' }} · {{ form.variants.length }} 个销售 SKU · {{ form.media.length }} 项媒体
+        </div>
         <DialogFooter class="mx-0 mb-0 shrink-0 rounded-b-[32px] border-t bg-background/95 px-5 py-4 backdrop-blur">
-          <Button type="button" variant="outline" @click="emit('update:open', false)">取消</Button>
-          <Button type="submit" :disabled="submitting || supplierCostPending">
+          <Button type="button" variant="outline" @click="requestProductEditorOpenChange(false)">取消</Button>
+          <Button type="submit" :disabled="submitting || supplierCostPending || uploadingMedia">
             <LoaderCircle v-if="submitting" class="size-4 animate-spin" />
             {{ supplierCostPending ? '请先处理成本资料' : submitting ? '保存中' : '保存商品' }}
           </Button>
@@ -385,7 +393,8 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import CarbonRimDedicatedProductSpecificationFields from './CarbonRimDedicatedProductSpecificationFields.vue'
 import type { PropType } from 'vue'
 import { RouterLink } from 'vue-router'
 import { LoaderCircle, Tags } from '@lucide/vue'
@@ -500,7 +509,7 @@ const handleOpenAutoFocus = (event: Event) => {
   })
 }
 
-defineProps({
+const props = defineProps({
   open: { type: Boolean, default: false },
   mode: { type: String, default: 'create' },
   submitting: { type: Boolean, default: false },
@@ -546,6 +555,24 @@ defineProps({
   languageOptions: { type: Array as PropType<LanguageOption[]>, default: () => [] },
 })
 
+const isDedicatedCarbonRim = computed(() => props.form.product_type === 'carbon_rim')
+const carbonRimEditorSteps = [
+  { no: '01', label: '商品资料' }, { no: '02', label: '车圈规格' },
+  { no: '03', label: '销售规格' }, { no: '04', label: '图片视频' },
+  { no: '05', label: '物流与售后' }, { no: '06', label: '核对保存' },
+]
+const navigateToCarbonRimEditorSection = (section: string): void => {
+  const ids: Record<string, string> = { '01': 'product-basic-information', '02': 'carbon-rim-specifications', '03': 'product-sales-variants', '04': 'product-media-section', '05': 'product-publishing-section', '06': 'carbon-rim-save-review' }
+  document.getElementById(ids[section] || '')?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+}
+const initialProductEditorValues = ref('')
+watch(() => props.open, async (open) => { if (open) { await nextTick(); initialProductEditorValues.value = JSON.stringify(props.form) } })
+const requestProductEditorOpenChange = (open: boolean): void => {
+  if (!open && (props.submitting || props.uploadingMedia)) return
+  if (!open && isDedicatedCarbonRim.value && initialProductEditorValues.value !== JSON.stringify(props.form) && !window.confirm('有未保存的修改，确定关闭车圈编辑窗口？')) return
+  emit('update:open', open)
+}
+
 const emit = defineEmits([
   'update:open',
   'submit',
@@ -558,7 +585,6 @@ const emit = defineEmits([
   'confirm-template-sync',
   'product-category-select',
   'product-brand-select',
-  'product-shipping-template-select',
   'product-information-template-select',
   'customs-classification-select',
   'customs-classification-manual-edit',

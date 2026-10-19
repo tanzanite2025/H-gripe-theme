@@ -9,7 +9,11 @@ import (
 
 const (
 	ModelVersion                                    = "pressure-baseline-v1-unapproved"
-	DynamicsModelVersion                            = "cornering-demo-v7-pressure-friction-status"
+	DynamicsModelVersion                            = "cornering-demo-v8-wide-tire-pressure-input"
+	MinimumSupportedNominalTireWidthMm              = 20.0
+	MaximumSupportedNominalTireWidthMm              = 120.0
+	PreviousMaximumGenericDeformationTireWidthMm    = 80.0
+	WideTireVerticalDeformationReferenceUnavailable = "NO_MATCHING_WIDE_TIRE_REFERENCE"
 	PsiPerBar                                       = 14.5037738
 	LoadToleranceKg                                 = 0.5
 	GravityMps2                                     = 9.80665
@@ -114,6 +118,7 @@ type WheelDynamics struct {
 	EstimatedContactPatchWidthMm                 *float64                                 `json:"estimated_contact_patch_width_mm,omitempty"`
 	EstimatedContactPatchLengthMm                *float64                                 `json:"estimated_contact_patch_length_mm,omitempty"`
 	VerticalDeformation                          *TirePressureVerticalDeformationEstimate `json:"vertical_deformation,omitempty"`
+	VerticalDeformationDataStatus                string                                   `json:"vertical_deformation_data_status,omitempty"`
 	MuNominal                                    float64                                  `json:"mu_nominal"`
 	IdealizedGripLimitN                          float64                                  `json:"idealized_grip_limit_n"`
 	GripMarginPct                                float64                                  `json:"grip_margin_pct"`
@@ -198,7 +203,7 @@ func ValidateTirePressureDynamicCalculationRequest(req Request) error {
 	}{
 		{"rider_weight_kg", req.RiderWeightKg, 35, 150},
 		{"bike_weight_kg", req.BikeWeightKg, 4.5, 30},
-		{"nominal_tire_width_mm", req.NominalTireWidthMm, 20, 80},
+		{"nominal_tire_width_mm", req.NominalTireWidthMm, MinimumSupportedNominalTireWidthMm, MaximumSupportedNominalTireWidthMm},
 	}
 	for _, check := range checks {
 		if !isFiniteTirePressureCalculationNumber(check.value) {
@@ -495,7 +500,14 @@ func CalculateSingleWheelGroundFrameCorneringDynamicsWithTireWidth(loadKg, angle
 			}
 		}
 	}
-	result.VerticalDeformation = CalculateTirePressureVerticalDeformationEstimate(fz, pressurePsi)
+	// The load/pressure area relation and geometric footprint support the
+	// expanded catalog widths. The trekking-tire deformation reference has no
+	// matching wide-tire measurements, so do not extrapolate it into this range.
+	if tireWidthMm > PreviousMaximumGenericDeformationTireWidthMm {
+		result.VerticalDeformationDataStatus = WideTireVerticalDeformationReferenceUnavailable
+	} else {
+		result.VerticalDeformation = CalculateTirePressureVerticalDeformationEstimate(fz, pressurePsi)
+	}
 	result.PressureFrictionCoefficient = CalculateTirePressureFrictionCoefficientEstimate(muNominal, pressurePsi)
 	return result
 }

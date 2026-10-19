@@ -221,6 +221,7 @@
                     </span>
                   </div>
 
+                  <CarbonRimSelectedSalesVariantFacts :specification="rawProduct?.variants?.find(variant => variant.id === selectedVariant?.id)?.carbon_rim_specification" />
                   <section v-if="productSpecificationGroups.length" class="global-product-detail-bottom-sheet-specifications">
                     <h4>{{ t('products.detail.specifications', 'Specifications') }}</h4>
                     <div
@@ -308,6 +309,7 @@
 </template>
 
 <script setup lang="ts">
+import CarbonRimSelectedSalesVariantFacts from '~/components/shop/product-detail/CarbonRimSelectedSalesVariantFacts.vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import {

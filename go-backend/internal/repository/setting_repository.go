@@ -1,15 +1,14 @@
 package repository
 
 import (
-	"errors"
-
 	"commerce-platform/internal/domain/setting"
 
 	"gorm.io/gorm"
 )
 
 type SettingRepository struct {
-	db *gorm.DB
+	db                             *gorm.DB
+	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 func NewSettingRepository(db *gorm.DB) *SettingRepository {
@@ -17,7 +16,7 @@ func NewSettingRepository(db *gorm.DB) *SettingRepository {
 }
 
 func (r *SettingRepository) WithTx(tx *gorm.DB) *SettingRepository {
-	return &SettingRepository{db: tx}
+	return &SettingRepository{db: tx, businessMediaReferenceResolver: r.businessMediaReferenceResolver}
 }
 
 // Get 获取设置
@@ -63,25 +62,28 @@ func (r *SettingRepository) GetPublicByGroup(group, locale string) ([]setting.Se
 
 // Set 设置值
 func (r *SettingRepository) Set(s *setting.Setting) error {
-	var existing setting.Setting
-	err := r.db.Where("key = ? AND locale = ?", s.Key, s.Locale).First(&existing).Error
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return r.db.Create(s).Error
+	if s == nil {
+		return gorm.ErrInvalidData
 	}
-	if err != nil {
+	values := []setting.Setting{*s}
+	if err := r.persistSettingsWithOneTransactionalMediaBindingPlan(values, false); err != nil {
 		return err
 	}
-
-	existing.Value = s.Value
-	existing.Type = s.Type
-	existing.Group = s.Group
-	return r.db.Save(&existing).Error
+	*s = values[0]
+	return nil
 }
 
 // Delete 删除设置
 func (r *SettingRepository) Delete(key, locale string) error {
-	return r.db.Where("key = ? AND locale = ?", key, locale).Delete(&setting.Setting{}).Error
+	if !setting.IsDedicatedSiteIdentityOwnerSettingKey(key) {
+		return r.db.Where("key = ? AND locale = ?", key, locale).Delete(&setting.Setting{}).Error
+	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := lockSiteIdentitySettingNamespacesBeforeSortedSettingRows(tx, []settingKeyAndLocaleIdentity{{Key: key, Locale: locale}}); err != nil {
+			return err
+		}
+		return tx.Where("key = ? AND locale = ?", key, locale).Delete(&setting.Setting{}).Error
+	})
 }
 
 // GetAll 获取所有设置
@@ -107,39 +109,7 @@ func (r *SettingRepository) GetByKeys(keys []string, locale string) ([]setting.S
 
 // BatchSet 批量设置
 func (r *SettingRepository) BatchSet(settings []setting.Setting) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		for _, s := range settings {
-			var existing setting.Setting
-			err := tx.Where("key = ? AND locale = ?", s.Key, s.Locale).First(&existing).Error
-
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				isPublic := s.IsPublic
-				if err := tx.Create(&s).Error; err != nil {
-					return err
-				}
-				if !isPublic {
-					if err := tx.Model(&s).Update("is_public", false).Error; err != nil {
-						return err
-					}
-					s.IsPublic = false
-				}
-				continue
-			}
-			if err != nil {
-				return err
-			}
-
-			existing.Value = s.Value
-			existing.Type = s.Type
-			existing.Group = s.Group
-			existing.IsPublic = s.IsPublic
-			existing.Description = s.Description
-			if err := tx.Save(&existing).Error; err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+	return r.persistSettingsWithOneTransactionalMediaBindingPlan(settings, true)
 }
 
 // GetGroups 获取所有分组

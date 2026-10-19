@@ -2,6 +2,8 @@
   <div class="flex min-h-full flex-col gap-4 lg:h-full lg:min-h-0 lg:overflow-hidden">
     <AdminPageHeader class="shrink-0" title="媒体库" description="按业务归属管理素材，使用位置单独查看">
       <template #actions>
+        <Button v-if="canViewMediaUsage" size="sm" variant="outline" @click="usageSummary.setMediaUsageSummaryDialogOpen(true)">使用汇总</Button>
+        <Button v-if="canConfigure" size="sm" variant="outline" @click="capacityAudit.setPhysicalStorageCapacityDialogOpen(true)">容量核对</Button>
         <Button v-if="canCreate" size="sm" :disabled="uploading" @click="triggerUpload">
           <UploadCloud v-if="!uploading" class="size-3.5" />
           <LoaderCircle v-else class="size-3.5 animate-spin" />
@@ -98,7 +100,10 @@
   />
 
   <MediaAssetPreviewDialog v-model:open="previewOpen" :asset="preview" />
-  <MediaAssetBusinessReferenceDetailsDialog v-model:open="referencesOpen" :asset="referencedAsset" />
+  <MediaPhysicalStorageCapacityReadOnlyAuditAndUnverifiedUsageDialog :audit="capacityAudit" />
+  <MediaUsageReadOnlySummaryRecognizedCoverageFiltersAndAuthorizedBusinessNavigationDialog :summary="usageSummary" @diagnose="associationDiagnosis.openMediaAssociationDiagnosis" />
+  <MediaAssetBusinessReferenceDetailsDialog v-model:open="referencesOpen" :asset="referencedAsset" @diagnose="openMediaAssetAssociationDiagnosis" />
+  <MediaReferenceAssociationDiagnosisAndAuditedDraftGalleryRepairDialog :review="associationDiagnosis" :can-repair="canRepairMediaAssociations" />
   <MediaAssetManualLibraryOwnershipReviewAndAuditedClassificationDialog :ownership-review="manualOwnershipReview" />
 
   <MediaDeleteDialog
@@ -121,6 +126,10 @@ import { ImageOff, LoaderCircle, UploadCloud } from '@lucide/vue'
 import type { MediaAsset, OperationalMediaUploadContext } from '@/api/media'
 import MediaLibraryBusinessPartitionNavigation from '@/components/admin/media/MediaLibraryBusinessPartitionNavigation.vue'
 import MediaAssetBusinessReferenceDetailsDialog from '@/components/admin/media/MediaAssetBusinessReferenceDetailsDialog.vue'
+import MediaReferenceAssociationDiagnosisAndAuditedDraftGalleryRepairDialog from '@/components/admin/media/MediaReferenceAssociationDiagnosisAndAuditedDraftGalleryRepairDialog.vue'
+import { useMediaAssociationDiagnosisAndReviewedRepairWithCancellationAndScopeInvalidation } from '@/composables/media/useMediaAssociationDiagnosisAndReviewedRepairWithCancellationAndScopeInvalidation'
+import MediaPhysicalStorageCapacityReadOnlyAuditAndUnverifiedUsageDialog from '@/components/admin/media/MediaPhysicalStorageCapacityReadOnlyAuditAndUnverifiedUsageDialog.vue'
+import { useReadOnlyMediaPhysicalStorageCapacityAuditWithCancellationAndPermissionRevocation } from '@/composables/media/useReadOnlyMediaPhysicalStorageCapacityAuditWithCancellationAndPermissionRevocation'
 import MediaAssetManualLibraryOwnershipReviewAndAuditedClassificationDialog from '@/components/admin/media/MediaAssetManualLibraryOwnershipReviewAndAuditedClassificationDialog.vue'
 import { useMediaAssetManualLibraryOwnershipReviewVersionConflictAndTransactionalSave } from '@/composables/media/useMediaAssetManualLibraryOwnershipReviewVersionConflictAndTransactionalSave'
 import { normalizeMediaLibraryPartitionView, type MediaLibraryPartitionView } from '@/modules/media/mediaLibraryBusinessPartitionUploadOriginAndCustomerServicePurposePresentation'
@@ -139,6 +148,9 @@ import { useMediaLibraryAssets } from '@/composables/media/useMediaLibraryAssets
 import { assetAccessURL } from '@/lib/mediaPresentation'
 import { uploadSpecAccept } from '@/lib/uploadSpecs'
 import { useAuthStore } from '@/stores/auth'
+import MediaUsageReadOnlySummaryRecognizedCoverageFiltersAndAuthorizedBusinessNavigationDialog from '@/components/admin/media/MediaUsageReadOnlySummaryRecognizedCoverageFiltersAndAuthorizedBusinessNavigationDialog.vue'
+import { useReadOnlyMediaUsageSummaryWithScopeInvalidationCancellationAndPermissionRevocation } from '@/composables/media/useReadOnlyMediaUsageSummaryWithScopeInvalidationCancellationAndPermissionRevocation'
+import type { MediaUsageSummaryParams } from '@/api/mediaUsageReadOnlyRebuildableSummaryWithValidatedCoverageAndReferenceStates'
 
 interface MediaEditorState extends Record<string, unknown> {
   alt: string
@@ -180,6 +192,26 @@ const {
   copyURL,
   downloadCopyrightEvidence,
 } = useMediaLibraryAssets(route.query.library_partition)
+const usageSummaryInvalidationRevision = ref(0)
+const canViewMediaUsage = computed(() => authStore.hasPermission('media:view'))
+const usageSummaryAuthorizationIdentity = computed(() => JSON.stringify([authStore.user?.id, authStore.user?.role, [...authStore.permissions].sort()]))
+const usageSummaryParams = computed<MediaUsageSummaryParams>(() => ({
+  library_partition: filters.libraryPartition,
+  upload_origin: filters.uploadOrigin === 'all' ? undefined : filters.uploadOrigin,
+  customer_service_media_purpose: filters.customerServiceMediaPurpose === 'all' ? undefined : filters.customerServiceMediaPurpose,
+  search: filters.search || undefined, media_type: filters.mediaType === 'all' ? undefined : filters.mediaType,
+  status: filters.status === 'all' ? undefined : filters.status,
+}))
+const usageSummary = useReadOnlyMediaUsageSummaryWithScopeInvalidationCancellationAndPermissionRevocation(canViewMediaUsage, usageSummaryParams, usageSummaryAuthorizationIdentity, usageSummaryInvalidationRevision)
+const canRepairMediaAssociations = computed(() => ['media:configure', 'gallery:view', 'gallery:edit', 'gallery:create'].every((permission) => authStore.hasPermission(permission)))
+const associationDiagnosisScopeIdentity = computed(() => JSON.stringify([usageSummaryAuthorizationIdentity.value, usageSummaryParams.value, usageSummaryInvalidationRevision.value]))
+const associationDiagnosis = useMediaAssociationDiagnosisAndReviewedRepairWithCancellationAndScopeInvalidation(canViewMediaUsage, canRepairMediaAssociations, associationDiagnosisScopeIdentity, () => { void fetchAssets() })
+function openMediaAssetAssociationDiagnosis(asset: MediaAsset) {
+  if (typeof asset.id === 'number' && (!Number.isSafeInteger(asset.id) || asset.id <= 0)) return
+  referencesOpen.value = false
+  associationDiagnosis.openMediaAssociationDiagnosis(String(asset.id))
+}
+watch(assets, () => { usageSummaryInvalidationRevision.value++ }, { flush: 'sync' })
 const { deleteDialog, requestDelete, deleteAsset, setDeleteDialogOpen } = useMediaDeletion(fetchAssets)
 const manualOwnershipReview = useMediaAssetManualLibraryOwnershipReviewVersionConflictAndTransactionalSave(fetchAssets)
 
@@ -200,6 +232,7 @@ const uploadButtonLabel = computed(() => ({ catalog: '上传商品素材', conte
 const canEdit = computed(() => authStore.hasPermission('media:edit'))
 const canDelete = computed(() => authStore.hasPermission('media:delete'))
 const canConfigure = computed(() => authStore.hasPermission('media:configure'))
+const capacityAudit = useReadOnlyMediaPhysicalStorageCapacityAuditWithCancellationAndPermissionRevocation(computed(() => canConfigure.value && authStore.hasPermission('media:view')))
 
 const triggerUpload = (): void => fileInput.value?.click()
 

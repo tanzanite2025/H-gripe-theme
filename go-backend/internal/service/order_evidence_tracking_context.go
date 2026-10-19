@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"strings"
-	"time"
 
 	"commerce-platform/internal/domain/orderevidence"
 	"commerce-platform/internal/domain/shipping"
@@ -12,49 +11,13 @@ import (
 // OrderEvidenceTrackingContext is read-only delivery context for the evidence
 // workbench. It deliberately projects shipping data instead of exposing the
 // provider aggregate, which may contain credentials and endpoint settings.
-type OrderEvidenceTrackingContext struct {
-	Shipments            []OrderEvidenceTrackingShipment `json:"shipments,omitempty"`
-	LatestDeliveryEvents []OrderEvidenceDeliveryEvent    `json:"latest_delivery_events,omitempty"`
-	ProviderPODURLs      []string                        `json:"provider_pod_urls,omitempty"`
-	ManualPOD            *OrderEvidenceManualPOD         `json:"manual_pod,omitempty"`
-}
+type OrderEvidenceTrackingContext = orderevidence.OrderEvidenceTrackingContext
 
-type OrderEvidenceTrackingShipment struct {
-	ID                  uint       `json:"id"`
-	TrackingNumber      string     `json:"tracking_number"`
-	ProviderCarrierCode string     `json:"provider_carrier_code"`
-	ProviderCode        string     `json:"provider_code,omitempty"`
-	ProviderName        string     `json:"provider_name,omitempty"`
-	CarrierName         string     `json:"carrier_name,omitempty"`
-	CarrierServiceName  string     `json:"carrier_service_name,omitempty"`
-	RegistrationStatus  string     `json:"registration_status"`
-	SyncStatus          string     `json:"sync_status"`
-	EventCount          int        `json:"event_count"`
-	LastEventAt         *time.Time `json:"last_event_at,omitempty"`
-	LastSyncedAt        *time.Time `json:"last_synced_at,omitempty"`
-	Enabled             bool       `json:"enabled"`
-}
+type OrderEvidenceTrackingShipment = orderevidence.OrderEvidenceTrackingShipment
 
-type OrderEvidenceDeliveryEvent struct {
-	ID                     uint      `json:"id"`
-	TrackingNumber         string    `json:"tracking_number"`
-	Status                 string    `json:"status"`
-	Location               string    `json:"location,omitempty"`
-	Description            string    `json:"description,omitempty"`
-	RecipientSignatureName string    `json:"recipient_signature_name,omitempty"`
-	ProofOfDeliveryURL     string    `json:"proof_of_delivery_url,omitempty"`
-	EventTime              time.Time `json:"event_time"`
-}
+type OrderEvidenceDeliveryEvent = orderevidence.OrderEvidenceDeliveryEvent
 
-type OrderEvidenceManualPOD struct {
-	ItemID                    uint       `json:"item_id"`
-	Status                    string     `json:"status"`
-	TrackingNumber            string     `json:"tracking_number,omitempty"`
-	TrackingAssociationStatus string     `json:"tracking_association_status"`
-	CapturedAt                *time.Time `json:"captured_at,omitempty"`
-	CapturedBy                uint       `json:"captured_by,omitempty"`
-	AttachmentCount           int        `json:"attachment_count"`
-}
+type OrderEvidenceManualPOD = orderevidence.OrderEvidenceManualPOD
 
 func buildOrderEvidenceTrackingContextFromSources(
 	shipments []shipping.TrackingShipment,

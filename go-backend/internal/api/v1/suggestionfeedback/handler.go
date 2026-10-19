@@ -5,6 +5,7 @@ import (
 	"commerce-platform/internal/pkg/honeypot"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
+	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
 	"crypto/sha1"
 	"encoding/hex"
@@ -107,7 +108,7 @@ func (h *Handler) Upload(c *gin.Context) {
 		c.JSON(upload.HTTPStatus(err), gin.H{"error": upload.ErrorCode(err), "message": err.Error()})
 		return
 	}
-	if h.storageService == nil {
+	if h.storageService == nil || h.suggestionService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "storage_unavailable", "message": "File storage is unavailable."})
 		return
 	}
@@ -117,15 +118,19 @@ func (h *Handler) Upload(c *gin.Context) {
 		return
 	}
 
-	url, err := h.storageService.Upload(c.Request.Context(), file)
+	url, err := h.suggestionService.UploadSuggestionAttachmentForEligibleUser(c.Request.Context(), userID, file)
 	if err != nil {
 		h.releaseSuggestionUpload(userID, file.Size)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "upload_failed", "message": "Failed to upload file"})
+		if errors.Is(err, service.ErrSuggestionFeedbackAttachmentEligibility) || errors.Is(err, repository.ErrSuggestionOrPayPalAttachmentReceiptUnavailable) || errors.Is(err, service.ErrObjectStorageCleanupUnavailable) {
+			respondSuggestionError(c, err)
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "upload_failed", "message": "Failed to upload file"})
+		}
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"url":  h.publicMediaURL(url),
+		"url":  url,
 		"name": file.Filename,
 		"size": file.Size,
 	})
@@ -175,7 +180,7 @@ func (h *Handler) publicMediaURL(value string) string {
 
 func (h *Handler) Create(c *gin.Context) {
 	userID, exists := currentUserID(c)
-	if !exists {
+	if !exists || userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized", "message": "Please sign in before submitting feedback."})
 		return
 	}
@@ -215,7 +220,7 @@ func (h *Handler) Create(c *gin.Context) {
 		EligibilityHash:     eligibilityHash(c.GetHeader("User-Agent")),
 	}
 
-	if err := h.suggestionService.Create(item, req.Attachments); err != nil {
+	if err := h.suggestionService.CreateWithAuthorizedSuggestionAttachmentReceipts(c.Request.Context(), item, req.Attachments); err != nil {
 		respondSuggestionError(c, err)
 		return
 	}
@@ -255,6 +260,12 @@ func eligibilityHash(userAgent string) string {
 
 func respondSuggestionError(c *gin.Context, err error) {
 	switch {
+	case errors.Is(err, service.ErrSuggestionFeedbackAttachmentEligibility):
+		c.JSON(http.StatusForbidden, gin.H{"error": "attachment_not_eligible", "message": err.Error()})
+	case errors.Is(err, repository.ErrSuggestionOrPayPalAttachmentReceiptUnavailable):
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_attachment", "message": "This attachment is unavailable. Please upload it again before submitting feedback."})
+	case errors.Is(err, service.ErrObjectStorageCleanupUnavailable):
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "storage_unavailable", "message": "File storage is unavailable."})
 	case errors.Is(err, service.ErrSuggestionFeedbackMissingMessage):
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing_field", "message": err.Error()})
 	case errors.Is(err, service.ErrSuggestionFeedbackInvalidStatus):

@@ -83,26 +83,37 @@ func TestSharedCustomerTemplateCanCoverOnlySelectedCartItems(t *testing.T) {
 	assert.ElementsMatch(t, []int64{1500, 3000, 3000, 2000}, fees)
 }
 
-func TestSKUShippingBindingsOverrideProductAndEmptySelectionInherits(t *testing.T) {
+func TestSkuShippingTemplatesRemainIndependentAndClearedSkuCannotInherit(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
-	first := createIndependentCustomerShippingTemplateForTest(t, db, "product-default", 1000, `["US"]`)
-	second := createIndependentCustomerShippingTemplateForTest(t, db, "sku-override", 2200, `["US"]`)
-	item, variant := seedQuoteProduct(t, db, 50, 800, first.ID)
+	mainTemplate := createIndependentCustomerShippingTemplateForTest(t, db, "main-rim", 2200, `["US"]`)
+	accessoryTemplate := createIndependentCustomerShippingTemplateForTest(t, db, "accessory", 500, `["US"]`)
+	item, mainVariant := seedQuoteProduct(t, db, 50, 800, mainTemplate.ID)
+	accessory := productdomain.ProductVariant{ProductID: item.ID, SKU: "ACCESSORY", OptionValues: `{"kind":"accessory"}`, Currency: "USD", PriceMinor: 500, Weight: 100, Stock: 10, IsActive: true}
+	require.NoError(t, db.Create(&accessory).Error)
 	repo := repository.NewProductRepository(db)
-	require.NoError(t, repo.ReplaceProductShippingTemplateBindings(item.ID, &variant.ID, []uint{second.ID}))
-	ids, err := repo.FindPurchasableShippingTemplateIDs(item.ID, &variant.ID)
+	require.NoError(t, repo.ReplaceSkuShippingTemplateBindings(item.ID, accessory.ID, []uint{accessoryTemplate.ID}))
+	for _, scenario := range []struct {
+		variantID uint
+		fee       int64
+	}{{mainVariant.ID, 2200}, {accessory.ID, 500}} {
+		quote, err := shippingService.QuoteCart(ShippingQuoteInput{Country: "US", Currency: "USD", Items: []ShippingQuoteItemInput{{ProductID: item.ID, VariantID: &scenario.variantID, Quantity: 1}}})
+		require.NoError(t, err)
+		assert.Equal(t, scenario.fee, quote.ShippingFeeMinor)
+	}
+	combined, err := shippingService.QuoteCart(ShippingQuoteInput{Country: "US", Currency: "USD", Items: []ShippingQuoteItemInput{{ProductID: item.ID, VariantID: &mainVariant.ID, Quantity: 1}, {ProductID: item.ID, VariantID: &accessory.ID, Quantity: 1}}})
 	require.NoError(t, err)
-	assert.Equal(t, []uint{second.ID}, ids)
-	require.NoError(t, repo.ReplaceProductShippingTemplateBindings(item.ID, &variant.ID, nil))
-	ids, err = repo.FindPurchasableShippingTemplateIDs(item.ID, &variant.ID)
+	assert.Equal(t, int64(2700), combined.ShippingFeeMinor)
+	require.NoError(t, repo.ReplaceSkuShippingTemplateBindings(item.ID, accessory.ID, nil))
+	ids, err := repo.FindSkuShippingTemplateIDs(item.ID, accessory.ID)
 	require.NoError(t, err)
-	assert.Equal(t, []uint{first.ID}, ids)
-	var count int64
-	require.NoError(t, db.Model(&productdomain.ProductShippingTemplateBinding{}).Where("product_id = ? AND variant_id IS NULL", item.ID).Count(&count).Error)
-	assert.Equal(t, int64(1), count)
-	quote, err := shippingService.QuoteCart(ShippingQuoteInput{Country: "US", Currency: "USD", Items: []ShippingQuoteItemInput{{ProductID: item.ID, VariantID: &variant.ID, Quantity: 1}}})
+	assert.Empty(t, ids)
+	_, err = shippingService.QuoteCart(ShippingQuoteInput{Country: "US", Currency: "USD", Items: []ShippingQuoteItemInput{{ProductID: item.ID, VariantID: &accessory.ID, Quantity: 1}}})
+	require.ErrorContains(t, err, "shipping template is missing for SKU ACCESSORY")
+	ids, err = repo.FindSkuShippingTemplateIDs(item.ID, mainVariant.ID)
 	require.NoError(t, err)
-	assert.Equal(t, int64(1000), quote.ShippingFeeMinor)
+	assert.Equal(t, []uint{mainTemplate.ID}, ids)
+	require.Error(t, repo.ReplaceSkuShippingTemplateBindings(item.ID, 0, []uint{mainTemplate.ID}))
+	require.Error(t, db.Create(&productdomain.ProductShippingTemplateBinding{ProductID: item.ID, ShippingTemplateID: mainTemplate.ID, Enabled: true}).Error)
 }
 
 func TestSavingCustomerTemplateDoesNotChangeSharedRouteAggregate(t *testing.T) {
@@ -205,44 +216,44 @@ func TestCustomerShippingAlternativesDoNotHidePricingConfigurationFailures(t *te
 	}
 }
 
-func TestProductAndSKUShippingBindingsCanBeSavedRepeatedlyWithoutDuplicates(t *testing.T) {
+func TestSkuShippingBindingsCanBeSavedRepeatedlyWithoutDuplicates(t *testing.T) {
 	db, _ := newTestShippingQuoteService(t)
 	first := createIndependentCustomerShippingTemplateForTest(t, db, "repeat-standard", 1000, `["US"]`)
 	second := createIndependentCustomerShippingTemplateForTest(t, db, "repeat-express", 2200, `["US"]`)
 	item, variant := seedQuoteProduct(t, db, 50, 800, first.ID)
 	repo := repository.NewProductRepository(db)
-	for _, scope := range []*uint{nil, &variant.ID} {
+	for _, scope := range []uint{variant.ID} {
 		for attempt := 0; attempt < 3; attempt++ {
-			require.NoError(t, repo.ReplaceProductShippingTemplateBindings(item.ID, scope, []uint{second.ID, first.ID, second.ID}))
-			ids, err := repo.FindPurchasableShippingTemplateIDs(item.ID, scope)
+			require.NoError(t, repo.ReplaceSkuShippingTemplateBindings(item.ID, scope, []uint{second.ID, first.ID, second.ID}))
+			ids, err := repo.FindSkuShippingTemplateIDs(item.ID, scope)
 			require.NoError(t, err)
 			assert.Equal(t, []uint{second.ID, first.ID}, ids)
 		}
 		duplicate := productdomain.ProductShippingTemplateBinding{ProductID: item.ID, VariantID: scope, ShippingTemplateID: first.ID, Enabled: true}
-		require.Error(t, db.Create(&duplicate).Error, "the database must reject duplicate active bindings in either scope")
+		require.Error(t, db.Create(&duplicate).Error, "the database must reject duplicate active bindings for a SKU")
 	}
-	require.Error(t, repo.ReplaceProductShippingTemplateBindings(item.ID, &variant.ID, []uint{999999}))
-	ids, err := repo.FindPurchasableShippingTemplateIDs(item.ID, &variant.ID)
+	require.Error(t, repo.ReplaceSkuShippingTemplateBindings(item.ID, variant.ID, []uint{999999}))
+	ids, err := repo.FindSkuShippingTemplateIDs(item.ID, variant.ID)
 	require.NoError(t, err)
 	assert.Equal(t, []uint{second.ID, first.ID}, ids, "a failed replacement must preserve the previous selection")
 }
 
 func TestShippingBindingStorageFailureCannotReportSuccessfulSave(t *testing.T) {
 	db, _ := newTestShippingQuoteService(t)
-	item, _ := seedQuoteProduct(t, db, 50, 800)
+	item, variant := seedQuoteProduct(t, db, 50, 800)
 	repo := repository.NewProductRepository(db)
 	require.NoError(t, db.Migrator().DropTable(&productdomain.ProductShippingTemplateBinding{}))
-	require.Error(t, repo.ReplaceProductShippingTemplateBindings(item.ID, nil, nil))
-	_, err := repo.FindPurchasableShippingTemplateIDs(item.ID, nil)
+	require.Error(t, repo.ReplaceSkuShippingTemplateBindings(item.ID, variant.ID, nil))
+	_, err := repo.FindSkuShippingTemplateIDs(item.ID, variant.ID)
 	require.Error(t, err)
 }
 
 func TestDeletingCustomerShippingTemplateRequiresRemovingProductBindings(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	template := createIndependentCustomerShippingTemplateForTest(t, db, "referenced", 1000, `["US"]`)
-	item, _ := seedQuoteProduct(t, db, 50, 800, template.ID)
-	require.ErrorContains(t, shippingService.DeleteTemplate(template.ID), "referenced by products or SKUs")
-	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(item.ID, nil, nil))
+	item, variant := seedQuoteProduct(t, db, 50, 800, template.ID)
+	require.ErrorContains(t, shippingService.DeleteTemplate(template.ID), "referenced by SKUs")
+	require.NoError(t, repository.NewProductRepository(db).ReplaceSkuShippingTemplateBindings(item.ID, variant.ID, nil))
 	require.NoError(t, shippingService.DeleteTemplate(template.ID))
 }
 
@@ -252,14 +263,13 @@ func TestRemovingSKUAndProductClearsTheirCustomerShippingTemplateBindings(t *tes
 	skuTemplate := createIndependentCustomerShippingTemplateForTest(t, db, "SKU binding", 2000, `["US"]`)
 	item, variant := seedQuoteProduct(t, db, 50, 800, productTemplate.ID)
 	productRepo := repository.NewProductRepository(db)
-	require.NoError(t, productRepo.ReplaceProductShippingTemplateBindings(item.ID, &variant.ID, []uint{skuTemplate.ID}))
+	require.NoError(t, productRepo.ReplaceSkuShippingTemplateBindings(item.ID, variant.ID, []uint{skuTemplate.ID}))
 	require.Error(t, shippingService.DeleteTemplate(skuTemplate.ID))
 	require.NoError(t, productRepo.UpdateWithSpecValuesAndVariants(&item, nil, false, nil, true))
 	require.NoError(t, shippingService.DeleteTemplate(skuTemplate.ID))
-	require.Error(t, shippingService.DeleteTemplate(productTemplate.ID))
+	require.NoError(t, shippingService.DeleteTemplate(productTemplate.ID))
 
 	require.NoError(t, productRepo.Delete(item.ID))
-	require.NoError(t, shippingService.DeleteTemplate(productTemplate.ID))
 	var activeBindingCount int64
 	require.NoError(t, db.Model(&productdomain.ProductShippingTemplateBinding{}).Where("product_id = ?", item.ID).Count(&activeBindingCount).Error)
 	assert.Zero(t, activeBindingCount)
@@ -324,28 +334,28 @@ func TestOneCarrierRouteCanServeIndependentAggregatesAndCustomerPrices(t *testin
 func TestAdminProductCreateNewSKUUpdateAndTranslationCopyPreserveShippingSelections(t *testing.T) {
 	db, productService := newTestProductService(t)
 	require.NoError(t, db.AutoMigrate(&shippingdomain.ShippingTemplate{}))
-	productSpecificationTemplate := seedCarbonRimType(t, db)
+	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
 	first := shippingdomain.ShippingTemplate{Name: "product selection", Type: "quantity", Currency: "USD", Enabled: true}
 	second := shippingdomain.ShippingTemplate{Name: "SKU selection", Type: "quantity", Currency: "USD", Enabled: true}
 	require.NoError(t, db.Create(&first).Error)
 	require.NoError(t, db.Create(&second).Error)
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
 		ProductSpecificationTemplateID: &productSpecificationTemplate.ID,
-		Name:                           "shipping selections", Slug: "shipping-selections", Status: "active", Locale: "en", ShippingTemplateIDs: []uint{first.ID, second.ID},
+		Name:                           "shipping selections", Slug: "shipping-selections", Status: "active", Locale: "en",
 		SpecValues: map[string]string{"outer_width_mm": "30"},
-		Variants:   []ProductVariantInput{{SKU: "SHIPPING-SELECTIONS-DEFAULT", OptionValues: map[string]string{"brake_type": "disc"}, PriceMinor: 5000, Stock: 10, IsDefault: true, IsActive: boolPtr(true)}},
+		Variants:   []ProductVariantInput{{SKU: "SHIPPING-SELECTIONS-DEFAULT", ShippingTemplateIDs: []uint{first.ID, second.ID}, OptionValues: map[string]string{"brake_type": "disc"}, PriceMinor: 5000, Stock: 10, IsDefault: true, IsActive: boolPtr(true)}},
 	})
 	require.NoError(t, err)
 	require.Len(t, created.Variants, 1)
 	updated, err := productService.UpdateAdminProduct(created.ID, ProductUpdateInput{
 		UpdateVariants: true,
 		Variants: []ProductVariantInput{
-			{ID: &created.Variants[0].ID, SKU: created.Variants[0].SKU, OptionValues: map[string]string{"brake_type": "disc"}, PriceMinor: 5000, Stock: 10, IsDefault: true, IsActive: boolPtr(true)},
+			{ID: &created.Variants[0].ID, ShippingTemplateIDs: []uint{first.ID, second.ID}, SKU: created.Variants[0].SKU, OptionValues: map[string]string{"brake_type": "disc"}, PriceMinor: 5000, Stock: 10, IsDefault: true, IsActive: boolPtr(true)},
 			{SKU: "SHIPPING-SELECTIONS-NEW", OptionValues: map[string]string{"brake_type": "rim"}, PriceMinor: 6000, Stock: 10, IsActive: boolPtr(true), ShippingTemplateIDs: []uint{second.ID}},
 		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, []uint{first.ID, second.ID}, updated.ShippingTemplateIDs)
+	assert.Equal(t, []uint{first.ID, second.ID}, updated.Variants[0].ShippingTemplateIDs)
 	require.Len(t, updated.Variants, 2)
 	var newVariantID uint
 	for _, variant := range updated.Variants {
@@ -357,7 +367,7 @@ func TestAdminProductCreateNewSKUUpdateAndTranslationCopyPreserveShippingSelecti
 	require.NotZero(t, newVariantID)
 	translated, _, err := productService.CopyAdminProductTranslation(created.ID, "fr")
 	require.NoError(t, err)
-	assert.Equal(t, []uint{first.ID, second.ID}, translated.ShippingTemplateIDs)
+	assert.Equal(t, []uint{first.ID, second.ID}, translated.Variants[0].ShippingTemplateIDs)
 	require.Len(t, translated.Variants, 2)
 	for _, variant := range translated.Variants {
 		if variant.MasterVariantID != nil && *variant.MasterVariantID == newVariantID {

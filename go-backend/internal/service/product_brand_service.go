@@ -13,21 +13,23 @@ import (
 )
 
 type ProductBrandInput struct {
-	Name        string
-	Slug        string
-	Description string
-	LogoURL     string
-	WebsiteURL  string
-	IsEnabled   bool
-	SortOrder   int
+	Name                 string
+	Slug                 string
+	Description          string
+	LogoURL              string
+	WebsiteURL           string
+	IsEnabled            bool
+	SortOrder            int
+	PreserveExistingLogo bool
 }
 
 var (
-	ErrProductBrandNotFound          = errors.New("product brand not found")
-	ErrProductBrandInvalid           = errors.New("product brand invalid")
-	ErrProductBrandSlugExists        = errors.New("product brand slug already exists")
-	ErrProductBrandInUse             = errors.New("product brand is used by products")
-	ErrProductBrandInSpokeRimCatalog = errors.New("product brand is used by the spoke rim catalog")
+	ErrProductBrandNotFound             = errors.New("product brand not found")
+	ErrProductBrandInvalid              = errors.New("product brand invalid")
+	ErrProductBrandSlugExists           = errors.New("product brand slug already exists")
+	ErrProductBrandInUse                = errors.New("product brand is used by products")
+	ErrProductBrandInSpokeRimCatalog    = errors.New("product brand is used by the spoke rim catalog")
+	ErrProductBrandLogoReferenceInvalid = repository.ErrProductBrandLogoReferenceInvalid
 )
 
 type ProductBrandService struct {
@@ -41,6 +43,12 @@ type ProductBrandService struct {
 
 func NewProductBrandService(repo *repository.ProductBrandRepository) *ProductBrandService {
 	return &ProductBrandService{repo: repo}
+}
+
+func (s *ProductBrandService) ConfigureMediaService(assets *MediaService) {
+	if s != nil && s.repo != nil {
+		s.repo.ConfigurePublicBusinessMediaReferenceIdentityResolver(assets)
+	}
 }
 
 func (s *ProductBrandService) ConfigureProductDependencies(
@@ -142,8 +150,8 @@ func (s *ProductBrandService) Update(id uint, input ProductBrandInput) (*product
 			if tx.ProductBrand == nil {
 				return errors.New("transactional product brand repository is not configured")
 			}
-			if err := tx.ProductBrand.Update(normalized); err != nil {
-				return err
+			if err := tx.ProductBrand.Update(normalized, repository.ProductBrandLogoFieldMutation{UpdateLogo: !input.PreserveExistingLogo}); err != nil {
+				return mapProductBrandRepositoryWriteErrorToServiceError(err)
 			}
 			updated, err = tx.ProductBrand.FindByID(id)
 			if err != nil {
@@ -164,8 +172,8 @@ func (s *ProductBrandService) Update(id uint, input ProductBrandInput) (*product
 		s.purgeHTMLCache("product brand update")
 		return updated, nil
 	}
-	if err := s.repo.Update(normalized); err != nil {
-		return nil, err
+	if err := s.repo.Update(normalized, repository.ProductBrandLogoFieldMutation{UpdateLogo: !input.PreserveExistingLogo}); err != nil {
+		return nil, mapProductBrandRepositoryWriteErrorToServiceError(err)
 	}
 	if productBrandAffectsProductPayload(existing, normalized) {
 		if err := s.notifyBrandDependents(id, "product_brand_changed"); err != nil {
@@ -322,6 +330,9 @@ func normalizeProductBrandInput(input ProductBrandInput) (*product.ProductBrand,
 		if strings.TrimSpace(value.raw) == "" {
 			continue
 		}
+		if value.name == "logo_url" && strings.HasPrefix(strings.TrimSpace(value.raw), "/") && !strings.HasPrefix(strings.TrimSpace(value.raw), "//") {
+			continue // Managed upload URLs and existing static paths use repository validation.
+		}
 		parsed, err := url.Parse(strings.TrimSpace(value.raw))
 		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
 			return nil, fmt.Errorf("%w: %s must be an absolute URL", ErrProductBrandInvalid, value.name)
@@ -337,4 +348,11 @@ func normalizeProductBrandInput(input ProductBrandInput) (*product.ProductBrand,
 		IsEnabled:   input.IsEnabled,
 		SortOrder:   input.SortOrder,
 	}, nil
+}
+
+func mapProductBrandRepositoryWriteErrorToServiceError(err error) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrProductBrandNotFound
+	}
+	return err
 }

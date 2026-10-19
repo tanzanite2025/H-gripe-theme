@@ -269,6 +269,7 @@ func main() {
 	// administrator-controlled database setting is disabled. This allows the
 	// retention policy to be changed from the admin workbench without a restart.
 	customerServiceRetentionScheduler = scheduler.NewCustomerServiceRetentionScheduler(deps.Services.CustomerServiceRetention, cfg.Worker)
+	customerServiceRetentionScheduler.ConfigureBusinessDraftMediaUploadExpiry(deps.Services.Media)
 	customerServiceRetentionScheduler.Start(context.Background())
 
 	var behaviorEventCleanupScheduler *scheduler.BehaviorEventCleanupScheduler

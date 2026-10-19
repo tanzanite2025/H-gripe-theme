@@ -109,13 +109,14 @@ func TestPublicUploadAccessAllowsOnlyCurrentSiteFavicon(t *testing.T) {
 	db := newSiteFaviconTestDB(t)
 	repo := repository.NewSiteFaviconRepository(db)
 	favicons := NewSiteFaviconService(repo, nil, "https://shop.example.test")
-	if err := repo.ReplaceCurrent(&sitefavicondomain.Asset{
+	if err := db.Create(&sitefavicondomain.Asset{
+		ID:         sitefavicondomain.CurrentAssetID,
 		StorageKey: "site-favicon/current.webp",
 		URL:        "https://shop.example.test/uploads/site-favicon/current.webp",
 		MimeType:   "image/webp",
 		Width:      512,
 		Height:     512,
-	}, nil); err != nil {
+	}).Error; err != nil {
 		t.Fatalf("seed current favicon: %v", err)
 	}
 
@@ -139,7 +140,7 @@ func TestSiteFaviconMissingObjectDoesNotProducePublicURL(t *testing.T) {
 		t.Fatalf("create storage service: %v", err)
 	}
 	repo := repository.NewSiteFaviconRepository(db)
-	if err := repo.ReplaceCurrent(&sitefavicondomain.Asset{StorageKey: "site-favicon/missing.webp", URL: "https://shop.example.test/uploads/site-favicon/missing.webp"}, nil); err != nil {
+	if err := db.Create(&sitefavicondomain.Asset{ID: sitefavicondomain.CurrentAssetID, StorageKey: "site-favicon/missing.webp", URL: "https://shop.example.test/uploads/site-favicon/missing.webp"}).Error; err != nil {
 		t.Fatalf("seed missing favicon: %v", err)
 	}
 	favicons := NewSiteFaviconService(repo, storageService, "https://shop.example.test")

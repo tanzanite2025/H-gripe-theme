@@ -89,8 +89,10 @@
           @select-custom-option="({ slug, value }) => selectCustomOption(slug, value)"
         />
 
+        <CarbonRimSelectedSalesVariantFacts :specification="selectedVariant?.carbon_rim_specification" />
+
         <ProductCarbonRimAppearanceGuideLink
-          :product-specification-template-slug="product.product_specification_template?.slug || ''"
+          :product-specification-template-slug="product.product_type === 'carbon_rim' ? 'carbon_rim' : product.product_specification_template?.slug || ''"
         />
 
         <ProductDetailQuantityActions
@@ -225,6 +227,7 @@ import { useProductDetailPurchase } from '~/composables/useProductDetailPurchase
 import { useProductDetailPresentation } from '~/composables/useProductDetailPresentation'
 import { useProductDetailTracking } from '~/composables/useProductDetailTracking'
 import { useProductDetailVariants } from '~/composables/useProductDetailVariants'
+import CarbonRimSelectedSalesVariantFacts from '~/components/shop/product-detail/CarbonRimSelectedSalesVariantFacts.vue'
 import { useProductDetailSeo } from '~/composables/seo/useProductDetailSeo'
 import ProductDetailExpressCheckout from '~/components/shop/product-detail/ProductDetailExpressCheckout.vue'
 import ProductDetailMediaGallery from '~/components/shop/product-detail/ProductDetailMediaGallery.vue'

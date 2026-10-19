@@ -1,12 +1,78 @@
 param(
   [switch]$StopOnly,
-  [switch]$PortsOnly
+  [switch]$PortsOnly,
+  [string]$LocalMediaAccessConfigurationPath,
+  [switch]$ValidateLocalMediaAccessConfiguration
 )
 
 $ErrorActionPreference = 'Stop'
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LogDir = Join-Path $Root 'output/dev'
+if ([string]::IsNullOrWhiteSpace($LocalMediaAccessConfigurationPath)) {
+  $LocalMediaAccessConfigurationPath = Join-Path $Root 'local-development-reviewed-historical-customer-service-attachment-access.json'
+}
+
+function Get-ValidatedLocalDevelopmentHistoricalAttachmentAccessEnvironment([string]$ConfigurationPath) {
+  $localMediaAccessEnvironment = @{}
+  if (Test-Path -LiteralPath $ConfigurationPath) {
+    $localMediaAccessConfiguration = Get-Content -LiteralPath $ConfigurationPath -Raw | ConvertFrom-Json
+    if ($null -eq $localMediaAccessConfiguration -or $localMediaAccessConfiguration -isnot [pscustomobject]) {
+      throw 'Local media access configuration must be a JSON object.'
+    }
+    foreach ($configurationProperty in $localMediaAccessConfiguration.PSObject.Properties) {
+      switch -CaseSensitive ($configurationProperty.Name) {
+        'reviewed_historical_customer_service_attachment_origins' {
+          if ($configurationProperty.Value -isnot [Array]) {
+            throw 'Reviewed historical attachment origins must be a JSON array of explicit HTTP(S) origins.'
+          }
+          foreach ($configuredOrigin in $configurationProperty.Value) {
+            if ($configuredOrigin -isnot [string] -or [string]::IsNullOrWhiteSpace($configuredOrigin)) {
+              throw 'Reviewed historical attachment origins must contain nonempty strings.'
+            }
+          }
+          $localMediaAccessEnvironment.MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS = $configurationProperty.Value -join ','
+        }
+        'database_auto_migrate' {
+          if ($configurationProperty.Value -isnot [bool]) {
+            throw 'The local database_auto_migrate setting must be a JSON boolean.'
+          }
+          $localMediaAccessEnvironment.DB_AUTO_MIGRATE = $configurationProperty.Value.ToString().ToLowerInvariant()
+        }
+        default { throw 'Local media access configuration contains an unsupported setting.' }
+      }
+    }
+  }
+
+  foreach ($environmentName in @('MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS', 'DB_AUTO_MIGRATE')) {
+    $explicitEnvironmentValue = [Environment]::GetEnvironmentVariable($environmentName, 'Process')
+    if (-not [string]::IsNullOrWhiteSpace($explicitEnvironmentValue)) {
+      $localMediaAccessEnvironment[$environmentName] = $explicitEnvironmentValue
+    }
+  }
+  $reviewedOrigins = $localMediaAccessEnvironment.MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS
+  if (-not [string]::IsNullOrWhiteSpace($reviewedOrigins)) {
+    foreach ($reviewedOrigin in $reviewedOrigins.Split(',')) {
+      $parsedReviewedOrigin = $null
+      if ($reviewedOrigin.Trim() -notmatch '\Ahttps?://[^/\\?#\s]+/?\z' -or
+          -not [Uri]::TryCreate($reviewedOrigin.Trim(), [UriKind]::Absolute, [ref]$parsedReviewedOrigin) -or
+          $parsedReviewedOrigin.Scheme -notin @('http', 'https') -or
+          [string]::IsNullOrWhiteSpace($parsedReviewedOrigin.Host) -or
+          $parsedReviewedOrigin.Host.Contains('*') -or $parsedReviewedOrigin.UserInfo -or
+          $parsedReviewedOrigin.AbsolutePath -ne '/' -or $parsedReviewedOrigin.Query -or
+          $reviewedOrigin.Contains('?') -or $reviewedOrigin.Contains('#')) {
+        throw 'Reviewed historical attachment sources must be explicit HTTP(S) origins without credentials, paths, queries, fragments or wildcards.'
+      }
+    }
+  }
+  if ($localMediaAccessEnvironment.ContainsKey('DB_AUTO_MIGRATE')) {
+    $parsedAutoMigrate = $false
+    if (-not [bool]::TryParse($localMediaAccessEnvironment.DB_AUTO_MIGRATE, [ref]$parsedAutoMigrate)) {
+      throw 'DB_AUTO_MIGRATE must be true or false.'
+    }
+  }
+  return $localMediaAccessEnvironment
+}
 
 $postgresHostPort = 9410
 $postgresHostPortOverride = [Environment]::GetEnvironmentVariable('POSTGRES_HOST_PORT', 'Process')
@@ -331,6 +397,20 @@ if ($StopOnly) {
   exit 0
 }
 
+$localDevelopmentMediaAccessEnvironment = Get-ValidatedLocalDevelopmentHistoricalAttachmentAccessEnvironment $LocalMediaAccessConfigurationPath
+if ($ValidateLocalMediaAccessConfiguration) {
+  [ordered]@{
+    local_configuration_exists = (Test-Path -LiteralPath $LocalMediaAccessConfigurationPath)
+    reviewed_historical_attachment_origins = $localDevelopmentMediaAccessEnvironment.MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS
+    database_auto_migrate = $localDevelopmentMediaAccessEnvironment.DB_AUTO_MIGRATE
+    services_started_or_stopped = $false
+  } | ConvertTo-Json
+  exit 0
+}
+$localDevelopmentMediaAccessEnvironmentCommand = ($localDevelopmentMediaAccessEnvironment.Keys | Sort-Object | ForEach-Object {
+  "`$env:${_}='" + ([string]$localDevelopmentMediaAccessEnvironment[$_]).Replace("'", "''") + "'"
+}) -join "`r`n"
+
 Write-Section 'Starting local DEV'
 Write-Host 'Port plan:' -ForegroundColor Cyan
 Write-Host "  Storefront Nuxt : http://localhost:$($Ports.Storefront)" -ForegroundColor White
@@ -425,6 +505,7 @@ $backendCommand = @"
 `$env:CORS_ORIGINS='$corsOrigins'
 `$env:STOREFRONT_HTML_CACHE_PURGE_URL='http://localhost:$($Ports.Storefront)/_internal/html-cache/purge'
 `$env:STOREFRONT_HTML_CACHE_PURGE_TOKEN='dev-html-cache-purge-token'
+$localDevelopmentMediaAccessEnvironmentCommand
 go run ./cmd/server
 "@
 $apiProcess = Start-DevProcess -Name 'Go API' -WorkingDirectory (Join-Path $Root 'go-backend') -Command $backendCommand -LogName 'go-api'

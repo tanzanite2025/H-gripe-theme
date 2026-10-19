@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	mediadomain "commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 
@@ -186,10 +187,12 @@ func newMediaDerivativePresetTestService(t *testing.T) (*MediaService, *reposito
 		&mediadomain.MediaAsset{},
 		&mediadomain.MediaAssetDerivative{},
 		&mediadomain.MediaDerivativePreset{},
+		&outbox.Event{},
 	))
 
 	presetRepo := repository.NewMediaDerivativePresetRepository(db)
 	mediaService := NewMediaService(repository.NewMediaRepository(db), nil, nil, "https://shop.example.test", 20<<30)
+	mediaService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	mediaService.ConfigureDerivativePresetRepository(presetRepo)
 	return mediaService, presetRepo, db
 }

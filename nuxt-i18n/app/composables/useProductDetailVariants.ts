@@ -331,7 +331,7 @@ export function useProductDetailVariants(
 
         return {
           slug,
-          name: definition?.name || humanizeProductSpecSlug(slug),
+          name: slug === 'rim_configuration' ? (locale.value === 'zh_cn' ? '车圈销售规格' : 'Rim configuration') : definition?.name || humanizeProductSpecSlug(slug),
           presentation,
           options: [...optionsByValue.values()],
         }

@@ -845,6 +845,7 @@ func TestQuoteCartUsesVariantPackagingRuleBeforeProductDefault(t *testing.T) {
 		IsActive:     true,
 	}
 	require.NoError(t, db.Create(&secondVariant).Error)
+	require.NoError(t, repository.NewProductRepository(db).ReplaceSkuShippingTemplateBindings(record.ID, secondVariant.ID, []uint{template.ID}))
 
 	defaultRule := shippingdomain.PackagingRule{RuleName: "Product default", BoxWeight: 0.1, IsActive: true}
 	variantRule := shippingdomain.PackagingRule{RuleName: "Variant carton", BoxWeight: 0.5, IsActive: true}
@@ -1135,12 +1136,12 @@ func TestCreatePackagingRuleApplyRejectsSecondRuleForProduct(t *testing.T) {
 	assert.Contains(t, err.Error(), "product already has a packaging rule")
 }
 
-func TestQuoteCartUsesVariantShippingTemplateOverride(t *testing.T) {
+func TestQuoteCartUsesUpdatedSkuShippingTemplate(t *testing.T) {
 	db, shippingService := newTestShippingQuoteService(t)
 	productTemplate := seedWeightQuoteTemplate(t, db)
 	variantTemplate := seedWeightQuoteTemplate(t, db)
 	record, variant := seedQuoteProduct(t, db, 50, 900, productTemplate.ID)
-	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(record.ID, &variant.ID, []uint{variantTemplate.ID}))
+	require.NoError(t, repository.NewProductRepository(db).ReplaceSkuShippingTemplateBindings(record.ID, variant.ID, []uint{variantTemplate.ID}))
 
 	quote, err := shippingService.QuoteCart(ShippingQuoteInput{
 		Country:  "US",
@@ -1229,13 +1230,12 @@ func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int,
 		suffix = fmt.Sprintf("-%d", productCount+1)
 	}
 	record := productdomain.Product{
-		ShippingTemplateIDs: append([]uint(nil), shippingTemplateIDs...),
-		SKU:                 "SKU-QUOTE" + suffix,
-		Name:                "Quote Product",
-		Slug:                "quote-product" + suffix,
-		PriceMinor:          priceMoney.AmountMinor(),
-		Stock:               10,
-		Status:              "active",
+		SKU:        "SKU-QUOTE" + suffix,
+		Name:       "Quote Product",
+		Slug:       "quote-product" + suffix,
+		PriceMinor: priceMoney.AmountMinor(),
+		Stock:      10,
+		Status:     "active",
 	}
 	require.NoError(t, db.Create(&record).Error)
 
@@ -1251,8 +1251,10 @@ func seedQuoteProduct(t *testing.T, db *gorm.DB, price float64, weightGrams int,
 		IsActive:     true,
 	}
 	require.NoError(t, db.Create(&variant).Error)
-	require.NoError(t, repository.NewProductRepository(db).ReplaceProductShippingTemplateBindings(record.ID, nil, shippingTemplateIDs))
+	require.NoError(t, repository.NewProductRepository(db).ReplaceSkuShippingTemplateBindings(record.ID, variant.ID, shippingTemplateIDs))
 
+	variant.ShippingTemplateIDs = append([]uint(nil), shippingTemplateIDs...)
+	record.Variants = []productdomain.ProductVariant{variant}
 	return record, variant
 }
 
@@ -1345,13 +1347,13 @@ func seedQuoteCustomerBillingTemplateAndCarrierRoute(t *testing.T, db *gorm.DB, 
 		customerTemplate.CreatedAt = time.Time{}
 		customerTemplate.UpdatedAt = time.Time{}
 		require.NoError(t, shippingRepo.CreateTemplateWithRules(&customerTemplate, customerTemplate.Rules))
-		var products []productdomain.Product
-		require.NoError(t, db.Where("id IN (?)", db.Model(&productdomain.ProductShippingTemplateBinding{}).Select("product_id").Where("shipping_template_id = ? AND variant_id IS NULL", templateID)).Find(&products).Error)
+		var variants []productdomain.ProductVariant
+		require.NoError(t, db.Where("id IN (?)", db.Model(&productdomain.ProductShippingTemplateBinding{}).Select("variant_id").Where("shipping_template_id = ?", templateID)).Find(&variants).Error)
 		productRepo := repository.NewProductRepository(db)
-		for _, product := range products {
-			ids, err := productRepo.FindPurchasableShippingTemplateIDs(product.ID, nil)
+		for _, variant := range variants {
+			ids, err := productRepo.FindSkuShippingTemplateIDs(variant.ProductID, variant.ID)
 			require.NoError(t, err)
-			require.NoError(t, productRepo.ReplaceProductShippingTemplateBindings(product.ID, nil, append(ids, customerTemplate.ID)))
+			require.NoError(t, productRepo.ReplaceSkuShippingTemplateBindings(variant.ProductID, variant.ID, append(ids, customerTemplate.ID)))
 		}
 	}
 	return input

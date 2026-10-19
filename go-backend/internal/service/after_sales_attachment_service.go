@@ -3,11 +3,9 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"commerce-platform/internal/domain/aftersales"
 	"commerce-platform/internal/pkg/storage"
@@ -16,15 +14,13 @@ import (
 
 const (
 	AfterSalesEvidenceUploadPrefix = "after-sales/pending"
-	afterSalesEvidenceSignedURLTTL = 10 * time.Minute
 )
 
 type AfterSalesAttachmentFile struct {
-	ReadCloser  io.ReadCloser
-	RedirectURL string
-	Filename    string
-	MimeType    string
-	Size        int64
+	ReadCloser io.ReadCloser
+	Filename   string
+	MimeType   string
+	Size       int64
 }
 
 func (s *AfterSalesService) ConfigureAttachmentStorage(storageService storage.StorageService) {
@@ -59,41 +55,16 @@ func (s *AfterSalesService) OpenAttachmentFile(
 		return nil, err
 	}
 
-	key, err := s.attachmentStorage.ObjectKey(attachment.StorageURL)
+	object, err := openPrivateOrderBusinessAttachmentFromOwningProvider(ctx, s.attachmentStorage, attachment.StorageURL, "after-sales", nil)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrAfterSalesAttachmentStorageUnavailable, err)
+		return nil, err
 	}
-	if !IsAfterSalesEvidenceStorageKey(key) {
-		return nil, ErrAfterSalesAttachmentStorageUnavailable
-	}
-
-	if opener, ok := s.attachmentStorage.(storage.ObjectOpener); ok {
-		object, err := opener.Open(ctx, key)
-		if err != nil {
-			return nil, err
-		}
-		return &AfterSalesAttachmentFile{
-			ReadCloser: object.ReadCloser,
-			Filename:   afterSalesAttachmentFilename(*attachment, object.Name),
-			MimeType:   afterSalesAttachmentMimeType(*attachment, object.MimeType),
-			Size:       afterSalesAttachmentSize(*attachment, object.Size),
-		}, nil
-	}
-
-	if signer, ok := s.attachmentStorage.(storage.PresignedURLProvider); ok {
-		url, err := signer.GetPresignedURL(ctx, key, afterSalesEvidenceSignedURLTTL)
-		if err != nil {
-			return nil, err
-		}
-		return &AfterSalesAttachmentFile{
-			RedirectURL: url,
-			Filename:    afterSalesAttachmentFilename(*attachment, filepath.Base(key)),
-			MimeType:    afterSalesAttachmentMimeType(*attachment, ""),
-			Size:        attachment.SizeBytes,
-		}, nil
-	}
-
-	return nil, ErrAfterSalesAttachmentStorageUnavailable
+	return &AfterSalesAttachmentFile{
+		ReadCloser: object.ReadCloser,
+		Filename:   afterSalesAttachmentFilename(*attachment, object.Name),
+		MimeType:   afterSalesAttachmentMimeType(*attachment, object.MimeType),
+		Size:       object.Size,
+	}, nil
 }
 
 func IsAfterSalesEvidenceStorageKey(key string) bool {
@@ -125,14 +96,4 @@ func afterSalesAttachmentMimeType(
 		return value
 	}
 	return "application/octet-stream"
-}
-
-func afterSalesAttachmentSize(
-	attachment aftersales.AfterSalesCaseAttachment,
-	fallback int64,
-) int64 {
-	if attachment.SizeBytes > 0 {
-		return attachment.SizeBytes
-	}
-	return fallback
 }

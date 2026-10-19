@@ -27,6 +27,7 @@ type OrderEvidenceAttachmentService struct {
 	txManager    *repository.TxManager
 	evidenceRepo *repository.OrderEvidenceRepository
 	storage      storage.StorageService
+	outbox       *repository.OutboxRepository
 }
 
 type OrderEvidenceAttachmentReferenceInput struct {
@@ -73,8 +74,20 @@ func (s *OrderEvidenceAttachmentService) Upload(
 	file *multipart.FileHeader,
 	uploadedBy uint,
 ) (*orderevidence.OrderEvidenceAttachment, error) {
-	if s == nil || s.txManager == nil || s.evidenceRepo == nil || s.storage == nil {
+	if s == nil || s.txManager == nil || s.evidenceRepo == nil || s.storage == nil || s.outbox == nil {
 		return nil, ErrOrderEvidenceAttachmentUnavailable
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := s.evidenceRepo.RequireIndependentOrderEvidenceAttachmentUploadTransaction(); err != nil {
+		return nil, err
+	}
+	if err := s.outbox.RequireIndependentOrderEvidenceAttachmentObjectWriteReceiptTransaction(); err != nil {
+		return nil, err
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	if orderID == 0 || itemID == 0 || uploadedBy == 0 {
 		return nil, errors.New("order id, evidence item id, and uploader are required")
@@ -114,42 +127,7 @@ func (s *OrderEvidenceAttachmentService) Upload(
 		return nil, err
 	}
 
-	prefix := fmt.Sprintf("order-evidence/%d/%d", orderID, itemID)
-	privateUploader, ok := s.storage.(storage.PrivateObjectUploader)
-	if !ok {
-		return nil, fmt.Errorf("%w: private evidence storage is required", ErrOrderEvidenceAttachmentUnavailable)
-	}
-	referenceURL, err := privateUploader.UploadWithPrefixPrivate(ctx, file, prefix)
-	if err != nil {
-		return nil, fmt.Errorf("upload order evidence attachment: %w", err)
-	}
-
-	storageKey, err := s.storage.ObjectKey(referenceURL)
-	if err != nil {
-		_ = s.storage.Delete(ctx, referenceURL)
-		return nil, fmt.Errorf("resolve order evidence attachment key: %w", err)
-	}
-	attachmentInput := OrderEvidenceAttachmentReferenceInput{
-		EvidenceItemID:   item.ID,
-		StorageKey:       storageKey,
-		OriginalFilename: file.Filename,
-		MimeType:         mimeType,
-		SizeBytes:        sizeBytes,
-		SHA256:           sha256Value,
-		UploadedBy:       uploadedBy,
-	}
-
-	var attachment *orderevidence.OrderEvidenceAttachment
-	err = s.txManager.WithinTx(func(repos repository.TxRepositories) error {
-		var registerErr error
-		attachment, registerErr = s.RegisterReference(repos, attachmentInput)
-		return registerErr
-	})
-	if err != nil {
-		_ = s.storage.Delete(ctx, referenceURL)
-		return nil, err
-	}
-	return attachment, nil
+	return s.uploadOrderEvidenceAttachmentWithPrecommittedExactKeyAndAtomicOwnerExchange(ctx, orderID, item, file, uploadedBy, mimeType, sha256Value, sizeBytes)
 }
 
 func (s *OrderEvidenceAttachmentService) Open(
@@ -185,7 +163,6 @@ func (s *OrderEvidenceAttachmentService) Delete(
 	itemID uint,
 	attachmentID uint,
 ) error {
-	_ = ctx
 	if s == nil || s.txManager == nil || s.evidenceRepo == nil {
 		return ErrOrderEvidenceAttachmentUnavailable
 	}
@@ -193,7 +170,8 @@ func (s *OrderEvidenceAttachmentService) Delete(
 		return errors.New("order id, evidence item id, and attachment id are required")
 	}
 
-	return s.txManager.WithinTx(func(repos repository.TxRepositories) error {
+	return s.evidenceRepo.WithLockedOrderEvidenceAttachmentLifecycleTransaction(ctx, func(lockedContext context.Context, repo *repository.OrderEvidenceRepository) error {
+		repos := repository.TxRepositories{OrderEvidence: repo}
 		if repos.OrderEvidence == nil {
 			return ErrOrderEvidenceAttachmentUnavailable
 		}
@@ -229,6 +207,17 @@ func (s *OrderEvidenceAttachmentService) RegisterReference(
 	if s == nil || repos.OrderEvidence == nil {
 		return nil, ErrOrderEvidenceStoreUnavailable
 	}
+	var attachment *orderevidence.OrderEvidenceAttachment
+	err := repos.OrderEvidence.WithLockedOrderEvidenceAttachmentLifecycleTransaction(nil, func(lockedContext context.Context, repo *repository.OrderEvidenceRepository) error {
+		var registerErr error
+		attachment, registerErr = s.registerOrderEvidenceReferenceAfterLifecycleLock(lockedContext, repo, input)
+		return registerErr
+	})
+	return attachment, err
+}
+
+func (s *OrderEvidenceAttachmentService) registerOrderEvidenceReferenceAfterLifecycleLock(ctx context.Context, repo *repository.OrderEvidenceRepository, input OrderEvidenceAttachmentReferenceInput) (*orderevidence.OrderEvidenceAttachment, error) {
+	repos := repository.TxRepositories{OrderEvidence: repo}
 	item, pkg, err := repos.OrderEvidence.FindItemAndPackageByID(input.EvidenceItemID)
 	if repository.IsRecordNotFound(err) {
 		return nil, ErrOrderEvidenceAttachmentItemNotFound
@@ -244,7 +233,7 @@ func (s *OrderEvidenceAttachmentService) RegisterReference(
 	if err != nil {
 		return nil, err
 	}
-	expectedPrefix := fmt.Sprintf("order-evidence/%d/", item.OrderID)
+	expectedPrefix := fmt.Sprintf("order-evidence/%d/%d/", item.OrderID, item.ID)
 	if !strings.HasPrefix(normalizedKey, expectedPrefix) {
 		return nil, ErrOrderEvidenceAttachmentOwnership
 	}
@@ -259,6 +248,21 @@ func (s *OrderEvidenceAttachmentService) RegisterReference(
 		UploadedBy:       input.UploadedBy,
 	}
 	if err := attachment.Validate(); err != nil {
+		return nil, err
+	}
+	allowedType := false
+	maxSize := upload.WarrantyImageRule.MaxSize
+	for _, contentType := range upload.WarrantyImageRule.AllowedContentTypes {
+		allowedType = allowedType || strings.EqualFold(attachment.MimeType, contentType)
+	}
+	if item.ItemType == orderevidence.EvidenceItemTypeSignedPOD && strings.EqualFold(attachment.MimeType, "application/pdf") {
+		allowedType = true
+		maxSize = upload.OrderEvidencePODDocumentRule.MaxSize
+	}
+	if !allowedType || attachment.SizeBytes <= 0 || attachment.SizeBytes > maxSize || attachment.UploadedBy == 0 {
+		return nil, errors.New("evidence attachment type, size, or uploader is invalid")
+	}
+	if err := s.validateOrderEvidenceAttachmentStoredIdentityAndBytesAfterLifecycleLock(ctx, attachment); err != nil {
 		return nil, err
 	}
 	if err := repos.OrderEvidence.CreateAttachment(attachment); err != nil {

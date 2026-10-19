@@ -159,9 +159,7 @@ func (h *Handler) publicSiteSettings(settings *settingdomain.SiteSettings) *sett
 	publicSettings := *settings
 	publicSettings.SiteLogoWidth = 0
 	publicSettings.SiteLogoHeight = 0
-	if logoURL := h.currentSiteLogoURL(); logoURL != "" {
-		publicSettings.SiteLogo = logoURL
-	}
+	publicSettings.SiteLogo = h.publicSiteLogoURL(publicSettings.SiteLogo)
 	if width, height, ok := h.publicSiteLogoDimensions(publicSettings.SiteLogo); ok {
 		publicSettings.SiteLogoWidth = width
 		publicSettings.SiteLogoHeight = height
@@ -169,12 +167,7 @@ func (h *Handler) publicSiteSettings(settings *settingdomain.SiteSettings) *sett
 		publicSettings.SiteLogoWidth = width
 		publicSettings.SiteLogoHeight = height
 	}
-	publicSettings.SiteLogo = h.publicSiteLogoURL(publicSettings.SiteLogo)
-	if h.siteFaviconService != nil {
-		publicSettings.SiteFavicon = h.siteFaviconService.CurrentPublicURL()
-	} else {
-		publicSettings.SiteFavicon = h.publicMediaURL(publicSettings.SiteFavicon)
-	}
+	publicSettings.SiteFavicon = h.publicSiteFaviconURL(publicSettings.SiteFavicon)
 	return &publicSettings
 }
 
@@ -215,28 +208,25 @@ func (h *Handler) publicSetting(item *settingdomain.Setting) *settingdomain.Sett
 	switch publicItem.Key {
 	case "site_logo":
 		publicItem.Value = h.publicSiteLogoURL(publicItem.Value)
-	case "site_favicon",
-		settingdomain.WebsiteProfileKeyAvatarURL,
+	case "site_favicon":
+		publicItem.Value = h.publicSiteFaviconURL(publicItem.Value)
+	case settingdomain.WebsiteProfileKeyAvatarURL,
 		settingdomain.WebsiteProfileKeyFactoryImageURL:
 		publicItem.Value = h.publicMediaURL(publicItem.Value)
 	}
 	return &publicItem
 }
 
-func (h *Handler) currentSiteLogoURL() string {
-	if h == nil || h.siteLogoService == nil {
-		return ""
-	}
-	return h.siteLogoService.CurrentPublicURL()
-}
-
 func (h *Handler) publicSiteLogoURL(value string) string {
 	if h == nil || h.siteLogoService == nil {
 		return h.publicMediaURL(value)
 	}
-	canonical := h.siteLogoService.CanonicalPublicURL(value)
-	if canonical != value {
-		return canonical
+	return h.publicMediaURL(h.siteLogoService.PublicSettingURLFromCurrentOwnerOrLegacySharedFallback(value))
+}
+
+func (h *Handler) publicSiteFaviconURL(value string) string {
+	if h != nil && h.siteFaviconService != nil {
+		return h.siteFaviconService.CurrentPublicURL()
 	}
 	return h.publicMediaURL(value)
 }

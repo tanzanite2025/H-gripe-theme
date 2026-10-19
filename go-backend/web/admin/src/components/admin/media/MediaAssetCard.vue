@@ -25,6 +25,7 @@
         <p class="mt-0.5 truncate text-[10px] text-muted-foreground">{{ mediaAssetUploadOriginLabel(asset.upload_origin) }}</p>
         <p v-if="asset.classification_method === 'manual_reviewed'" class="mt-0.5 text-[10px] text-muted-foreground">归属已人工整理</p>
         <p v-if="asset.requires_conversation_access" class="mt-1 text-[10px] text-muted-foreground">请在对应会话中查看附件</p>
+        <p v-if="asset.business_draft_upload_expires_at" class="mt-1 text-[10px] text-amber-700">尚未保存到业务，上传后 24 小时可回收；请及时保存</p>
       </div>
 
       <div class="grid grid-cols-3 gap-1 text-[10px] font-bold text-muted-foreground">

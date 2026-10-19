@@ -25,16 +25,33 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.QuickBuy.ConfigureMediaService(services.Media)
 	services.GoogleMerchant.ConfigureMediaService(services.Media)
 	services.Ticket.ConfigureCustomerServiceRealtimeOutbox(repos.Outbox)
-	services.CustomerServiceAvatar = service.NewCustomerServiceAvatarService(repos.User, support.StorageSvc, repos.Outbox)
+	services.Ticket.ConfigureMediaService(services.Media)
+	services.CustomerServiceAvatar = service.NewCustomerServiceAvatarService(repos.User, support.StorageSvc, repos.Outbox, support.StorefrontBaseURL)
 	services.Media.ConfigureObjectCleanupOutbox(repos.Outbox)
+	repos.OrderEvidenceSnapshot.ConfigureImmutableSnapshotMediaReferenceIdentityResolver(services.Media)
+	repos.OrderEvidenceSubmission.ConfigureImmutableSnapshotMediaReferenceIdentityResolver(services.Media)
+	repos.OrderEvidenceExport.ConfigureImmutableSnapshotMediaReferenceIdentityResolver(services.Media)
 	services.SiteLogo.ConfigureObjectCleanupOutbox(repos.Outbox)
+	services.SiteLogo.ConfigureSettingService(services.Setting)
 	services.SiteFavicon.ConfigureObjectCleanupOutbox(repos.Outbox)
 	services.HomeVisualTiles.ConfigureObjectCleanupOutbox(repos.Outbox)
+	suggestionAndPayPalAttachmentUploads := service.NewSuggestionAndPayPalAttachmentUploadService(repos.Outbox, support.StorageSvc, support.StorefrontBaseURL)
+	services.SuggestionFeedback.ConfigureSuggestionAttachmentDurableUploads(suggestionAndPayPalAttachmentUploads)
 	services.UGCShowcase.ConfigureObjectCleanupOutbox(repos.Outbox)
+	services.OrderEvidenceAttachment.ConfigureObjectCleanupOutbox(repos.Outbox)
+	privateOrderBusinessAttachmentUploads := service.NewPrivateOrderBusinessAttachmentUploadService(repos.Outbox, support.StorageSvc, support.StorefrontBaseURL)
+	services.Warranty.ConfigurePrivateOrderBusinessAttachmentUploads(privateOrderBusinessAttachmentUploads)
+	services.AfterSales.ConfigurePrivateOrderBusinessAttachmentUploads(privateOrderBusinessAttachmentUploads)
+	services.ShipmentRecord.ConfigurePrivateOrderBusinessAttachmentUploads(privateOrderBusinessAttachmentUploads)
 	services.PublicUploadAccess = service.NewPublicUploadAccessService(services.Media, services.UGCShowcase, services.CustomerServiceAvatar)
 	services.PublicUploadAccess.ConfigureSiteLogoService(services.SiteLogo)
 	services.PublicUploadAccess.ConfigureSiteFaviconService(services.SiteFavicon)
+	services.PublicUploadAccess.ConfigureHomeVisualTileService(services.HomeVisualTiles)
+	services.PublicUploadAccess.ConfigureSuggestionAndPayPalAttachmentUploads(suggestionAndPayPalAttachmentUploads)
 	services.FAQ.ConfigureMediaService(services.Media)
+	services.Post.ConfigureMediaService(services.Media)
+	services.Gallery.ConfigureMediaService(services.Media)
+	services.Setting.ConfigureMediaService(services.Media)
 	services.Review.ConfigureMediaService(services.Media)
 	services.UGCShowcase.ConfigureUploadEligibility(services.UGCShowcaseUploadEligibility)
 	if cfg.ShowcaseUploadProtection.Enabled {
@@ -138,6 +155,7 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.Payment.ConfigureOrderEvidenceSubmissionSnapshotRepository(repos.OrderEvidenceSubmission)
 	services.Payment.ConfigurePolicyDisclosureRepository(repos.OrderPolicyDisclosure)
 	services.Payment.ConfigurePayPalDisputeEvidenceDocumentStorage(support.StorageSvc)
+	services.Payment.ConfigurePayPalInvoiceDurableAttachmentUploads(suggestionAndPayPalAttachmentUploads)
 	if podURLProvider, ok := support.StorageSvc.(service.PayPalDisputeEvidenceAttachmentURLProvider); ok {
 		services.Payment.ConfigurePayPalDisputeEvidenceAttachmentURLProvider(podURLProvider)
 	}
@@ -249,7 +267,7 @@ func (b *dependencyServicesBuilder) wire() error {
 	services.Outbox.RegisterHandler(outbox.EventTypeProductCacheInvalidate, productCacheOutboxHandler.Handle)
 	customerServiceRealtimeOutboxHandler := service.NewCustomerServiceRealtimeOutboxHandler(services.CustomerServiceEvents, b.customerServiceRealtimeRelay)
 	services.Outbox.RegisterHandler(outbox.EventTypeCustomerServiceRealtime, customerServiceRealtimeOutboxHandler.Handle)
-	customerServiceAvatarCleanupHandler := service.NewCustomerServiceAvatarCleanupHandler(repos.User, support.StorageSvc)
+	customerServiceAvatarCleanupHandler := service.NewCustomerServiceAvatarCleanupHandler(repos.User, support.StorageSvc, support.StorefrontBaseURL)
 	services.Outbox.RegisterHandler(outbox.EventTypeCustomerServiceAvatarCleanup, customerServiceAvatarCleanupHandler.Handle)
 	services.Outbox.RegisterHandler(
 		outbox.EventTypeCustomerServiceRetentionCleanup,
@@ -262,6 +280,9 @@ func (b *dependencyServicesBuilder) wire() error {
 		services.UGCShowcase,
 	)
 	objectStorageCleanupHandler.ConfigureSiteFaviconService(services.SiteFavicon)
+	objectStorageCleanupHandler.ConfigureOrderEvidenceAttachmentService(services.OrderEvidenceAttachment)
+	objectStorageCleanupHandler.ConfigurePrivateOrderBusinessAttachmentUploads(privateOrderBusinessAttachmentUploads)
+	objectStorageCleanupHandler.ConfigureSuggestionAndPayPalAttachmentUploads(suggestionAndPayPalAttachmentUploads)
 	services.Outbox.RegisterHandler(outbox.EventTypeObjectStorageCleanup, objectStorageCleanupHandler.Handle)
 	services.Outbox.RegisterHandler(
 		outbox.EventTypeStorefrontRouteCatalogChanged,

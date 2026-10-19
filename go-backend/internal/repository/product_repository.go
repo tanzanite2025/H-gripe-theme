@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -259,15 +260,14 @@ func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*prod
 	return &p, nil
 }
 
-// ReplaceProductShippingTemplateBindings replaces either the product-level or
-// SKU-level customer billing selections atomically. The order supplied by the
+// ReplaceSkuShippingTemplateBindings replaces SKU billing selections atomically. The order supplied by the
 // caller is persisted as priority so Checkout can keep stable alternatives.
-func (r *ProductRepository) ReplaceProductShippingTemplateBindings(productID uint, variantID *uint, templateIDs []uint) error {
+func (r *ProductRepository) ReplaceSkuShippingTemplateBindings(productID uint, variantID uint, templateIDs []uint) error {
 	if r == nil || r.db == nil {
 		return gorm.ErrInvalidDB
 	}
-	if productID == 0 {
-		return fmt.Errorf("product ID is required to save shipping template bindings")
+	if productID == 0 || variantID == 0 {
+		return fmt.Errorf("product ID and SKU ID are required to save shipping template bindings")
 	}
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// Serialize replacement for the same product so simultaneous edits cannot
@@ -276,18 +276,11 @@ func (r *ProductRepository) ReplaceProductShippingTemplateBindings(productID uin
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("id").First(&owner, productID).Error; err != nil {
 			return err
 		}
-		if variantID != nil {
-			var variant product.ProductVariant
-			if err := tx.Where("id = ? AND product_id = ?", *variantID, productID).First(&variant).Error; err != nil {
-				return err
-			}
+		var variant product.ProductVariant
+		if err := tx.Where("id = ? AND product_id = ?", variantID, productID).First(&variant).Error; err != nil {
+			return err
 		}
-		query := tx.Where("product_id = ?", productID)
-		if variantID == nil {
-			query = query.Where("variant_id IS NULL")
-		} else {
-			query = query.Where("variant_id = ?", *variantID)
-		}
+		query := tx.Where("product_id = ? AND variant_id = ?", productID, variantID)
 		if err := query.Delete(&product.ProductShippingTemplateBinding{}).Error; err != nil {
 			return err
 		}
@@ -317,29 +310,18 @@ func (r *ProductRepository) ReplaceProductShippingTemplateBindings(productID uin
 	})
 }
 
-// FindPurchasableShippingTemplateIDs returns SKU-specific bindings when they
-// exist, otherwise the product-level bindings. It never reads provider route
-// records, keeping the product and Checkout boundary on customer templates.
-func (r *ProductRepository) FindPurchasableShippingTemplateIDs(productID uint, variantID *uint) ([]uint, error) {
+// FindSkuShippingTemplateIDs reads only the requested SKU's billing templates.
+func (r *ProductRepository) FindSkuShippingTemplateIDs(productID uint, variantID uint) ([]uint, error) {
 	if r == nil || r.db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
-	if productID == 0 {
-		return nil, fmt.Errorf("product ID is required to read shipping template bindings")
+	if productID == 0 || variantID == 0 {
+		return nil, fmt.Errorf("product ID and SKU ID are required to read shipping template bindings")
 	}
 	var bindings []product.ProductShippingTemplateBinding
-	if variantID != nil {
-		err := r.db.Where("product_id = ? AND variant_id = ? AND enabled = ? AND deleted_at IS NULL", productID, *variantID, true).
-			Order("priority ASC, id ASC").Find(&bindings).Error
-		if err != nil {
-			return nil, err
-		}
-	}
-	if len(bindings) == 0 {
-		if err := r.db.Where("product_id = ? AND variant_id IS NULL AND enabled = ? AND deleted_at IS NULL", productID, true).
-			Order("priority ASC, id ASC").Find(&bindings).Error; err != nil {
-			return nil, err
-		}
+	if err := r.db.Where("product_id = ? AND variant_id = ? AND enabled = ?", productID, variantID, true).
+		Order("priority ASC, id ASC").Find(&bindings).Error; err != nil {
+		return nil, err
 	}
 	ids := make([]uint, 0, len(bindings))
 	for _, binding := range bindings {
@@ -354,20 +336,12 @@ func (r *ProductRepository) populateProductShippingTemplateBindingProjections(it
 	if item == nil {
 		return nil
 	}
-	productIDs, err := r.FindPurchasableShippingTemplateIDs(item.ID, nil)
-	if err != nil {
-		return err
-	}
-	item.ShippingTemplateIDs = productIDs
 	for index := range item.Variants {
-		var bindings []product.ProductShippingTemplateBinding
-		if err := r.db.Where("product_id = ? AND variant_id = ? AND enabled = ?", item.ID, item.Variants[index].ID, true).Order("priority ASC, id ASC").Find(&bindings).Error; err != nil {
+		ids, err := r.FindSkuShippingTemplateIDs(item.ID, item.Variants[index].ID)
+		if err != nil {
 			return err
 		}
-		item.Variants[index].ShippingTemplateIDs = make([]uint, 0, len(bindings))
-		for _, binding := range bindings {
-			item.Variants[index].ShippingTemplateIDs = append(item.Variants[index].ShippingTemplateIDs, binding.ShippingTemplateID)
-		}
+		item.Variants[index].ShippingTemplateIDs = ids
 	}
 	return nil
 }
@@ -634,7 +608,7 @@ func (r *ProductRepository) FindProductCacheIdentitiesByIDs(ids []uint) ([]produ
 	if len(ids) == 0 {
 		return products, nil
 	}
-	err := r.db.Select("id", "slug", "locale").Where("id IN ?", ids).Find(&products).Error
+	err := r.db.Select("id", "slug", "locale").Where("id IN ? OR (product_type = ? AND parent_id IN ?)", ids, product.ProductTypeCarbonRim, ids).Find(&products).Error
 	return products, err
 }
 
@@ -768,6 +742,10 @@ func productUpdateColumns(p *product.Product) map[string]interface{} {
 		"featured":                          p.Featured,
 		"meta_title":                        p.MetaTitle,
 		"meta_desc":                         p.MetaDesc,
+	}
+	if p.CarbonRimSpecificationDirty {
+		encodedSpecification, _ := json.Marshal(p.CarbonRimSpecification)
+		columns["carbon_rim_specification"] = string(encodedSpecification)
 	}
 	return columns
 }

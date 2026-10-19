@@ -8,8 +8,23 @@
         <span>{{ selectedTirePressureRangeLabel }}</span>
       </div>
       <span>{{ selectedTireModelLabel }}</span>
-      <small class="pressure-reference-hint">{{ t('guidesTirePressure.dashboard.selectedTirePressureHint') }}</small>
-      <strong class="pressure-reference-value">{{ selectedTireReferencePressureLabel }}</strong>
+      <small class="pressure-reference-hint">{{ manualOperatingPressureInputAllowed ? t('guidesTirePressure.dashboard.manualOperatingPressureHint', { maximum: selectedTireMaximumPressurePsi }) : t('guidesTirePressure.dashboard.selectedTirePressureHint') }}</small>
+      <div v-if="manualOperatingPressureInputAllowed && selectedTireWidthSupported" class="manual-operating-pressure-input">
+        <label for="tire-pressure-operating-psi-when-catalog-minimum-is-missing">{{ t('guidesTirePressure.dashboard.manualOperatingPressureLabel') }}</label>
+        <input
+          id="tire-pressure-operating-psi-when-catalog-minimum-is-missing"
+          v-model.number="manualOperatingPressurePsi"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          :max="selectedTireMaximumPressurePsi ?? undefined"
+          step="any"
+          :aria-invalid="manualOperatingPressureValidationState !== null && manualOperatingPressureValidationState !== 'REQUIRED'"
+          aria-describedby="tire-pressure-operating-psi-validation-message"
+        >
+        <p v-if="manualOperatingPressureValidationState" id="tire-pressure-operating-psi-validation-message" role="status">{{ manualOperatingPressureValidationMessage }}</p>
+      </div>
+      <strong v-else class="pressure-reference-value">{{ selectedTireReferencePressureLabel }}</strong>
       <div class="pressure-comparison-actions">
         <button
           class="pressure-comparison-toggle"
@@ -91,7 +106,10 @@
         <small>{{ t('guidesTirePressure.dashboard.pressureFrictionDataHint') }}</small>
       </div>
     </div>
-    <div class="control-box"><div class="control-head"><b>{{ t('guidesTirePressure.dashboard.tireWidth') }}</b><span>{{ tireWidth }}C</span></div><input id="tire-dashboard-tire-width" v-model.number="tireWidth" :aria-label="t('guidesTirePressure.dashboard.tireWidth')" type="range" min="20" max="80" step="1"><div class="range-scale"><span>20C</span><span>28C</span><span>40C</span><span>80C</span></div></div>
+    <div class="control-box">
+      <div class="control-head"><b>{{ t('guidesTirePressure.dashboard.tireWidth') }}</b><span>{{ displayedTireWidthMm ?? '—' }} mm</span></div>
+      <small>{{ t('guidesTirePressure.dashboard.catalogTireWidthReadonlyHint') }}</small>
+    </div>
     </div>
   </article>
 </template>
@@ -115,10 +133,16 @@ type TirePressureControlsModel = {
   postureLabel: ComputedRef<string>
   postures: ComputedRef<Array<{ id: string; key: string; label: string }>>
   postureId: Ref<string>
-  tireWidth: Ref<number>
+  displayedTireWidthMm: ComputedRef<number | null>
   selectedTireModelLabel: ComputedRef<string>
   selectedTirePressureRangeLabel: ComputedRef<string>
   selectedTireReferencePressureLabel: ComputedRef<string>
+  selectedTireMaximumPressurePsi: ComputedRef<number | null>
+  selectedTireWidthSupported: ComputedRef<boolean>
+  manualOperatingPressureInputAllowed: ComputedRef<boolean>
+  manualOperatingPressurePsi: Ref<number | string>
+  manualOperatingPressureValidationState: ComputedRef<'REQUIRED' | 'INVALID' | 'ABOVE_CATALOG_MAXIMUM' | null>
+  manualOperatingPressureValidationMessage: ComputedRef<string>
   pressureComparisonEnabled: Ref<boolean>
   pressureComparisonAvailable: ComputedRef<boolean>
   pressureComparisonAvailabilityHint: ComputedRef<string>
@@ -140,7 +164,7 @@ type TirePressureControlsModel = {
 const { t } = useI18n()
 const model = inject<TirePressureControlsModel>('tirePressureModel')
 if (!model) throw new Error('TirePressureControls requires tirePressureModel')
-const { totalWeight, leanAngle, leanDesc, leanPresets, leanPresetLabel, riderWeight, bikeWeight, frontLoad, rearLoad, frontRatio, rearRatio, postureLabel, postures, postureId, tireWidth, selectedTireModelLabel, selectedTirePressureRangeLabel, selectedTireReferencePressureLabel, pressureComparisonEnabled, pressureComparisonAvailable, pressureComparisonAvailabilityHint, comparisonRequestPending, comparisonRequestFailed, retryTirePressureDynamics, toggleLowestPressureComparison, wetPressureScenarioEnabled, wetPressureScenarioAvailable, wetPressureWaterFilmDepthMm, toggleWetPressureScenario, speedKmh, equivalentTurnRadiusM, lateralAccelerationG, formatTurnRadius, demonstrationFrictionCoefficientNominal } = model
+const { totalWeight, leanAngle, leanDesc, leanPresets, leanPresetLabel, riderWeight, bikeWeight, frontLoad, rearLoad, frontRatio, rearRatio, postureLabel, postures, postureId, displayedTireWidthMm, selectedTireModelLabel, selectedTirePressureRangeLabel, selectedTireReferencePressureLabel, selectedTireMaximumPressurePsi, selectedTireWidthSupported, manualOperatingPressureInputAllowed, manualOperatingPressurePsi, manualOperatingPressureValidationState, manualOperatingPressureValidationMessage, pressureComparisonEnabled, pressureComparisonAvailable, pressureComparisonAvailabilityHint, comparisonRequestPending, comparisonRequestFailed, retryTirePressureDynamics, toggleLowestPressureComparison, wetPressureScenarioEnabled, wetPressureScenarioAvailable, wetPressureWaterFilmDepthMm, toggleWetPressureScenario, speedKmh, equivalentTurnRadiusM, lateralAccelerationG, formatTurnRadius, demonstrationFrictionCoefficientNominal } = model
 
 function formatFrictionCoefficient(value: number | null | undefined) {
   return value === null || value === undefined || !Number.isFinite(value) ? '—' : value.toFixed(2)
@@ -220,6 +244,27 @@ function formatFrictionCoefficient(value: number | null | undefined) {
   color: var(--tz-text-primary);
   font-size: 0.78rem;
   font-variant-numeric: tabular-nums;
+}
+
+.manual-operating-pressure-input {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.manual-operating-pressure-input input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--tz-border-strong);
+  border-radius: 0.4rem;
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+}
+
+.manual-operating-pressure-input p {
+  margin: 0;
+  color: var(--tz-text-secondary);
 }
 
 .pressure-comparison-toggle {

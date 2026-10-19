@@ -60,7 +60,7 @@ func createIsolatedPostgreSQLCustomerServiceAttachmentRetirementTestEnvironment(
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	require.NoError(t, db.AutoMigrate(&user.User{}, &ticket.Ticket{}, &ticket.TicketMessage{}, &ticket.CustomerServiceInboxState{},
 		&media.MediaAsset{}, &media.MediaAssetDerivative{}, &outbox.Event{}, &audit.AuditLog{}))
-	for _, migrationName := range []string{"420_add_customer_service_message_media_asset_bindings_and_pending_upload_sessions.up.sql", "421_add_customer_service_private_derivative_write_lease_for_safe_asset_cleanup.up.sql"} {
+	for _, migrationName := range []string{"420_add_customer_service_message_media_asset_bindings_and_pending_upload_sessions.up.sql", "421_add_customer_service_private_derivative_write_lease_for_safe_asset_cleanup.up.sql", "428_add_pending_customer_service_upload_expected_capacity_bytes.up.sql"} {
 		migration, err := os.ReadFile(filepath.Join("..", "..", "migrations", migrationName))
 		require.NoError(t, err)
 		require.NoError(t, db.Exec(string(migration)).Error)
@@ -71,7 +71,9 @@ func createIsolatedPostgreSQLCustomerServiceAttachmentRetirementTestEnvironment(
 	require.NoError(t, db.Create(&support).Error)
 	require.NoError(t, db.Omit("Messages", "User").Create(&env.conversation).Error)
 	require.NoError(t, db.Omit("Derivatives").Create(&env.asset).Error)
-	require.NoError(t, repository.NewMediaRepository(db).CreateAssetDerivatives(env.asset.Derivatives))
+	// Copy the historical fixture without issuing a new provider registration.
+	// Uploads below use the configured MediaService and verify actual bytes.
+	require.NoError(t, db.Create(&env.asset.Derivatives).Error)
 	require.NoError(t, db.Create(&env.message).Error)
 	for _, table := range []string{"users", "tickets", "ticket_messages", "media_assets", "media_asset_derivatives"} {
 		require.NoError(t, db.Exec("SELECT setval(pg_get_serial_sequence('"+table+"','id'), (SELECT MAX(id) FROM "+table+"), true)").Error)

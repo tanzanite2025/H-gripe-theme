@@ -27,10 +27,18 @@ func (h *MediaHandler) UploadAsset(c *gin.Context) {
 }
 
 func (h *MediaHandler) UploadRefundCancellationPolicyImage(c *gin.Context) {
-	h.uploadAsset(c, string(upload.SpecRefundCancellationImage))
+	h.uploadMediaAssetUsingAuthorizedWorkflow(c, string(upload.SpecRefundCancellationImage), true)
 }
 
 func (h *MediaHandler) uploadAsset(c *gin.Context, forcedPurpose string, trustedOrigin ...media.MediaAssetUploadOrigin) {
+	h.uploadMediaAssetUsingAuthorizedWorkflow(c, forcedPurpose, false, trustedOrigin...)
+}
+
+func (h *MediaHandler) UploadBusinessDraftMediaAssetForAuthorizedOrigin(origin media.MediaAssetUploadOrigin) gin.HandlerFunc {
+	return func(c *gin.Context) { h.uploadMediaAssetUsingAuthorizedWorkflow(c, "", true, origin) }
+}
+
+func (h *MediaHandler) uploadMediaAssetUsingAuthorizedWorkflow(c *gin.Context, forcedPurpose string, businessDraft bool, trustedOrigin ...media.MediaAssetUploadOrigin) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, mediaMaxRequestBytes)
 	if err := c.Request.ParseMultipartForm(mediaMultipartMemory); err != nil {
 		if isRequestBodyTooLarge(err) {
@@ -92,7 +100,11 @@ func (h *MediaHandler) uploadAsset(c *gin.Context, forcedPurpose string, trusted
 		return
 	}
 
-	asset, err := h.mediaService.UploadAsset(c.Request.Context(), service.MediaUploadInput{
+	uploadOperation := h.mediaService.UploadAsset
+	if businessDraft {
+		uploadOperation = h.mediaService.UploadBusinessDraftMediaAsset
+	}
+	asset, err := uploadOperation(c.Request.Context(), service.MediaUploadInput{
 		UploadOrigin: mediaAssetUploadOriginSelectedByAuthorizedHandler(forcedPurpose, trustedOrigin), UploadPurpose: requestedPurpose,
 		File:                file,
 		MediaType:           mediaType,

@@ -120,24 +120,26 @@ type ProductConfigurationInventoryAllocation struct {
 }
 
 type ProductConfigurationSnapshot struct {
-	SchemaVersion             int                                       `json:"schema_version"`
-	ProductID                 uint                                      `json:"product_id"`
-	VariantID                 uint                                      `json:"variant_id"`
-	ProductName               string                                    `json:"product_name"`
-	VariantName               string                                    `json:"variant_name"`
-	ConfigurationHash         string                                    `json:"configuration_hash"`
-	NormalizedConfiguration   json.RawMessage                           `json:"normalized_configuration"`
-	Currency                  string                                    `json:"currency"`
-	Selections                []ProductConfigurationGroupSnapshot       `json:"selections"`
-	InventoryAllocations      []ProductConfigurationInventoryAllocation `json:"inventory_allocations,omitempty"`
-	WeightDeltaGrams          int                                       `json:"weight_delta_grams,omitempty"`
-	PackagingWeightDeltaGrams int                                       `json:"packaging_weight_delta_grams,omitempty"`
-	ProductionLeadTimeDays    int                                       `json:"production_lead_time_days,omitempty"`
-	RequiresProduction        bool                                      `json:"requires_production,omitempty"`
-	CancellationPolicy        string                                    `json:"cancellation_policy,omitempty"`
-	ReturnPolicy              string                                    `json:"return_policy,omitempty"`
-	OptionRelations           []ProductConfigurationRelationSnapshot    `json:"option_relations,omitempty"`
-	PriceBreakdown            ProductConfigurationPriceBreakdown        `json:"price_breakdown"`
+	CarbonRimSpecification        *productdomain.CarbonRimSpecification        `json:"carbon_rim_specification,omitempty"`
+	CarbonRimVariantSpecification *productdomain.CarbonRimVariantSpecification `json:"carbon_rim_variant_specification,omitempty"`
+	SchemaVersion                 int                                          `json:"schema_version"`
+	ProductID                     uint                                         `json:"product_id"`
+	VariantID                     uint                                         `json:"variant_id"`
+	ProductName                   string                                       `json:"product_name"`
+	VariantName                   string                                       `json:"variant_name"`
+	ConfigurationHash             string                                       `json:"configuration_hash"`
+	NormalizedConfiguration       json.RawMessage                              `json:"normalized_configuration"`
+	Currency                      string                                       `json:"currency"`
+	Selections                    []ProductConfigurationGroupSnapshot          `json:"selections"`
+	InventoryAllocations          []ProductConfigurationInventoryAllocation    `json:"inventory_allocations,omitempty"`
+	WeightDeltaGrams              int                                          `json:"weight_delta_grams,omitempty"`
+	PackagingWeightDeltaGrams     int                                          `json:"packaging_weight_delta_grams,omitempty"`
+	ProductionLeadTimeDays        int                                          `json:"production_lead_time_days,omitempty"`
+	RequiresProduction            bool                                         `json:"requires_production,omitempty"`
+	CancellationPolicy            string                                       `json:"cancellation_policy,omitempty"`
+	ReturnPolicy                  string                                       `json:"return_policy,omitempty"`
+	OptionRelations               []ProductConfigurationRelationSnapshot       `json:"option_relations,omitempty"`
+	PriceBreakdown                ProductConfigurationPriceBreakdown           `json:"price_breakdown"`
 }
 
 type ProductConfigurationRelationSnapshot struct {
@@ -471,7 +473,7 @@ func ResolveProductConfiguration(item *productdomain.Product, variant *productdo
 	sort.Slice(allocations, func(i, j int) bool { return allocations[i].VariantID < allocations[j].VariantID })
 	return ProductConfigurationResult{
 		Data: data, Hash: hex.EncodeToString(digest[:]), Delta: zero, Selections: resultSelections,
-		Snapshot:             ProductConfigurationSnapshot{SchemaVersion: ProductConfigurationSchemaVersion, ProductID: item.ID, VariantID: variant.ID, Currency: currencyCode, Selections: resultSnapshotGroups, InventoryAllocations: allocations, WeightDeltaGrams: weightDeltaGrams, PackagingWeightDeltaGrams: packagingWeightDeltaGrams, ProductionLeadTimeDays: productionLeadTimeDays, RequiresProduction: requiresProduction, CancellationPolicy: cancellationPolicy, ReturnPolicy: returnPolicy, OptionRelations: relationSnapshots},
+		Snapshot:             ProductConfigurationSnapshot{CarbonRimSpecification: item.CarbonRimSpecification, CarbonRimVariantSpecification: variant.CarbonRimSpecification, SchemaVersion: ProductConfigurationSchemaVersion, ProductID: item.ID, VariantID: variant.ID, Currency: currencyCode, Selections: resultSnapshotGroups, InventoryAllocations: allocations, WeightDeltaGrams: weightDeltaGrams, PackagingWeightDeltaGrams: packagingWeightDeltaGrams, ProductionLeadTimeDays: productionLeadTimeDays, RequiresProduction: requiresProduction, CancellationPolicy: cancellationPolicy, ReturnPolicy: returnPolicy, OptionRelations: relationSnapshots},
 		InventoryAllocations: allocations, WeightDeltaGrams: weightDeltaGrams, PackagingWeightDeltaGrams: packagingWeightDeltaGrams, ProductionLeadTimeDays: productionLeadTimeDays, RequiresProduction: requiresProduction, CancellationPolicy: cancellationPolicy, ReturnPolicy: returnPolicy,
 	}, nil
 }

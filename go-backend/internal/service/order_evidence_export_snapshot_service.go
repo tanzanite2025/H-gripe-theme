@@ -25,64 +25,13 @@ var (
 // by the order evidence export endpoint. Storage keys are intentionally not
 // included; attachment IDs, metadata, and hashes remain available for the
 // authenticated attachment endpoint.
-type OrderEvidenceExportSnapshotPayload struct {
-	SchemaVersion   int                                `json:"schema_version"`
-	ExportType      string                             `json:"export_type"`
-	ExportedAt      time.Time                          `json:"exported_at"`
-	Order           *order.Order                       `json:"order"`
-	Package         *OrderEvidenceExportPackage        `json:"package"`
-	Completeness    orderevidence.EvidenceCompleteness `json:"completeness"`
-	TrackingContext *OrderEvidenceTrackingContext      `json:"tracking_context,omitempty"`
-	TrackingEvents  []shipping.TrackingEvent           `json:"tracking_events"`
-	Sources         []OrderEvidenceSourceReference     `json:"sources"`
-	Warnings        []string                           `json:"warnings,omitempty"`
-}
+type OrderEvidenceExportSnapshotPayload = orderevidence.OrderEvidenceExportSnapshotPayload
 
-type OrderEvidenceExportPackage struct {
-	ID                         uint                      `json:"id"`
-	OrderID                    uint                      `json:"order_id"`
-	SnapshotID                 uint                      `json:"snapshot_id"`
-	PackageVersion             int                       `json:"package_version"`
-	Status                     string                    `json:"status"`
-	OrderTotalUSDSnapshotMinor int64                     `json:"order_total_usd_snapshot_minor"`
-	IsHighValue                bool                      `json:"is_high_value"`
-	HasSpokeTensionQC          bool                      `json:"has_spoke_tension_qc"`
-	SchemaVersion              int                       `json:"schema_version"`
-	CreatedBy                  uint                      `json:"created_by"`
-	LockedAt                   *time.Time                `json:"locked_at,omitempty"`
-	CreatedAt                  time.Time                 `json:"created_at"`
-	UpdatedAt                  time.Time                 `json:"updated_at"`
-	Items                      []OrderEvidenceExportItem `json:"items"`
-}
+type OrderEvidenceExportPackage = orderevidence.OrderEvidenceExportPackage
 
-type OrderEvidenceExportItem struct {
-	ID             uint                            `json:"id"`
-	PackageID      uint                            `json:"package_id"`
-	OrderID        uint                            `json:"order_id"`
-	OrderItemID    *uint                           `json:"order_item_id,omitempty"`
-	SnapshotID     *uint                           `json:"snapshot_id,omitempty"`
-	ItemType       string                          `json:"item_type"`
-	Status         string                          `json:"status"`
-	RequiredReason string                          `json:"required_reason"`
-	DataJSON       json.RawMessage                 `json:"data_json"`
-	CapturedAt     *time.Time                      `json:"captured_at,omitempty"`
-	CapturedBy     uint                            `json:"captured_by"`
-	ContentSHA256  string                          `json:"content_sha256"`
-	Attachments    []OrderEvidenceExportAttachment `json:"attachments"`
-	CreatedAt      time.Time                       `json:"created_at"`
-	UpdatedAt      time.Time                       `json:"updated_at"`
-}
+type OrderEvidenceExportItem = orderevidence.OrderEvidenceExportItem
 
-type OrderEvidenceExportAttachment struct {
-	ID               uint      `json:"id"`
-	EvidenceItemID   uint      `json:"evidence_item_id"`
-	OriginalFilename string    `json:"original_filename"`
-	MimeType         string    `json:"mime_type"`
-	SizeBytes        int64     `json:"size_bytes"`
-	SHA256           string    `json:"sha256"`
-	UploadedBy       uint      `json:"uploaded_by"`
-	CreatedAt        time.Time `json:"created_at"`
-}
+type OrderEvidenceExportAttachment = orderevidence.OrderEvidenceExportAttachment
 
 // OrderEvidenceExportSnapshotService creates or reuses an immutable manifest
 // for the current locked package version. It never mutates evidence facts.
@@ -168,6 +117,10 @@ func (s *OrderEvidenceExportSnapshotService) Export(
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("%w: marshal payload: %v", ErrOrderEvidenceExportSnapshotInvalid, err)
+	}
+	payloadBytes, err = orderevidence.CanonicalImmutableSnapshotJSONForStorageIndependentIntegrity(payloadBytes)
+	if err != nil {
+		return nil, fmt.Errorf("%w: canonicalize payload: %v", ErrOrderEvidenceExportSnapshotInvalid, err)
 	}
 	hash := sha256.Sum256(payloadBytes)
 	snapshot := &orderevidence.OrderEvidenceExportSnapshot{

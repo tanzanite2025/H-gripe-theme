@@ -1,7 +1,8 @@
 import { computed, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { ApiRequestError, useApiRequest } from '~/composables/useApiRequest'
 
-export type TirePressureCalculatorDynamicsState = 'PENDING' | 'BACKEND DEMO' | 'UNAVAILABLE'
+export type TirePressureCalculatorDynamicsInputBlockingState = 'MODEL_REQUIRED' | 'PRESSURE_REFERENCE_UNAVAILABLE' | 'OPERATING_PRESSURE_REQUIRED' | 'TIRE_WIDTH_UNSUPPORTED'
+export type TirePressureCalculatorDynamicsState = TirePressureCalculatorDynamicsInputBlockingState | 'PENDING' | 'BACKEND DEMO' | 'UNAVAILABLE'
 
 export type TirePressureCalculatorVerticalDeformationEstimate = {
   data_status: string
@@ -73,6 +74,7 @@ export type TirePressureCalculatorBackendWheelDynamics = {
   estimated_contact_patch_width_mm?: number
   estimated_contact_patch_length_mm?: number
   vertical_deformation?: TirePressureCalculatorVerticalDeformationEstimate
+  vertical_deformation_data_status?: string
   pressure_contact_area_comparison?: TirePressureCalculatorPressureContactAreaComparison
   pressure_friction_coefficient?: TirePressureCalculatorPressureFrictionCoefficientEstimate
   wet_pressure_compensation?: TirePressureCalculatorWetPressureCompensation
@@ -117,6 +119,8 @@ export type TirePressureCalculatorDynamicsRequestInputs = {
   apiPosition: ComputedRef<string>
   leanAngle: Ref<number>
   selectedTireArticleNo: ComputedRef<string | null>
+  selectedTireWidthSupported: ComputedRef<boolean>
+  manualOperatingPressureInputAllowed: ComputedRef<boolean>
   selectedTireReferencePressurePsi: ComputedRef<number | null>
   selectedTirePressureBoundsPsi: ComputedRef<TirePressureCalculatorPressureBounds | null>
   pressureComparisonEnabled: Ref<boolean>
@@ -208,7 +212,7 @@ export const useTirePressureCalculatorDynamicsRequest = (
   inputs: TirePressureCalculatorDynamicsRequestInputs,
 ) => {
   const { request } = useApiRequest()
-  const dynamicsState = ref<TirePressureCalculatorDynamicsState>('PENDING')
+  const dynamicsState = ref<TirePressureCalculatorDynamicsState>('MODEL_REQUIRED')
   const backendDynamics = ref<TirePressureCalculatorBackendDynamics | null>(null)
   const committedDynamicsInputKey = ref<string | null>(null)
   const pressureComparisonActive = computed(() => inputs.pressureComparisonEnabled.value || inputs.wetPressureScenarioEnabled.value)
@@ -220,6 +224,8 @@ export const useTirePressureCalculatorDynamicsRequest = (
     position: inputs.apiPosition.value,
     lean: inputs.leanAngle.value,
     tireArticleNo: inputs.selectedTireArticleNo.value,
+    tireWidthSupported: inputs.selectedTireWidthSupported.value,
+    manualOperatingPressureInputAllowed: inputs.manualOperatingPressureInputAllowed.value,
     referencePressurePsi: inputs.selectedTireReferencePressurePsi.value,
     minimumPressurePsi: inputs.selectedTirePressureBoundsPsi.value?.minimumPsi ?? null,
     pressureComparisonEnabled: inputs.pressureComparisonEnabled.value,
@@ -250,8 +256,27 @@ export const useTirePressureCalculatorDynamicsRequest = (
   let dynamicsTimer: ReturnType<typeof setTimeout> | undefined
   let isCalculatorUnmounted = false
 
+  function resolveTirePressureDynamicsInputBlockingState(): TirePressureCalculatorDynamicsInputBlockingState | null {
+    if (!inputs.selectedTireArticleNo.value) return 'MODEL_REQUIRED'
+    if (!inputs.selectedTireWidthSupported.value) return 'TIRE_WIDTH_UNSUPPORTED'
+    if (inputs.selectedTireReferencePressurePsi.value === null) {
+      return inputs.manualOperatingPressureInputAllowed.value ? 'OPERATING_PRESSURE_REQUIRED' : 'PRESSURE_REFERENCE_UNAVAILABLE'
+    }
+    return null
+  }
+
   function scheduleTirePressureDynamicsRefresh(delayMilliseconds = 450) {
     if (dynamicsTimer) clearTimeout(dynamicsTimer)
+    dynamicsTimer = undefined
+    const inputBlockingState = resolveTirePressureDynamicsInputBlockingState()
+    if (inputBlockingState) {
+      backendDynamics.value = null
+      committedDynamicsInputKey.value = null
+      dynamicsState.value = inputBlockingState
+      dynamicsRefreshQueued = false
+      return
+    }
+    if (!import.meta.client || isCalculatorUnmounted) return
     dynamicsState.value = 'PENDING'
     dynamicsTimer = setTimeout(() => void refreshTirePressureGroundFrameDynamicsFromBackend(), delayMilliseconds)
   }
@@ -267,10 +292,11 @@ export const useTirePressureCalculatorDynamicsRequest = (
     if (!import.meta.client || isCalculatorUnmounted) return
     const inputKey = dynamicsInputKey.value
 
-    if (inputs.selectedTireReferencePressurePsi.value === null) {
+    const inputBlockingState = resolveTirePressureDynamicsInputBlockingState()
+    if (inputBlockingState) {
       backendDynamics.value = null
       committedDynamicsInputKey.value = null
-      dynamicsState.value = 'PENDING'
+      dynamicsState.value = inputBlockingState
       return
     }
 
@@ -361,19 +387,7 @@ export const useTirePressureCalculatorDynamicsRequest = (
     }
   }
 
-  watch([
-    inputs.riderWeight,
-    inputs.bikeWeight,
-    inputs.leanAngle,
-    inputs.speedKmh,
-    inputs.apiPosition,
-    inputs.tireWidth,
-    inputs.selectedTireArticleNo,
-    inputs.selectedTireReferencePressurePsi,
-    inputs.selectedTirePressureBoundsPsi,
-    inputs.pressureComparisonEnabled,
-    inputs.wetPressureScenarioEnabled,
-  ], () => {
+  watch(dynamicsInputKey, () => {
     scheduleTirePressureDynamicsRefresh()
   }, { immediate: true })
 

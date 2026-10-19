@@ -1,6 +1,7 @@
 package ticket
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -117,7 +118,7 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		AgentID          string                                                             `json:"agent_id"`
 		Locale           string                                                             `json:"locale"`
 		MessageType      string                                                             `json:"message_type"`
-		Metadata         interface{}                                                        `json:"metadata"`
+		Metadata         json.RawMessage                                                    `json:"metadata"`
 		AttachmentURL    string                                                             `json:"attachment_url"`
 		Attachments      []string                                                           `json:"attachments"`
 		MediaAttachments []ticketdomain.CustomerServiceMessageMediaAttachmentBindingRequest `json:"media_attachments"`

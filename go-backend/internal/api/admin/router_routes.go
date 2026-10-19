@@ -126,7 +126,7 @@ func RegisterAdminRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Conf
 	notificationTemplateHandler := NewNotificationTemplateHandler(services.TransactionalNotificationTemplates)
 	emailDeliveryRecordHandler := NewEmailDeliveryRecordHandler(services.EmailDeliveryRecords)
 	refundCancellationPolicyHandler := NewRefundCancellationPolicyHandler(services.RefundCancellationPolicy)
-	siteLogoHandler := NewSiteLogoHandler(services.SiteLogo, services.AdminSettings)
+	siteLogoHandler := NewSiteLogoHandler(services.SiteLogo)
 	siteFaviconHandler := NewSiteFaviconHandler(services.SiteFavicon, services.AdminSettings)
 	homeVisualTileHandler := NewHomeVisualTileHandler(services.HomeVisualTiles)
 	websiteProfileHandler := NewWebsiteProfileHandler(services.WebsiteProfile)

@@ -16,7 +16,12 @@
       aria-live="polite"
       aria-atomic="true"
     >
-      <figure v-for="image in visiblePhotoWallImages" :key="image.id" class="reusable-photo-wall__image-frame">
+      <figure
+        v-for="(image, imageIndex) in configuredPhotoWallImages"
+        :key="image.id"
+        v-show="isPhotoWallImageOnActivePage(imageIndex)"
+        class="reusable-photo-wall__image-frame"
+      >
         <StorefrontImage
           :src="image.src"
           :alt="image.alt"
@@ -107,10 +112,12 @@ const activePhotoWallPageIndex = ref(0)
 const configuredPhotoWallImages = computed(() => props.images.filter(image => image.src.trim()))
 const photoWallImagesPerPage = computed(() => isCompactPhotoWall.value ? 1 : Math.max(1, Math.floor(props.imagesPerPage)))
 const photoWallPageCount = computed(() => Math.ceil(configuredPhotoWallImages.value.length / photoWallImagesPerPage.value))
-const visiblePhotoWallImages = computed(() => {
+// Render every photograph on the server so later groups retain crawlable images
+// and captions; inactive groups stay hidden until their pagination dot is selected.
+function isPhotoWallImageOnActivePage(imageIndex: number): boolean {
   const firstVisibleImageIndex = activePhotoWallPageIndex.value * photoWallImagesPerPage.value
-  return configuredPhotoWallImages.value.slice(firstVisibleImageIndex, firstVisibleImageIndex + photoWallImagesPerPage.value)
-})
+  return imageIndex >= firstVisibleImageIndex && imageIndex < firstVisibleImageIndex + photoWallImagesPerPage.value
+}
 
 function selectPhotoWallPage(pageIndex: number): void {
   const pageCount = photoWallPageCount.value
@@ -199,6 +206,7 @@ watch(photoWallPageCount, (pageCount) => {
   color: var(--tz-text-primary);
   font-size: 0.75rem;
   line-height: 1.45;
+  white-space: pre-line;
 }
 
 .reusable-photo-wall__empty-frame {
@@ -233,8 +241,18 @@ watch(photoWallPageCount, (pageCount) => {
 
 @media (max-width: 639px) {
   .reusable-photo-wall {
-    grid-template-rows: auto minmax(12rem, 1fr) 3rem;
-    min-height: 18rem;
+    grid-template-rows: auto auto 3rem;
+    min-height: 0;
+  }
+
+  .reusable-photo-wall__stage {
+    container-type: inline-size;
+    aspect-ratio: 1 / 1;
+  }
+
+  .reusable-photo-wall__image-frame,
+  .reusable-photo-wall__empty-frame {
+    width: 100%;
   }
 }
 </style>

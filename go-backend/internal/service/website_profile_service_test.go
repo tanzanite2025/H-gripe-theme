@@ -10,15 +10,16 @@ import (
 )
 
 func TestWebsiteProfileServiceMergesLocaleAndGlobalSettings(t *testing.T) {
-	_, settingService := newTestSettingService(t)
+	db, settingService := newTestSettingService(t)
 	websiteProfileService := NewWebsiteProfileService(settingService)
 
-	require.NoError(t, settingService.BatchSet([]settingdomain.Setting{
+	// Existing unregistered paths remain readable; new bindings are validated.
+	require.NoError(t, db.Create(&[]settingdomain.Setting{
 		{Key: settingdomain.WebsiteProfileKeyTitle, Value: "English title", Type: "string", Locale: "en", Group: settingdomain.WebsiteProfileGroup, IsPublic: true},
 		{Key: settingdomain.WebsiteProfileKeyTitle, Value: "中文标题", Type: "string", Locale: "zh_cn", Group: settingdomain.WebsiteProfileGroup, IsPublic: true},
 		{Key: settingdomain.WebsiteProfileKeyAvatarURL, Value: "/uploads/avatar.webp", Type: "string", Locale: "global", Group: settingdomain.WebsiteProfileGroup, IsPublic: true},
 		{Key: settingdomain.WebsiteProfileKeyFactoryLink, Value: "/company/about#factory", Type: "string", Locale: "global", Group: settingdomain.WebsiteProfileGroup, IsPublic: true},
-	}))
+	}).Error)
 
 	settings, err := websiteProfileService.Get("zh-CN")
 	require.NoError(t, err)
@@ -34,7 +35,9 @@ func TestWebsiteProfileServiceMergesLocaleAndGlobalSettings(t *testing.T) {
 }
 
 func TestWebsiteProfileServiceUpdateStoresLocaleAndGlobalFields(t *testing.T) {
-	_, settingService := newTestSettingService(t)
+	db, settingService, _, _ := createWebsiteProfileRegisteredMediaBindingTestServices(t)
+	avatar := createRegisteredPublicImageForProductMediaBindingTest(t, db, "avatar.webp")
+	factory := createRegisteredPublicImageForProductMediaBindingTest(t, db, "factory.webp")
 	websiteProfileService := NewWebsiteProfileService(settingService)
 
 	settings, err := websiteProfileService.Update(settingdomain.WebsiteProfileUpdateRequest{
@@ -47,8 +50,8 @@ func TestWebsiteProfileServiceUpdateStoresLocaleAndGlobalFields(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "zh_cn", settings.Locale)
 	assert.Equal(t, "新的标题", settings.Title)
-	assert.Equal(t, "/uploads/avatar.webp", settings.AvatarURL)
-	assert.Equal(t, "/uploads/factory.webp", settings.FactoryImageURL)
+	assert.Equal(t, avatar.URL, settings.AvatarURL)
+	assert.Equal(t, factory.URL, settings.FactoryImageURL)
 
 	localeRecord, err := settingService.Get(settingdomain.WebsiteProfileKeyTitle, "zh_cn")
 	require.NoError(t, err)
@@ -56,7 +59,7 @@ func TestWebsiteProfileServiceUpdateStoresLocaleAndGlobalFields(t *testing.T) {
 
 	globalRecord, err := settingService.Get(settingdomain.WebsiteProfileKeyAvatarURL, "global")
 	require.NoError(t, err)
-	assert.Equal(t, "/uploads/avatar.webp", globalRecord.Value)
+	assert.Equal(t, avatar.URL, globalRecord.Value)
 }
 
 func TestWebsiteProfileServiceMergesLegacyStatementParagraphs(t *testing.T) {

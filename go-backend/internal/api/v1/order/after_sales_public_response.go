@@ -1,6 +1,9 @@
 package order
 
 import (
+	"commerce-platform/internal/service"
+	"fmt"
+	"net/url"
 	"time"
 
 	"commerce-platform/internal/domain/aftersales"
@@ -50,11 +53,12 @@ type PublicAfterSalesCaseEvent struct {
 }
 
 type PublicAfterSalesAttachment struct {
-	Kind        string    `json:"kind"`
-	Filename    string    `json:"filename"`
-	ContentType string    `json:"content_type"`
-	SizeBytes   int64     `json:"size_bytes"`
-	CreatedAt   time.Time `json:"created_at"`
+	DownloadPath string    `json:"download_path"`
+	Kind         string    `json:"kind"`
+	Filename     string    `json:"filename"`
+	ContentType  string    `json:"content_type"`
+	SizeBytes    int64     `json:"size_bytes"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type PublicAfterSalesRefundReview struct {
@@ -68,7 +72,11 @@ type PublicAfterSalesRefundReview struct {
 	UpdatedAt           time.Time  `json:"updated_at"`
 }
 
-func publicAfterSalesCaseFromDomain(record aftersales.AfterSalesCase) PublicAfterSalesCaseResponse {
+func publicAfterSalesCaseFromDomain(record aftersales.AfterSalesCase, orderNumbers ...string) PublicAfterSalesCaseResponse {
+	orderNumber := record.OrderNumber
+	if len(orderNumbers) > 0 {
+		orderNumber = orderNumbers[0]
+	}
 	result := PublicAfterSalesCaseResponse{
 		Type:            record.Type,
 		Status:          record.Status,
@@ -113,11 +121,12 @@ func publicAfterSalesCaseFromDomain(record aftersales.AfterSalesCase) PublicAfte
 	}
 	for _, attachment := range record.Attachments {
 		result.Attachments = append(result.Attachments, PublicAfterSalesAttachment{
-			Kind:        attachment.Kind,
-			Filename:    attachment.Filename,
-			ContentType: attachment.ContentType,
-			SizeBytes:   attachment.SizeBytes,
-			CreatedAt:   attachment.CreatedAt,
+			DownloadPath: fmt.Sprintf("/orders/%s/after-sales/attachments/%s", url.PathEscape(orderNumber), service.CustomerAfterSalesAttachmentOpaqueLocator(attachment)),
+			Kind:         attachment.Kind,
+			Filename:     attachment.Filename,
+			ContentType:  attachment.ContentType,
+			SizeBytes:    attachment.SizeBytes,
+			CreatedAt:    attachment.CreatedAt,
 		})
 	}
 	if record.RefundReview != nil {
@@ -135,10 +144,10 @@ func publicAfterSalesCaseFromDomain(record aftersales.AfterSalesCase) PublicAfte
 	return result
 }
 
-func publicAfterSalesCasesFromDomain(records []aftersales.AfterSalesCase) []PublicAfterSalesCaseResponse {
+func publicAfterSalesCasesFromDomain(records []aftersales.AfterSalesCase, orderNumbers ...string) []PublicAfterSalesCaseResponse {
 	result := make([]PublicAfterSalesCaseResponse, 0, len(records))
 	for _, record := range records {
-		result = append(result, publicAfterSalesCaseFromDomain(record))
+		result = append(result, publicAfterSalesCaseFromDomain(record, orderNumbers...))
 	}
 	return result
 }

@@ -241,10 +241,8 @@
                 <span class="text-[10px] font-mono text-muted-foreground/70">{{ draft.shippingImages.length }} / 10</span>
               </div>
               <div v-if="draft.shippingImages.length" class="grid grid-cols-3 gap-2">
-                <div v-for="image in draft.shippingImages" :key="image" class="group relative aspect-square overflow-hidden rounded-xl border bg-muted/30">
-                  <a :href="image" target="_blank" rel="noopener noreferrer">
-                    <img :src="image" alt="发货记录图片" class="size-full object-cover">
-                  </a>
+                <div v-for="image in draft.shippingImages" :key="image" class="group relative min-w-0 rounded-xl border bg-muted/30 p-2 pr-8">
+                  <AuthorizedPrivateOrderAttachmentPreviewAndDownload v-if="selectedShipment?.shipping_images?.includes(image)" :path="`/api/admin/warranty/shipment-records/${selectedShipment.order_id}/images/${selectedShipment.shipping_images.indexOf(image)}`" label="查看图片" :filename="`shipment-${selectedShipment.order_id}-${selectedShipment.shipping_images.indexOf(image) + 1}`" />
                   <Button
                     v-if="canEdit"
                     variant="destructive"
@@ -302,6 +300,7 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, ref } from 'vue'
 import { ImagePlus, LoaderCircle, PackageCheck, Save, Search, X } from '@lucide/vue'
+import AuthorizedPrivateOrderAttachmentPreviewAndDownload from '@/components/admin/AuthorizedPrivateOrderAttachmentPreviewAndDownload.vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'

@@ -197,16 +197,21 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if _, supplied := raw["shipping_template_ids"]; supplied {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "shipping_template_ids must be configured on each SKU; product-level shipping templates are not supported"})
+		return
+	}
 	if field, blocked := rejectProductSEORequestFields(raw); blocked {
 		c.JSON(http.StatusBadRequest, gin.H{"error": field + " must be maintained from SEO / 产品"})
 		return
 	}
 
 	newProduct, err := h.productService.CreateAdminProduct(service.ProductCreateInput{
+		ProductType:                    req.ProductType,
+		CarbonRimSpecification:         req.CarbonRimSpecification,
 		ProductSpecificationTemplateID: req.ProductSpecificationTemplateID,
 		ProductCategoryID:              req.ProductCategoryID,
 		BrandID:                        req.BrandID,
-		ShippingTemplateIDs:            normalizeShippingTemplateIDs(req.ShippingTemplateIDs),
 		AfterSalesTemplateID:           req.AfterSalesTemplateID,
 		PackagingTemplateID:            req.PackagingTemplateID,
 		CustomsClassificationProfileID: req.CustomsClassificationProfileID,
@@ -262,16 +267,20 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if _, supplied := raw["shipping_template_ids"]; supplied {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "shipping_template_ids must be configured on each SKU; product-level shipping templates are not supported"})
+		return
+	}
 	if field, blocked := rejectProductSEORequestFields(raw); blocked {
 		c.JSON(http.StatusBadRequest, gin.H{"error": field + " must be maintained from SEO / 产品"})
 		return
 	}
 
+	_, updateCarbonRimSpecification := raw["carbon_rim_specification"]
 	_, updateParentID := raw["parent_id"]
 	_, updateProductSpecificationTemplateID := raw["product_specification_template_id"]
 	_, updateProductCategoryID := raw["product_category_id"]
 	_, updateBrandID := raw["brand_id"]
-	_, updateShippingTemplateIDs := raw["shipping_template_ids"]
 	_, updateAfterSalesTemplateID := raw["after_sales_template_id"]
 	_, updatePackagingTemplateID := raw["packaging_template_id"]
 	_, updateCustomsClassificationProfileID := raw["customs_classification_profile_id"]
@@ -298,14 +307,15 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	}
 
 	updatedProduct, err := h.productService.UpdateAdminProduct(uint(id), service.ProductUpdateInput{
+		ProductType:                          req.ProductType,
+		CarbonRimSpecification:               req.CarbonRimSpecification,
+		UpdateCarbonRimSpecification:         updateCarbonRimSpecification,
 		ProductSpecificationTemplateID:       req.ProductSpecificationTemplateID,
 		UpdateProductSpecificationTemplateID: updateProductSpecificationTemplateID,
 		ProductCategoryID:                    req.ProductCategoryID,
 		UpdateProductCategoryID:              updateProductCategoryID,
 		BrandID:                              req.BrandID,
 		UpdateBrandID:                        updateBrandID,
-		ShippingTemplateIDs:                  normalizeShippingTemplateIDs(req.ShippingTemplateIDs),
-		UpdateShippingTemplateIDs:            updateShippingTemplateIDs,
 		AfterSalesTemplateID:                 req.AfterSalesTemplateID,
 		UpdateAfterSalesTemplateID:           updateAfterSalesTemplateID,
 		PackagingTemplateID:                  req.PackagingTemplateID,

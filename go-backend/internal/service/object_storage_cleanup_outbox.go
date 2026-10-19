@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"commerce-platform/internal/domain/outbox"
-	ugcshowcasedomain "commerce-platform/internal/domain/ugcshowcase"
+	sitefavicondomain "commerce-platform/internal/domain/site_favicon"
+	sitelogodomain "commerce-platform/internal/domain/site_logo"
 	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -37,6 +39,7 @@ func newObjectStorageCleanupEvent(
 	aggregateType string,
 	aggregateID string,
 	objectKeys []string,
+	expectedUploadObjectBytes ...map[string]int64,
 ) (*outbox.Event, error) {
 	resourceType = strings.TrimSpace(resourceType)
 	resourceID = strings.TrimSpace(resourceID)
@@ -47,12 +50,22 @@ func newObjectStorageCleanupEvent(
 	}
 
 	keys := normalizeObjectCleanupKeys(objectKeys)
+	var expectedBytes map[string]int64
+	if len(expectedUploadObjectBytes) > 0 {
+		expectedBytes = make(map[string]int64)
+		for _, key := range keys {
+			if size, known := expectedUploadObjectBytes[0][key]; known && size >= 0 {
+				expectedBytes[key] = size
+			}
+		}
+	}
 	now := time.Now().UTC()
 	payload, err := json.Marshal(outbox.ObjectStorageCleanupPayload{
-		ResourceType: resourceType,
-		ResourceID:   resourceID,
-		ObjectKeys:   keys,
-		RequestedAt:  now,
+		ResourceType:              resourceType,
+		ResourceID:                resourceID,
+		ObjectKeys:                keys,
+		RequestedAt:               now,
+		ExpectedUploadObjectBytes: expectedBytes,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("encode object storage cleanup event: %w", err)
@@ -95,11 +108,14 @@ func normalizeObjectCleanupKeys(values []string) []string {
 // delete. This makes delayed events safe when an object key becomes current or
 // referenced again before the worker receives it.
 type ObjectStorageCleanupOutboxHandler struct {
-	media       *MediaService
-	siteLogo    *SiteLogoService
-	siteFavicon *SiteFaviconService
-	homeVisual  *HomeVisualTileService
-	showcase    *UGCShowcaseService
+	suggestionAndPayPalAttachments  *SuggestionAndPayPalAttachmentUploadService
+	privateOrderBusinessAttachments *PrivateOrderBusinessAttachmentUploadService
+	media                           *MediaService
+	siteLogo                        *SiteLogoService
+	siteFavicon                     *SiteFaviconService
+	homeVisual                      *HomeVisualTileService
+	showcase                        *UGCShowcaseService
+	orderEvidenceAttachment         *OrderEvidenceAttachmentService
 }
 
 func NewObjectStorageCleanupOutboxHandler(
@@ -119,6 +135,18 @@ func NewObjectStorageCleanupOutboxHandler(
 func (h *ObjectStorageCleanupOutboxHandler) ConfigureSiteFaviconService(service *SiteFaviconService) {
 	if h != nil {
 		h.siteFavicon = service
+	}
+}
+
+func (h *ObjectStorageCleanupOutboxHandler) ConfigureOrderEvidenceAttachmentService(service *OrderEvidenceAttachmentService) {
+	if h != nil {
+		h.orderEvidenceAttachment = service
+	}
+}
+
+func (h *ObjectStorageCleanupOutboxHandler) ConfigurePrivateOrderBusinessAttachmentUploads(uploads *PrivateOrderBusinessAttachmentUploadService) {
+	if h != nil {
+		h.privateOrderBusinessAttachments = uploads
 	}
 }
 
@@ -142,8 +170,21 @@ func (h *ObjectStorageCleanupOutboxHandler) Handle(ctx context.Context, event ou
 	payload.ObjectKeys = normalizeObjectCleanupKeys(payload.ObjectKeys)
 
 	switch payload.ResourceType {
+	case outbox.SuggestionAndPayPalAttachmentCleanupResourceType:
+		return h.suggestionAndPayPalAttachments.cleanupSuggestionOrPayPalAttachmentFromOriginalReceipt(ctx, event)
+	case repository.PrivateOrderBusinessAttachmentFailedUploadResourceType:
+		return h.privateOrderBusinessAttachments.cleanupPrivateOrderBusinessAttachmentFailedBatchWithRetainedReferences(ctx, payload.ResourceID, payload.ObjectKeys)
+	case objectCleanupResourceExpiredBusinessDraftMediaUpload:
+		if h.media == nil {
+			return ErrObjectStorageCleanupUnavailable
+		}
+		return h.media.cleanupExpiredBusinessDraftMediaObjectsFromDurableReceipt(ctx, payload.ResourceID, payload.ObjectKeys)
+	case objectCleanupResourceFailedOrderEvidenceUpload:
+		return h.orderEvidenceAttachment.cleanupFailedOrderEvidenceUploadWithImmutableHistoryRetention(ctx, payload.ResourceID, payload.ObjectKeys)
 	case objectCleanupResourceMediaAsset:
-		return h.cleanupMediaAsset(ctx, payload.ResourceID)
+		return h.cleanupMediaAssetFromOriginalDurableReceipt(ctx, payload.ResourceID, payload.ObjectKeys)
+	case objectCleanupResourceUnregisteredMediaUpload, objectCleanupResourceUnregisteredMediaDerivative, objectCleanupResourceRetiredMediaDerivative:
+		return h.media.cleanupUnregisteredOrRetiredMediaObjectFromDurableEvent(ctx, payload.ResourceType, payload.ResourceID, payload.ObjectKeys)
 	case objectCleanupResourceCustomerServiceUnregisteredUpload:
 		return h.media.cleanupRetiredUnregisteredCustomerServiceUploadOriginal(ctx, payload.ObjectKeys)
 	case objectCleanupResourceSiteLogo:
@@ -152,6 +193,12 @@ func (h *ObjectStorageCleanupOutboxHandler) Handle(ctx context.Context, event ou
 		return h.cleanupSiteFavicon(ctx, payload.ObjectKeys)
 	case objectCleanupResourceHomeVisualTile:
 		return h.cleanupHomeVisualTiles(ctx, payload.ObjectKeys)
+	case objectCleanupResourceFailedUGCShowcaseUpload:
+		if h.showcase == nil {
+			return ErrObjectStorageCleanupUnavailable
+		}
+		_, err := h.showcase.cleanupUGCShowcaseObjectsWithRetainedReferencesAndLockedRejectedOwner(ctx, 0, payload.ObjectKeys, true)
+		return err
 	case objectCleanupResourceUGCShowcase:
 		return h.cleanupShowcase(ctx, payload.ResourceID, payload.ObjectKeys)
 	default:
@@ -163,22 +210,23 @@ func (h *ObjectStorageCleanupOutboxHandler) cleanupSiteFavicon(ctx context.Conte
 	if h == nil || h.siteFavicon == nil || h.siteFavicon.repo == nil || h.siteFavicon.storage == nil {
 		return ErrObjectStorageCleanupUnavailable
 	}
-	current, err := h.siteFavicon.repo.Current()
-	if err != nil {
-		return fmt.Errorf("load current site favicon before cleanup: %w", err)
-	}
-	for _, key := range keys {
-		if !IsSiteFaviconStorageKey(key) || (current != nil && current.StorageKey == key) {
-			continue
+	return h.siteFavicon.repo.WithLockedCurrentSiteFaviconForObjectCleanup(ctx, func(current *sitefavicondomain.Asset, references *repository.MediaRepository) error {
+		for _, key := range keys {
+			if !IsSiteFaviconStorageKey(key) || (current != nil && current.StorageKey == key) {
+				continue
+			}
+			if err := checkDedicatedPublicObjectBusinessReferencesBeforePhysicalCleanup(references, h.siteFavicon.storage, h.siteFavicon.siteURL, key); err != nil {
+				return err
+			}
+			if err := h.siteFavicon.storage.Delete(ctx, key); err != nil {
+				return fmt.Errorf("delete retired site favicon %s: %w", key, err)
+			}
 		}
-		if err := h.siteFavicon.storage.Delete(ctx, key); err != nil {
-			return fmt.Errorf("delete retired site favicon %s: %w", key, err)
-		}
-	}
-	return nil
+		return nil
+	})
 }
 
-func (h *ObjectStorageCleanupOutboxHandler) cleanupMediaAsset(ctx context.Context, resourceID string) error {
+func (h *ObjectStorageCleanupOutboxHandler) cleanupMediaAssetFromOriginalDurableReceipt(ctx context.Context, resourceID string, keys []string) error {
 	if h == nil || h.media == nil {
 		return ErrObjectStorageCleanupUnavailable
 	}
@@ -186,139 +234,46 @@ func (h *ObjectStorageCleanupOutboxHandler) cleanupMediaAsset(ctx context.Contex
 	if err != nil || assetID == 0 || uint64(uint(assetID)) != assetID {
 		return fmt.Errorf("invalid media asset cleanup id %q", resourceID)
 	}
-	return h.media.cleanupDeletedAsset(ctx, uint(assetID))
+	return h.media.cleanupDeletedAsset(ctx, uint(assetID), keys)
 }
 
 func (h *ObjectStorageCleanupOutboxHandler) cleanupSiteLogo(ctx context.Context, keys []string) error {
 	if h == nil || h.siteLogo == nil || h.siteLogo.repo == nil || h.siteLogo.storage == nil {
 		return ErrObjectStorageCleanupUnavailable
 	}
-	current, err := h.siteLogo.repo.Current()
-	if err != nil {
-		return fmt.Errorf("load current site logo before cleanup: %w", err)
-	}
-	for _, key := range keys {
-		if !IsSiteLogoStorageKey(key) {
-			continue
+	return h.siteLogo.repo.WithLockedCurrentSiteLogoForObjectCleanup(ctx, func(current *sitelogodomain.Asset, references *repository.MediaRepository) error {
+		for _, key := range keys {
+			if !IsSiteLogoStorageKey(key) || (current != nil && strings.TrimSpace(current.StorageKey) == key) {
+				continue
+			}
+			if err := checkDedicatedPublicObjectBusinessReferencesBeforePhysicalCleanup(references, h.siteLogo.storage, h.siteLogo.siteURL, key); err != nil {
+				return err
+			}
+			if err := h.siteLogo.storage.Delete(ctx, key); err != nil {
+				return fmt.Errorf("delete retired site logo %s: %w", key, err)
+			}
 		}
-		if current != nil && strings.TrimSpace(current.StorageKey) == key {
-			continue
-		}
-		if err := h.siteLogo.storage.Delete(ctx, key); err != nil {
-			return fmt.Errorf("delete retired site logo %s: %w", key, err)
-		}
-	}
-	return nil
+		return nil
+	})
 }
 
 func (h *ObjectStorageCleanupOutboxHandler) cleanupHomeVisualTiles(ctx context.Context, keys []string) error {
 	if h == nil || h.homeVisual == nil || h.homeVisual.repo == nil || h.homeVisual.storage == nil {
 		return ErrObjectStorageCleanupUnavailable
 	}
-	for _, key := range keys {
-		if !IsHomeVisualTileStorageKey(key) {
-			continue
-		}
-		count, err := h.homeVisual.repo.CountItemsByStorageKey(key)
-		if err != nil {
-			return fmt.Errorf("check home visual tile references for %s: %w", key, err)
-		}
-		if count > 0 {
-			continue
-		}
-		if err := h.homeVisual.storage.Delete(ctx, key); err != nil {
-			return fmt.Errorf("delete retired home visual tile %s: %w", key, err)
-		}
-	}
-	return nil
+	return h.homeVisual.cleanupUnreferencedDedicatedVisualShowcaseObjectsUnderTransactionLock(ctx, keys)
 }
 
 func (h *ObjectStorageCleanupOutboxHandler) cleanupShowcase(ctx context.Context, resourceID string, keys []string) error {
-	if h == nil || h.showcase == nil || h.showcase.repo == nil || h.showcase.storage == nil {
+	if h == nil || h.showcase == nil {
 		return ErrObjectStorageCleanupUnavailable
 	}
 	ownerID, err := strconv.ParseUint(resourceID, 10, 64)
 	if err != nil || ownerID == 0 || uint64(uint(ownerID)) != ownerID {
-		return fmt.Errorf("invalid showcase cleanup id %q", resourceID)
+		return fmt.Errorf("invalid showcase cleanup owner identity")
 	}
-	owner, ownerErr := h.showcase.repo.GetByID(uint(ownerID))
-	if ownerErr != nil && !isRecordNotFound(ownerErr) {
-		return fmt.Errorf("load showcase owner before cleanup: %w", ownerErr)
-	}
-	for _, key := range keys {
-		if !showcaseStorageKeyIsPending(key) {
-			continue
-		}
-		items, err := h.showcase.repo.ListByImageStorageKeyCandidate(key)
-		if err != nil {
-			return fmt.Errorf("check showcase image references for %s: %w", key, err)
-		}
-		stillReferenced := false
-		for _, item := range items {
-			matches, matchErr := h.showcase.showcaseImageMatchesStorageKey(item, key)
-			if matchErr != nil {
-				return matchErr
-			}
-			if !matches {
-				continue
-			}
-			if item.ID == uint(ownerID) && item.Status == ugcshowcasedomain.StatusRejected {
-				continue
-			}
-			stillReferenced = true
-			break
-		}
-		if stillReferenced {
-			continue
-		}
-		if err := h.showcase.storage.Delete(ctx, key); err != nil {
-			return fmt.Errorf("delete retired showcase image %s: %w", key, err)
-		}
-		if owner != nil && owner.Status == ugcshowcasedomain.StatusRejected {
-			if err := h.showcase.pruneShowcaseImageReference(owner, key); err != nil {
-				return fmt.Errorf("prune retired showcase image reference %s: %w", key, err)
-			}
-		}
-	}
-	return nil
-}
-
-// pruneShowcaseImageReference removes a successfully cleaned pending object
-// from the rejected owner's JSON image list. It is intentionally idempotent:
-// duplicate deliveries and already-pruned references are harmless.
-func (s *UGCShowcaseService) pruneShowcaseImageReference(item *ugcshowcasedomain.UGCShowcase, key string) error {
-	if s == nil || s.repo == nil || item == nil {
-		return nil
-	}
-	imageReferences, err := decodeShowcaseImageURLs(item.Images)
-	if err != nil {
-		return err
-	}
-	remaining := make([]string, 0, len(imageReferences))
-	removed := false
-	for _, reference := range imageReferences {
-		imageKey, keyErr := s.storage.ObjectKey(reference)
-		if keyErr == nil && imageKey == key {
-			removed = true
-			continue
-		}
-		remaining = append(remaining, reference)
-	}
-	if !removed {
-		return nil
-	}
-	imagesJSON, err := json.Marshal(remaining)
-	if err != nil {
-		return fmt.Errorf("encode remaining showcase images: %w", err)
-	}
-	updated, err := s.repo.UpdateImagesByStatus(item.ID, ugcshowcasedomain.StatusRejected, datatypes.JSON(imagesJSON))
-	if err != nil {
-		return err
-	}
-	if updated {
-		item.Images = datatypes.JSON(imagesJSON)
-	}
-	return nil
+	_, err = h.showcase.cleanupUGCShowcaseObjectsWithRetainedReferencesAndLockedRejectedOwner(ctx, uint(ownerID), keys, false)
+	return err
 }
 
 func isRecordNotFound(err error) bool {

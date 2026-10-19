@@ -447,7 +447,7 @@ func (s *localStorage) CopyObject(ctx context.Context, sourceKey string, destKey
 	}
 	defer func() { _ = dest.Close() }()
 
-	if _, err := io.Copy(dest, source); err != nil {
+	if _, err := io.Copy(dest, privateUploadReaderWithRequestContext{ctx: ctx, reader: source}); err != nil {
 		return fmt.Errorf("failed to copy file: %w", err)
 	}
 	return nil

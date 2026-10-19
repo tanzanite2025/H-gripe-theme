@@ -1,7 +1,6 @@
 package admin
 
 import (
-	settingdomain "commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/response"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/service"
@@ -18,13 +17,11 @@ const (
 
 type SiteLogoHandler struct {
 	siteLogoService *service.SiteLogoService
-	settingsService *service.AdminSettingsService
 }
 
-func NewSiteLogoHandler(siteLogoService *service.SiteLogoService, settingsService *service.AdminSettingsService) *SiteLogoHandler {
+func NewSiteLogoHandler(siteLogoService *service.SiteLogoService) *SiteLogoHandler {
 	return &SiteLogoHandler{
 		siteLogoService: siteLogoService,
-		settingsService: settingsService,
 	}
 }
 
@@ -48,7 +45,7 @@ func (h *SiteLogoHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	logo, err := h.siteLogoService.UploadCurrent(c.Request.Context(), file, currentUserID(c))
+	logo, err := h.siteLogoService.UploadCurrent(c.Request.Context(), file, currentUserID(c), c.DefaultQuery("locale", "en"))
 	if err != nil {
 		if code := upload.ErrorCode(err); code != "invalid_upload" {
 			c.JSON(upload.HTTPStatus(err), gin.H{"error": err.Error(), "code": code})
@@ -56,22 +53,6 @@ func (h *SiteLogoHandler) Upload(c *gin.Context) {
 		}
 		respondSiteLogoError(c, err)
 		return
-	}
-
-	if h.settingsService != nil {
-		_, err = h.settingsService.UpdateSetting(settingdomain.UpdateSettingRequest{
-			Key:         "site_logo",
-			Value:       logo.URL,
-			Type:        "string",
-			Group:       "site",
-			Locale:      c.DefaultQuery("locale", "en"),
-			IsPublic:    true,
-			Description: "Site logo URL",
-		})
-		if err != nil {
-			respondSiteLogoError(c, err)
-			return
-		}
 	}
 
 	c.JSON(http.StatusCreated, response.Response{
@@ -82,23 +63,7 @@ func (h *SiteLogoHandler) Upload(c *gin.Context) {
 }
 
 func (h *SiteLogoHandler) Delete(c *gin.Context) {
-	if h.settingsService != nil {
-		_, err := h.settingsService.UpdateSetting(settingdomain.UpdateSettingRequest{
-			Key:         "site_logo",
-			Value:       "",
-			Type:        "string",
-			Group:       "site",
-			Locale:      c.DefaultQuery("locale", "en"),
-			IsPublic:    true,
-			Description: "Site logo URL",
-		})
-		if err != nil {
-			respondSiteLogoError(c, err)
-			return
-		}
-	}
-
-	if err := h.siteLogoService.DeleteCurrent(c.Request.Context()); err != nil {
+	if err := h.siteLogoService.DeleteCurrent(c.Request.Context(), c.DefaultQuery("locale", "en")); err != nil {
 		respondSiteLogoError(c, err)
 		return
 	}

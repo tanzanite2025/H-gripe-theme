@@ -1,10 +1,10 @@
 package warranty
 
 import (
+	"commerce-platform/internal/api/privateattachment"
 	"commerce-platform/internal/pkg/antibot"
 	"commerce-platform/internal/pkg/apierror"
 	"commerce-platform/internal/pkg/response"
-	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
 	"commerce-platform/internal/service"
 	"errors"
@@ -20,8 +20,6 @@ const (
 	warrantyClaimMaxRequestBytes        int64 = 82 << 20
 	warrantyClaimMaxTotalAttachmentSize int64 = 80 << 20
 )
-
-var errWarrantyStorageUnavailable = errors.New("file storage is unavailable")
 
 func (h *Handler) VerifyWarrantyOrder(c *gin.Context) {
 	var req struct {
@@ -109,7 +107,7 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	imageURLs, videoURL, err := h.uploadWarrantyClaimFiles(c)
+	files, err := collectAndValidateWarrantyClaimAttachmentFiles(c)
 	if err != nil {
 		status := http.StatusBadRequest
 		code := apierror.ErrCodeBadRequest
@@ -121,18 +119,19 @@ func (h *Handler) SubmitWarrantyClaim(c *gin.Context) {
 		return
 	}
 
-	claim, err := h.warrantySvc.CreateWarrantyClaimForOrder(service.WarrantyClaimByOrderInput{
+	claim, err := h.warrantySvc.CreateVerifiedWarrantyClaimWithPrivateAttachmentFiles(c.Request.Context(), service.WarrantyClaimByOrderInput{
 		OrderNumber:       orderNumber,
 		Email:             email,
 		VerificationToken: verificationToken,
 		Description:       c.PostForm("issue_description"),
 		TirePressure:      c.PostForm("tire_pressure"),
 		IsTubeless:        c.PostForm("is_tubeless") == "yes",
-		ImageURLs:         imageURLs,
-		VideoURL:          videoURL,
-	})
+	}, files)
 	if err != nil {
-		h.cleanupUploadedWarrantyFiles(c, imageURLs, videoURL)
+		if errors.Is(err, service.ErrObjectStorageCleanupUnavailable) {
+			apierror.RespondError(c, http.StatusServiceUnavailable, "warranty_storage_unavailable", "Warranty evidence storage is temporarily unavailable")
+			return
+		}
 		if errors.Is(err, service.ErrWarrantyEmailMismatch) || service.IsRecordNotFound(err) {
 			apierror.RespondNotFound(c, "Order")
 			return
@@ -203,6 +202,7 @@ func (h *Handler) allowChallenge(c *gin.Context, challengeToken string) bool {
 }
 
 func (h *Handler) GetWarrantyClaim(c *gin.Context) {
+	privateattachment.SetPrivateAttachmentResponseHeaders(c)
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		apierror.RespondBadRequest(c, "Invalid claim ID")
@@ -241,72 +241,27 @@ func respondWarrantyServiceError(c *gin.Context, err error) {
 	}
 }
 
-func (h *Handler) uploadWarrantyClaimFiles(c *gin.Context) ([]string, string, error) {
+func collectAndValidateWarrantyClaimAttachmentFiles(c *gin.Context) (service.PrivateOrderBusinessAttachmentUploadFiles, error) {
+	result := service.PrivateOrderBusinessAttachmentUploadFiles{}
 	form, err := c.MultipartForm()
 	if err != nil {
-		return []string{}, "", nil
+		return result, err
 	}
-
-	imageFiles := make([]*multipart.FileHeader, 0, len(form.File["images[]"])+len(form.File["images"]))
-	imageFiles = append(imageFiles, form.File["images[]"]...)
-	imageFiles = append(imageFiles, form.File["images"]...)
-	videoFiles := form.File["video"]
-
-	if (len(imageFiles) > 0 || len(videoFiles) > 0) && h.storageService == nil {
-		return nil, "", errWarrantyStorageUnavailable
+	result.Images = append(append([]*multipart.FileHeader{}, form.File["images[]"]...), form.File["images"]...)
+	if err := upload.ValidateSpecFiles(result.Images, string(upload.SpecWarrantyEvidence)); err != nil {
+		return result, err
 	}
-	privateUploader, hasPrivateStorage := h.storageService.(storage.PrivateObjectUploader)
-	if (len(imageFiles) > 0 || len(videoFiles) > 0) && !hasPrivateStorage {
-		return nil, "", errWarrantyStorageUnavailable
+	videos := form.File["video"]
+	if len(videos) > 1 {
+		return result, errors.New("too_many_files: maximum 1 video allowed")
 	}
-	if err := upload.ValidateSpecFiles(imageFiles, string(upload.SpecWarrantyEvidence)); err != nil {
-		return nil, "", err
-	}
-	if len(videoFiles) > 1 {
-		return nil, "", errors.New("too_many_files: maximum 1 video allowed")
-	}
-	if len(videoFiles) == 1 {
-		if err := upload.ValidateFile(videoFiles[0], upload.WarrantyVideoRule); err != nil {
-			return nil, "", err
+	all := append([]*multipart.FileHeader{}, result.Images...)
+	if len(videos) == 1 {
+		result.Video = videos[0]
+		if err := upload.ValidateFile(result.Video, upload.WarrantyVideoRule); err != nil {
+			return result, err
 		}
+		all = append(all, result.Video)
 	}
-	allFiles := make([]*multipart.FileHeader, 0, len(imageFiles)+len(videoFiles))
-	allFiles = append(allFiles, imageFiles...)
-	allFiles = append(allFiles, videoFiles...)
-	if err := upload.ValidateTotalSize(allFiles, warrantyClaimMaxTotalAttachmentSize); err != nil {
-		return nil, "", err
-	}
-
-	imageURLs := make([]string, 0, len(imageFiles))
-	for _, file := range imageFiles {
-		url, err := privateUploader.UploadWithPrefixPrivate(c.Request.Context(), file, "warranty")
-		if err != nil {
-			h.cleanupUploadedWarrantyFiles(c, imageURLs, "")
-			return nil, "", err
-		}
-		imageURLs = append(imageURLs, url)
-	}
-
-	videoURL := ""
-	if len(videoFiles) == 1 {
-		url, err := privateUploader.UploadWithPrefixPrivate(c.Request.Context(), videoFiles[0], "warranty")
-		if err != nil {
-			h.cleanupUploadedWarrantyFiles(c, imageURLs, "")
-			return nil, "", err
-		}
-		videoURL = url
-	}
-	return imageURLs, videoURL, nil
-}
-
-func (h *Handler) cleanupUploadedWarrantyFiles(c *gin.Context, imageURLs []string, videoURL string) {
-	if h == nil || h.storageService == nil {
-		return
-	}
-	for _, reference := range append(append([]string{}, imageURLs...), videoURL) {
-		if strings.TrimSpace(reference) == "" {
-			continue
-		}
-		_ = h.storageService.Delete(c.Request.Context(), reference)
-	}
+	return result, upload.ValidateTotalSize(all, warrantyClaimMaxTotalAttachmentSize)
 }

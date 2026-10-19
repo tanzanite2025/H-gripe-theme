@@ -54,6 +54,7 @@ func (h *MediaHandler) GetAsset(c *gin.Context) {
 }
 
 func (h *MediaHandler) GetAssetReferences(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
 	id, ok := parseMediaAssetID(c)
 	if !ok {
 		return
@@ -72,7 +73,8 @@ func (h *MediaHandler) GetAssetReferences(c *gin.Context) {
 		respondMediaError(c, err)
 		return
 	}
-	response.Success(c, gin.H{"references": report.References, "total": report.Total})
+	scoped := permissionScopedMediaReferenceReportForAuthenticatedAdministrator(c, report.References)
+	response.Success(c, gin.H{"references": scoped.References, "total": scoped.Total})
 }
 
 func (h *MediaHandler) ExportCopyrightEvidence(c *gin.Context) {

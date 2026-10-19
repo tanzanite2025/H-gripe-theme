@@ -1,16 +1,19 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/pkg/storage"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -18,6 +21,22 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+type mediaUploadActorQuotaTestObjectIdentityResolverWithLocalExistenceVerification struct {
+	provider storage.StorageService
+}
+
+func (r *mediaUploadActorQuotaTestObjectIdentityResolverWithLocalExistenceVerification) ResolveTrustedMediaObjectKeyForPublicBusinessReference(reference string) (string, error) {
+	return storage.TrustedBusinessMediaReferenceObjectKey(reference, r.provider, "")
+}
+
+func (r *mediaUploadActorQuotaTestObjectIdentityResolverWithLocalExistenceVerification) ResolveRegisteredMediaObjectKeyForCleanupOwnership(reference string) (string, error) {
+	return r.provider.ObjectKey(reference)
+}
+
+func (r *mediaUploadActorQuotaTestObjectIdentityResolverWithLocalExistenceVerification) ValidateMediaObjectExistsBeforeRegisteringOwnership(ctx context.Context, key string) error {
+	return r.provider.(storage.ObjectExistenceVerifier).VerifyStoredObjectExists(ctx, key)
+}
 
 func createIsolatedPostgreSQLMediaUploadActorQuotaRepository(t *testing.T) *MediaRepository {
 	t.Helper()
@@ -53,7 +72,19 @@ func createIsolatedPostgreSQLMediaUploadActorQuotaRepository(t *testing.T) *Medi
 	sqlDB.SetMaxOpenConns(8)
 	t.Cleanup(func() { _ = sqlDB.Close() })
 	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &media.MediaAssetDerivative{}))
-	return NewMediaRepository(db)
+	objectRoot := t.TempDir()
+	provider, err := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: objectRoot, BaseURL: "https://media.example.test"})
+	require.NoError(t, err)
+	objectKeys := []string{strings.Repeat("a", 64) + ".png", strings.Repeat("b", 64) + ".png"}
+	for index := 0; index < 8; index++ {
+		objectKeys = append(objectKeys, fmt.Sprintf("%d.png", index))
+	}
+	for _, key := range objectKeys {
+		require.NoError(t, os.WriteFile(filepath.Join(objectRoot, key), []byte("synthetic quota fixture"), 0o600))
+	}
+	repo := NewMediaRepository(db)
+	repo.ConfigurePublicBusinessMediaReferenceIdentityResolver(&mediaUploadActorQuotaTestObjectIdentityResolverWithLocalExistenceVerification{provider: provider})
+	return repo
 }
 
 func TestPostgreSQLMediaUploadActorStorageQuotaSerializesConcurrentRegistrations(t *testing.T) {

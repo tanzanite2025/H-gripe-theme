@@ -191,9 +191,13 @@ func (s *TicketService) deliverAutoReply(t *ticket.Ticket, rule ticket.AutoReply
 				CustomerServiceRealtimeActor{Kind: "system"},
 			)
 		},
+		&rule,
 	)
+	if errors.Is(err, repository.ErrAutoReplyRuleChangedBeforeDelivery) {
+		return "", false, nil, nil
+	}
 	if err != nil {
-		return "", false, nil, err
+		return "", false, nil, mapAutoReplyMediaRepositoryWriteError(err)
 	}
 	if !created {
 		return replyMessage, true, nil, nil
@@ -265,7 +269,7 @@ func (s *TicketService) CreateAutoReplyRule(input AutoReplyRuleInput) (*ticket.A
 		return nil, err
 	}
 	if err := s.ticketRepo.CreateAutoReplyRule(rule); err != nil {
-		return nil, err
+		return nil, mapAutoReplyMediaRepositoryWriteError(err)
 	}
 	return rule, nil
 }
@@ -288,7 +292,7 @@ func (s *TicketService) UpdateAutoReplyRule(id uint, input AutoReplyRuleInput) (
 		return nil, err
 	}
 	if err := s.ticketRepo.UpdateAutoReplyRule(rule); err != nil {
-		return nil, err
+		return nil, mapAutoReplyMediaRepositoryWriteError(err)
 	}
 	return rule, nil
 }
@@ -634,15 +638,16 @@ func containsUint(values []uint, target uint) bool {
 }
 
 func buildAutoReplyMetadata(rule ticket.AutoReplyRule, locale, trigger, dedupeKey string) string {
-	payload := map[string]interface{}{}
+	payload := map[string]json.RawMessage{}
 	if strings.TrimSpace(rule.Metadata) != "" {
 		_ = json.Unmarshal([]byte(rule.Metadata), &payload)
 	}
-	payload["_source"] = "auto_reply"
-	payload["_rule_id"] = rule.ID
-	payload["_dedupe_key"] = dedupeKey
-	payload["_trigger"] = trigger
-	payload["_locale"] = locale
+	if payload == nil {
+		payload = map[string]json.RawMessage{}
+	}
+	for key, value := range map[string]any{"_source": "auto_reply", "_rule_id": rule.ID, "_dedupe_key": dedupeKey, "_trigger": trigger, "_locale": locale} {
+		payload[key], _ = json.Marshal(value)
+	}
 	result, _ := json.Marshal(payload)
 	return string(result)
 }

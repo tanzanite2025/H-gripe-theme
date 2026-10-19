@@ -15,13 +15,13 @@ type ProductBrandHandler struct {
 }
 
 type productBrandRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Slug        string `json:"slug" binding:"required"`
-	Description string `json:"description"`
-	LogoURL     string `json:"logo_url"`
-	WebsiteURL  string `json:"website_url"`
-	IsEnabled   *bool  `json:"is_enabled"`
-	SortOrder   int    `json:"sort_order"`
+	Name        string  `json:"name" binding:"required"`
+	Slug        string  `json:"slug" binding:"required"`
+	Description string  `json:"description"`
+	LogoURL     *string `json:"logo_url"`
+	WebsiteURL  string  `json:"website_url"`
+	IsEnabled   *bool   `json:"is_enabled"`
+	SortOrder   int     `json:"sort_order"`
 }
 
 func NewProductBrandHandler(brandService *service.ProductBrandService) *ProductBrandHandler {
@@ -96,18 +96,23 @@ func (h *ProductBrandHandler) Delete(c *gin.Context) {
 }
 
 func productBrandInput(req productBrandRequest) service.ProductBrandInput {
+	logoURL := ""
+	if req.LogoURL != nil {
+		logoURL = *req.LogoURL
+	}
 	enabled := true
 	if req.IsEnabled != nil {
 		enabled = *req.IsEnabled
 	}
 	return service.ProductBrandInput{
-		Name:        req.Name,
-		Slug:        req.Slug,
-		Description: req.Description,
-		LogoURL:     req.LogoURL,
-		WebsiteURL:  req.WebsiteURL,
-		IsEnabled:   enabled,
-		SortOrder:   req.SortOrder,
+		Name:                 req.Name,
+		Slug:                 req.Slug,
+		Description:          req.Description,
+		LogoURL:              logoURL,
+		PreserveExistingLogo: req.LogoURL == nil,
+		WebsiteURL:           req.WebsiteURL,
+		IsEnabled:            enabled,
+		SortOrder:            req.SortOrder,
 	}
 }
 
@@ -130,7 +135,7 @@ func respondProductBrandError(c *gin.Context, err error) {
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 	case errors.Is(err, service.ErrProductBrandInSpokeRimCatalog):
 		c.JSON(http.StatusConflict, gin.H{"error": "Product brand is referenced by the spoke rim catalog and cannot be deleted"})
-	case errors.Is(err, service.ErrProductBrandInvalid):
+	case errors.Is(err, service.ErrProductBrandInvalid), errors.Is(err, service.ErrProductBrandLogoReferenceInvalid):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to manage product brand"})

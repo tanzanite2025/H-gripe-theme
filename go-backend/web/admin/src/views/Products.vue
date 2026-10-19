@@ -134,7 +134,6 @@
       @confirm-template-sync="confirmTemplateSync"
       @product-category-select="setProductCategory"
       @product-brand-select="setProductBrand"
-      @product-shipping-template-select="setProductShippingTemplates"
       @product-information-template-select="setProductInformationTemplate"
       @customs-classification-select="handleCustomsClassificationSelect"
       @customs-classification-manual-edit="clearCustomsClassification"
@@ -329,7 +328,6 @@ const {
   getSpecLabel,
   specSelectValue,
   setSpecSelectValue,
-  setProductShippingTemplates,
   setProductCategory,
   setProductBrand,
   setProductInformationTemplate,
@@ -440,7 +438,7 @@ const handleCreationTypeContinue = async (type: ProductCreationType): Promise<vo
     await openSpokeRepairKitCreateDialog()
     return
   }
-  await showGenericCreateDialog()
+  await showGenericCreateDialog(type === 'carbon-rim' ? 'carbon_rim' : '')
 }
 
 const openProductEditDialog = async (product: AdminProductRecord): Promise<void> => {

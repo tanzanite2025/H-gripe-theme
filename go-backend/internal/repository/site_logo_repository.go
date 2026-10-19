@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"context"
+
 	sitelogodomain "commerce-platform/internal/domain/site_logo"
 
 	"gorm.io/gorm"
@@ -8,11 +10,28 @@ import (
 )
 
 type SiteLogoRepository struct {
-	db *gorm.DB
+	db                                   *gorm.DB
+	validateObjectBeforeReplacingCurrent func(context.Context, *sitelogodomain.Asset) error
 }
 
 func NewSiteLogoRepository(db *gorm.DB) *SiteLogoRepository {
 	return &SiteLogoRepository{db: db}
+}
+
+func (r *SiteLogoRepository) WithTx(tx *gorm.DB) *SiteLogoRepository {
+	copy := *r
+	copy.db = tx
+	return &copy
+}
+
+func (r *SiteLogoRepository) WithContext(ctx context.Context) *SiteLogoRepository {
+	copy := *r
+	copy.db = r.db.WithContext(ctx)
+	return &copy
+}
+
+func (r *SiteLogoRepository) ConfigureTransactionalSiteLogoObjectValidation(validate func(context.Context, *sitelogodomain.Asset) error) {
+	r.validateObjectBeforeReplacingCurrent = validate
 }
 
 func (r *SiteLogoRepository) Current() (*sitelogodomain.Asset, error) {
@@ -44,7 +63,7 @@ func (r *SiteLogoRepository) ReplaceCurrent(
 
 	asset.ID = sitelogodomain.CurrentAssetID
 	var previous *sitelogodomain.Asset
-	err := r.db.Transaction(func(tx *gorm.DB) error {
+	err := runWithDedicatedPublicObjectNamespaceTransactionLock(r.db.Statement.Context, r.db, dedicatedSiteLogoObjectNamespace, func(tx *gorm.DB) error {
 		var current sitelogodomain.Asset
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("id = ?", sitelogodomain.CurrentAssetID).
@@ -57,6 +76,12 @@ func (r *SiteLogoRepository) ReplaceCurrent(
 			previous = &previousCopy
 		}
 
+		if r.validateObjectBeforeReplacingCurrent == nil {
+			return ErrDedicatedSiteIdentityTransactionalObjectValidationUnavailable
+		}
+		if err := r.validateObjectBeforeReplacingCurrent(tx.Statement.Context, asset); err != nil {
+			return err
+		}
 		if err := tx.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
 			UpdateAll: true,
@@ -82,12 +107,15 @@ func (r *SiteLogoRepository) DeleteCurrent(
 	}
 
 	var previous *sitelogodomain.Asset
-	err := r.db.Transaction(func(tx *gorm.DB) error {
+	err := runWithDedicatedPublicObjectNamespaceTransactionLock(r.db.Statement.Context, r.db, dedicatedSiteLogoObjectNamespace, func(tx *gorm.DB) error {
 		var current sitelogodomain.Asset
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("id = ?", sitelogodomain.CurrentAssetID).
 			First(&current).Error
 		if err == gorm.ErrRecordNotFound {
+			if afterDelete != nil {
+				return afterDelete(tx, nil)
+			}
 			return nil
 		}
 		if err != nil {
@@ -108,4 +136,17 @@ func (r *SiteLogoRepository) DeleteCurrent(
 		return nil, err
 	}
 	return previous, nil
+}
+
+func (r *SiteLogoRepository) WithLockedCurrentSiteLogoForObjectCleanup(ctx context.Context, operation func(*sitelogodomain.Asset, *MediaRepository) error) error {
+	if r == nil {
+		return gorm.ErrInvalidDB
+	}
+	return runDedicatedPublicObjectPhysicalCleanupTransactionHoldingNamespaceLockUntilProviderReturns(ctx, r.db, dedicatedSiteLogoObjectNamespace, func(tx *gorm.DB) error {
+		current, err := NewSiteLogoRepository(tx).Current()
+		if err != nil {
+			return err
+		}
+		return operation(current, NewMediaRepository(tx))
+	})
 }

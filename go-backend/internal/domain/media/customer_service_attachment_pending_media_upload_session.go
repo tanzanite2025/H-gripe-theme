@@ -18,6 +18,7 @@ type MediaUploadSession struct {
 	UploadActorAccountID          uint                 `gorm:"not null;default:0" json:"-"`
 	UploadActorVisitorSessionHash string               `gorm:"type:varchar(64);not null;default:''" json:"-"`
 	ObjectKey                     string               `gorm:"not null;uniqueIndex" json:"-"`
+	ExpectedUploadBytes           *int64               `json:"-"`
 	MediaAssetID                  *uint                `gorm:"uniqueIndex" json:"-"`
 	Status                        string               `gorm:"type:varchar(20);not null;index" json:"-"`
 	ExpiresAt                     time.Time            `gorm:"not null;index" json:"-"`

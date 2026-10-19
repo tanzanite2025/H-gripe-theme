@@ -120,6 +120,7 @@
                 <div v-for="(record, recordIndex) in afterSalesCases" :key="`${record.created_at || 'case'}-${record.status || 'unknown'}-${recordIndex}`" class="after-sales__case">
                   <div class="after-sales__case-head"><strong>{{ record.reason }}</strong><span>{{ record.status }}</span></div>
                   <p>{{ record.description }}</p>
+                  <AuthorizedPrivateOrderAttachmentPreviewAndDownload v-for="attachment in record.attachments || []" :key="attachment.download_path" :path="attachment.download_path" :label="attachment.filename || t('privateOrderAttachments.attachment', 'Attachment')" :filename="attachment.filename || 'attachment'" />
                   <p v-if="record.resolution"><strong>{{ t('accountSidebar.orders.resolution', 'Resolution') }}:</strong> {{ record.resolution }}</p>
                   <div v-for="shipment in record.return_shipments || []" :key="shipment.tracking_number" class="after-sales__shipment">
                     <strong>{{ t('accountSidebar.orders.returnTracking', 'Return tracking') }}</strong>
@@ -165,6 +166,7 @@
 </template>
 
 <script setup lang="ts">
+import AuthorizedPrivateOrderAttachmentPreviewAndDownload from '~/components/AuthorizedPrivateOrderAttachmentPreviewAndDownload.vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
 import { ApiRequestError } from '~/composables/useApiRequest'
@@ -209,6 +211,7 @@ interface TrackingEvent {
 }
 
 interface AfterSalesCase {
+  attachments?: Array<{ download_path: string; filename?: string }>
   status?: string
   reason?: string
   description?: string

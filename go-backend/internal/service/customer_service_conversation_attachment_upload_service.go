@@ -46,7 +46,7 @@ func (s *CustomerServiceConversationAttachmentUploadService) UploadVerifiedCusto
 		return nil, err
 	}
 	if s.media.CustomerServicePrivateAttachmentUploadsEnabled() {
-		return s.uploadPreparedPrivateCustomerServiceConversationAttachment(ctx, conversation, identity, file, width, height, owner, 0, false)
+		return s.uploadPreparedPrivateCustomerServiceConversationAttachment(ctx, conversation, identity, file, "image", width, height, owner, 0, false)
 	}
 	return s.media.UploadAsset(ctx, MediaUploadInput{
 		UploadOrigin: media.MediaUploadOriginCustomerServiceConversation, UploadPurpose: string(upload.SpecCustomerServiceAttachment),

@@ -34,6 +34,8 @@
             <span class="font-semibold">{{ t('warrantySubmitClaim.claimStatus.resolution') }}:</span>
             {{ claimStatus.resolution || t('warrantySubmitClaim.claimStatus.noResolution') }}
           </p>
+          <AuthorizedPrivateOrderAttachmentPreviewAndDownload v-for="(path, index) in authorizedClaimImagePaths" :key="path" :path="path" :claim-token="claimAccess.token" :label="t('privateOrderAttachments.image', 'Image') + ' ' + (index + 1)" :filename="`claim-${claimAccess.id}-image-${index + 1}`" />
+          <AuthorizedPrivateOrderAttachmentPreviewAndDownload v-if="claimStatus.video_url" :path="claimStatus.video_url" :claim-token="claimAccess.token" :label="t('privateOrderAttachments.video', 'Video')" :filename="`claim-${claimAccess.id}-video`" />
         </div>
       </div>
 
@@ -214,7 +216,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import AuthorizedPrivateOrderAttachmentPreviewAndDownload from '~/components/AuthorizedPrivateOrderAttachmentPreviewAndDownload.vue'
 import { useI18n, useRoute } from '#imports'
 import { useAuth } from '~/composables/useAuth'
 import { usePageMessages } from '~/composables/usePageMessages'
@@ -258,6 +261,8 @@ const submitStatus = ref<'success' | 'error' | ''>('')
 interface WarrantyClaimStatus {
   status?: string
   resolution?: string
+  images?: string
+  video_url?: string
 }
 
 interface WarrantyClaimAccess {
@@ -267,6 +272,9 @@ interface WarrantyClaimAccess {
 
 const claimAccess = ref<WarrantyClaimAccess | null>(null)
 const claimStatus = ref<WarrantyClaimStatus | null>(null)
+const authorizedClaimImagePaths = computed<string[]>(() => {
+  try { const paths = JSON.parse(claimStatus.value?.images || '[]'); return Array.isArray(paths) ? paths.filter((path): path is string => typeof path === 'string') : [] } catch { return [] }
+})
 const claimStatusLoading = ref(false)
 const claimStatusError = ref('')
 const route = useRoute()

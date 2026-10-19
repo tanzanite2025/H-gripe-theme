@@ -7,11 +7,15 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"commerce-platform/internal/domain/gallery"
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/database"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 
 	"gorm.io/gorm"
 )
@@ -93,7 +97,21 @@ func main() {
 	}
 
 	// 导入数据
-	stats := importData(db, data)
+	galleryRepository := repository.NewGalleryRepository(db)
+	storageConfig := storage.LoadConfigFromEnv()
+	if _, configured := os.LookupEnv("STORAGE_BASE_URL"); !configured {
+		storageConfig.BaseURL = cfg.Server.BaseURL
+	}
+	storageService, err := storage.NewStorageService(storageConfig)
+	if err != nil {
+		log.Fatalf("initialize gallery import media identity validation: %v", err)
+	}
+	storefrontBaseURL := strings.TrimSpace(os.Getenv("STOREFRONT_BASE_URL"))
+	if storefrontBaseURL == "" {
+		storefrontBaseURL = cfg.Server.BaseURL
+	}
+	galleryRepository.ConfigurePublicBusinessMediaReferenceIdentityResolver(service.NewMediaService(repository.NewMediaRepository(db), storageService, nil, storefrontBaseURL, cfg.MediaUpload.AccountStorageQuotaBytes))
+	stats := importGalleriesAndAppendImagesThroughTransactionalMediaRepository(db, galleryRepository, data)
 
 	fmt.Println("\n=== 导入完成 ===")
 	fmt.Printf("图片库: 创建 %d, 更新 %d, 跳过 %d\n",
@@ -150,121 +168,61 @@ type ImportStats struct {
 	ImagesSkipped    int
 }
 
-// importData 导入数据
-func importData(db *gorm.DB, data *GalleryExportData) ImportStats {
+// Import each gallery and its new images in one transaction; reuse never copies assets.
+func importGalleriesAndAppendImagesThroughTransactionalMediaRepository(db *gorm.DB, galleries *repository.GalleryRepository, data *GalleryExportData) ImportStats {
 	stats := ImportStats{}
-
-	// WordPress ID 到 Go ID 的映射
-	galleryIDMap := make(map[int]uint)
-
-	// 导入图片库
-	fmt.Println("导入图片库...")
-	for _, g := range data.Galleries {
-		fmt.Printf("  处理: %s (slug: %s)...", g.Name, g.Slug)
-
-		// 检查是否已存在
-		var existing gallery.Gallery
-		err := db.Where("slug = ?", g.Slug).First(&existing).Error
-
-		if err == gorm.ErrRecordNotFound {
-			// 创建新图片库
-			newGallery := gallery.Gallery{
-				Name:        g.Name,
-				Slug:        g.Slug,
-				Description: g.Description,
-				CoverImage:  g.CoverImage,
-				ViewCount:   g.ViewCount,
-				Status:      g.Status,
-				CreatedAt:   g.CreatedAt,
-				UpdatedAt:   g.UpdatedAt,
-			}
-
-			if err := db.Create(&newGallery).Error; err != nil {
-				fmt.Printf(" 失败: %v\n", err)
-				stats.GalleriesSkipped++
-				continue
-			}
-
-			galleryIDMap[g.ID] = newGallery.ID
-			stats.GalleriesCreated++
-			fmt.Printf(" 创建 (ID: %d)\n", newGallery.ID)
-
-		} else if err == nil {
-			// 更新现有图片库
-			existing.Name = g.Name
-			existing.Description = g.Description
-			existing.CoverImage = g.CoverImage
-			existing.ViewCount = g.ViewCount
-			existing.Status = g.Status
-			existing.UpdatedAt = g.UpdatedAt
-
-			if err := db.Save(&existing).Error; err != nil {
-				fmt.Printf(" 更新失败: %v\n", err)
-				stats.GalleriesSkipped++
-				continue
-			}
-
-			galleryIDMap[g.ID] = existing.ID
-			stats.GalleriesUpdated++
-			fmt.Printf(" 更新 (ID: %d)\n", existing.ID)
-
-		} else {
-			fmt.Printf(" 查询失败: %v\n", err)
+	importedSourceIDs := make(map[int]bool)
+	for _, incoming := range data.Galleries {
+		if importedSourceIDs[incoming.ID] {
 			stats.GalleriesSkipped++
-		}
-	}
-
-	// 导入图片
-	fmt.Println("\n导入图片...")
-	for _, img := range data.Images {
-		// 获取对应的 Go 图片库 ID
-		goGalleryID, ok := galleryIDMap[img.GalleryID]
-		if !ok {
-			fmt.Printf("  跳过图片 (图片库 ID %d 不存在): %s\n", img.GalleryID, img.Title)
-			stats.ImagesSkipped++
 			continue
 		}
-
-		fmt.Printf("  添加图片: %s...", truncate(img.Title, 30))
-
-		// 检查是否已存在（通过 URL）
-		var existing gallery.GalleryImage
-		err := db.Where("gallery_id = ? AND url = ?", goGalleryID, img.URL).First(&existing).Error
-
-		if err == gorm.ErrRecordNotFound {
-			// 创建新图片
-			newImage := gallery.GalleryImage{
-				GalleryID:   goGalleryID,
-				URL:         img.URL,
-				Thumbnail:   img.Thumbnail,
-				Title:       img.Title,
-				Description: img.Description,
-				Alt:         img.Alt,
-				Width:       img.Width,
-				Height:      img.Height,
-				Size:        img.Size,
-				Tags:        img.Tags,
-				Order:       img.Order,
+		importedSourceIDs[incoming.ID] = true
+		var item gallery.Gallery
+		err := db.Where("slug = ?", incoming.Slug).First(&item).Error
+		creating := err == gorm.ErrRecordNotFound
+		if err != nil && !creating {
+			log.Printf("gallery lookup failed [%s]: %v", incoming.Slug, err)
+			stats.GalleriesSkipped++
+			for _, image := range data.Images {
+				if image.GalleryID == incoming.ID {
+					stats.ImagesSkipped++
+				}
 			}
-
-			if err := db.Create(&newImage).Error; err != nil {
-				fmt.Printf(" 失败: %v\n", err)
-				stats.ImagesSkipped++
+			continue
+		}
+		if creating {
+			item.Slug, item.CreatedAt = incoming.Slug, incoming.CreatedAt
+		}
+		item.Name, item.Description, item.CoverImage = incoming.Name, incoming.Description, incoming.CoverImage
+		item.ViewCount, item.Status, item.UpdatedAt = incoming.ViewCount, incoming.Status, incoming.UpdatedAt
+		var images []gallery.GalleryImage
+		for _, image := range data.Images {
+			if image.GalleryID != incoming.ID {
 				continue
 			}
-
-			stats.ImagesCreated++
-			fmt.Printf(" 创建 (ID: %d)\n", newImage.ID)
-
-		} else if err == nil {
-			fmt.Printf(" 已存在，跳过\n")
-			stats.ImagesSkipped++
+			images = append(images, gallery.GalleryImage{URL: image.URL, Thumbnail: image.Thumbnail, Title: image.Title, Description: image.Description, Alt: image.Alt, Width: image.Width, Height: image.Height, Size: image.Size, Tags: image.Tags, Order: image.Order})
+		}
+		added, skipped, err := galleries.SaveImportedGalleryAndAppendPreviouslyUnplacedImages(&item, images)
+		if err != nil {
+			log.Printf("gallery import rolled back [%s]: %v", incoming.Slug, err)
+			stats.GalleriesSkipped++
+			stats.ImagesSkipped += len(images)
+			continue
+		}
+		if creating {
+			stats.GalleriesCreated++
 		} else {
-			fmt.Printf(" 查询失败: %v\n", err)
+			stats.GalleriesUpdated++
+		}
+		stats.ImagesCreated += added
+		stats.ImagesSkipped += skipped
+	}
+	for _, image := range data.Images {
+		if !importedSourceIDs[image.GalleryID] {
 			stats.ImagesSkipped++
 		}
 	}
-
 	return stats
 }
 

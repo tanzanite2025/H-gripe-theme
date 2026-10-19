@@ -3,6 +3,7 @@ package service
 import (
 	"commerce-platform/internal/domain/post"
 	"commerce-platform/internal/pkg/safehtml"
+	"commerce-platform/internal/repository"
 	"errors"
 	"time"
 )
@@ -105,12 +106,8 @@ func (s *PostService) CreateAdminPost(input PostCreateInput) (*post.Post, error)
 		newPost.PublishedAt = &now
 	}
 
-	if err := s.postRepo.Create(newPost); err != nil {
-		return nil, err
-	}
-	if err := s.categoryService.ReplacePostCategories(newPost.ID, categoryIDs); err != nil {
-		_ = s.postRepo.Delete(newPost.ID)
-		return nil, err
+	if err := s.postRepo.CreateWithCategoryIDs(newPost, categoryIDs); err != nil {
+		return nil, mapPostRepositoryWriteErrorToServiceError(err)
 	}
 	s.invalidateStorefrontHTMLCache("admin post create")
 
@@ -192,13 +189,14 @@ func (s *PostService) UpdateAdminPost(id uint, input PostUpdateInput) (*post.Pos
 		existingPost.TranslationGroupID = input.TranslationGroupID
 	}
 
-	if err := s.postRepo.Update(existingPost); err != nil {
-		return nil, err
-	}
+	mediaMutation := repository.PostMediaFieldMutation{UpdateContent: input.Content != nil, UpdateFeaturedImage: input.FeaturedImg != nil}
 	if input.UpdateCategoryIDs {
-		if err := s.categoryService.ReplacePostCategories(existingPost.ID, categoryIDs); err != nil {
-			return nil, err
-		}
+		err = s.postRepo.UpdateWithCategoryIDs(existingPost, categoryIDs, mediaMutation)
+	} else {
+		err = s.postRepo.Update(existingPost, mediaMutation)
+	}
+	if err != nil {
+		return nil, mapPostRepositoryWriteErrorToServiceError(err)
 	}
 
 	s.clearPostCache(&previousPost)

@@ -130,10 +130,10 @@ func TestCustomerServiceAvatarCleanupHandlerOnlyDeletesUnreferencedManagedAvatar
 
 	payload, err := json.Marshal(outbox.CustomerServiceAvatarCleanupPayload{URL: profile.Avatar})
 	require.NoError(t, err)
-	require.NoError(t, handler.Handle(context.Background(), outbox.Event{
+	require.ErrorIs(t, handler.Handle(context.Background(), outbox.Event{
 		EventType: outbox.EventTypeCustomerServiceAvatarCleanup,
 		Payload:   payload,
-	}))
+	}), ErrMediaAssetInUse)
 	require.Empty(t, store.deletedURLs)
 
 	staleURL := "https://assets.example.test/customer-service/avatars/2026/08/16/stale.webp"
@@ -241,6 +241,14 @@ type recordingCustomerServiceAvatarStorage struct {
 	deleteErr    error
 }
 
+func (s *recordingCustomerServiceAvatarStorage) VerifyStoredObjectExists(_ context.Context, key string) error {
+	uploadedKey, err := s.ObjectKey(s.uploadURL)
+	if err != nil || s.uploadCalls == 0 || uploadedKey != key {
+		return errors.New("recording provider has no uploaded object at this key")
+	}
+	return nil
+}
+
 func (s *recordingCustomerServiceAvatarStorage) Upload(context.Context, *multipart.FileHeader) (string, error) {
 	return s.UploadWithPrefix(context.Background(), nil, "")
 }
@@ -294,4 +302,17 @@ func (s *recordingCustomerServiceAvatarStorage) ObjectKey(reference string) (str
 
 func (s *recordingCustomerServiceAvatarStorage) CopyObject(context.Context, string, string) error {
 	return errors.New("not implemented")
+}
+
+func (s *recordingCustomerServiceAvatarStorage) WriteDedicatedImmediateOwnerObjectAtPreallocatedKey(_ context.Context, reader io.Reader, key, cacheControl string) (string, error) {
+	if !storage.IsPreallocatedDedicatedImmediateOwnerObjectKey(key) {
+		return "", errors.New("unexpected preallocated key")
+	}
+	if _, err := io.Copy(io.Discard, reader); err != nil {
+		return "", err
+	}
+	s.uploadCalls++
+	s.cacheControl = cacheControl
+	s.uploadURL = s.GetURL(key)
+	return s.uploadURL, nil
 }

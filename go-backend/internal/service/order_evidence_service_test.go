@@ -9,7 +9,9 @@ import (
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/order"
 	"commerce-platform/internal/domain/orderevidence"
+	"commerce-platform/internal/domain/outbox"
 	productrequirement "commerce-platform/internal/domain/productrequirement"
+	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 
 	"github.com/glebarez/sqlite"
@@ -143,7 +145,17 @@ func TestOrderEvidenceAttachmentServiceEnforcesOrderScopedStoragePrefix(t *testi
 	}, input)
 	require.ErrorIs(t, err, ErrOrderEvidenceAttachmentOwnership)
 
-	input.StorageKey = fmt.Sprintf("order-evidence/%d/photo.jpg", snapshot.OrderID)
+	file := newEvidencePNGFileHeader(t, "photo.png")
+	provider, storageErr := storage.NewStorageService(&storage.Config{Type: storage.StorageTypeLocal, LocalPath: t.TempDir(), BaseURL: "https://evidence.test"})
+	require.NoError(t, storageErr)
+	reference, storageErr := provider.(storage.PrivateObjectUploader).UploadWithPrefixPrivate(t.Context(), file, fmt.Sprintf("order-evidence/%d/%d", snapshot.OrderID, items[0].ID))
+	require.NoError(t, storageErr)
+	input.StorageKey, storageErr = provider.ObjectKey(reference)
+	require.NoError(t, storageErr)
+	input.SHA256, input.SizeBytes, storageErr = hashMultipartFile(file)
+	require.NoError(t, storageErr)
+	input.MimeType = "image/png"
+	attachmentService.storage = provider
 	attachment, err := attachmentService.RegisterReference(repository.TxRepositories{
 		OrderEvidence: repository.NewOrderEvidenceRepository(db),
 	}, input)
@@ -165,6 +177,7 @@ func newOrderEvidenceServiceTestDB(t *testing.T) *gorm.DB {
 		&orderevidence.OrderEvidencePackage{},
 		&orderevidence.OrderEvidenceItem{},
 		&orderevidence.OrderEvidenceAttachment{},
+		&outbox.Event{},
 	))
 	return db
 }

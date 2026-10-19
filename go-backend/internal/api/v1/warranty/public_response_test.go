@@ -8,9 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPublicWarrantyClaimResponseCanonicalizesAttachments(t *testing.T) {
+func TestPublicWarrantyClaimResponseUsesAuthorizedAttachmentPathsWithoutChangingStoredReferences(t *testing.T) {
 	resolver := service.NewMediaService(nil, nil, nil, "https://shop.example.test", 20<<30)
 	claim := domainwarranty.WarrantyClaim{
+		ID:       17,
 		Images:   `["http://media.internal:8080/uploads/warranty/photo.jpg","https://cdn.example.test/photo.jpg"]`,
 		VideoURL: "http://media.internal:8080/uploads/warranty/video.mp4",
 	}
@@ -19,9 +20,9 @@ func TestPublicWarrantyClaimResponseCanonicalizesAttachments(t *testing.T) {
 
 	require.Equal(
 		t,
-		`["https://shop.example.test/uploads/warranty/photo.jpg","https://cdn.example.test/photo.jpg"]`,
+		`["/warranty/claims/17/attachments/images/0","/warranty/claims/17/attachments/images/1"]`,
 		publicValue.Images,
 	)
-	require.Equal(t, "https://shop.example.test/uploads/warranty/video.mp4", publicValue.VideoURL)
+	require.Equal(t, "/warranty/claims/17/attachments/video/0", publicValue.VideoURL)
 	require.Equal(t, "http://media.internal:8080/uploads/warranty/video.mp4", claim.VideoURL)
 }

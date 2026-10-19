@@ -173,6 +173,10 @@ func BuildOrderEvidenceSnapshot(
 	if err != nil {
 		return nil, fmt.Errorf("marshal order evidence snapshot: %w", err)
 	}
+	payloadBytes, err = CanonicalImmutableSnapshotJSONForStorageIndependentIntegrity(payloadBytes)
+	if err != nil {
+		return nil, fmt.Errorf("canonicalize order evidence snapshot: %w", err)
+	}
 	hash := sha256.Sum256(payloadBytes)
 
 	snapshot := &OrderEvidenceSnapshot{
@@ -257,9 +261,7 @@ func (s OrderEvidenceSnapshot) Validate() error {
 }
 
 func (s OrderEvidenceSnapshot) VerifyIntegrity() error {
-	hash := sha256.Sum256(s.SnapshotData)
-	expected := hex.EncodeToString(hash[:])
-	if !strings.EqualFold(strings.TrimSpace(s.SnapshotSHA256), expected) {
+	if !immutableSnapshotDigestMatchesDocumentOrVerifiedLegacySerialization(s.SnapshotData, s.SnapshotSHA256, &OrderEvidenceSnapshotPayload{}) {
 		return errors.New("order evidence snapshot sha256 does not match snapshot data")
 	}
 	return nil

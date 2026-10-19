@@ -2,12 +2,29 @@ package repository
 
 import (
 	"commerce-platform/internal/domain/user"
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+var ErrCustomerServiceAvatarMustUseOwningLifecycle = errors.New("customer-service avatar binding must use its configured owning lifecycle")
+
+func (r *UserRepository) ConfigureTransactionalCustomerServiceAvatarBindingValidation(validate func(context.Context, string) error) {
+	r.validateCustomerServiceAvatarBeforeBinding = validate
+}
+
+func (r *UserRepository) WithLockedCustomerServiceAvatarNamespaceForPhysicalCleanup(ctx context.Context, operation func(*MediaRepository) error) error {
+	if r == nil {
+		return gorm.ErrInvalidDB
+	}
+	return runDedicatedPublicObjectPhysicalCleanupTransactionHoldingNamespaceLockUntilProviderReturns(ctx, r.db, dedicatedCustomerServiceAvatarObjectNamespace, func(tx *gorm.DB) error {
+		return operation(NewMediaRepository(tx))
+	})
+}
 
 // ReplaceCustomerServiceAgentAvatar changes the one avatar owned by an
 // existing customer-service profile. The callback runs in the same
@@ -27,7 +44,7 @@ func (r *UserRepository) ReplaceCustomerServiceAgentAvatar(
 
 	avatarURL = strings.TrimSpace(avatarURL)
 	previousAvatarURL := ""
-	err := r.db.Transaction(func(tx *gorm.DB) error {
+	err := runWithDedicatedPublicObjectNamespaceTransactionLock(r.db.Statement.Context, r.db, dedicatedCustomerServiceAvatarObjectNamespace, func(tx *gorm.DB) error {
 		var profile user.AgentProfile
 		query := tx.Where("user_id = ?", userID)
 		switch tx.Dialector.Name() {
@@ -41,6 +58,14 @@ func (r *UserRepository) ReplaceCustomerServiceAgentAvatar(
 		previousAvatarURL = strings.TrimSpace(profile.Avatar)
 		if previousAvatarURL == avatarURL {
 			return nil
+		}
+		if avatarURL != "" {
+			if r.validateCustomerServiceAvatarBeforeBinding == nil {
+				return ErrCustomerServiceAvatarMustUseOwningLifecycle
+			}
+			if err := r.validateCustomerServiceAvatarBeforeBinding(tx.Statement.Context, avatarURL); err != nil {
+				return err
+			}
 		}
 
 		result := tx.Model(&user.AgentProfile{}).

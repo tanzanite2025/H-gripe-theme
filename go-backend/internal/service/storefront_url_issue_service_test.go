@@ -318,7 +318,7 @@ func TestResolveRetiredRejectsNonStaleRouteIssue(t *testing.T) {
 	require.ErrorContains(t, err, "only stale-route URL issues can be marked retired")
 }
 
-func TestRecheckAutomaticallyClosesRecoveredStaleRouteIssue(t *testing.T) {
+func TestRecheckDeletesRecoveredAndRetiredURLIssuesAndTheirEvents(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -406,17 +406,13 @@ func TestRecheckAutomaticallyClosesRecoveredStaleRouteIssue(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, seodomain.RouteCheckStatusNotFound, retiredResult.Status)
 
-	updatedIssue, err := issueRepository.FindByID(issues[0].ID)
-	require.NoError(t, err)
-	require.Equal(t, urlmanagementdomain.URLIssueStateVerified, updatedIssue.State)
-	require.Equal(t, urlmanagementdomain.URLIssueResolutionRuntimeFixed, updatedIssue.ResolutionType)
+	_, err = issueRepository.FindByID(issues[0].ID)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
 	stillActiveIssue, err := issueRepository.FindByID(issues[1].ID)
 	require.NoError(t, err)
 	require.Equal(t, urlmanagementdomain.URLIssueStateOpen, stillActiveIssue.State)
-	retiredIssue, err := issueRepository.FindByID(issues[2].ID)
-	require.NoError(t, err)
-	require.Equal(t, urlmanagementdomain.URLIssueStateVerified, retiredIssue.State)
-	require.Equal(t, urlmanagementdomain.URLIssueResolutionRetired, retiredIssue.ResolutionType)
+	_, err = issueRepository.FindByID(issues[2].ID)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
 
 	activeIssues, total, err := issueRepository.List(repository.StorefrontURLIssueListFilter{State: "active"})
 	require.NoError(t, err)
@@ -424,15 +420,12 @@ func TestRecheckAutomaticallyClosesRecoveredStaleRouteIssue(t *testing.T) {
 	require.Len(t, activeIssues, 1)
 	require.Equal(t, urlmanagementdomain.URLIssueTypeStaleRoute, activeIssues[0].IssueType)
 
-	var verificationEvent urlmanagementdomain.StorefrontURLIssueEvent
-	require.NoError(t, db.Where("issue_id = ? AND event_type = ?", issues[0].ID, urlmanagementdomain.URLIssueEventVerificationPassed).
-		First(&verificationEvent).Error)
-	var retirementEvent urlmanagementdomain.StorefrontURLIssueEvent
-	require.NoError(t, db.Where("issue_id = ? AND event_type = ?", issues[2].ID, urlmanagementdomain.URLIssueEventStaleRouteRetired).
-		First(&retirementEvent).Error)
+	var removedEventCount int64
+	require.NoError(t, db.Model(&urlmanagementdomain.StorefrontURLIssueEvent{}).Where("issue_id IN ?", []uint{issues[0].ID, issues[2].ID}).Count(&removedEventCount).Error)
+	require.Zero(t, removedEventCount)
 }
 
-func TestRouteCatalogSyncKeepsActiveRuntimeIssueAndVerifiesResolvedPathCollision(t *testing.T) {
+func TestRouteCatalogSyncKeepsCurrentRuntimeIssueAndDeletesResolvedPathCollision(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -498,7 +491,6 @@ func TestRouteCatalogSyncKeepsActiveRuntimeIssueAndVerifiesResolvedPathCollision
 	activeRuntimeIssue, err := issueService.Get(issues[0].ID)
 	require.NoError(t, err)
 	require.Equal(t, urlmanagementdomain.URLIssueStateOpen, activeRuntimeIssue.State)
-	verifiedCollisionIssue, err := issueService.Get(issues[1].ID)
-	require.NoError(t, err)
-	require.Equal(t, urlmanagementdomain.URLIssueStateVerified, verifiedCollisionIssue.State)
+	_, err = issueService.Get(issues[1].ID)
+	require.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }

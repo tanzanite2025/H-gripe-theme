@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 
@@ -28,7 +29,7 @@ func TestMediaUploadQuotaCountsSoftDeletedAssets(t *testing.T) {
 		_ = sqlDB.Close()
 	})
 
-	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}))
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}, &media.MediaAsset{}))
 	existing := media.MediaAsset{
 		Filename:         "existing.jpg",
 		URL:              "https://media.example.test/uploads/existing.jpg",
@@ -51,6 +52,7 @@ func TestMediaUploadQuotaCountsSoftDeletedAssets(t *testing.T) {
 	require.NoError(t, err)
 
 	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "", 10)
+	service.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	_, err = service.UploadAsset(context.Background(), MediaUploadInput{
 		File:       multipartFileHeader(t, "next.jpg", "image/jpeg", []byte("12345")),
 		MediaType:  "image",
@@ -72,7 +74,7 @@ func TestMediaUploadQuotaAllowsUsageAtExactLimit(t *testing.T) {
 		_ = sqlDB.Close()
 	})
 
-	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}))
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}, &media.MediaAsset{}))
 	require.NoError(t, db.Create(&media.MediaAsset{
 		Filename:         "existing.jpg",
 		URL:              "https://media.example.test/uploads/existing.jpg",
@@ -94,6 +96,7 @@ func TestMediaUploadQuotaAllowsUsageAtExactLimit(t *testing.T) {
 
 	payload := mediaUploadTestPNG(t)
 	service := NewMediaService(repository.NewMediaRepository(db), storageService, nil, "", 6+int64(len(payload)))
+	service.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
 		File:       multipartFileHeader(t, "next.png", "image/png", payload),
 		MediaType:  "image",

@@ -36,55 +36,6 @@ func (r *MediaRepository) hasTable(table string) bool {
 	return r.db.Migrator().HasTable(table)
 }
 
-func (r *MediaRepository) mediaReferenceContainsCondition(columns, urls []string) (string, []interface{}) {
-	conditions := make([]string, 0, len(columns)*len(urls))
-	args := make([]interface{}, 0, len(columns)*len(urls))
-	dialect := ""
-	if r != nil && r.db != nil {
-		dialect = r.db.Dialector.Name()
-	}
-	for _, column := range columns {
-		for _, value := range urls {
-			conditions = append(conditions, mediaReferenceTextExpression(dialect, column)+" LIKE ?")
-			args = append(args, "%"+value+"%")
-		}
-	}
-	if len(conditions) == 0 {
-		return "1 = 0", []interface{}{}
-	}
-	return strings.Join(conditions, " OR "), args
-}
-
-func mediaReferenceTextExpression(dialect, column string) string {
-	switch strings.ToLower(strings.TrimSpace(dialect)) {
-	case "mysql":
-		return "CAST(" + column + " AS CHAR)"
-	default:
-		// PostgreSQL JSON/JSONB and SQLite JSON values need an explicit text cast
-		// before LIKE can inspect embedded media URLs.
-		return "CAST(" + column + " AS TEXT)"
-	}
-}
-
-func containsMediaReferenceURL(urls []string, value string) bool {
-	value = strings.TrimSpace(value)
-	for _, candidate := range urls {
-		if value == candidate {
-			return true
-		}
-	}
-	return false
-}
-
-func containsMediaReferenceURLInText(urls []string, value string) bool {
-	for _, candidate := range urls {
-		if candidate != "" && strings.Contains(value, candidate) {
-			return true
-		}
-	}
-	return false
-}
-
 func newMediaReference(
 	category media.ReferenceCategory,
 	resourceType string,

@@ -31,7 +31,6 @@ func TestPublicCartSummaryUsesMinimalMediaContract(t *testing.T) {
 				Product: &productdomain.Product{
 					ID:                             7,
 					ProductSpecificationTemplateID: &productSpecificationTemplateID,
-					ShippingTemplateIDs:            []uint{shippingTemplateID},
 					SKU:                            "INTERNAL-PRODUCT-SKU",
 					Name:                           "Public Cart Product",
 					Slug:                           "public-cart-product",

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	orderdomain "commerce-platform/internal/domain/order"
+	"commerce-platform/internal/domain/orderevidence"
 	paymentdomain "commerce-platform/internal/domain/payment"
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
@@ -20,31 +21,9 @@ const (
 	DisputeEvidenceStatusUnavailable    = "unavailable"
 )
 
-type DisputeEvidenceChecklist struct {
-	Items               []DisputeEvidenceChecklistItem `json:"items"`
-	ReadyCount          int                            `json:"ready_count"`
-	TotalCount          int                            `json:"total_count"`
-	MissingCount        int                            `json:"missing_count"`
-	ManualRequiredCount int                            `json:"manual_required_count"`
-	UnavailableCount    int                            `json:"unavailable_count"`
-	BlockerCount        int                            `json:"blocker_count"`
-	Complete            bool                           `json:"complete"`
-	LastEvaluatedAt     time.Time                      `json:"last_evaluated_at"`
-}
+type DisputeEvidenceChecklist = orderevidence.DisputeEvidenceChecklist
 
-type DisputeEvidenceChecklistItem struct {
-	Key            string     `json:"key"`
-	Title          string     `json:"title"`
-	ProviderField  string     `json:"provider_field,omitempty"`
-	Status         string     `json:"status"`
-	Required       bool       `json:"required"`
-	Blocker        bool       `json:"blocker"`
-	ManualRequired bool       `json:"manual_required"`
-	Source         string     `json:"source"`
-	ObservedAt     *time.Time `json:"observed_at,omitempty"`
-	Summary        string     `json:"summary"`
-	MissingReason  string     `json:"missing_reason,omitempty"`
-}
+type DisputeEvidenceChecklistItem = orderevidence.DisputeEvidenceChecklistItem
 
 type DisputeEvidenceSubmissionCheck struct {
 	Ready            bool     `json:"ready"`

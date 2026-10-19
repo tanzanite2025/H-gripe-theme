@@ -14,7 +14,8 @@
           <dt class="text-muted-foreground">归属依据</dt><dd>{{ ownershipReview.review.value.current.classification_method === 'manual_reviewed' ? '人工整理' : ownershipReview.review.value.current.classification_method === 'recorded_upload_context' ? '上传入口记录' : '历史待确认' }}</dd>
         </dl>
         <div v-if="ownershipReview.review.value.can_reclassify" class="space-y-1 text-xs text-muted-foreground">
-          <p>已识别使用 {{ ownershipReview.review.value.recognized_reference_total }} 处<span v-for="(count, category) in ownershipReview.review.value.reference_category_counts" :key="category"> · {{ referenceCategoryLabel(String(category)) }} {{ count }}</span></p>
+          <p>已识别可见使用 {{ ownershipReview.review.value.recognized_reference_total }} 处<span v-for="(count, category) in ownershipReview.review.value.reference_category_counts" :key="category"> · {{ referenceCategoryLabel(String(category)) }} {{ count }}</span></p>
+          <p v-if="ownershipReview.review.value.has_restricted_references">另含受限引用，相关数量与来源不展示，请人工核查归属。</p>
           <p v-if="ownershipReview.review.value.retained_deleted_parent_references">已删除业务记录保留引用 {{ ownershipReview.review.value.retained_deleted_parent_references }} 处</p>
           <p v-if="ownershipReview.review.value.missing_parent_references" class="text-destructive">缺失业务父记录 {{ ownershipReview.review.value.missing_parent_references }} 处，请核对。</p>
           <p>使用位置仅作为整理参考，不能确认全部历史来源。</p>
@@ -69,7 +70,7 @@ function selectReviewedOwnershipPartition(value: unknown): void {
 }
 
 function referenceCategoryLabel(category: string): string {
-  return ({ catalog: '商品', content: '页面', community: '社区', customer: '客户', support: '客服' } as Record<string, string>)[category] || '其他'
+  return ({ catalog: '商品', content: '页面', community: '社区', customer: '客户', support: '客服', registration: '媒体登记' } as Record<string, string>)[category] || '其他'
 }
 
 function ownershipRestrictionLabel(restriction?: string): string {

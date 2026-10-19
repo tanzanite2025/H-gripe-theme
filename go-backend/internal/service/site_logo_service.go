@@ -3,13 +3,13 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"mime/multipart"
 	"path"
 	"strconv"
 	"strings"
 
 	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/domain/setting"
 	sitelogodomain "commerce-platform/internal/domain/site_logo"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/upload"
@@ -28,10 +28,17 @@ var (
 )
 
 type SiteLogoService struct {
-	repo    *repository.SiteLogoRepository
-	storage storage.StorageService
-	siteURL string
-	outbox  *repository.OutboxRepository
+	repo     *repository.SiteLogoRepository
+	storage  storage.StorageService
+	siteURL  string
+	outbox   *repository.OutboxRepository
+	settings *SettingService
+}
+
+func (s *SiteLogoService) ConfigureSettingService(settings *SettingService) {
+	if s != nil {
+		s.settings = settings
+	}
 }
 
 func (s *SiteLogoService) ConfigureObjectCleanupOutbox(repo *repository.OutboxRepository) {
@@ -42,6 +49,11 @@ func (s *SiteLogoService) ConfigureObjectCleanupOutbox(repo *repository.OutboxRe
 }
 
 func NewSiteLogoService(repo *repository.SiteLogoRepository, storageSvc storage.StorageService, siteURL string) *SiteLogoService {
+	if repo != nil {
+		repo.ConfigureTransactionalSiteLogoObjectValidation(func(ctx context.Context, asset *sitelogodomain.Asset) error {
+			return validateDedicatedSiteIdentityObjectIdentityAndExistenceBeforeOwnerRegistration(ctx, storageSvc, SiteLogoStoragePrefix, asset.StorageKey, asset.URL)
+		})
+	}
 	return &SiteLogoService{
 		repo:    repo,
 		storage: storageSvc,
@@ -49,8 +61,8 @@ func NewSiteLogoService(repo *repository.SiteLogoRepository, storageSvc storage.
 	}
 }
 
-func (s *SiteLogoService) UploadCurrent(ctx context.Context, file *multipart.FileHeader, uploaderID uint) (*sitelogodomain.Asset, error) {
-	if s == nil || s.repo == nil || s.storage == nil {
+func (s *SiteLogoService) UploadCurrent(ctx context.Context, file *multipart.FileHeader, uploaderID uint, locales ...string) (*sitelogodomain.Asset, error) {
+	if s == nil || s.repo == nil || s.storage == nil || s.settings == nil {
 		return nil, ErrSiteLogoUnavailable
 	}
 	if file == nil {
@@ -68,91 +80,89 @@ func (s *SiteLogoService) UploadCurrent(ctx context.Context, file *multipart.Fil
 		return nil, err
 	}
 
-	url, err := s.storage.UploadWithPrefix(ctx, file, SiteLogoStoragePrefix)
-	if err != nil {
-		return nil, err
-	}
-	if strings.TrimSpace(url) == "" {
-		return nil, ErrSiteLogoStorageKeyUnavailable
-	}
+	var asset *sitelogodomain.Asset
 
-	storageKey, err := s.storage.ObjectKey(url)
-	if err != nil {
-		_ = s.storage.Delete(ctx, url)
-		return nil, fmt.Errorf("%w: %v", ErrSiteLogoStorageKeyUnavailable, err)
+	locale := "en"
+	if len(locales) > 0 && strings.TrimSpace(locales[0]) != "" {
+		locale = strings.TrimSpace(locales[0])
 	}
-	if !IsSiteLogoStorageKey(storageKey) {
-		_ = s.storage.Delete(ctx, url)
-		return nil, ErrSiteLogoStorageKeyUnavailable
-	}
+	var mirrors []setting.Setting
+	_, err = uploadDedicatedImmediateOwnerObjectWithWriteAheadCleanupReceiptAndTransactionalBinding(ctx, s.outbox, s.storage, SiteLogoStoragePrefix, 0, file, func(uploadTx *gorm.DB, url, storageKey string) error {
+		asset = &sitelogodomain.Asset{
+			Filename:         path.Base(url),
+			OriginalFilename: file.Filename,
+			URL:              url,
+			StorageKey:       storageKey,
+			MimeType:         upload.SiteLogoImageContentType,
+			Size:             file.Size,
+			ContentSHA256:    contentSHA256,
+			Width:            upload.SiteLogoImageDimension,
+			Height:           upload.SiteLogoImageDimension,
+			UploaderID:       uploaderID,
+		}
 
-	asset := &sitelogodomain.Asset{
-		Filename:         path.Base(url),
-		OriginalFilename: file.Filename,
-		URL:              url,
-		StorageKey:       storageKey,
-		MimeType:         upload.SiteLogoImageContentType,
-		Size:             file.Size,
-		ContentSHA256:    contentSHA256,
-		Width:            upload.SiteLogoImageDimension,
-		Height:           upload.SiteLogoImageDimension,
-		UploaderID:       uploaderID,
-	}
-
-	_, err = s.repo.ReplaceCurrent(asset, func(tx *gorm.DB, previous *sitelogodomain.Asset) error {
-		if previous == nil || strings.TrimSpace(previous.StorageKey) == "" || previous.StorageKey == asset.StorageKey {
-			return nil
-		}
-		if s.outbox == nil {
-			return ErrObjectStorageCleanupUnavailable
-		}
-		event, eventErr := newObjectStorageCleanupEvent(
-			objectCleanupResourceSiteLogo,
-			strconv.FormatUint(uint64(previous.ID), 10),
-			outbox.AggregateTypeSiteLogo,
-			strconv.FormatUint(uint64(previous.ID), 10),
-			[]string{previous.StorageKey},
-		)
-		if eventErr != nil {
-			return eventErr
-		}
-		return s.outbox.WithTx(tx).CreateEvent(event)
+		_, err := s.repo.WithTx(uploadTx).ReplaceCurrent(asset, func(tx *gorm.DB, previous *sitelogodomain.Asset) error {
+			if previous != nil && previous.StorageKey != "" && previous.StorageKey != asset.StorageKey {
+				if s.outbox == nil {
+					return ErrObjectStorageCleanupUnavailable
+				}
+				event, eventErr := newObjectStorageCleanupEvent(objectCleanupResourceSiteLogo, strconv.FormatUint(uint64(previous.ID), 10), outbox.AggregateTypeSiteLogo, strconv.FormatUint(uint64(previous.ID), 10), []string{previous.StorageKey})
+				if eventErr != nil {
+					return eventErr
+				}
+				if err := s.outbox.WithTx(tx).CreateEvent(event); err != nil {
+					return err
+				}
+			}
+			var err error
+			mirrors, err = s.settings.synchronizeDedicatedSiteIdentityMirrorsFromOwnerTransaction(tx, setting.SiteLogoSettingKey, locale, s.siteURL)
+			return err
+		})
+		return err
 	})
 	if err != nil {
-		_ = s.storage.Delete(ctx, url)
 		return nil, err
 	}
+	s.settings.invalidateDedicatedSiteIdentityMirrorCachesAfterOwnerCommit(mirrors)
 	asset.URL = s.CanonicalPublicURL(asset.URL)
 	return asset, nil
 }
 
-func (s *SiteLogoService) DeleteCurrent(ctx context.Context) error {
-	if s == nil || s.repo == nil || s.storage == nil {
+func (s *SiteLogoService) persistFailedUploadCompensationWithOwnerAndHistoricalReferenceProtection(ctx context.Context, reference string) error {
+	return persistFailedDedicatedPublicUploadCompensationBeforeAttemptingOwnerCheckedCleanup(ctx, s.outbox, s.storage, SiteLogoStoragePrefix, objectCleanupResourceSiteLogo, outbox.AggregateTypeSiteLogo, reference, NewObjectStorageCleanupOutboxHandler(nil, s, nil, nil))
+}
+
+func (s *SiteLogoService) DeleteCurrent(ctx context.Context, locales ...string) error {
+	if s == nil || s.repo == nil || s.storage == nil || s.settings == nil {
 		return ErrSiteLogoUnavailable
 	}
 
-	_, err := s.repo.DeleteCurrent(func(tx *gorm.DB, previous *sitelogodomain.Asset) error {
-		if previous == nil || strings.TrimSpace(previous.StorageKey) == "" {
-			return nil
+	locale := "en"
+	if len(locales) > 0 && strings.TrimSpace(locales[0]) != "" {
+		locale = strings.TrimSpace(locales[0])
+	}
+	var mirrors []setting.Setting
+	_, err := s.repo.WithContext(ctx).DeleteCurrent(func(tx *gorm.DB, previous *sitelogodomain.Asset) error {
+		if previous != nil && previous.StorageKey != "" {
+			if s.outbox == nil {
+				return ErrObjectStorageCleanupUnavailable
+			}
+			event, eventErr := newObjectStorageCleanupEvent(objectCleanupResourceSiteLogo, strconv.FormatUint(uint64(previous.ID), 10), outbox.AggregateTypeSiteLogo, strconv.FormatUint(uint64(previous.ID), 10), []string{previous.StorageKey})
+			if eventErr != nil {
+				return eventErr
+			}
+			if err := s.outbox.WithTx(tx).CreateEvent(event); err != nil {
+				return err
+			}
 		}
-		if s.outbox == nil {
-			return ErrObjectStorageCleanupUnavailable
-		}
-		event, eventErr := newObjectStorageCleanupEvent(
-			objectCleanupResourceSiteLogo,
-			strconv.FormatUint(uint64(previous.ID), 10),
-			outbox.AggregateTypeSiteLogo,
-			strconv.FormatUint(uint64(previous.ID), 10),
-			[]string{previous.StorageKey},
-		)
-		if eventErr != nil {
-			return eventErr
-		}
-		return s.outbox.WithTx(tx).CreateEvent(event)
+		var err error
+		mirrors, err = s.settings.synchronizeDedicatedSiteIdentityMirrorsFromOwnerTransaction(tx, setting.SiteLogoSettingKey, locale, s.siteURL)
+		return err
 	})
 	if err != nil {
 		return err
 	}
+	s.settings.invalidateDedicatedSiteIdentityMirrorCachesAfterOwnerCommit(mirrors)
 	return nil
 }
 
@@ -199,16 +209,19 @@ func (s *SiteLogoService) publicURLForKey(key string) string {
 	return s.siteURL + "/uploads/" + normalizedKey
 }
 
-func (s *SiteLogoService) CanServePublicLogo(_ context.Context, key string) (bool, error) {
+func (s *SiteLogoService) CanServePublicLogo(ctx context.Context, key string) (bool, error) {
 	normalizedKey, ok := storage.NormalizeObjectKey(key)
-	if !ok || !IsSiteLogoStorageKey(normalizedKey) {
+	if !ok || !IsSiteLogoStorageKey(normalizedKey) || s == nil || s.repo == nil {
 		return false, nil
 	}
-	current, ok := s.current()
-	if !ok {
-		return false, nil
+	current, err := s.repo.WithContext(ctx).Current()
+	if err != nil {
+		return false, err
 	}
-	return current.StorageKey == normalizedKey, nil
+	if current != nil && current.StorageKey == normalizedKey {
+		return true, nil
+	}
+	return s.repo.HasPublishedBusinessConsumerForDedicatedPublicObject(ctx, normalizedKey, &MediaService{storage: s.storage, siteURL: s.siteURL})
 }
 
 func (s *SiteLogoService) current() (*sitelogodomain.Asset, bool) {

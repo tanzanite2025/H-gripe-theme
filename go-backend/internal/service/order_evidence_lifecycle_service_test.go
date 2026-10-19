@@ -46,7 +46,7 @@ func TestOrderEvidenceLifecycleUpdatesReadinessLocksAndRevises(t *testing.T) {
 	})
 	require.ErrorContains(t, err, "configuration confirmation evidence item is immutable")
 
-	attachment, err := attachmentService.RegisterReference(repos, OrderEvidenceAttachmentReferenceInput{
+	attachment, err := createHistoricalOrderEvidenceAttachmentFixtureWithoutUploading(t, repos, OrderEvidenceAttachmentReferenceInput{
 		EvidenceItemID:   byType[orderevidence.EvidenceItemTypeProductIdentity].ID,
 		StorageKey:       "order-evidence/1/identity.jpg",
 		OriginalFilename: "identity.jpg",
@@ -73,7 +73,7 @@ func TestOrderEvidenceLifecycleUpdatesReadinessLocksAndRevises(t *testing.T) {
 		orderevidence.EvidenceItemTypeOutboundWeightPackaging,
 	} {
 		item := byType[itemType]
-		attachment, err := attachmentService.RegisterReference(repos, OrderEvidenceAttachmentReferenceInput{
+		attachment, err := createHistoricalOrderEvidenceAttachmentFixtureWithoutUploading(t, repos, OrderEvidenceAttachmentReferenceInput{
 			EvidenceItemID:   item.ID,
 			StorageKey:       fmt.Sprintf("order-evidence/%d/%s.jpg", snapshot.OrderID, itemType),
 			OriginalFilename: itemType + ".jpg",
@@ -98,7 +98,7 @@ func TestOrderEvidenceLifecycleUpdatesReadinessLocksAndRevises(t *testing.T) {
 	})
 	require.ErrorIs(t, err, ErrOrderEvidenceAttachmentRequired)
 
-	podAttachment, err := attachmentService.RegisterReference(repos, OrderEvidenceAttachmentReferenceInput{
+	podAttachment, err := createHistoricalOrderEvidenceAttachmentFixtureWithoutUploading(t, repos, OrderEvidenceAttachmentReferenceInput{
 		EvidenceItemID:   byType[orderevidence.EvidenceItemTypeSignedPOD].ID,
 		StorageKey:       fmt.Sprintf("order-evidence/%d/signed-pod.jpg", snapshot.OrderID),
 		OriginalFilename: "signed-pod.jpg",
@@ -221,7 +221,6 @@ func TestOrderEvidenceLifecycleValidatesOutboundAndPODContractsOnly(t *testing.T
 		OrderEvidence: repository.NewOrderEvidenceRepository(db),
 	}
 	evidenceService := NewOrderEvidenceService()
-	attachmentService := NewOrderEvidenceAttachmentService()
 	pkg, err := evidenceService.CreateInitialPackage(repos, snapshot)
 	require.NoError(t, err)
 	items, err := repos.OrderEvidence.ListItemsByPackageID(pkg.ID)
@@ -231,7 +230,7 @@ func TestOrderEvidenceLifecycleValidatesOutboundAndPODContractsOnly(t *testing.T
 	pod := findEvidenceItemByType(items, orderevidence.EvidenceItemTypeSignedPOD)
 
 	for _, item := range []orderevidence.OrderEvidenceItem{outbound, pod} {
-		_, err = attachmentService.RegisterReference(repos, OrderEvidenceAttachmentReferenceInput{
+		_, err = createHistoricalOrderEvidenceAttachmentFixtureWithoutUploading(t, repos, OrderEvidenceAttachmentReferenceInput{
 			EvidenceItemID:   item.ID,
 			StorageKey:       fmt.Sprintf("order-evidence/%d/%d.jpg", snapshot.OrderID, item.ID),
 			OriginalFilename: fmt.Sprintf("%d.jpg", item.ID),
@@ -274,14 +273,13 @@ func TestOrderEvidenceLifecyclePreservesManualTensionConclusionAndValues(t *test
 		OrderEvidence: repository.NewOrderEvidenceRepository(db),
 	}
 	evidenceService := NewOrderEvidenceService()
-	attachmentService := NewOrderEvidenceAttachmentService()
 	pkg, err := evidenceService.CreateInitialPackage(repos, snapshot)
 	require.NoError(t, err)
 	items, err := repos.OrderEvidence.ListItemsByPackageID(pkg.ID)
 	require.NoError(t, err)
 	tension := findEvidenceItemByType(items, orderevidence.EvidenceItemTypeSpokeQCTension)
 
-	_, err = attachmentService.RegisterReference(repos, OrderEvidenceAttachmentReferenceInput{
+	_, err = createHistoricalOrderEvidenceAttachmentFixtureWithoutUploading(t, repos, OrderEvidenceAttachmentReferenceInput{
 		EvidenceItemID:   tension.ID,
 		StorageKey:       fmt.Sprintf("order-evidence/%d/tension.jpg", snapshot.OrderID),
 		OriginalFilename: "tension.jpg",

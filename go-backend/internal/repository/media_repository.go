@@ -12,8 +12,9 @@ import (
 )
 
 type MediaRepository struct {
-	db                             *gorm.DB
-	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
+	db                                   *gorm.DB
+	businessMediaReferenceResolver       PublicBusinessMediaReferenceObjectKeyResolver
+	preparedBusinessDraftUploadReceiptID string
 }
 
 func NewMediaRepository(db *gorm.DB) *MediaRepository {
@@ -21,7 +22,7 @@ func NewMediaRepository(db *gorm.DB) *MediaRepository {
 }
 
 func (r *MediaRepository) WithTx(tx *gorm.DB) *MediaRepository {
-	return &MediaRepository{db: tx, businessMediaReferenceResolver: r.businessMediaReferenceResolver}
+	return &MediaRepository{db: tx, businessMediaReferenceResolver: r.businessMediaReferenceResolver, preparedBusinessDraftUploadReceiptID: r.preparedBusinessDraftUploadReceiptID}
 }
 
 func (r *MediaRepository) ConfigurePublicBusinessMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {
@@ -38,7 +39,19 @@ func (r *MediaRepository) WithTransaction(fn func(repo *MediaRepository, tx *gor
 }
 
 func (r *MediaRepository) CreateAsset(asset *media.MediaAsset) error {
-	return r.db.Create(asset).Error
+	if r == nil || r.db == nil {
+		return gorm.ErrInvalidDB
+	}
+	if asset == nil {
+		return fmt.Errorf("media asset is required for object registration")
+	}
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		repo := r.WithTx(tx)
+		if err := repo.lockAndValidateMediaObjectsBeforeRegisteringOwnershipWithinTransaction(repo.registeredMediaOriginalAndDerivativeObjectIdentityKeys(asset)); err != nil {
+			return err
+		}
+		return tx.Create(asset).Error
+	}, mediaObjectOwnershipReadCommittedTransactionOptions(r.db)...)
 }
 
 // AssetStorageUsageByUploaderID returns storage attributed to an uploader.
@@ -257,6 +270,18 @@ func (r *MediaRepository) FindAssetByIDUnscoped(id uint) (*media.MediaAsset, err
 	return &asset, nil
 }
 
+func (r *MediaRepository) FindAssetByIDUnscopedForUpdate(id uint) (*media.MediaAsset, error) {
+	var asset media.MediaAsset
+	query := r.db.Unscoped().Clauses(clause.Locking{Strength: "UPDATE"})
+	if r.hasAssetDerivativesTable() {
+		query = query.Preload("Derivatives", func(db *gorm.DB) *gorm.DB { return db.Unscoped() })
+	}
+	if err := query.First(&asset, id).Error; err != nil {
+		return nil, err
+	}
+	return &asset, nil
+}
+
 func (r *MediaRepository) FindAssetByStorageKey(key string) (*media.MediaAsset, error) {
 	normalizedKey := strings.Trim(strings.ReplaceAll(key, "\\", "/"), "/")
 	if normalizedKey == "" {
@@ -285,15 +310,35 @@ func (r *MediaRepository) CreateAssetDerivatives(derivatives []media.MediaAssetD
 	if len(derivatives) == 0 {
 		return nil
 	}
+	if r == nil || r.db == nil {
+		return gorm.ErrInvalidDB
+	}
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := lockActiveMediaAssetsBeforePersistingDerivativeMetadata(tx, derivatives); err != nil {
 			return err
 		}
+		if err := r.WithTx(tx).lockAndValidateMediaDerivativeObjectsBeforePersistingMetadataWithinTransaction(derivatives); err != nil {
+			return err
+		}
 		return tx.Create(&derivatives).Error
-	})
+	}, mediaObjectOwnershipReadCommittedTransactionOptions(r.db)...)
 }
 
 func (r *MediaRepository) ReplaceAssetDerivatives(derivatives []media.MediaAssetDerivative) ([]string, error) {
+	return r.replaceMediaAssetDerivativesWithTransactionalRetiredObjectRecorder(derivatives, nil)
+}
+
+// The recorder shares the replacement transaction: failure preserves the old
+// generation and rolls back every new registration and cleanup event.
+func (r *MediaRepository) ReplaceAssetDerivativesAndRecordRetiredObjectsWithinTransaction(derivatives []media.MediaAssetDerivative, recordRetiredObjects func(*gorm.DB, []media.MediaAssetDerivative) error) error {
+	if recordRetiredObjects == nil {
+		return fmt.Errorf("retired derivative cleanup recorder is required")
+	}
+	_, err := r.replaceMediaAssetDerivativesWithTransactionalRetiredObjectRecorder(derivatives, recordRetiredObjects)
+	return err
+}
+
+func (r *MediaRepository) replaceMediaAssetDerivativesWithTransactionalRetiredObjectRecorder(derivatives []media.MediaAssetDerivative, recordRetiredObjects func(*gorm.DB, []media.MediaAssetDerivative) error) ([]string, error) {
 	if len(derivatives) == 0 {
 		return nil, nil
 	}
@@ -306,6 +351,10 @@ func (r *MediaRepository) ReplaceAssetDerivatives(derivatives []media.MediaAsset
 		if err := lockActiveMediaAssetsBeforePersistingDerivativeMetadata(tx, derivatives); err != nil {
 			return err
 		}
+		if err := r.WithTx(tx).lockAndValidateMediaDerivativeObjectsBeforePersistingMetadataWithinTransaction(derivatives); err != nil {
+			return err
+		}
+		var retired []media.MediaAssetDerivative
 		for _, derivative := range derivatives {
 			if derivative.MediaAssetID == 0 || strings.TrimSpace(derivative.Preset) == "" {
 				continue
@@ -317,6 +366,7 @@ func (r *MediaRepository) ReplaceAssetDerivatives(derivatives []media.MediaAsset
 				return err
 			}
 			for _, item := range existing {
+				retired = append(retired, item)
 				if strings.TrimSpace(item.URL) != "" {
 					oldURLs = append(oldURLs, item.URL)
 				}
@@ -327,8 +377,14 @@ func (r *MediaRepository) ReplaceAssetDerivatives(derivatives []media.MediaAsset
 				return err
 			}
 		}
-		return tx.Create(&derivatives).Error
-	})
+		if err := tx.Create(&derivatives).Error; err != nil {
+			return err
+		}
+		if recordRetiredObjects != nil {
+			return recordRetiredObjects(tx, retired)
+		}
+		return nil
+	}, mediaObjectOwnershipReadCommittedTransactionOptions(r.db)...)
 	if err != nil {
 		return nil, err
 	}

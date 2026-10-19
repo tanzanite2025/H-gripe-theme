@@ -11,7 +11,8 @@ import (
 )
 
 type OrderEvidenceSubmissionSnapshotRepository struct {
-	db *gorm.DB
+	db                     *gorm.DB
+	mediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 func NewOrderEvidenceSubmissionSnapshotRepository(db *gorm.DB) *OrderEvidenceSubmissionSnapshotRepository {
@@ -19,7 +20,7 @@ func NewOrderEvidenceSubmissionSnapshotRepository(db *gorm.DB) *OrderEvidenceSub
 }
 
 func (r *OrderEvidenceSubmissionSnapshotRepository) WithTx(tx *gorm.DB) *OrderEvidenceSubmissionSnapshotRepository {
-	return &OrderEvidenceSubmissionSnapshotRepository{db: tx}
+	return &OrderEvidenceSubmissionSnapshotRepository{db: tx, mediaReferenceResolver: r.mediaReferenceResolver}
 }
 
 func (r *OrderEvidenceSubmissionSnapshotRepository) Create(
@@ -31,7 +32,15 @@ func (r *OrderEvidenceSubmissionSnapshotRepository) Create(
 	if snapshot == nil {
 		return errors.New("order evidence submission snapshot is required")
 	}
-	return r.db.Create(snapshot).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := lockImmutableSnapshotSubmissionSelectionBeforeReadingOrBindingReceipts(tx, snapshot.Provider, snapshot.DisputeID); err != nil {
+			return err
+		}
+		if err := admitImmutableOrderEvidenceSnapshotMediaReferencesWithinTransaction(tx, r.mediaReferenceResolver, snapshot.SnapshotData, immutableOrderEvidenceSnapshotMediaAdmissionScope{orderID: snapshot.OrderID, provider: snapshot.Provider, disputeID: snapshot.DisputeID}); err != nil {
+			return err
+		}
+		return tx.Create(snapshot).Error
+	}, mediaObjectOwnershipReadCommittedTransactionOptions(r.db)...)
 }
 
 // CreateOrGetLatest creates version one once and returns the existing immutable
@@ -40,6 +49,15 @@ func (r *OrderEvidenceSubmissionSnapshotRepository) Create(
 func (r *OrderEvidenceSubmissionSnapshotRepository) CreateOrGetLatest(
 	snapshot *orderevidence.OrderEvidenceSubmissionSnapshot,
 ) (*orderevidence.OrderEvidenceSubmissionSnapshot, error) {
+	return r.createOrGetLatestWithAtomicInvoiceReceiptBinding(snapshot, nil)
+}
+
+// The binder runs only when this candidate is selected, inside its insertion transaction.
+func (r *OrderEvidenceSubmissionSnapshotRepository) CreateOrGetLatestWithAtomicPayPalInvoiceReceiptBinding(snapshot *orderevidence.OrderEvidenceSubmissionSnapshot, binder func(*gorm.DB, []string) error) (*orderevidence.OrderEvidenceSubmissionSnapshot, error) {
+	return r.createOrGetLatestWithAtomicInvoiceReceiptBinding(snapshot, binder)
+}
+
+func (r *OrderEvidenceSubmissionSnapshotRepository) createOrGetLatestWithAtomicInvoiceReceiptBinding(snapshot *orderevidence.OrderEvidenceSubmissionSnapshot, binder func(*gorm.DB, []string) error) (*orderevidence.OrderEvidenceSubmissionSnapshot, error) {
 	if r == nil || r.db == nil {
 		return nil, gorm.ErrInvalidDB
 	}
@@ -56,12 +74,18 @@ func (r *OrderEvidenceSubmissionSnapshotRepository) CreateOrGetLatest(
 
 	var result *orderevidence.OrderEvidenceSubmissionSnapshot
 	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := lockImmutableSnapshotSubmissionSelectionBeforeReadingOrBindingReceipts(tx, snapshot.Provider, snapshot.DisputeID); err != nil {
+			return err
+		}
 		var existing orderevidence.OrderEvidenceSubmissionSnapshot
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("provider = ? AND dispute_id = ?", snapshot.Provider, snapshot.DisputeID).
 			Order("version DESC, id DESC").
 			First(&existing).Error
 		if err == nil {
+			if existing.OrderID != snapshot.OrderID {
+				return ErrImmutableOrderEvidenceSnapshotMediaReferenceUnavailable
+			}
 			if validateErr := existing.Validate(); validateErr != nil {
 				return validateErr
 			}
@@ -72,6 +96,9 @@ func (r *OrderEvidenceSubmissionSnapshotRepository) CreateOrGetLatest(
 			return err
 		}
 
+		if err := admitImmutableOrderEvidenceSnapshotMediaReferencesWithinTransaction(tx, r.mediaReferenceResolver, snapshot.SnapshotData, immutableOrderEvidenceSnapshotMediaAdmissionScope{orderID: snapshot.OrderID, provider: snapshot.Provider, disputeID: snapshot.DisputeID, bindNewInvoiceReceipts: binder}); err != nil {
+			return err
+		}
 		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(snapshot).Error; err != nil {
 			return err
 		}
@@ -89,7 +116,7 @@ func (r *OrderEvidenceSubmissionSnapshotRepository) CreateOrGetLatest(
 		}
 		result = &canonical
 		return nil
-	})
+	}, mediaObjectOwnershipReadCommittedTransactionOptions(r.db)...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,4 +160,8 @@ func (r *OrderEvidenceSubmissionSnapshotRepository) FindByID(
 		return nil, err
 	}
 	return &snapshot, nil
+}
+
+func (r *OrderEvidenceSubmissionSnapshotRepository) ConfigureImmutableSnapshotMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {
+	r.mediaReferenceResolver = resolver
 }

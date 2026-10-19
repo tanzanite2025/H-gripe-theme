@@ -14,11 +14,12 @@
              </div>
            </div>
            <ReusablePhotoWallWithGreenDotPagination
+             id="hole-pattern-drilled-rim-lacing-photo-gallery"
              class="hole-pattern-drilled-rim-lacing-photo-wall"
              :images="localizedCarbonRimDrillingAndLacingPhotoWallImages"
              :images-per-page="5"
              :title="t('companyAboutHolePatterns.lacingPhotoWall.title')"
-             :aria-label="t('companyAboutHolePatterns.lacingPhotoWall.title')"
+             :ariaLabel="t('companyAboutHolePatterns.lacingPhotoWall.title')"
              :pagination-label="t('companyAboutHolePatterns.lacingPhotoWall.paginationLabel')"
              :show-page-label="formatHolePatternLacingPhotoWallPageLabel"
            />
@@ -184,6 +185,7 @@ const localizedCarbonRimDrillingAndLacingPhotoWallImages = computed(() => (
   carbonRimDrillingAndLacingPhotoWallImages.map(image => ({
     ...image,
     alt: image.alt[isSimplifiedChineseStorefrontLocale(resolvedLocale.value) ? 'zh_cn' : 'en'],
+    caption: image.caption[isSimplifiedChineseStorefrontLocale(resolvedLocale.value) ? 'zh_cn' : 'en'],
   }))
 ))
 
@@ -197,6 +199,11 @@ useCompanyAboutSectionSearchSocialAndStructuredData({
   resolvedContentLocale: resolvedLocale,
   socialPreviewImage: holePatternAutomatedDrillingVideoMetadata.poster,
   video: holePatternAutomatedDrillingVideoMetadata,
+  imageGallery: {
+    elementId: 'hole-pattern-drilled-rim-lacing-photo-gallery',
+    title: () => t('companyAboutHolePatterns.lacingPhotoWall.title'),
+    images: localizedCarbonRimDrillingAndLacingPhotoWallImages,
+  },
 })
 
 watch(locale, (nextLocale) => {
@@ -666,6 +673,13 @@ const holePatternDrawingSimulationAndDrillingWorkflowKeys = ['hubDrawingGeometry
 
   .hole-pattern-customization-scope {
     padding-top: 0.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .hole-pattern-drilled-rim-lacing-photo-wall {
+    width: min(100%, 512px);
+    align-self: center;
   }
 }
 

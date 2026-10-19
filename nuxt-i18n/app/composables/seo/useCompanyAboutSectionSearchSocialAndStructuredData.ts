@@ -6,12 +6,27 @@ import { getStorefrontLocaleLanguageTag } from '~/utils/storefrontLocales'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import type { CompanyAboutTabId } from '~/utils/pageSubNavigation'
 
+interface CompanyAboutSectionGalleryImage {
+  id: string
+  src: string
+  alt: string
+  caption: string
+  mimeType: string
+  width: number
+  height: number
+}
+
 interface CompanyAboutSectionSearchSocialAndStructuredDataOptions {
   sectionId: CompanyAboutTabId
   messageNamespace: 'companyAboutFactory' | 'companyAboutAppearance' | 'companyAboutHolePatterns'
   resolvedContentLocale: MaybeRefOrGetter<string>
   socialPreviewImage: { path: string; mimeType: string; width: number; height: number }
   video?: { contentPath: string; duration: string; uploadDate?: string }
+  imageGallery?: {
+    elementId: string
+    title: MaybeRefOrGetter<string>
+    images: MaybeRefOrGetter<readonly CompanyAboutSectionGalleryImage[]>
+  }
 }
 
 // Called by the mounted section after its translations load. Unmounting removes
@@ -38,6 +53,23 @@ export function useCompanyAboutSectionSearchSocialAndStructuredData(
     const pageId = `${canonicalUrl.value}#${options.sectionId}-page`
     const breadcrumbId = `${canonicalUrl.value}#${options.sectionId}-breadcrumbs`
     const videoId = `${canonicalUrl.value}#${options.sectionId}-process-video`
+    const gallery = options.imageGallery
+    const galleryId = gallery ? `${canonicalUrl.value}#${gallery.elementId}` : ''
+    const galleryImages = gallery ? toValue(gallery.images).map(photo => ({
+      '@type': 'ImageObject',
+      '@id': `${canonicalUrl.value}#${options.sectionId}-photo-${photo.id}`,
+      url: new URL(photo.src, canonicalUrl.value).toString(),
+      contentUrl: new URL(photo.src, canonicalUrl.value).toString(),
+      name: photo.caption,
+      caption: photo.caption,
+      description: photo.alt,
+      encodingFormat: photo.mimeType,
+      width: photo.width,
+      height: photo.height,
+      inLanguage: renderedLanguage,
+      isPartOf: { '@id': galleryId },
+    })) : []
+    const galleryImageReferences = galleryImages.map(photo => ({ '@id': photo['@id'] }))
 
     return {
       title,
@@ -79,6 +111,10 @@ export function useCompanyAboutSectionSearchSocialAndStructuredData(
               },
               breadcrumb: { '@id': breadcrumbId },
               ...(options.video ? { video: { '@id': videoId } } : {}),
+              ...(galleryImages.length ? {
+                image: galleryImageReferences,
+                hasPart: { '@id': galleryId },
+              } : {}),
             },
             {
               '@type': 'BreadcrumbList',
@@ -103,6 +139,15 @@ export function useCompanyAboutSectionSearchSocialAndStructuredData(
               ...(options.video.uploadDate ? { uploadDate: options.video.uploadDate } : {}),
               isPartOf: { '@id': pageId },
             }] : []),
+            ...(gallery && galleryImages.length ? [{
+              '@type': 'ImageGallery',
+              '@id': galleryId,
+              url: galleryId,
+              name: toValue(gallery.title),
+              inLanguage: renderedLanguage,
+              isPartOf: { '@id': pageId },
+              associatedMedia: galleryImageReferences,
+            }, ...galleryImages] : []),
           ],
         }),
       }],

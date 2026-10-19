@@ -17,7 +17,7 @@ func (s *SettingService) Set(key, value, settingType, group, locale string) erro
 	}
 
 	if err := s.settingRepo.Set(st); err != nil {
-		return err
+		return mapSettingRepositoryMediaErrorToInvalidSettingValue(err)
 	}
 
 	s.invalidateSettingCaches(key, group, locale)
@@ -95,7 +95,7 @@ func (s *SettingService) GetByGroup(group, locale string) ([]setting.Setting, er
 
 func (s *SettingService) BatchSet(settings []setting.Setting) error {
 	if err := s.settingRepo.BatchSet(settings); err != nil {
-		return err
+		return mapSettingRepositoryMediaErrorToInvalidSettingValue(err)
 	}
 
 	for _, st := range settings {
@@ -113,7 +113,7 @@ func (s *SettingService) BatchSetTx(tx *gorm.DB, settings []setting.Setting) err
 		return fmt.Errorf("setting transaction is unavailable")
 	}
 	if err := s.settingRepo.WithTx(tx).BatchSet(settings); err != nil {
-		return err
+		return mapSettingRepositoryMediaErrorToInvalidSettingValue(err)
 	}
 	for _, st := range settings {
 		s.invalidateSettingCaches(st.Key, st.Group, st.Locale)

@@ -50,9 +50,8 @@ const (
 	URLIssueResolutionNotApplicable     = "not_applicable"
 )
 
-// StorefrontURLIssue is the human-owned lifecycle record for a detected
-// storefront URL problem. Route observations and check evidence remain in
-// their own append-only/catalog tables.
+// StorefrontURLIssue tracks a currently detected storefront URL problem.
+// A later observation that no longer detects it removes the row and timeline.
 type StorefrontURLIssue struct {
 	ID                   uint                                   `gorm:"primaryKey" json:"id"`
 	RouteEntryID         uint                                   `gorm:"not null;uniqueIndex:uq_storefront_url_issues_route_type;index" json:"route_entry_id"`

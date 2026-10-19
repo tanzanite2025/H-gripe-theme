@@ -7,7 +7,7 @@ import (
 )
 
 func (r *MediaRepository) WithContextForMediaLibraryClassification(ctx context.Context) *MediaRepository {
-	return NewMediaRepository(r.db.WithContext(ctx))
+	return r.WithTx(r.db.WithContext(ctx))
 }
 
 // Caller owns the transaction and the asset lock. Update only management

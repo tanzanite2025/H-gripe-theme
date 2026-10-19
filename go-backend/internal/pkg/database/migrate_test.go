@@ -176,14 +176,15 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create migration runner: %v", err)
 	}
-	// Migration 343 permanently retires gift-card data, so exercise the reversible
-	// migrations after that boundary without pretending the removed schema can return.
-	if err := migrator.Migrate(343); err != nil {
-		t.Fatalf("roll back migrations to version 343: %v", err)
+	// Migration 431 permanently retires product-level shipping ownership. Only
+	// migrations after this boundary may roll back; the 431 migration tests assert
+	// that product-wide inheritance cannot be resurrected by a down migration.
+	if err := migrator.Migrate(431); err != nil && err != migrate.ErrNoChange {
+		t.Fatalf("roll back migrations to version 431: %v", err)
 	}
-	assertMigrationState(ctx, t, testDB, 343, false)
+	assertMigrationState(ctx, t, testDB, 431, false)
 	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
-		t.Fatalf("reapply migrations after version 343: %v", err)
+		t.Fatalf("reapply migrations after version 431: %v", err)
 	}
 	if err := PrepareSchema(ctx, gormDB, &cfg, "release"); err != nil {
 		t.Fatalf("prepare existing PostgreSQL schema: %v", err)
@@ -422,16 +423,23 @@ func assertProductTemplateSourceReset(ctx context.Context, t *testing.T, db *sql
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_specification_templates").Scan(&productSpecificationTemplateCount); err != nil {
 		t.Fatalf("count product specification templates: %v", err)
 	}
-	if productSpecificationTemplateCount != 7 {
-		t.Fatalf("expected seven product templates, got %d", productSpecificationTemplateCount)
+	if productSpecificationTemplateCount != 6 {
+		t.Fatalf("expected six remaining product templates after physical rim template removal, got %d", productSpecificationTemplateCount)
+	}
+	var removedRimTemplateCount int
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_specification_templates WHERE lower(trim(slug)) IN ('rim','carbon_rim','carbon-rim')").Scan(&removedRimTemplateCount); err != nil {
+		t.Fatal(err)
+	}
+	if removedRimTemplateCount != 0 {
+		t.Fatal("removed carbon rim specification templates were recreated")
 	}
 
 	var specCount int
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_spec_definitions").Scan(&specCount); err != nil {
 		t.Fatalf("count product spec definitions: %v", err)
 	}
-	if specCount != 65 {
-		t.Fatalf("expected sixty-five product spec definitions, got %d", specCount)
+	if specCount != 56 {
+		t.Fatalf("expected fifty-six remaining product spec definitions after removing nine rim fields, got %d", specCount)
 	}
 }
 

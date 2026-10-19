@@ -41,10 +41,10 @@
         <CardContent class="flex h-full items-center">
           <div class="rounded-xl border border-dashed border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5">
             <p class="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-              专用对象生命周期
+              图片保存与清理
             </p>
             <p class="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-              上传文件只写入 visual-showcase 专用目录，不创建媒体库记录。保存新配置后，不再引用的旧文件会被删除。
+              上传后请在 24 小时内保存卡片或整组配置，未保存的图片到期后会自动清理。替换后的旧图片会在没有其他引用时清理。
             </p>
           </div>
         </CardContent>
@@ -161,7 +161,7 @@ const uploadImage = async ({ index, file }: VisualShowcaseAdministrationUploadRe
     const upload = await visualShowcaseApi.uploadImage(SHOWCASE_KEY, locale.value, file)
     const current = items.value[index]
     if (current) updateItem(index, applyVisualShowcaseUploadToFormState(current, upload))
-    toast.success(`第 ${index + 1} 张图片已上传，保存当前卡片后生效`)
+    toast.success(`第 ${index + 1} 张图片已上传，请在 24 小时内保存当前卡片或整组配置`)
   } catch (error) {
     console.error('Failed to upload visual showcase image:', error)
     toast.error('图片上传失败，请确认图片为 600×600 px')
@@ -190,7 +190,7 @@ const save = async (): Promise<void> => {
     )
     const savedItems = visualShowcaseHomeHeroAdministrationRowsFromApiItems(response.items)
     items.value = savedItems
-    toast.success('首页视觉目录已保存，旧图片已按引用关系清理')
+    toast.success('首页视觉目录已保存，旧图片将按引用关系清理')
   } catch (error) {
     console.error('Failed to save visual showcase:', error)
     toast.error('首页视觉目录保存失败')

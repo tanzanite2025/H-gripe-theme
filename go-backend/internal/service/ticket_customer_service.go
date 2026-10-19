@@ -809,17 +809,12 @@ func (s *TicketService) persistCustomerServiceMessage(
 				message.Metadata = customerServiceMessageMetadataWithoutDuplicateAttachmentURLs(message.Metadata)
 			}
 		}
-		if err := ticketRepo.CreateTicketMessage(message); err != nil {
-			return err
+		identity, identityErr := customerServiceMessageAttachmentBindingActorIdentity(current, actor)
+		if identityErr != nil {
+			return identityErr
 		}
-		if len(message.RequestedMediaAttachmentBindings) > 0 {
-			identity, identityErr := customerServiceMessageAttachmentBindingActorIdentity(current, actor)
-			if identityErr != nil {
-				return identityErr
-			}
-			if err := ticketRepo.BindCustomerServiceMessageMediaAssetsWithinTransaction(current.ID, message.ID, identity, message.RequestedMediaAttachmentBindings); err != nil {
-				return err
-			}
+		if err := ticketRepo.CreateCustomerServiceMessageAndBindMediaWithinTransaction(message, identity); err != nil {
+			return err
 		}
 
 		changedAt := time.Now().UTC()

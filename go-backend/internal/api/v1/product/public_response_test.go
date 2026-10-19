@@ -14,7 +14,6 @@ func TestPublicProductFromDomainExposesPurchasableSkuFactsWithoutExactInventory(
 	item := productdomain.Product{
 		ID:                             11,
 		ProductSpecificationTemplateID: pointerTo(uint(3)),
-		ShippingTemplateIDs:            []uint{7},
 		SKU:                            "PUBLIC-PRODUCT",
 		Name:                           "Public Product",
 		Slug:                           "public-product",

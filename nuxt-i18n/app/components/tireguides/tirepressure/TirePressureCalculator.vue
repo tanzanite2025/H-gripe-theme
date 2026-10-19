@@ -23,6 +23,15 @@
 
     <TirePressureProductModelSelector v-model:selected-tire-model="selectedTireModel" />
 
+    <div v-if="selectedTireModel && (!selectedTireWidthSupported || selectedTireReferencePressurePsi === null)" class="calculation-input-notice" role="status" aria-live="polite">
+      <p v-if="!selectedTireWidthSupported">{{ t('guidesTirePressure.dashboard.unsupportedTireWidthHint', { width: selectedTireEtrtoWidthMm ?? '—', minimum: minimumTireWidthMm, maximum: maximumTireWidthMm }) }}</p>
+      <p v-if="selectedTireReferencePressurePsi === null">{{ manualOperatingPressureInputAllowed ? manualOperatingPressureValidationMessage : t('guidesTirePressure.dashboard.incompletePressureReferenceHint') }}</p>
+    </div>
+    <div v-else-if="dynamicsState === 'UNAVAILABLE'" class="calculation-input-notice" role="alert">
+      <p>{{ forceDemoStatus }}</p>
+      <button type="button" @click="retryTirePressureDynamics">{{ t('guidesTirePressure.dashboard.pressureComparisonRetry') }}</button>
+    </div>
+
     <section class="hero-grid">
       <article class="hero-card front">
         <div><b>{{ t('guidesTirePressure.dashboard.frontWheel') }}</b><span class="load-tag">{{ formatRatio(frontRatio) }} {{ t('guidesTirePressure.dashboard.load') }}</span><strong>{{ formatPressure(frontPsi) }} <small>PSI</small></strong><em>{{ formatBar(frontBar) }}</em><p>{{ t('guidesTirePressure.dashboard.loadValue', { value: formatEngineeringNumber(frontLoad, 1) }) }} · {{ t('guidesTirePressure.dashboard.contactValue', { value: formatArea(frontArea) }) }}</p><p v-if="frontPressureAreaComparison" class="pressure-comparison-result">{{ formatPressureAreaComparison(frontPressureAreaComparison) }}</p></div>
@@ -42,6 +51,7 @@
         <div class="force-data-grid">
           <article class="force-wheel-card force-wheel-card--front">
             <header><b>{{ t('guidesTirePressure.dashboard.frontWheel') }}</b><span>{{ formatRatio(frontRatio) }} {{ t('guidesTirePressure.dashboard.load') }}</span></header>
+            <p v-if="backendFront?.vertical_deformation_data_status === 'NO_MATCHING_WIDE_TIRE_REFERENCE'" class="wide-tire-deformation-reference-note">{{ t('guidesTirePressure.dashboard.wideTireVerticalDeformationUnavailable') }}</p>
             <div class="metric-grid">
               <div class="metric metric--primary"><span>{{ t('guidesTirePressure.dashboard.resultantForceMetric') }}</span><strong>{{ formatForce(backendFront?.resultant_contact_force_n ?? null) }} N</strong><small>{{ formatResultantMass(backendFront?.resultant_contact_force_n) }} · {{ formatResultantG(backendFront?.resultant_contact_force_n, backendFront?.vertical_load_n) }}</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.verticalLoadMetric') }}</span><strong>{{ formatForce(backendFront?.vertical_load_n ?? null) }} N</strong><small>{{ formatEngineeringNumber(frontLoad, 1) }} kg</small></div>
@@ -53,6 +63,7 @@
           </article>
           <article class="force-wheel-card force-wheel-card--rear">
             <header><b>{{ t('guidesTirePressure.dashboard.rearWheel') }}</b><span>{{ formatRatio(rearRatio) }} {{ t('guidesTirePressure.dashboard.load') }}</span></header>
+            <p v-if="backendRear?.vertical_deformation_data_status === 'NO_MATCHING_WIDE_TIRE_REFERENCE'" class="wide-tire-deformation-reference-note">{{ t('guidesTirePressure.dashboard.wideTireVerticalDeformationUnavailable') }}</p>
             <div class="metric-grid">
               <div class="metric metric--primary"><span>{{ t('guidesTirePressure.dashboard.resultantForceMetric') }}</span><strong>{{ formatForce(backendRear?.resultant_contact_force_n ?? null) }} N</strong><small>{{ formatResultantMass(backendRear?.resultant_contact_force_n) }} · {{ formatResultantG(backendRear?.resultant_contact_force_n, backendRear?.vertical_load_n) }}</small></div>
               <div class="metric"><span>{{ t('guidesTirePressure.dashboard.verticalLoadMetric') }}</span><strong>{{ formatForce(backendRear?.vertical_load_n ?? null) }} N</strong><small>{{ formatEngineeringNumber(rearLoad, 1) }} kg</small></div>
@@ -84,6 +95,11 @@ import {
 } from '~/composables/useTirePressureCalculatorDynamicsRequest'
 import type { SchwalbeTirePressureReferenceCatalogItem } from '~/data/tireguides/schwalbeCatalog'
 import { parseSchwalbeTireCatalogEtrtoDimensions } from '~/data/tireguides/schwalbeTireCatalogDimensionNormalization'
+import {
+  useTirePressureCatalogBoundsAndMissingMinimumOperatingPressureInput,
+  minimumSupportedTirePressureNominalWidthMm,
+  maximumSupportedTirePressureNominalWidthMm,
+} from '~/composables/useTirePressureCatalogBoundsAndMissingMinimumOperatingPressureInput'
 import TirePressureControls from './TirePressureControls.vue'
 import TirePressureProductModelSelector from './TirePressureProductModelSelector.vue'
 
@@ -96,8 +112,8 @@ const speedKmh = ref(30)
 const postureId = ref('race')
 const tireWidth = ref(28)
 const selectedTireModel = ref<SchwalbeTirePressureReferenceCatalogItem | null>(null)
-const minimumTireWidthMm = 20
-const maximumTireWidthMm = 80
+const minimumTireWidthMm = minimumSupportedTirePressureNominalWidthMm
+const maximumTireWidthMm = maximumSupportedTirePressureNominalWidthMm
 const leanPresets = [0, 15, 28, 40]
 const postureConfigs = [
   { id: 'race', key: 'race' },
@@ -108,28 +124,21 @@ const postureConfigs = [
 const postures = computed(() => postureConfigs.map(item => ({ ...item, label: t(`guidesTirePressure.dashboard.${item.key}`) })))
 const apiPosition = computed(() => ({ race: 'AGGRESSIVE_RACE', endurance: 'ENDURANCE', tt: 'TT_AERO', gravel: 'GRAVEL_TRAIL' }[postureId.value] || 'ENDURANCE'))
 const totalWeight = computed(() => riderWeight.value + bikeWeight.value)
-const selectedTirePressureBoundsPsi = computed(() => {
-  const tire = selectedTireModel.value
-  if (!tire) return null
-
-  const minimumPsi = tire.min_pressure_psi ?? (tire.min_pressure_bar === undefined ? undefined : tire.min_pressure_bar * 14.5037738)
-  const maximumPsi = tire.max_pressure_psi ?? (tire.max_pressure_bar === undefined ? undefined : tire.max_pressure_bar * 14.5037738)
-  if (
-    minimumPsi === undefined
-    || maximumPsi === undefined
-    || !Number.isFinite(minimumPsi)
-    || !Number.isFinite(maximumPsi)
-    || minimumPsi <= 0
-    || maximumPsi <= 0
-    || minimumPsi > maximumPsi
-  ) return null
-
-  return { minimumPsi, maximumPsi }
-})
-const selectedTireReferencePressurePsi = computed(() => {
-  const bounds = selectedTirePressureBoundsPsi.value
-  if (!bounds) return null
-  return Number(((bounds.minimumPsi + bounds.maximumPsi) / 2).toFixed(1))
+const {
+  selectedTireMaximumPressurePsi,
+  selectedTirePressureBoundsPsi,
+  selectedTireReferencePressurePsi,
+  manualOperatingPressureInputAllowed,
+  manualOperatingPressurePsi,
+  manualOperatingPressureValidationState,
+} = useTirePressureCatalogBoundsAndMissingMinimumOperatingPressureInput(selectedTireModel)
+const manualOperatingPressureValidationMessage = computed(() => {
+  const messageKey = manualOperatingPressureValidationState.value === 'ABOVE_CATALOG_MAXIMUM'
+    ? 'manualOperatingPressureAboveMaximum'
+    : manualOperatingPressureValidationState.value === 'INVALID'
+      ? 'manualOperatingPressureInvalid'
+      : 'manualOperatingPressureRequired'
+  return t(`guidesTirePressure.dashboard.${messageKey}`, { maximum: formatEngineeringNumber(selectedTireMaximumPressurePsi.value, 1) })
 })
 const selectedTireModelLabel = computed(() => selectedTireModel.value?.model_name || t('guidesTirePressure.dashboard.tireModelNotSelected'))
 const selectedTireEtrtoWidthMm = computed(() => {
@@ -137,9 +146,16 @@ const selectedTireEtrtoWidthMm = computed(() => {
   if (!etrto) return null
   return parseSchwalbeTireCatalogEtrtoDimensions(etrto)?.nominalTireWidthMm ?? null
 })
+const selectedTireWidthSupported = computed(() => {
+  const width = selectedTireEtrtoWidthMm.value
+  return width !== null && width >= minimumTireWidthMm && width <= maximumTireWidthMm
+})
+const displayedTireWidthMm = computed(() => selectedTireEtrtoWidthMm.value)
 const selectedTirePressureRangeLabel = computed(() => {
   const bounds = selectedTirePressureBoundsPsi.value
-  if (!bounds) return t('guidesTirePressure.dashboard.tirePressureNotAvailable')
+  if (!bounds) return manualOperatingPressureInputAllowed.value
+    ? t('guidesTirePressure.dashboard.catalogMaximumPressure', { maximum: formatEngineeringNumber(selectedTireMaximumPressurePsi.value, 1) })
+    : t('guidesTirePressure.dashboard.tirePressureNotAvailable')
   return `${formatEngineeringNumber(bounds.minimumPsi, 1)}–${formatEngineeringNumber(bounds.maximumPsi, 1)} PSI`
 })
 const selectedTireReferencePressureLabel = computed(() => selectedTireReferencePressurePsi.value === null
@@ -154,13 +170,15 @@ const wetPressureScenarioEnabled = ref(false)
 const pressureComparisonAvailable = computed(() => {
   const referencePressurePsi = selectedTireReferencePressurePsi.value
   const minimumPressurePsi = selectedTirePressureBoundsPsi.value?.minimumPsi ?? null
-  return referencePressurePsi !== null
+  return selectedTireWidthSupported.value
+    && referencePressurePsi !== null
     && minimumPressurePsi !== null
     && minimumPressurePsi < referencePressurePsi
 })
 const wetPressureScenarioAvailable = computed(() => pressureComparisonAvailable.value)
 const pressureComparisonAvailabilityHint = computed(() => {
   if (!selectedTireModel.value) return t('guidesTirePressure.dashboard.pressureComparisonUnavailableNoModel')
+  if (!selectedTireWidthSupported.value) return t('guidesTirePressure.dashboard.unsupportedTireWidth')
   const bounds = selectedTirePressureBoundsPsi.value
   if (!bounds) return t('guidesTirePressure.dashboard.pressureComparisonUnavailableNoRange')
   return t('guidesTirePressure.dashboard.pressureComparisonUnavailableNoLowerPressure')
@@ -194,6 +212,8 @@ const {
   apiPosition,
   leanAngle,
   selectedTireArticleNo,
+  selectedTireWidthSupported,
+  manualOperatingPressureInputAllowed,
   selectedTireReferencePressurePsi,
   selectedTirePressureBoundsPsi,
   pressureComparisonEnabled,
@@ -224,10 +244,10 @@ const lateralAccelerationG = computed(() => currentBackendDynamics.value?.dynami
 const demonstrationFrictionCoefficientNominal = computed(() => backendFront.value?.mu_nominal ?? null)
 const tireBodyNormalizationFactor = computed(() => currentBackendDynamics.value?.dynamics.tire_body_normalization_factor ?? null)
 const tireBodyNormalizationLabel = computed(() => tireBodyNormalizationFactor.value === null
-  ? t('guidesTirePressure.dashboard.backendPending')
+  ? forceDemoStatus.value
   : t('guidesTirePressure.dashboard.tireBodyBaseline', { value: tireBodyNormalizationFactor.value.toFixed(2) }))
-const modelVersionLabel = computed(() => currentBackendDynamics.value?.dynamics.model_version ?? t('guidesTirePressure.dashboard.backendPending'))
-const loadSourceLabel = computed(() => currentBackendDynamics.value?.load_source ?? t('guidesTirePressure.dashboard.backendPending'))
+const modelVersionLabel = computed(() => currentBackendDynamics.value?.dynamics.model_version ?? forceDemoStatus.value)
+const loadSourceLabel = computed(() => currentBackendDynamics.value?.load_source ?? forceDemoStatus.value)
 const tireWidthSourceLabel = computed(() => {
   const source = currentBackendDynamics.value?.dynamics.tire_width_source
   return source === 'MEASURED'
@@ -236,14 +256,27 @@ const tireWidthSourceLabel = computed(() => {
       ? selectedTireEtrtoWidthMm.value !== null && tireWidth.value === selectedTireEtrtoWidthMm.value
         ? t('guidesTirePressure.dashboard.nominalWidthSource')
         : t('guidesTirePressure.dashboard.manualWidthSource')
-      : t('guidesTirePressure.dashboard.backendPending')
+      : forceDemoStatus.value
 })
 const leanDesc = computed(() => t(`guidesTirePressure.dashboard.${leanAngle.value < 10 ? 'straight' : leanAngle.value < 20 ? 'gentle' : leanAngle.value < 32 ? 'fastCorner' : 'maximumLean'}`))
 const postureLabel = computed(() => postures.value.find(item => item.id === postureId.value)?.label || '')
 const leanPresetLabel = (preset: number) => preset === 0 ? t('guidesTirePressure.dashboard.straight') : preset === 15 ? t('guidesTirePressure.dashboard.gentle') : preset === 28 ? t('guidesTirePressure.dashboard.fastCorner') : t('guidesTirePressure.dashboard.maximumLean')
-const forceDemoStatus = computed(() => dynamicsState.value === 'BACKEND DEMO' ? t('guidesTirePressure.dashboard.forceDemoStatus') : dynamicsState.value === 'UNAVAILABLE' ? t('guidesTirePressure.dashboard.backendUnavailable') : t('guidesTirePressure.dashboard.backendPending'))
+const forceDemoStatus = computed(() => {
+  const messageKey = {
+    MODEL_REQUIRED: 'tireModelNotSelected',
+    PRESSURE_REFERENCE_UNAVAILABLE: 'tirePressureNotAvailable',
+    OPERATING_PRESSURE_REQUIRED: 'manualOperatingPressureRequired',
+    TIRE_WIDTH_UNSUPPORTED: 'unsupportedTireWidth',
+    PENDING: 'backendPending',
+    UNAVAILABLE: 'backendUnavailable',
+    'BACKEND DEMO': 'forceDemoStatus',
+  }[dynamicsState.value]
+  return dynamicsState.value === 'OPERATING_PRESSURE_REQUIRED'
+    ? manualOperatingPressureValidationMessage.value
+    : t(`guidesTirePressure.dashboard.${messageKey}`)
+})
 const diagnosticText = computed(() => {
-  if (frontDemand.value === null || rearDemand.value === null) return t('guidesTirePressure.dashboard.backendPending')
+  if (frontDemand.value === null || rearDemand.value === null) return forceDemoStatus.value
   return t('guidesTirePressure.dashboard.diagnosticBody', {
     speed: formatEngineeringNumber(currentBackendDynamics.value?.dynamics.speed_kmh, 1),
     lean: formatEngineeringNumber(currentBackendDynamics.value?.dynamics.lean_angle_deg, 1),
@@ -347,7 +380,7 @@ function formatVerticalDeformation(deformation: TirePressureCalculatorVerticalDe
   })
 }
 function marginLabel(value: number | null) {
-  if (value === null) return t('guidesTirePressure.dashboard.backendPending')
+  if (value === null) return forceDemoStatus.value
   const state = value >= 25 ? 'safe' : value >= 8 ? 'warning' : 'critical'
   const prefix = value >= 8 ? '+' : ''
   return `${prefix}${value.toFixed(0)}% ${t(`guidesTirePressure.dashboard.${state}`)}`
@@ -369,8 +402,12 @@ function toggleWetPressureScenario() {
 provide('tirePressureModel', {
   totalWeight, leanAngle, leanDesc, leanPresets, leanPresetLabel, riderWeight, bikeWeight,
   frontLoad, rearLoad, frontRatio, rearRatio,
-  postureLabel, postures, postureId, tireWidth,
+  postureLabel, postures, postureId,
+  displayedTireWidthMm,
   selectedTireModelLabel, selectedTirePressureRangeLabel, selectedTireReferencePressureLabel,
+  selectedTireMaximumPressurePsi, selectedTireWidthSupported,
+  manualOperatingPressureInputAllowed, manualOperatingPressurePsi,
+  manualOperatingPressureValidationState, manualOperatingPressureValidationMessage,
   pressureComparisonEnabled, pressureComparisonAvailable,
   pressureComparisonAvailabilityHint,
   comparisonRequestPending, comparisonRequestFailed,
@@ -395,6 +432,37 @@ provide('tirePressureModel', {
   margin: 0;
   color: var(--tz-text-primary, #0f172a);
   text-align: left;
+}
+
+.calculation-input-notice {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #f5d28a;
+  border-radius: 0.7rem;
+  background: #fffaf0;
+  color: #713f12;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.calculation-input-notice p {
+  margin: 0;
+}
+
+.calculation-input-notice p + p,
+.calculation-input-notice button {
+  margin-top: 0.35rem;
+}
+
+.calculation-input-notice button {
+  text-decoration: underline;
+}
+
+.wide-tire-deformation-reference-note {
+  margin: 0.5rem 0;
+  color: var(--simulator-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
 }
 
 .topbar {

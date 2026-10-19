@@ -27,6 +27,7 @@ type PaymentService struct {
 	stripeDisputeEvidenceSubmitter             stripeDisputeEvidenceSubmitter
 	paypalDisputeEvidenceSubmitter             PayPalDisputeEvidenceSubmitter
 	paypalDisputeDocumentStorage               PayPalDisputeEvidenceDocumentStorage
+	paypalDisputeAttachmentUploads             *SuggestionAndPayPalAttachmentUploadService
 	paypalDisputeEvidenceAttachmentURLProvider PayPalDisputeEvidenceAttachmentURLProvider
 	paypalDisputeInvoiceOptions                PayPalDisputeInvoiceOptions
 	paypalDisputeInvoiceSellerProfileProvider  PayPalDisputeInvoiceSellerProfileProvider
@@ -110,6 +111,9 @@ func (s *PaymentService) ConfigurePayPalDisputeEvidenceDocumentStorage(storage P
 		return
 	}
 	s.paypalDisputeDocumentStorage = storage
+	if s.paypalDisputeAttachmentUploads != nil {
+		s.configurePayPalInvoiceDurableUploadProvider(storage)
+	}
 }
 
 // ConfigurePayPalDisputeEvidenceAttachmentURLProvider supplies short-lived

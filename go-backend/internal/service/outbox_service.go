@@ -318,6 +318,12 @@ func (s *OutboxService) handleEventWithLeaseHeartbeat(
 	event outbox.Event,
 	handler OutboxEventHandler,
 ) error {
+	return s.handleOutboxEventWithLeaseHeartbeatAndRefresh(ctx, event, handler, func(refreshedAt time.Time) error {
+		return s.repo.RefreshProcessingLockByWorker(event.ID, s.workerID, refreshedAt)
+	})
+}
+
+func (s *OutboxService) handleOutboxEventWithLeaseHeartbeatAndRefresh(ctx context.Context, event outbox.Event, handler OutboxEventHandler, refreshLease func(time.Time) error) error {
 	if s == nil || s.repo == nil || handler == nil {
 		return nil
 	}
@@ -344,7 +350,7 @@ func (s *OutboxService) handleEventWithLeaseHeartbeat(
 			case <-stop:
 				return
 			case tick := <-ticker.C:
-				if err := s.repo.RefreshProcessingLockByWorker(event.ID, s.workerID, tick.UTC()); err != nil {
+				if err := refreshLease(tick.UTC()); err != nil {
 					// Once the lease heartbeat is no longer reliable, the
 					// external outcome cannot be proven safe to replay.
 					heartbeatErr <- errors.Join(err, resilience.ErrExternalOutcomeUnknown)

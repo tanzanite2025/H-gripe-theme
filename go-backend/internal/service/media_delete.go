@@ -71,31 +71,66 @@ func (s *MediaService) DeleteAsset(ctx context.Context, id uint, confirmation st
 	return nil
 }
 
-func (s *MediaService) cleanupDeletedAsset(ctx context.Context, id uint) error {
+func (s *MediaService) cleanupDeletedAsset(ctx context.Context, id uint, originalReceiptKeys ...[]string) error {
 	if s == nil || s.repo == nil || s.storage == nil {
 		return ErrObjectStorageCleanupUnavailable
 	}
-	asset, err := s.repo.FindAssetByIDUnscoped(id)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil
+	if ctx == nil {
+		ctx = context.Background()
 	}
+	var cleanedAsset *media.MediaAsset
+	err := s.withinMediaPhysicalCleanupTransactionHoldingLocksUntilProviderReturns(ctx, func(repo *repository.MediaRepository, _ *gorm.DB) error {
+		asset, err := repo.FindAssetByIDUnscopedForUpdate(id)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if len(originalReceiptKeys) > 0 {
+				return s.cleanupLateWrittenMediaObjectsWithinTransactionAfterRegistrationRemovalFromOriginalReceipt(ctx, repo, id, originalReceiptKeys[0])
+			}
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("load deleted media asset: %w", err)
+		}
+		if !asset.DeletedAt.Valid {
+			return nil
+		}
+		if err := repo.LockRegisteredMediaAssetObjectsBeforePhysicalCleanupWithinTransaction(asset); err != nil {
+			return err
+		}
+		if err := s.cleanupDeletedMediaAssetObjectsAndRegistrationWithinLockedTransaction(ctx, repo, asset); err != nil {
+			return err
+		}
+		cleanedAsset = asset
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("load deleted media asset: %w", err)
+		return err
 	}
-	if !asset.DeletedAt.Valid {
-		return nil
+	if cleanedAsset != nil && s.cdnPurger != nil {
+		s.cdnPurger.PurgeAsync(s.CanonicalPublicMediaURL(cleanedAsset.URL))
+		for _, derivative := range cleanedAsset.Derivatives {
+			s.cdnPurger.PurgeAsync(s.CanonicalPublicMediaURL(derivative.URL))
+		}
+	}
+	return nil
+}
+
+// Keep the row and object locks through reference revalidation, provider IO and
+// hard deletion. Concurrent workers and registrations use this same boundary.
+func (s *MediaService) cleanupDeletedMediaAssetObjectsAndRegistrationWithinLockedTransaction(ctx context.Context, repo *repository.MediaRepository, asset *media.MediaAsset) error {
+	if err := s.validateSharedMediaCleanupDoesNotOwnDedicatedPublicObjects(asset); err != nil {
+		return err
 	}
 	if asset.CustomerServiceDerivativeWriteExpiresAt != nil && asset.CustomerServiceDerivativeWriteExpiresAt.After(time.Now().UTC()) {
 		return ErrCustomerServiceAttachmentWritesInProgress
 	}
-	references, err := s.repo.FindAssetReferences(asset)
+	references, err := repo.FindAssetReferences(asset)
 	if err != nil {
 		return err
 	}
 	if len(references) > 0 {
 		return &MediaAssetInUseError{References: references}
 	}
-	if err := s.cleanupRetiredCustomerServiceAttachmentDerivativeNamespace(ctx, asset); err != nil {
+	if err := s.cleanupRetiredCustomerServiceAttachmentDerivativeNamespace(ctx, asset, repo); err != nil {
 		return err
 	}
 
@@ -120,14 +155,8 @@ func (s *MediaService) cleanupDeletedAsset(ctx context.Context, id uint) error {
 			return fmt.Errorf("delete media object: %w", err)
 		}
 	}
-	if err := s.repo.HardDeleteAsset(id); err != nil {
+	if err := repo.HardDeleteAsset(asset.ID); err != nil {
 		return fmt.Errorf("delete media asset record: %w", err)
-	}
-	if s.cdnPurger != nil {
-		s.cdnPurger.PurgeAsync(s.CanonicalPublicMediaURL(asset.URL))
-		for _, derivative := range asset.Derivatives {
-			s.cdnPurger.PurgeAsync(s.CanonicalPublicMediaURL(derivative.URL))
-		}
 	}
 	return nil
 }

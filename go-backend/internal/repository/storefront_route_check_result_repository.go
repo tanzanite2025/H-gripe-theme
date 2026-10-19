@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (r *StorefrontRouteCatalogRepository) ListChecks(routeEntryID uint, page, pageSize int) ([]seodomain.StorefrontRouteCheckResult, int64, error) {
@@ -51,7 +52,22 @@ func (r *StorefrontRouteCatalogRepository) SaveCheck(result *seodomain.Storefron
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(result).Error; err != nil {
+		var entry seodomain.StorefrontRouteCatalogEntry
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&entry, result.RouteEntryID).Error; err != nil {
+			return err
+		}
+		var previousResult seodomain.StorefrontRouteCheckResult
+		err := tx.Where("route_entry_id = ?", result.RouteEntryID).Order("checked_at DESC, id DESC").First(&previousResult).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if previousResult.ID != 0 {
+			result.ID = previousResult.ID
+		}
+		if err := tx.Save(result).Error; err != nil {
+			return err
+		}
+		if err := retainOnlyLatestStorefrontRouteCheckResults(tx, result.RouteEntryID); err != nil {
 			return err
 		}
 		return tx.Model(&seodomain.StorefrontRouteCatalogEntry{}).

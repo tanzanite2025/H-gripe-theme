@@ -80,6 +80,24 @@ npm run dev:stop
 npm run dev:ports
 ```
 
+For installation-specific historical customer-service attachment access, copy
+`local-development-reviewed-historical-customer-service-attachment-access.example.json`
+to `local-development-reviewed-historical-customer-service-attachment-access.json`
+and fill in only origins reviewed for this installation. The local file is
+ignored by Git and is loaded on each `npm run dev`; the example trusts no
+historical origin and disables automatic migrations. Apply reviewed migrations
+before launching a fresh database with automatic migrations disabled. Nonempty
+`MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS` and
+`DB_AUTO_MIGRATE` environment variables override the local file. Validate it
+without starting or stopping services:
+
+```powershell
+./start-dev.ps1 -ValidateLocalMediaAccessConfiguration
+```
+
+The deployment guide's Media Upgrade Step 20 records the local rollout and
+frontend proxy/image-transform verification.
+
 The local dev launcher ensures a first backoffice account exists after the API health check passes:
 
 - Email: `admin@example.com`

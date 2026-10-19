@@ -137,24 +137,19 @@ func uniqueShippingQuoteTemplateIDs(items []ShippingQuoteItemInput) ([]uint, err
 	return templateIDs, nil
 }
 
-func resolveProductShippingTemplateIDs(productRepo *repository.ProductRepository, p *product.Product, variant *product.ProductVariant) ([]uint, error) {
+func resolveRequiredSkuShippingTemplateIDs(productRepo *repository.ProductRepository, p *product.Product, variant *product.ProductVariant) ([]uint, error) {
 	if productRepo == nil {
 		return nil, errors.New("product shipping template binding repository is not configured")
 	}
-	ids, err := productRepo.FindPurchasableShippingTemplateIDs(p.ID, func() *uint {
-		if variant == nil {
-			return nil
-		}
-		return &variant.ID
-	}())
+	if variant == nil {
+		return nil, fmt.Errorf("product ID %d has no purchasable SKU", p.ID)
+	}
+	ids, err := productRepo.FindSkuShippingTemplateIDs(p.ID, variant.ID)
 	if err != nil {
 		return nil, err
 	}
 	if len(ids) == 0 {
-		if variant != nil {
-			return nil, fmt.Errorf("shipping template is missing for SKU %s", variant.SKU)
-		}
-		return nil, fmt.Errorf("shipping template is missing for product ID %d", p.ID)
+		return nil, fmt.Errorf("shipping template is missing for SKU %s", variant.SKU)
 	}
 	return ids, nil
 }

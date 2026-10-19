@@ -153,43 +153,13 @@ func (h *ShipmentRecordHandler) UploadImages(c *gin.Context) {
 		return
 	}
 
-	urls := make([]string, 0, len(files))
-	for _, file := range files {
-		var url string
-		var err error
-		if privateUploader, ok := h.storageService.(storage.PrivateObjectUploader); ok {
-			url, err = privateUploader.UploadWithPrefixPrivate(c.Request.Context(), file, "warranty/shipment")
-		} else {
-			err = errWarrantyShipmentPrivateStorageUnavailable
-		}
-		if err != nil {
-			cleanupShipmentUploadObjects(c, h.storageService, urls)
-			apierror.RespondInternalError(c, err)
-			return
-		}
-		urls = append(urls, url)
-	}
-
-	record, err := h.shipmentRecordService.AddImages(id, urls)
+	record, urls, err := h.shipmentRecordService.AddPrivateShipmentImageFilesWithAtomicOwnerBinding(c.Request.Context(), id, files)
 	if err != nil {
-		cleanupShipmentUploadObjects(c, h.storageService, urls)
 		respondShipmentRecordError(c, err)
 		return
 	}
+
 	response.Success(c, gin.H{"images": urls, "record": record})
-}
-
-var errWarrantyShipmentPrivateStorageUnavailable = errors.New("private storage is required for shipment evidence")
-
-func cleanupShipmentUploadObjects(c *gin.Context, storageService storage.StorageService, urls []string) {
-	if storageService == nil {
-		return
-	}
-	for _, reference := range urls {
-		if strings.TrimSpace(reference) != "" {
-			_ = storageService.Delete(c.Request.Context(), reference)
-		}
-	}
 }
 
 func parseShipmentRecordID(c *gin.Context) (uint, bool) {
@@ -215,7 +185,7 @@ func parseShipmentRecordDate(value string) (time.Time, error) {
 
 func respondShipmentRecordError(c *gin.Context, err error) {
 	switch {
-	case errors.Is(err, service.ErrShipmentRecordUnavailable):
+	case errors.Is(err, service.ErrShipmentRecordUnavailable), errors.Is(err, service.ErrObjectStorageCleanupUnavailable):
 		apierror.RespondError(c, http.StatusServiceUnavailable, "shipment_record_unavailable", err.Error())
 	case repository.IsRecordNotFound(err):
 		apierror.RespondNotFound(c, "Shipped order")

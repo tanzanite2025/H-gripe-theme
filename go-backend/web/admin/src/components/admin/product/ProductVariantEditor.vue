@@ -1,10 +1,10 @@
 <template>
-  <div class="space-y-3">
+  <div class="space-y-3" :class="{ 'carbon-rim-sales-variants': dedicatedCarbonRim }">
     <Alert>
       <Info class="size-4" />
       <AlertTitle>价格与库存按 SKU 维护</AlertTitle>
       <AlertDescription>
-        每个 SKU 都可以单独维护重量、价格、运费模板和库存；主基准币种继承商品设置。
+        每个 SKU 独立维护重量、价格、运费模板和库存。附属品可配置自己的运费模板；未配置模板的 SKU 无法计算运费。
       </AlertDescription>
     </Alert>
 
@@ -12,6 +12,7 @@
       <span v-if="specDefinitions.length">
           SKU 选项列来自已绑定商品规格模板；每一行仍单独维护价格、重量、运费模板和库存，主基准币种继承商品。
       </span>
+      <span v-else-if="dedicatedCarbonRim">每行下方填写这只车圈的孔数、钻孔形式、涂装和实测参数。</span>
       <span v-else>
         当前没有模板 SKU 选项字段；先维护默认 SKU、价格、重量、运费模板和库存即可，主基准币种继承商品。
       </span>
@@ -161,11 +162,11 @@
             </div>
           </div>
         </div>
-        <p v-else class="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">还没有配置买家选配值。</p>
+        <p v-else-if="!dedicatedCarbonRim" class="rounded-md border border-dashed px-3 py-3 text-center text-xs text-muted-foreground">还没有配置买家选配值。</p>
       </div>
     </div>
 
-    <div class="space-y-3 rounded-lg border bg-muted/10 p-3">
+    <div v-if="!dedicatedCarbonRim" class="space-y-3 rounded-lg border bg-muted/10 p-3">
       <div class="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 class="text-sm font-semibold text-foreground">选项依赖关系</h3>
@@ -267,7 +268,7 @@
       </div>
     </div>
 
-    <Table class="min-w-[1380px]">
+    <Table :class="dedicatedCarbonRim ? 'carbon-rim-sales-variants-table' : 'min-w-[1380px]'">
       <TableHeader>
         <TableRow>
           <TableHead class="w-16 text-center">默认</TableHead>
@@ -285,7 +286,7 @@
       </TableHeader>
       <TableBody>
         <template v-for="(variant, index) in variants" :key="variant.id || `variant-${index}`">
-        <TableRow>
+        <TableRow :class="{ 'carbon-rim-sales-fields-row': dedicatedCarbonRim }">
           <TableCell class="text-center">
             <input
               type="radio"
@@ -338,16 +339,11 @@
               <Input v-model.number="variant.weight_grams" type="number" min="0" step="1" placeholder="克" />
             </TableCell>
             <TableCell>
-              <select
-                class="min-h-16 w-full rounded-md border bg-background px-2 py-1 text-xs"
-                multiple
-                :value="shippingTemplateIDs(variant)"
-                @change="setShippingTemplateValue(variant, $event)"
-              >
-                <option v-for="template in shippingTemplates" :key="template.id" :value="String(template.id)">
-                  {{ template.name }}{{ template.enabled === false ? '（停用）' : '' }}
-                </option>
-              </select>
+              <ProductShippingBillingTemplateSelectionDialog
+                v-model="variant.shipping_template_ids"
+                :shipping-templates="shippingTemplates"
+                :selection-context="`SKU ${variant.sku || index + 1}`"
+              />
             </TableCell>
             <TableCell>
               <Input v-model.number="variant.stock" type="number" min="0" step="1" />
@@ -369,7 +365,7 @@
                     variant="ghost"
                     size="icon"
                     class="text-destructive hover:text-destructive"
-                    :disabled="variants.length <= 1"
+                    :disabled="variants.length <= 1 || (dedicatedCarbonRim && Boolean(variant.id))"
                     :aria-label="`删除变体 ${variant.sku || index + 1}`"
                     @click="emit('remove', index)"
                   >
@@ -379,6 +375,11 @@
                 <TooltipContent>删除变体</TooltipContent>
               </Tooltip>
             </TableCell>
+        </TableRow>
+        <TableRow v-if="dedicatedCarbonRim && variant.carbon_rim_specification" class="carbon-rim-engineering-fields-row">
+          <TableCell :colspan="8">
+            <CarbonRimSalesVariantSpecificationFields :specification="variant.carbon_rim_specification" :persisted="Boolean(variant.id)" :locked="engineeringFactsLocked" />
+          </TableCell>
         </TableRow>
         <TableRow v-if="customOptionDefinitions.length" :key="`${variant.id || `variant-${index}`}-custom-rules`">
           <TableCell :colspan="specDefinitions.length + 8" class="bg-muted/10 p-3">
@@ -440,6 +441,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import ProductShippingBillingTemplateSelectionDialog from './ProductShippingBillingTemplateSelectionDialog.vue'
+import CarbonRimSalesVariantSpecificationFields from './CarbonRimSalesVariantSpecificationFields.vue'
 import { toast } from 'vue-sonner'
 import { ImageUp, Info, LoaderCircle, Plus, Trash2 } from '@lucide/vue'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -465,6 +468,8 @@ import type {
 const defaultRadioName = `product-variant-default-${Math.random().toString(36).slice(2)}`
 
 const props = withDefaults(defineProps<{
+  dedicatedCarbonRim?: boolean
+  engineeringFactsLocked?: boolean
   variants: ProductVariantForm[]
   specDefinitions?: ProductSpecDefinition[]
   defaultIndex?: number
@@ -640,10 +645,10 @@ const uploadSwatch = async (event: Event, option: ProductVariantOptionValueForm)
     formData.append('file', file)
     formData.append('media_type', 'image')
     formData.append('image_purpose', 'product_variant_swatch')
-    const asset = await mediaApi.uploadAsset(formData, 'catalog')
+    const asset = await mediaApi.uploadBusinessDraftAsset(formData, 'catalog')
     option.swatch_media_asset_id = asset?.id || null
     option.swatch_url = String(asset?.url || asset?.access_url || '')
-    toast.success('展示图片已上传')
+    toast.success('展示图片已上传，请在 24 小时内保存商品')
   } catch (error) {
     console.error('Failed to upload variant option swatch:', error)
     toast.error('展示图片上传失败')
@@ -652,17 +657,32 @@ const uploadSwatch = async (event: Event, option: ProductVariantOptionValueForm)
   }
 }
 const selectValue = (value: unknown): string => value === undefined || value === null || value === '' ? '__empty__' : String(value)
-const shippingTemplateIDs = (variant: ProductVariantForm): string[] => (Array.isArray(variant.shipping_template_ids) ? variant.shipping_template_ids : []).map(value => String(value))
 const checkboxValue = (event: Event): boolean => Boolean((event.target as HTMLInputElement | null)?.checked)
 const setSelectValue = (variant: ProductVariantForm, slug: string, value: unknown): void => {
   variant.option_values[slug] = value === '__empty__' ? '' : value
 }
 
-const setShippingTemplateValue = (variant: ProductVariantForm, event: Event): void => {
-  const target = event.target as HTMLSelectElement
-  const ids = Array.from(target.selectedOptions).map(option => Number(option.value)).filter(value => Number.isInteger(value) && value > 0)
-  variant.shipping_template_ids = Array.from(new Set(ids))
-}
 
 </script>
+
+<style scoped>
+@media (max-width: 767px) {
+  .carbon-rim-sales-variants :deep(table) { display: block; width: 100%; }
+  .carbon-rim-sales-variants :deep(thead) { display: none; }
+  .carbon-rim-sales-variants :deep(tbody) { display: block; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; padding-top: 1rem; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td) { display: block; min-width: 0; text-align: left; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td::before) { display: block; font-size: 0.75rem; margin-bottom: 0.375rem; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td:nth-child(1)::before) { content: '默认'; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td:nth-child(2)::before) { content: 'SKU'; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td:nth-child(3)::before) { content: '价格'; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td:nth-child(4)::before) { content: '重量（克）'; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td:nth-child(5)::before) { content: '线路计费模板'; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td:nth-child(6)::before) { content: '库存'; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td:nth-child(7)::before) { content: '启用'; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-sales-fields-row > td:nth-child(8)::before) { content: '操作'; }
+  .carbon-rim-sales-variants :deep(.carbon-rim-engineering-fields-row),
+  .carbon-rim-sales-variants :deep(.carbon-rim-engineering-fields-row > td) { display: block; width: 100%; }
+}
+</style>
 

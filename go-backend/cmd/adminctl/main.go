@@ -40,6 +40,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return runAuditPricingSnapshots(args[1:], stdout, stderr)
 	case "audit-schwalbe-catalog-refresh":
 		return runAuditSchwalbeCatalogRefresh(args[1:], stdout, stderr)
+	case "audit-historical-media":
+		return runHistoricalMediaReadOnlyInventoryCommand(args[1:], stdout, stderr)
 	case "help", "-h", "--help":
 		printUsage(stdout)
 		return nil
@@ -330,6 +332,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: adminctl ensure-admin [-config path] [-operator label]")
 	_, _ = fmt.Fprintln(w, "       adminctl audit-pricing-snapshots [-config path] [-batch-size N] [-max-orders N] [-format text|json]")
 	fmt.Fprintln(w, "       adminctl audit-schwalbe-catalog-refresh -snapshot path [-config path] [-format text|json]")
+	fmt.Fprintln(w, "       adminctl audit-historical-media [-config path] [-batch-size N] [-max-records-per-source N] [-max-issues N] [-timeout 5m] [-format text|json]")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Required environment:")
 	fmt.Fprintln(w, "  ADMIN_EMAIL")

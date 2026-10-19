@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
 	settingdomain "commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
@@ -38,7 +39,7 @@ func TestMediaEvidencePreservesOriginalAndDetectsStorageChanges(t *testing.T) {
 		_ = sqlDB.Close()
 	})
 
-	require.NoError(t, db.AutoMigrate(&media.MediaAsset{}, &settingdomain.Setting{}))
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}, &media.MediaAsset{}, &settingdomain.Setting{}))
 
 	uploadRoot := t.TempDir()
 	storageService, err := storage.NewStorageService(&storage.Config{
@@ -57,6 +58,7 @@ func TestMediaEvidencePreservesOriginalAndDetectsStorageChanges(t *testing.T) {
 	}))
 
 	service := NewMediaService(repository.NewMediaRepository(db), storageService, settingService, "https://shop.northstar.example", 20<<30)
+	service.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	original := mediaUploadTestPNG(t)
 	asset, err := service.UploadAsset(context.Background(), MediaUploadInput{
 		File:       multipartFileHeader(t, "wheelset.png", "image/png", original),

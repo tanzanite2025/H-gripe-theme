@@ -38,6 +38,8 @@ func TestHomeVisualTileRepositorySaveSingleVisualShowcaseItemKeepsOtherSlots(t *
 	require.NoError(t, db.Create(&second).Error)
 
 	repository := NewHomeVisualTileRepository(db)
+	// This test isolates slot persistence; service tests use real object storage.
+	repository.ConfigureTransactionalVisualShowcaseImageBindingValidation(func(_ *gorm.DB, _, _ []homevisualtile.Tile) error { return nil })
 	replacement := first
 	replacement.ImageURL = "/uploads/visual-showcase/home-hero/en/replacement.webp"
 	replacement.StorageKey = "visual-showcase/home-hero/en/replacement.webp"

@@ -23,6 +23,8 @@ type OrderEvidenceAttachment struct {
 	SHA256           string    `gorm:"column:sha256;type:char(64);not null" json:"sha256"`
 	UploadedBy       uint      `gorm:"not null;default:0" json:"uploaded_by"`
 	CreatedAt        time.Time `json:"created_at"`
+	// Detachment hides the mutable placement while retaining immutable ownership.
+	DetachedAt gorm.DeletedAt `gorm:"column:detached_at;index" json:"-"`
 }
 
 func (OrderEvidenceAttachment) TableName() string {

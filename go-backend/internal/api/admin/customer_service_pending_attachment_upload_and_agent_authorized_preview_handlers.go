@@ -57,7 +57,7 @@ func (h *TicketHandler) UploadAgentCustomerServiceConversationAttachment(c *gin.
 		case errors.Is(err, service.ErrMediaAccountStorageQuotaExceeded):
 			c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "storage quota exceeded"})
 		case errors.Is(err, service.ErrUnsupportedMediaType):
-			c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "private conversation uploads currently support images only"})
+			c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "unsupported attachment type"})
 		default:
 			respondAdminCustomerServiceError(c, err)
 		}

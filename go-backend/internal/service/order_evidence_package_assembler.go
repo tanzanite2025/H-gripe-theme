@@ -18,15 +18,7 @@ var (
 
 // OrderEvidenceSourceReference records which durable facts were included in a
 // compiled view. It is metadata only; the source records remain authoritative.
-type OrderEvidenceSourceReference struct {
-	SourceType       string     `json:"source_type"`
-	SourceID         uint       `json:"source_id"`
-	OrderItemID      *uint      `json:"order_item_id,omitempty"`
-	EvidenceItemType string     `json:"evidence_item_type,omitempty"`
-	Status           string     `json:"status,omitempty"`
-	ContentSHA256    string     `json:"content_sha256,omitempty"`
-	CapturedAt       *time.Time `json:"captured_at,omitempty"`
-}
+type OrderEvidenceSourceReference = orderevidence.OrderEvidenceSourceReference
 
 // OrderEvidencePackageAssembly is a read-time compiled view for the evidence
 // workbench and payment-channel adapters. It deliberately keeps raw shipping

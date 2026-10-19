@@ -36,6 +36,7 @@ type MediaAsset struct {
 	CustomerServiceMediaPurpose             string                     `gorm:"type:varchar(32);not null;default:''" json:"customer_service_media_purpose"`
 	UploadPurpose                           string                     `gorm:"type:varchar(64);not null;default:''" json:"upload_purpose"`
 	AccessURL                               string                     `gorm:"-" json:"access_url,omitempty"`
+	BusinessDraftUploadExpiresAt            *time.Time                 `gorm:"-" json:"business_draft_upload_expires_at,omitempty"`
 	RequiresConversationAccess              bool                       `gorm:"-" json:"requires_conversation_access,omitempty"`
 	PendingCustomerServiceUploadSessionID   string                     `gorm:"-" json:"-"`
 	CustomerServiceDerivativeWriteToken     string                     `gorm:"type:varchar(36);not null;default:''" json:"-"`

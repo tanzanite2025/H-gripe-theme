@@ -73,18 +73,8 @@
               </TableCell>
               <TableCell>
                 <div class="flex flex-wrap gap-1.5">
-                  <Badge v-for="(image, index) in claimImages(claim)" :key="`${claim.id}-image-${index}`" variant="outline" class="rounded-full">
-                    <a :href="image" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 no-underline">
-                      <ImageIcon class="size-3" />
-                      图 {{ index + 1 }}
-                    </a>
-                  </Badge>
-                  <Badge v-if="claim.video_url" variant="outline" class="rounded-full">
-                    <a :href="claim.video_url" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 no-underline">
-                      <Video class="size-3" />
-                      视频
-                    </a>
-                  </Badge>
+                  <AuthorizedPrivateOrderAttachmentPreviewAndDownload v-for="index in claimImageAttachmentIndicesFromOriginalStoredReferences(claim)" :key="`${claim.id}-image-${index}`" :path="`/api/admin/warranty/claims/${claim.id}/attachments/images/${index}`" :label="`图 ${index + 1}`" :filename="`claim-${claim.id}-image-${index + 1}`" />
+                  <AuthorizedPrivateOrderAttachmentPreviewAndDownload v-if="claim.video_url" :path="`/api/admin/warranty/claims/${claim.id}/attachments/video/0`" label="视频" :filename="`claim-${claim.id}-video`" />
                   <span v-if="claimImages(claim).length === 0 && !claim.video_url" class="text-xs text-muted-foreground">无附件</span>
                 </div>
               </TableCell>
@@ -151,16 +141,17 @@
 </template>
 
 <script setup lang="ts">
-import { FileWarning, Image as ImageIcon, LoaderCircle, Video } from '@lucide/vue'
+import { FileWarning, LoaderCircle } from '@lucide/vue'
+import AuthorizedPrivateOrderAttachmentPreviewAndDownload from '@/components/admin/AuthorizedPrivateOrderAttachmentPreviewAndDownload.vue'
 import AdminPagination from '@/components/admin/AdminPagination.vue'
 import AdminTablePanel from '@/components/admin/AdminTablePanel.vue'
 import WarrantyClaimDetailPanel from '@/components/admin/warranty/WarrantyClaimDetailPanel.vue'
-import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableEmpty, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TabsContent } from '@/components/ui/tabs'
 import {
   claimImages,
+  claimImageAttachmentIndicesFromOriginalStoredReferences,
   claimProductName,
   formatDateTime,
   issueTypeLabel

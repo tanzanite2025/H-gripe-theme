@@ -223,17 +223,17 @@ func (h *IssuesHandler) Recheck(c *gin.Context) {
 			return
 		}
 		updatedIssue, err := h.issues.Get(issue.ID)
-		if err != nil {
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			writeURLIssueError(c, err)
 			return
 		}
 		h.recordIssueAudit(c, startedAt, "sync", issue.ID, "success", nil, map[string]interface{}{
 			"route_entry_id": issue.RouteEntryID,
 		}, map[string]interface{}{
-			"state":            updatedIssue.State,
+			"cleared":          updatedIssue == nil,
 			"manifest_version": syncSummary.ManifestVersion,
 		})
-		c.JSON(http.StatusOK, gin.H{"data": gin.H{"issue": updatedIssue}})
+		c.JSON(http.StatusOK, gin.H{"data": gin.H{"issue": updatedIssue, "cleared": updatedIssue == nil}})
 		return
 	}
 	var result seodomain.StorefrontRouteCheckResult
@@ -252,7 +252,7 @@ func (h *IssuesHandler) Recheck(c *gin.Context) {
 		return
 	}
 	updatedIssue, err := h.issues.Get(issue.ID)
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		writeURLIssueError(c, err)
 		return
 	}
@@ -264,6 +264,7 @@ func (h *IssuesHandler) Recheck(c *gin.Context) {
 	})
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{
 		"issue":        updatedIssue,
+		"cleared":      updatedIssue == nil,
 		"check_result": result,
 	}})
 }
@@ -300,7 +301,7 @@ func (h *IssuesHandler) Verify(c *gin.Context) {
 	}
 
 	updatedIssue, err := h.issues.Verify(issue.ID, c.GetUint("user_id"))
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		h.recordIssueAudit(c, startedAt, "execute", issue.ID, "failed", err, issue, nil)
 		writeURLIssueError(c, err)
 		return
@@ -308,6 +309,7 @@ func (h *IssuesHandler) Verify(c *gin.Context) {
 	h.recordIssueAudit(c, startedAt, "execute", issue.ID, "success", nil, issue, updatedIssue)
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{
 		"issue":        updatedIssue,
+		"cleared":      updatedIssue == nil,
 		"check_result": checkResult,
 	}})
 }

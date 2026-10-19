@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"strings"
+	"context"
 	"time"
 
 	"commerce-platform/internal/domain/ugcshowcase"
@@ -13,7 +13,9 @@ import (
 )
 
 type UGCShowcaseRepository struct {
-	db *gorm.DB
+	db                    *gorm.DB
+	validateImageBindings func(context.Context, *ugcshowcase.UGCShowcase, *ugcshowcase.UGCShowcase) error
+	resolveImageObjectKey func(string) (string, error)
 }
 
 func NewUGCShowcaseRepository(db *gorm.DB) *UGCShowcaseRepository {
@@ -21,15 +23,25 @@ func NewUGCShowcaseRepository(db *gorm.DB) *UGCShowcaseRepository {
 }
 
 func (r *UGCShowcaseRepository) WithTx(tx *gorm.DB) *UGCShowcaseRepository {
-	return &UGCShowcaseRepository{db: tx}
+	copy := *r
+	copy.db = tx
+	return &copy
 }
 
 func (r *UGCShowcaseRepository) Create(item *ugcshowcase.UGCShowcase) error {
-	return r.db.Create(item).Error
+	return r.WithTransaction(func(repo *UGCShowcaseRepository, tx *gorm.DB) error {
+		if item == nil || repo.validateImageBindings == nil {
+			return ErrUGCShowcaseImageOwnershipValidationUnavailable
+		}
+		if err := repo.validateImageBindings(tx.Statement.Context, nil, item); err != nil {
+			return err
+		}
+		return tx.Create(item).Error
+	})
 }
 
 func (r *UGCShowcaseRepository) WithTransaction(fn func(repo *UGCShowcaseRepository, tx *gorm.DB) error) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
+	return runWithDedicatedPublicObjectNamespaceTransactionLock(r.db.Statement.Context, r.db, dedicatedUGCShowcaseLifecycleNamespace, func(tx *gorm.DB) error {
 		return fn(r.WithTx(tx), tx)
 	})
 }
@@ -103,127 +115,30 @@ func (r *UGCShowcaseRepository) CountByUserAndStatus(userID uint, status string)
 	return count, err
 }
 
-func (r *UGCShowcaseRepository) ListByImageStorageKeyCandidate(key string) ([]ugcshowcase.UGCShowcase, error) {
-	var items []ugcshowcase.UGCShowcase
-	if key == "" {
-		return items, nil
-	}
-	escapedKey := escapeShowcaseImageSearchPattern(key)
-	imagesLikeClause := showcaseImagesLikeClause(r.db.Dialector.Name())
-	err := r.db.Model(&ugcshowcase.UGCShowcase{}).
-		Where(imagesLikeClause, "%"+escapedKey+"%").
-		Limit(25).
-		Find(&items).Error
-	return items, err
-}
-
-func showcaseImagesLikeClause(dialect string) string {
-	switch dialect {
-	case "postgres":
-		return "CAST(images AS TEXT) LIKE ? ESCAPE '\\'"
-	case "mysql":
-		return "CAST(images AS CHAR) LIKE ?"
-	default:
-		return "images LIKE ? ESCAPE '\\'"
-	}
-}
-
-func escapeShowcaseImageSearchPattern(value string) string {
-	value = strings.ReplaceAll(value, `\`, `\\`)
-	value = strings.ReplaceAll(value, `%`, `\%`)
-	return strings.ReplaceAll(value, `_`, `\_`)
-}
-
 func (r *UGCShowcaseRepository) UpdateStatus(id uint, status string, reason string) error {
-	updates := map[string]interface{}{
-		"status":          status,
-		"rejected_reason": reason,
-	}
-	if status == ugcshowcase.StatusApproved {
-		approvedAt := time.Now()
-		updates["approved_at"] = &approvedAt
-	}
-	return r.db.Model(&ugcshowcase.UGCShowcase{}).Where("id = ?", id).Updates(updates).Error
+	_, err := r.mutateUGCShowcaseImagesAndStatusWithNamespaceAndCurrentRowLocks(id, "", nil, &status, reason)
+	return err
 }
 
 func (r *UGCShowcaseRepository) UpdatePendingStatus(id uint, status string, reason string) (bool, error) {
-	updates := map[string]interface{}{
-		"status":          status,
-		"rejected_reason": reason,
-	}
-	if status == ugcshowcase.StatusApproved {
-		approvedAt := time.Now()
-		updates["approved_at"] = &approvedAt
-	}
-	result := r.db.Model(&ugcshowcase.UGCShowcase{}).
-		Where("id = ? AND status = ?", id, ugcshowcase.StatusPending).
-		Updates(updates)
-	if result.Error != nil {
-		return false, result.Error
-	}
-	return result.RowsAffected > 0, nil
+	return r.mutateUGCShowcaseImagesAndStatusWithNamespaceAndCurrentRowLocks(id, ugcshowcase.StatusPending, nil, &status, reason)
 }
 
 func (r *UGCShowcaseRepository) UpdateImagesAndStatus(id uint, images datatypes.JSON, status string, reason string) error {
-	updates := map[string]interface{}{
-		"images":          images,
-		"status":          status,
-		"rejected_reason": reason,
-	}
-	if status == ugcshowcase.StatusApproved {
-		approvedAt := time.Now()
-		updates["approved_at"] = &approvedAt
-	}
-	return r.db.Model(&ugcshowcase.UGCShowcase{}).Where("id = ?", id).Updates(updates).Error
+	_, err := r.mutateUGCShowcaseImagesAndStatusWithNamespaceAndCurrentRowLocks(id, "", &images, &status, reason)
+	return err
 }
 
 func (r *UGCShowcaseRepository) UpdatePendingImagesAndStatus(id uint, images datatypes.JSON, status string, reason string) (bool, error) {
-	updates := map[string]interface{}{
-		"images":          images,
-		"status":          status,
-		"rejected_reason": reason,
-	}
-	if status == ugcshowcase.StatusApproved {
-		approvedAt := time.Now()
-		updates["approved_at"] = &approvedAt
-	}
-	result := r.db.Model(&ugcshowcase.UGCShowcase{}).
-		Where("id = ? AND status = ?", id, ugcshowcase.StatusPending).
-		Updates(updates)
-	if result.Error != nil {
-		return false, result.Error
-	}
-	return result.RowsAffected > 0, nil
+	return r.mutateUGCShowcaseImagesAndStatusWithNamespaceAndCurrentRowLocks(id, ugcshowcase.StatusPending, &images, &status, reason)
 }
 
 func (r *UGCShowcaseRepository) ListImageCleanupCandidates(cutoff time.Time, limit int) ([]ugcshowcase.UGCShowcase, error) {
-	var items []ugcshowcase.UGCShowcase
-	if limit <= 0 {
-		return items, nil
-	}
-	imagesLikeClause := showcaseImagesLikeClause(r.db.Dialector.Name())
-	err := r.db.Model(&ugcshowcase.UGCShowcase{}).
-		Where(
-			"(status = ? AND created_at < ?) OR (status = ? AND "+imagesLikeClause+")",
-			ugcshowcase.StatusPending,
-			cutoff,
-			ugcshowcase.StatusRejected,
-			"%showcase/pending/%",
-		).
-		Order("created_at asc").
-		Limit(limit).
-		Find(&items).Error
-	return items, err
+	return r.listExactPendingUGCShowcaseCleanupCandidates(cutoff, limit)
 }
 
 func (r *UGCShowcaseRepository) UpdateImagesByStatus(id uint, status string, images datatypes.JSON) (bool, error) {
-	result := r.db.Model(&ugcshowcase.UGCShowcase{}).
-		Where("id = ? AND status = ?", id, status).
-		Update("images", images)
-	if result.Error != nil {
-		return false, result.Error
-	}
-	return result.RowsAffected > 0, nil
+	return r.mutateUGCShowcaseImagesAndStatusWithNamespaceAndCurrentRowLocks(id, status, &images, nil, "")
 }
 
 func (r *UGCShowcaseRepository) CreateComment(comment *ugcshowcase.UGCShowcaseComment) error {

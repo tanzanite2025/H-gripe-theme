@@ -70,18 +70,7 @@ type StripeDisputeCommunicationEvidence struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-type StripeDisputeEvidenceDraft struct {
-	CustomerName           string `json:"customer_name"`
-	CustomerEmailAddress   string `json:"customer_email_address"`
-	BillingAddress         string `json:"billing_address"`
-	ShippingAddress        string `json:"shipping_address"`
-	ProductDescription     string `json:"product_description"`
-	ShippingCarrier        string `json:"shipping_carrier"`
-	ShippingDate           string `json:"shipping_date"`
-	ShippingTrackingNumber string `json:"shipping_tracking_number"`
-	UncategorizedText      string `json:"uncategorized_text"`
-	CommunicationSummary   string `json:"communication_summary"`
-}
+type StripeDisputeEvidenceDraft = orderevidence.StripeDisputeEvidenceDraft
 
 type SubmitStripeDisputeEvidenceInput struct {
 	DisputeID                    uint

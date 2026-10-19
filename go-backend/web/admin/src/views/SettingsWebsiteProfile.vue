@@ -384,7 +384,7 @@ const handleUpload = async (target: UploadTarget, event: Event): Promise<void> =
     formData.append('file', file)
     formData.append('media_type', 'image')
     formData.append('image_purpose', purpose)
-    const asset = await mediaApi.uploadAsset(formData, 'website-profile')
+    const asset = await mediaApi.uploadBusinessDraftAsset(formData, 'website-profile')
     const url = String(assetAccessURL(asset) || '').trim()
     if (!url) {
       toast.error('上传成功但没有返回图片地址')
@@ -392,7 +392,7 @@ const handleUpload = async (target: UploadTarget, event: Event): Promise<void> =
     }
     if (target === 'avatar') form.avatar_url = url
     else form.factory_image_url = url
-    toast.success('图片已上传，保存设置后前台生效')
+    toast.success('图片已上传，请在 24 小时内保存设置')
   } catch (error) {
     console.error('Failed to upload website profile image:', error)
     toast.error('图片上传失败，请检查文件类型和大小')

@@ -19,13 +19,14 @@ import (
 )
 
 var (
-	ErrInvalidEntry        = errors.New("workbench feed entry is invalid")
-	ErrEntryNotFound       = errors.New("workbench feed entry not found")
-	ErrMediaLimit          = errors.New("workbench feed media limit exceeded")
-	ErrProductLimit        = errors.New("workbench feed tagged product limit exceeded")
-	ErrProductNotFound     = errors.New("workbench feed product not found")
-	ErrInvalidStatus       = errors.New("workbench feed status is invalid")
-	ErrInvalidDirectAction = errors.New("workbench feed direct action must be detail_drawer")
+	ErrInvalidEntry          = errors.New("workbench feed entry is invalid")
+	ErrEntryNotFound         = errors.New("workbench feed entry not found")
+	ErrMediaLimit            = errors.New("workbench feed media limit exceeded")
+	ErrProductLimit          = errors.New("workbench feed tagged product limit exceeded")
+	ErrProductNotFound       = errors.New("workbench feed product not found")
+	ErrInvalidStatus         = errors.New("workbench feed status is invalid")
+	ErrInvalidDirectAction   = errors.New("workbench feed direct action must be detail_drawer")
+	ErrMediaReferenceInvalid = errors.New("workbench feed image reference is invalid")
 )
 
 type Service struct {
@@ -36,6 +37,9 @@ type Service struct {
 }
 
 func NewService(db *gorm.DB, repo *Repository, catalog *Catalog, media *mediaservice.MediaService) *Service {
+	if repo != nil && media != nil {
+		repo.businessMediaReferenceResolver = media
+	}
 	return &Service{db: db, repo: repo, catalog: catalog, media: media}
 }
 
@@ -99,10 +103,10 @@ func (s *Service) Create(input EntryInput) (*FeedEntry, error) {
 			CreatedBy:   input.ActorID,
 			UpdatedBy:   input.ActorID,
 		}
-		if err := repo.Create(entry); err != nil {
+		if err := repo.createEntryFieldsWithoutAssociations(entry); err != nil {
 			return err
 		}
-		if err := repo.ReplaceChildren(entry.ID, mediaModels(input.Media), taggedProductModels(resolvedProducts)); err != nil {
+		if err := repo.replaceChildrenWithValidatedMediaWithinTransaction(entry.ID, mediaModels(input.Media), taggedProductModels(resolvedProducts)); err != nil {
 			return err
 		}
 		result, err = repo.FindByID(entry.ID)
@@ -122,7 +126,7 @@ func (s *Service) Update(id uint, input EntryInput) (*FeedEntry, error) {
 	var result *FeedEntry
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		repo := s.repo.WithTx(tx)
-		entry, err := repo.FindByID(id)
+		entry, err := repo.findActiveEntryWithMediaForUpdate(id)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrEntryNotFound
 		}
@@ -135,10 +139,10 @@ func (s *Service) Update(id uint, input EntryInput) (*FeedEntry, error) {
 		entry.Tags = mustJSON(normalizeTags(input.Tags))
 		entry.Status = normalizeStatus(input.Status)
 		entry.UpdatedBy = input.ActorID
-		if err := repo.Update(entry); err != nil {
+		if err := repo.updateEntryFieldsWithoutAssociations(entry); err != nil {
 			return err
 		}
-		if err := repo.ReplaceChildren(entry.ID, mediaModels(input.Media), taggedProductModels(resolvedProducts)); err != nil {
+		if err := repo.replaceChildrenWithValidatedMediaWithinTransaction(entry.ID, mediaModels(input.Media), taggedProductModels(resolvedProducts)); err != nil {
 			return err
 		}
 		result, err = repo.FindByID(entry.ID)
@@ -152,26 +156,19 @@ func (s *Service) UpdateStatus(id uint, status string, actorID uint) (*FeedEntry
 	if !isValidStatus(normalized) {
 		return nil, ErrInvalidStatus
 	}
-	entry, err := s.Get(id)
-	if err != nil {
-		return nil, err
+	entry, err := s.repo.updateOnlyEntryStatusWithinParentLockedTransaction(id, normalized, actorID)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrEntryNotFound
 	}
-	entry.Status = normalized
-	entry.UpdatedBy = actorID
-	if normalized == StatusPublished && entry.PublishedAt.IsZero() {
-		entry.PublishedAt = time.Now()
-	}
-	if err := s.repo.Update(entry); err != nil {
-		return nil, err
-	}
-	return s.Get(id)
+	return entry, err
 }
 
 func (s *Service) Delete(id uint) error {
-	if _, err := s.Get(id); err != nil {
-		return err
+	err := s.repo.Delete(id)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return ErrEntryNotFound
 	}
-	return s.repo.Delete(id)
+	return err
 }
 
 func (s *Service) ListProductOptions(input CatalogQuery) ([]ProductCatalogOption, int64, error) {
@@ -189,7 +186,7 @@ func (s *Service) UploadMedia(ctx context.Context, uploaderID uint, file *multip
 	if err != nil {
 		return nil, err
 	}
-	asset, err := s.media.UploadAsset(ctx, mediaservice.MediaUploadInput{
+	asset, err := s.media.UploadBusinessDraftMediaAsset(ctx, mediaservice.MediaUploadInput{
 		UploadOrigin:        media.MediaUploadOriginAdministratorWorkbenchFeed,
 		File:                file,
 		MediaType:           "image",
@@ -197,7 +194,6 @@ func (s *Service) UploadMedia(ctx context.Context, uploaderID uint, file *multip
 		UploadActorIdentity: media.MediaUploadActorIdentity{ActorType: media.MediaUploadActorAdministrator, AccountID: uploaderID},
 		Width:               width,
 		Height:              height,
-		StoragePrefix:       "workbench-feed",
 	})
 	if err != nil {
 		return nil, err

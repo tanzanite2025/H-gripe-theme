@@ -3,7 +3,6 @@ export interface ProductFormRecord {
   product_specification_template_id: number | string | null
   product_category_id: number | string | null
   brand_id: number | string | null
-  shipping_template_ids: Array<number | string>
   after_sales_template_id: number | string | null
   packaging_template_id: number | string | null
   customs_classification_profile_id: number | string | null
@@ -50,6 +49,7 @@ export interface ProductMediaForm {
 }
 
 export interface ProductVariantForm {
+  carbon_rim_specification?: import('./carbonRimDedicatedSpecificationFormValuesAndValidation').CarbonRimVariantSpecificationForm
   id?: number | string | null
   sku?: string
   title?: string

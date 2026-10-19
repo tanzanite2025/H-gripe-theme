@@ -170,6 +170,7 @@ func createCustomerServiceAttachmentIdentityTestEnvironment(t *testing.T, visito
 	}
 	mediaService := service.NewMediaService(repository.NewMediaRepository(db), createCustomerServiceAttachmentLocalStorage(t, uploadRoot), nil, "https://shop.example.test", 20<<30,
 		service.MediaUploadActorQuotaOptions{VisitorSessionStorageQuotaBytes: visitorQuotaBytes})
+	mediaService.ConfigureObjectCleanupOutbox(repository.NewOutboxRepository(db))
 	handler := NewHandler(originalHandler.ticketService, Options{MediaService: mediaService, VisitorSecret: "test-secret"})
 	router := gin.New()
 	router.POST("/attachments", handler.UploadPublicCustomerServiceAttachment)

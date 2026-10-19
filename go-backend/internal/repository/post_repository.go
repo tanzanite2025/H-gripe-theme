@@ -8,12 +8,17 @@ import (
 )
 
 type PostRepository struct {
-	db                *gorm.DB
-	categoriesEnabled bool
+	db                             *gorm.DB
+	categoriesEnabled              bool
+	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
 func NewPostRepository(db *gorm.DB) *PostRepository {
 	return &PostRepository{db: db}
+}
+
+func (r *PostRepository) ConfigurePublicBusinessMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {
+	r.businessMediaReferenceResolver = resolver
 }
 
 func (r *PostRepository) ConfigureCategoryRepository(_ *BlogCategoryRepository) {
@@ -34,7 +39,11 @@ func (r *PostRepository) withCategories(query *gorm.DB) *gorm.DB {
 
 // Create 创建文章
 func (r *PostRepository) Create(p *post.Post) error {
-	return r.db.Create(p).Error
+	var categoryIDs []uint
+	for _, category := range p.Categories {
+		categoryIDs = append(categoryIDs, category.ID)
+	}
+	return r.CreateWithCategoryIDs(p, categoryIDs)
 }
 
 // FindByID 根据ID查找文章
@@ -58,8 +67,8 @@ func (r *PostRepository) FindBySlug(slug, locale string) (*post.Post, error) {
 }
 
 // Update 更新文章
-func (r *PostRepository) Update(p *post.Post) error {
-	return r.db.Save(p).Error
+func (r *PostRepository) Update(p *post.Post, mutations ...PostMediaFieldMutation) error {
+	return r.updatePostMediaAndOptionalCategoryRelationshipsInOneTransaction(p, nil, mutations...)
 }
 
 // Delete 删除文章（软删除）

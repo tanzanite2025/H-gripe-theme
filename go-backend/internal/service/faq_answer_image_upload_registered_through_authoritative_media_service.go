@@ -28,7 +28,7 @@ func (s *FAQService) UploadAnswerImage(ctx context.Context, file *multipart.File
 	if err != nil {
 		return "", err
 	}
-	asset, err := s.mediaService.UploadAsset(ctx, MediaUploadInput{
+	asset, err := s.mediaService.UploadBusinessDraftMediaAsset(ctx, MediaUploadInput{
 		UploadOrigin:  media.MediaUploadOriginAdministratorContent,
 		UploadPurpose: string(upload.SpecFAQAnswerImage),
 		File:          file, MediaType: "image", Alt: strings.TrimSpace(alt),

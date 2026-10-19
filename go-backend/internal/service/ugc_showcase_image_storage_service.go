@@ -4,16 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"mime/multipart"
 	"strings"
 	"time"
 
 	ugcshowcasedomain "commerce-platform/internal/domain/ugcshowcase"
 	"commerce-platform/internal/pkg/storage"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -45,12 +42,6 @@ type UGCShowcaseImageFile struct {
 	ModTime     time.Time
 }
 
-type showcaseImagePublication struct {
-	PublishedObjectKeys     []string
-	CopiedObjectKeys        []string
-	PendingSourceReferences []string
-}
-
 func (s *UGCShowcaseService) PublicImageAccess(ctx context.Context, key string) (UGCShowcasePublicImageAccess, error) {
 	normalizedKey, ok := storage.NormalizeObjectKey(key)
 	if !ok {
@@ -66,27 +57,30 @@ func (s *UGCShowcaseService) PublicImageAccess(ctx context.Context, key string) 
 		return UGCShowcasePublicImageAccess{}, nil
 	}
 
-	items, err := s.repo.ListByImageStorageKeyCandidate(normalizedKey)
-	if err != nil {
-		return UGCShowcasePublicImageAccess{}, err
-	}
-	for _, item := range items {
-		matches, err := s.showcaseImageMatchesStorageKey(item, normalizedKey)
+	access := UGCShowcasePublicImageAccess{Found: showcaseStorageKeyIsInShowcaseNamespace(normalizedKey)}
+	for afterID := uint(0); ; {
+		items, err := s.repo.WithContext(ctx).ListUGCShowcaseImageReferenceScanPageAfterID(afterID)
 		if err != nil {
 			return UGCShowcasePublicImageAccess{}, err
 		}
-		if matches {
-			return UGCShowcasePublicImageAccess{
-				Found:   true,
-				Allowed: item.Status == ugcshowcasedomain.StatusApproved,
-			}, nil
+		for _, item := range items {
+			matches, err := s.showcaseImageMatchesStorageKey(item, normalizedKey)
+			if err != nil {
+				return UGCShowcasePublicImageAccess{}, err
+			}
+			if matches {
+				access.Found = true
+				if item.Status == ugcshowcasedomain.StatusApproved {
+					access.Allowed = true
+					return access, nil
+				}
+			}
 		}
+		if len(items) < 256 {
+			return access, nil
+		}
+		afterID = items[len(items)-1].ID
 	}
-
-	if showcaseStorageKeyIsInShowcaseNamespace(normalizedKey) {
-		return UGCShowcasePublicImageAccess{Found: true, Allowed: false}, nil
-	}
-	return UGCShowcasePublicImageAccess{}, nil
 }
 
 func (s *UGCShowcaseService) OpenImageFile(ctx context.Context, id uint, imageIndex int) (*UGCShowcaseImageFile, error) {
@@ -104,7 +98,7 @@ func (s *UGCShowcaseService) openImageFile(ctx context.Context, id uint, imageIn
 	if s == nil || s.storage == nil {
 		return nil, ErrShowcaseStorageUnavailable
 	}
-	item, err := s.repo.GetByID(id)
+	item, err := s.repo.WithContext(ctx).GetByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrShowcaseNotFound
@@ -121,7 +115,7 @@ func (s *UGCShowcaseService) openImageFile(ctx context.Context, id uint, imageIn
 	if imageIndex >= len(imageURLs) {
 		return nil, ErrShowcaseImageNotFound
 	}
-	key, err := s.storage.ObjectKey(imageURLs[imageIndex])
+	key, err := s.resolveUGCShowcaseStoredImageObjectKey(imageURLs[imageIndex])
 	if err != nil {
 		return nil, ErrShowcaseImageNotFound
 	}
@@ -154,70 +148,13 @@ func (s *UGCShowcaseService) openImageFile(ctx context.Context, id uint, imageIn
 	return nil, ErrShowcaseStorageUnavailable
 }
 
-func (s *UGCShowcaseService) uploadPendingShowcaseImage(ctx context.Context, file *multipart.FileHeader) (string, error) {
-	privateUploader, ok := s.storage.(storage.PrivateObjectUploader)
-	if !ok {
-		return "", ErrShowcaseStorageUnavailable
-	}
-	url, err := privateUploader.UploadWithPrefixPrivate(ctx, file, showcasePendingUploadPrefix)
-	if err != nil {
-		return "", err
-	}
-	key, err := s.storage.ObjectKey(url)
-	if err != nil {
-		_ = s.storage.Delete(ctx, url)
-		return "", fmt.Errorf("resolve pending showcase upload key: %w", err)
-	}
-	if !showcaseStorageKeyIsPending(key) {
-		_ = s.storage.Delete(ctx, url)
-		return "", fmt.Errorf("pending showcase upload escaped pending namespace")
-	}
-	return key, nil
-}
-
-func (s *UGCShowcaseService) publishShowcaseImages(ctx context.Context, imageReferences []string) (showcaseImagePublication, error) {
-	publication := showcaseImagePublication{
-		PublishedObjectKeys:     make([]string, 0, len(imageReferences)),
-		CopiedObjectKeys:        make([]string, 0, len(imageReferences)),
-		PendingSourceReferences: make([]string, 0, len(imageReferences)),
-	}
-	publicationID := uuid.NewString()
-
-	for _, imageReference := range imageReferences {
-		key, err := s.storage.ObjectKey(imageReference)
-		if err != nil {
-			return publication, fmt.Errorf("%w: %v", ErrShowcaseImagesInvalid, err)
-		}
-		if showcaseStorageKeyIsApproved(key) {
-			publication.PublishedObjectKeys = append(publication.PublishedObjectKeys, key)
-			continue
-		}
-
-		destinationKey, err := approvedShowcaseStorageKeyForSource(key, publicationID)
-		if err != nil {
-			return publication, err
-		}
-		if err := s.storage.CopyObject(ctx, key, destinationKey); err != nil {
-			return publication, fmt.Errorf("publish showcase image: %w", err)
-		}
-
-		publication.PublishedObjectKeys = append(publication.PublishedObjectKeys, destinationKey)
-		publication.CopiedObjectKeys = append(publication.CopiedObjectKeys, destinationKey)
-		if showcaseStorageKeyIsPending(key) {
-			publication.PendingSourceReferences = append(publication.PendingSourceReferences, imageReference)
-		}
-	}
-
-	return publication, nil
-}
-
 func (s *UGCShowcaseService) showcaseImageMatchesStorageKey(item ugcshowcasedomain.UGCShowcase, key string) (bool, error) {
 	imageURLs, err := decodeShowcaseImageURLs(item.Images)
 	if err != nil {
 		return false, err
 	}
 	for _, imageURL := range imageURLs {
-		imageKey, err := s.storage.ObjectKey(imageURL)
+		imageKey, err := s.resolveUGCShowcaseStoredImageObjectKey(imageURL)
 		if err != nil {
 			continue
 		}

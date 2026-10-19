@@ -132,7 +132,7 @@ func TestStorefrontURLIssueRepositoryHidesHistoricalButShowsFreshRuntimeIssuesFo
 	require.Zero(t, stats.Verified)
 }
 
-func TestAutomaticallyVerifyIssuesNoLongerDetectedForRouteEntryKeepsHistory(t *testing.T) {
+func TestDeleteRecoveredURLIssuesAlsoDeletesTheirTimeline(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -165,25 +165,21 @@ func TestAutomaticallyVerifyIssuesNoLongerDetectedForRouteEntryKeepsHistory(t *t
 	}
 	require.NoError(t, db.Create(&issue).Error)
 
-	verifiedAt := time.Now().UTC()
-	verifiedCount, err := NewStorefrontURLIssueRepository(db).
-		AutomaticallyVerifyIssuesNoLongerDetectedForRouteEntry(entry.ID, nil, verifiedAt)
+	require.NoError(t, db.Create(&urlmanagementdomain.StorefrontURLIssueEvent{IssueID: issue.ID, EventType: "detected", Metadata: "{}", CreatedAt: checkedAt}).Error)
+
+	removedCount, err := NewStorefrontURLIssueRepository(db).
+		DeleteIssuesNoLongerDetectedForRouteEntry(entry.ID, nil)
 	require.NoError(t, err)
-	require.Equal(t, int64(1), verifiedCount)
+	require.Equal(t, int64(1), removedCount)
 
 	var refreshed urlmanagementdomain.StorefrontURLIssue
-	require.NoError(t, db.First(&refreshed, issue.ID).Error)
-	require.Equal(t, urlmanagementdomain.URLIssueStateVerified, refreshed.State)
-	require.Equal(t, urlmanagementdomain.URLIssueResolutionRuntimeFixed, refreshed.ResolutionType)
-	require.NotNil(t, refreshed.VerifiedAt)
-
-	var event urlmanagementdomain.StorefrontURLIssueEvent
-	require.NoError(t, db.Where("issue_id = ? AND event_type = ?", issue.ID, urlmanagementdomain.URLIssueEventVerificationPassed).
-		First(&event).Error)
-	require.Contains(t, event.Note, "自动验证关闭")
+	require.ErrorIs(t, db.First(&refreshed, issue.ID).Error, gorm.ErrRecordNotFound)
+	var eventCount int64
+	require.NoError(t, db.Model(&urlmanagementdomain.StorefrontURLIssueEvent{}).Where("issue_id = ?", issue.ID).Count(&eventCount).Error)
+	require.Zero(t, eventCount)
 }
 
-func TestRetireAllActiveStaleRouteIssuesMarksOnlyStalePaths(t *testing.T) {
+func TestRetireAllActiveStaleRouteIssuesDeletesOnlyStalePaths(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -219,19 +215,9 @@ func TestRetireAllActiveStaleRouteIssuesMarksOnlyStalePaths(t *testing.T) {
 	require.Equal(t, int64(1), retiredCount)
 
 	var staleIssue urlmanagementdomain.StorefrontURLIssue
-	require.NoError(t, db.First(&staleIssue, issues[0].ID).Error)
-	require.Equal(t, urlmanagementdomain.URLIssueStateVerified, staleIssue.State)
-	require.Equal(t, urlmanagementdomain.URLIssueResolutionRetired, staleIssue.ResolutionType)
-	_, err = NewStorefrontURLIssueRepository(db).RecordDetection(
-		entries[0].ID,
-		urlmanagementdomain.URLIssueTypeStaleRoute,
-		urlmanagementdomain.URLIssueSeverityMedium,
-		nil,
-		now.Add(2*time.Minute),
-	)
-	require.NoError(t, err)
-	require.NoError(t, db.First(&staleIssue, issues[0].ID).Error)
-	require.Equal(t, urlmanagementdomain.URLIssueStateVerified, staleIssue.State)
+	require.ErrorIs(t, db.First(&staleIssue, issues[0].ID).Error, gorm.ErrRecordNotFound)
+	var staleEntry seodomain.StorefrontRouteCatalogEntry
+	require.ErrorIs(t, db.First(&staleEntry, entries[0].ID).Error, gorm.ErrRecordNotFound)
 
 	var activeIssue urlmanagementdomain.StorefrontURLIssue
 	require.NoError(t, db.First(&activeIssue, issues[1].ID).Error)
