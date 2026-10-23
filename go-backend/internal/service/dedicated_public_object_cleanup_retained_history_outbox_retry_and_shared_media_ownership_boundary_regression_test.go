@@ -65,7 +65,7 @@ func insertRetainedHistoricalDedicatedObjectConsumerAndReturnDetachment(t *testi
 		require.NoError(t, db.Delete(&item).Error)
 		if consumer == "product_description" || consumer == "product_short_desc" {
 			return func() {
-				require.NoError(t, db.Unscoped().Model(&item).Updates(map[string]any{"description": "", "short_desc": ""}).Error)
+				require.NoError(t, db.Unscoped().Model(&item).Updates(map[string]any{"description": "", "short_description": ""}).Error)
 			}
 		}
 		placement := product.ProductMedia{ProductID: item.ID, MediaType: "image", URL: "/static/unrelated.png"}

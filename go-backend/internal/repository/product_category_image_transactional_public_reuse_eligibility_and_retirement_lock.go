@@ -24,8 +24,16 @@ func (r *ProductCategoryRepository) lockValidateAndResolveCategoryImageFromRegis
 	if err != nil {
 		return err
 	}
+	return validateAndResolveCategoryImageFromLockedRegisteredAsset(tx, category, resolved, previous...)
+}
+
+func validateAndResolveCategoryImageFromLockedRegisteredAsset(tx *gorm.DB, category *product.ProductCategory, resolved *lockedPublicBusinessMediaReferenceIdentities, previous ...product.ProductCategory) error {
+	if category.ImageMediaAssetID == nil {
+		category.ImageURL = ""
+		return nil
+	}
 	asset := resolved.assets[*category.ImageMediaAssetID]
-	if asset.MediaType != "image" || strings.TrimSpace(asset.URL) == "" {
+	if asset == nil || asset.MediaType != "image" || strings.TrimSpace(asset.URL) == "" {
 		return ErrProductCategoryImageReferenceInvalid
 	}
 	if resolved.dedicatedObjectNamespaceForResolvedPublicMediaReference("", asset.ID) != "" {

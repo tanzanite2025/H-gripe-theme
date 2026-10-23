@@ -1,146 +1,192 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-6 overflow-y-auto lg:overflow-hidden">
-    <AdminPageHeader class="shrink-0" title="邮件模板" description="维护订单与售后事务邮件模板，保存会生成不可变版本快照。" />
+  <div class="flex h-full min-h-0 flex-col gap-4 overflow-y-auto lg:overflow-hidden">
+    <AdminPageHeader class="shrink-0" title="邮件模板" description="按前台 20 种语言独立维护订单与售后邮件，保存会生成版本快照。" />
 
-    <div class="grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[18rem_minmax(0,1fr)]">
-      <section class="flex min-h-0 flex-col rounded-lg border bg-card p-4">
-        <div class="mb-3 flex shrink-0 items-center justify-between">
-          <h2 class="font-semibold">模板列表</h2>
-          <Button size="icon" variant="ghost" :disabled="loading" title="刷新" @click="loadTemplates">
-            <RefreshCw class="size-4" :class="loading ? 'animate-spin' : ''" />
-          </Button>
-        </div>
-        <div v-if="loading" class="min-h-0 flex-1 py-8 text-center text-sm text-muted-foreground">正在加载...</div>
-        <div v-else class="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-          <section v-for="group in notificationTemplateGroups" :key="group.key" class="rounded-md border border-border/70">
-            <button
-              type="button"
-              class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm font-semibold transition-colors hover:bg-muted/70"
-              :aria-expanded="isNotificationTemplateGroupExpanded(group.key)"
-              @click="toggleNotificationTemplateGroup(group.key)"
-            >
-              <span>{{ group.label }}</span>
-              <span class="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{{ group.templates.length }}</span>
-                <ChevronDown class="size-4 transition-transform" :class="isNotificationTemplateGroupExpanded(group.key) ? 'rotate-180' : ''" />
-              </span>
-            </button>
-            <div v-if="isNotificationTemplateGroupExpanded(group.key)" class="space-y-1 border-t border-border/60 p-1">
-              <button
-                v-for="template in group.templates"
-                :key="template.id"
-                type="button"
-                class="w-full rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
-                :class="selected?.id === template.id ? 'border-primary bg-muted' : 'border-transparent'"
-                @click="selectTemplate(template)"
-              >
-                <div class="flex items-center justify-between gap-2">
-                  <span class="truncate font-medium">{{ getNotificationTemplateDisplayName(template) }}</span>
-                  <span class="text-xs text-muted-foreground">{{ template.locale }}</span>
-                </div>
-                <div class="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                  <span class="truncate font-mono text-[10px]">{{ template.code }}</span>
-                  <span>v{{ template.version }} · {{ template.is_enabled ? '启用' : '停用' }}</span>
-                </div>
-              </button>
-            </div>
-          </section>
-        </div>
-      </section>
-
-      <section v-if="selected" class="min-h-0 overflow-y-auto rounded-lg border bg-card p-6">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 class="text-lg font-semibold">{{ getNotificationTemplateDisplayName(selected) }}</h2>
-            <p class="text-sm text-muted-foreground">{{ selected.code }} / {{ selected.locale }} · 当前版本 v{{ selected.version }} · {{ selected.category }}</p>
-          </div>
-          <div class="flex gap-2">
-            <Button :disabled="saving" @click="saveTemplate">
-              <LoaderCircle v-if="saving" class="mr-2 size-4 animate-spin" />
-              <Save v-else class="mr-2 size-4" />保存
-            </Button>
-          </div>
-        </div>
-
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1.5fr)]">
-          <label class="space-y-1 text-sm"><span>名称</span><Input v-model="draft.name" /></label>
-          <label class="flex items-center gap-2 whitespace-nowrap pt-6 text-sm"><input v-model="draft.is_enabled" type="checkbox" />启用模板</label>
-          <label class="block space-y-1 text-sm">
-            <span>邮件标题</span>
-            <NotificationTemplateSubjectEditor
-              v-model="draft.subject_template"
-              :template-variable-display-values="notificationTemplateVariableDisplayValues"
-            />
-          </label>
-        </div>
-        <div class="grid items-stretch gap-4 xl:grid-cols-2">
-          <div class="space-y-2">
-            <div>
-              <span class="block text-sm font-medium">邮件正文</span>
-            </div>
-            <RichTextEditor
-              class="h-[28rem]"
-              v-model="draft.body_html"
-              :template-variable-display-values="notificationTemplateVariableDisplayValues"
-            />
-          </div>
-          <div class="space-y-2">
-            <div>
-              <span class="block text-sm font-medium">实时预览</span>
-            </div>
-            <div class="flex h-[28rem] min-h-0 flex-col overflow-hidden rounded-lg border bg-muted/15 p-3">
-              <div class="mb-3 rounded-md border bg-background px-3 py-2">
-                <div class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">邮件标题</div>
-                <div class="mt-1 text-sm font-medium">{{ liveNotificationTemplatePreviewSubject }}</div>
-              </div>
-              <iframe
-                :srcdoc="liveNotificationTemplatePreviewDocument"
-                title="邮件正文实时预览"
-                class="min-h-0 w-full flex-1 rounded-md border bg-white"
-                sandbox="allow-same-origin"
-              />
-            </div>
-          </div>
-        </div>
-        <label class="block space-y-1 text-sm"><span>变更原因</span><Input v-model="draft.change_reason" placeholder="例如：更新售后寄回说明" /></label>
-
-        <div v-if="versions.length" class="border-t pt-4">
-          <button
-            type="button"
-            class="flex w-full items-center justify-between gap-2 text-left text-sm font-medium"
-            :aria-expanded="versionsHistoryExpanded"
-            @click="versionsHistoryExpanded = !versionsHistoryExpanded"
-          >
-            <span>版本历史</span>
-            <span class="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{{ versions.length }}</span>
-              <ChevronDown class="size-4 transition-transform" :class="versionsHistoryExpanded ? 'rotate-180' : ''" />
-            </span>
-          </button>
-          <div v-if="versionsHistoryExpanded" class="mt-2 space-y-1 text-sm">
-            <div v-for="version in versions" :key="version.id" class="flex justify-between rounded bg-muted/50 px-3 py-2">
-              <span class="min-w-0 truncate">v{{ version.version }} {{ version.change_reason || '无说明' }}</span>
-              <span class="flex shrink-0 items-center gap-2 text-muted-foreground">
-                <span>{{ formatDate(version.created_at) }}</span>
-                <Button
-                  v-if="version.version < selected.version"
-                  size="icon"
-                  variant="ghost"
-                  class="size-7"
-                  :disabled="rollingBack"
-                  title="回滚为新版本"
-                  @click.stop="rollbackVersion(version.version)"
-                >
-                  <RotateCcw class="size-3.5" :class="rollingBack ? 'animate-spin' : ''" />
-                </Button>
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section v-else class="rounded-lg border bg-card p-10 text-center text-muted-foreground">请选择一个模板</section>
+    <div class="shrink-0 space-y-2">
+      <p class="px-1 text-[10px] font-bold text-muted-foreground">邮件内容语言 · 与后台界面语言独立</p>
+      <AdminStorefrontLanguageDisplayCard
+        :model-value="notificationTemplateContentLocale"
+        :language-options="notificationTemplateContentLanguageOptions"
+        :disabled="loading || saving || rollingBack"
+        aria-label="邮件模板内容语言"
+        @update:model-value="selectNotificationTemplateContentLocale"
+      />
     </div>
 
+    <div class="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      <Card class="min-h-0">
+        <CardHeader class="shrink-0 border-b border-dashed">
+          <CardTitle><h2>模板列表</h2></CardTitle>
+          <CardAction>
+            <Button size="icon-sm" variant="ghost" :disabled="loading" title="刷新" aria-label="刷新模板列表" @click="loadTemplates">
+              <RefreshCw class="size-4" :class="loading ? 'animate-spin' : ''" />
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent class="min-h-0 flex-1 overflow-y-auto">
+          <div v-if="loading" class="py-8 text-center text-xs text-muted-foreground">正在加载...</div>
+          <div v-else class="space-y-3">
+            <section v-for="group in notificationTemplateGroups" :key="group.key" class="border-b border-dashed border-border/60 pb-3 last:border-0 last:pb-0">
+              <button
+                type="button"
+                class="flex w-full items-center justify-between gap-2 rounded-xl px-2 py-2 text-left text-xs font-black transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                :aria-expanded="isNotificationTemplateGroupExpanded(group.key)"
+                @click="toggleNotificationTemplateGroup(group.key)"
+              >
+                <span>{{ group.label }}</span>
+                <span class="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{{ group.templates.length }}</span>
+                  <ChevronDown class="size-4 transition-transform" :class="isNotificationTemplateGroupExpanded(group.key) ? 'rotate-180' : ''" />
+                </span>
+              </button>
+              <div v-if="isNotificationTemplateGroupExpanded(group.key)" class="mt-1 space-y-1">
+                <button
+                  v-for="template in group.templates"
+                :key="template.code"
+                  type="button"
+                  class="w-full rounded-xl border border-dashed px-3 py-2 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  :class="selected?.code === template.code ? 'border-admin-selected-border bg-admin-selected-soft' : 'border-transparent hover:bg-muted/70'"
+                  :aria-pressed="selected?.code === template.code"
+                  :disabled="saving || rollingBack"
+                  @click="selectNotificationTemplateFromList(template)"
+                >
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="truncate font-bold">{{ getNotificationTemplateDisplayName(template) }}</span>
+                    <span class="shrink-0 font-mono text-[10px] text-muted-foreground">{{ template.locale }}</span>
+                  </div>
+                  <div class="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                    <span class="min-w-0 truncate font-mono" :title="template.code">{{ template.code }}</span>
+                    <span class="flex shrink-0 items-center gap-1.5">
+                      <span v-if="template.id">v{{ template.version }}</span>
+                      <AdminStatusBadge :tone="template.id && template.is_enabled ? 'green' : 'gray'">{{ template.id ? (template.is_enabled ? '启用' : '停用') : '未配置' }}</AdminStatusBadge>
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </section>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card v-if="selected" class="min-h-0 min-w-0 overflow-y-auto">
+        <CardHeader class="shrink-0 border-b border-dashed">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0 space-y-1.5">
+              <div class="flex flex-wrap items-center gap-2">
+                <CardTitle><h2>{{ getNotificationTemplateDisplayName(selected) }}</h2></CardTitle>
+                <AdminStatusBadge :tone="selected.id && selected.is_enabled ? 'green' : 'gray'">{{ selected.id ? (selected.is_enabled ? '启用' : '停用') : '未配置' }}</AdminStatusBadge>
+              </div>
+              <p class="break-all font-mono text-[10px] text-muted-foreground">
+                {{ selected.code }} / {{ notificationTemplateContentLanguageLabel }} · {{ selected.id ? `当前版本 v${selected.version}` : '尚未创建此语言版本' }}
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <Button :disabled="loading || saving || rollingBack || !canEditNotificationTemplates" @click="saveTemplate">
+                <LoaderCircle v-if="saving" class="mr-2 size-4 animate-spin" />
+                <Save v-else class="mr-2 size-4" />保存
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent class="space-y-5">
+          <div v-if="!selected.id" class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border/80 bg-muted/25 p-3">
+            <p class="min-w-0 flex-1 text-xs leading-5 text-muted-foreground">
+              {{ notificationTemplateContentLanguageLabel }}尚未配置此模板。填写并保存后创建独立版本；未配置或停用时，发信会回退到已启用的英文模板。
+            </p>
+            <Button v-if="englishNotificationTemplateForSelectedCode" variant="outline" size="sm" :disabled="!canEditNotificationTemplates" @click="copyEnglishNotificationTemplateIntoCurrentLocaleDraft">从英文复制</Button>
+          </div>
+          <div class="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <AdminFormField label="名称" for-id="notification-template-name">
+              <Input id="notification-template-name" v-model="draft.name" :disabled="!canEditNotificationTemplates" />
+            </AdminFormField>
+            <div class="flex h-9 items-center gap-3 px-1">
+              <label for="notification-template-enabled" class="text-xs font-bold">启用模板</label>
+              <Switch id="notification-template-enabled" v-model="draft.is_enabled" size="sm" :disabled="!canEditNotificationTemplates" />
+            </div>
+            <AdminFormField label="邮件标题" for-id="notification-template-subject" class="sm:col-span-2">
+              <NotificationTemplateSubjectEditor
+                id="notification-template-subject"
+                aria-label="邮件标题"
+                v-model="draft.subject_template"
+                :lang="notificationTemplateContentHTMLLanguage"
+                :dir="notificationTemplateContentTextDirection"
+                :disabled="!canEditNotificationTemplates"
+                :template-variable-display-values="notificationTemplateVariableDisplayValues"
+              />
+            </AdminFormField>
+          </div>
+          <div class="grid items-stretch gap-4 xl:grid-cols-2">
+            <AdminFormField label="邮件正文">
+              <RichTextEditor
+                class="notification-template-body-editor h-[28rem] min-w-0"
+                v-model="draft.body_html"
+                :lang="notificationTemplateContentHTMLLanguage"
+                :dir="notificationTemplateContentTextDirection"
+                :disabled="!canEditNotificationTemplates"
+                :template-variable-display-values="notificationTemplateVariableDisplayValues"
+              />
+            </AdminFormField>
+            <AdminFormField label="实时预览">
+              <div class="flex h-[28rem] min-h-0 flex-col overflow-hidden rounded-2xl border border-dashed border-border/70 bg-muted/10 p-3">
+                <div class="mb-3 border-b border-dashed border-border/60 px-1 pb-3">
+                  <div class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">邮件标题</div>
+                  <div class="mt-1 break-words text-xs font-bold">
+                    {{ liveNotificationTemplatePreviewSubject }}
+                  </div>
+                </div>
+                <iframe
+                  :srcdoc="liveNotificationTemplatePreviewDocument"
+                  title="邮件正文实时预览"
+                  class="min-h-0 w-full flex-1 rounded-xl border-0 bg-white"
+                  sandbox="allow-same-origin"
+                />
+              </div>
+            </AdminFormField>
+          </div>
+          <AdminFormField label="变更原因" for-id="notification-template-change-reason">
+            <Input id="notification-template-change-reason" v-model="draft.change_reason" :disabled="!canEditNotificationTemplates" placeholder="例如：更新售后寄回说明" />
+          </AdminFormField>
+
+          <div v-if="versions.length" class="border-t border-dashed pt-4">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-2 rounded-xl text-left text-xs font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              :aria-expanded="versionsHistoryExpanded"
+              @click="versionsHistoryExpanded = !versionsHistoryExpanded"
+            >
+              <span>版本历史</span>
+              <span class="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{{ versions.length }}</span>
+                <ChevronDown class="size-4 transition-transform" :class="versionsHistoryExpanded ? 'rotate-180' : ''" />
+              </span>
+            </button>
+            <div v-if="versionsHistoryExpanded" class="mt-3 divide-y divide-dashed text-xs">
+              <div v-for="version in versions" :key="version.id" class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
+                <span class="min-w-0 truncate">v{{ version.version }} {{ version.change_reason || '无说明' }}</span>
+                <span class="flex shrink-0 items-center gap-2 text-muted-foreground">
+                  <span>{{ formatDate(version.created_at) }}</span>
+                  <Button
+                    v-if="version.version < selected.version"
+                    size="icon"
+                    variant="ghost"
+                    class="size-7"
+                    :disabled="saving || rollingBack || !canEditNotificationTemplates"
+                    title="回滚为新版本"
+                    @click.stop="rollbackVersion(version.version)"
+                  >
+                    <RotateCcw class="size-3.5" :class="rollingBack ? 'animate-spin' : ''" />
+                  </Button>
+                </span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card v-else class="min-h-0 min-w-0 items-center justify-center">
+        <CardContent class="py-10 text-center text-xs text-muted-foreground">请选择一个模板</CardContent>
+      </Card>
+    </div>
   </div>
 </template>
 
@@ -149,11 +195,18 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { toast } from 'vue-sonner'
 import { ChevronDown, LoaderCircle, RefreshCw, RotateCcw, Save } from '@lucide/vue'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
+import AdminFormField from '@/components/admin/AdminFormField.vue'
+import AdminStatusBadge from '@/components/admin/AdminStatusBadge.vue'
+import AdminStorefrontLanguageDisplayCard from '@/components/admin/AdminStorefrontLanguageDisplayCard.vue'
 import NotificationTemplateSubjectEditor from '@/components/admin/settings/NotificationTemplateSubjectEditor.vue'
 import RichTextEditor from '@/components/admin/settings/RichTextEditor.vue'
 import { Button } from '@/components/ui/button'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { useAdminI18n } from '@/i18n'
+import { buildLanguageOptions, normalizeLocaleCode, STOREFRONT_SUPPORTED_LANGUAGES } from '@/lib/languages'
+import { useAuthStore } from '@/stores/auth'
 import notificationTemplatesApi, { type NotificationTemplate, type NotificationTemplateVersion } from '@/api/notificationTemplates'
 
 const notificationTemplatePreviewFontURL = new URL(
@@ -170,6 +223,55 @@ const rollingBack = ref(false)
 const versionsHistoryExpanded = ref(false)
 const draft = reactive({ name: '', subject_template: '', body_html: '', is_enabled: true, change_reason: '' })
 const { locale } = useAdminI18n()
+const notificationTemplateContentLanguageOptions = buildLanguageOptions(STOREFRONT_SUPPORTED_LANGUAGES)
+const notificationTemplateContentLocale = ref('en')
+const notificationTemplateContentHTMLLanguage = computed(() => notificationTemplateContentLocale.value.replace('_', '-'))
+const notificationTemplateContentTextDirection = computed(() => notificationTemplateContentLocale.value === 'ar' ? 'rtl' : 'ltr')
+const notificationTemplateContentLanguageLabel = computed(() => notificationTemplateContentLanguageOptions.find(
+  (language) => language.value === notificationTemplateContentLocale.value,
+)?.label || notificationTemplateContentLocale.value)
+const notificationTemplateAuthStore = useAuthStore()
+const canEditNotificationTemplates = computed(() => notificationTemplateAuthStore.hasPermission('settings:edit'))
+let notificationTemplateSelectionRequestSequence = 0
+
+const englishNotificationTemplateForSelectedCode = computed(() => templates.value.find(
+  (template) => template.code === selected.value?.code && normalizeLocaleCode(template.locale) === 'en',
+))
+
+const hasUnsavedNotificationTemplateChanges = computed(() => Boolean(selected.value && (
+  draft.name !== selected.value.name || draft.subject_template !== selected.value.subject_template
+  || draft.body_html !== selected.value.body_html || draft.is_enabled !== selected.value.is_enabled || draft.change_reason.trim()
+)))
+
+const getNotificationTemplateForContentLocale = (source: NotificationTemplate, contentLocale: string): NotificationTemplate => {
+  const existing = templates.value.find((template) => template.code === source.code && normalizeLocaleCode(template.locale) === contentLocale)
+  if (existing) return existing
+  return {
+    ...source, id: 0, locale: contentLocale, version: 0, subject_template: '', body_html: '', body_text: '', is_enabled: false, updated_at: '',
+  }
+}
+
+const selectNotificationTemplateContentLocale = async (contentLocale: string): Promise<void> => {
+  if (loading.value || saving.value || rollingBack.value || contentLocale === notificationTemplateContentLocale.value) return
+  if (!notificationTemplateContentLanguageOptions.some((language) => language.value === contentLocale)) return
+  if (hasUnsavedNotificationTemplateChanges.value && !window.confirm('当前模板有未保存的修改，确定切换邮件内容语言并放弃修改吗？')) return
+  notificationTemplateContentLocale.value = contentLocale
+  if (selected.value) await selectTemplate(getNotificationTemplateForContentLocale(selected.value, contentLocale))
+}
+
+const selectNotificationTemplateFromList = async (template: NotificationTemplate): Promise<void> => {
+  if (saving.value || rollingBack.value || selected.value?.code === template.code) return
+  await selectTemplate(template)
+}
+
+const copyEnglishNotificationTemplateIntoCurrentLocaleDraft = (): void => {
+  const source = englishNotificationTemplateForSelectedCode.value
+  if (!source || !selected.value || selected.value.id || !canEditNotificationTemplates.value) return
+  if (hasUnsavedNotificationTemplateChanges.value && !window.confirm('确定用英文内容替换当前未保存的修改吗？')) return
+  draft.name = source.name
+  draft.subject_template = source.subject_template
+  draft.body_html = source.body_html
+}
 
 const notificationTemplateChineseNameByCode: Record<string, string> = {
   order_confirmation: '订单确认',
@@ -220,8 +322,12 @@ const notificationTemplateGroups = computed<NotificationTemplateGroup[]>(() => {
   ]
   const groupsByKey = new Map(groups.map((group) => [group.key, group]))
 
+  const templateSourcesByCode = new Map<string, NotificationTemplate>()
   templates.value.forEach((template) => {
-    groupsByKey.get(getNotificationTemplateGroupKey(template))?.templates.push(template)
+    if (!templateSourcesByCode.has(template.code) || normalizeLocaleCode(template.locale) === 'en') templateSourcesByCode.set(template.code, template)
+  })
+  templateSourcesByCode.forEach((template) => {
+    groupsByKey.get(getNotificationTemplateGroupKey(template))?.templates.push(getNotificationTemplateForContentLocale(template, notificationTemplateContentLocale.value))
   })
 
   return groups.filter((group) => group.templates.length > 0)
@@ -324,7 +430,7 @@ const liveNotificationTemplatePreviewDocument = computed(() => {
     draft.body_html,
     liveNotificationTemplatePreviewVariables.value,
   )
-  return `<!doctype html><html><head><meta charset="utf-8"><style>@font-face{font-family:MapleUICJK;src:url('${notificationTemplatePreviewFontURL}') format('woff2');font-weight:100 900;font-style:normal;font-display:block}body{margin:0;padding:18px;color:#172033;font:14px/1.65 MapleUICJK}p{margin:0 0 12px}h1,h2,h3{margin:0 0 12px}a{color:#2563eb}blockquote{border-left:3px solid #94a3b8;margin:0 0 12px;padding-left:12px;color:#64748b}</style></head><body>${previewBody || '<p style="color:#94a3b8">暂无正文</p>'}</body></html>`
+  return `<!doctype html><html lang="${notificationTemplateContentHTMLLanguage.value}" dir="${notificationTemplateContentTextDirection.value}"><head><meta charset="utf-8"><style>@font-face{font-family:MapleUICJK;src:url('${notificationTemplatePreviewFontURL}') format('woff2');font-weight:100 900;font-style:normal;font-display:block}body{margin:0;padding:18px;color:#172033;font:14px/1.65 MapleUICJK}p{margin:0 0 12px}h1,h2,h3{margin:0 0 12px}a{color:#2563eb}blockquote{border-inline-start:3px solid #94a3b8;margin:0 0 12px;padding-inline-start:12px;color:#64748b}</style></head><body>${previewBody || '<p style="color:#94a3b8">暂无正文</p>'}</body></html>`
 })
 
 const applyDraft = (template: NotificationTemplate) => {
@@ -332,20 +438,38 @@ const applyDraft = (template: NotificationTemplate) => {
 }
 
 const loadTemplates = async () => {
+  if (saving.value || rollingBack.value) return
+  if (hasUnsavedNotificationTemplateChanges.value && !window.confirm('当前模板有未保存的修改，确定刷新并放弃修改吗？')) return
   loading.value = true
-  try { templates.value = await notificationTemplatesApi.list(); if (!selected.value && templates.value.length) await selectTemplate(templates.value[0]) } catch (error) { toast.error(error instanceof Error ? error.message : '模板加载失败') } finally { loading.value = false }
+  try {
+    templates.value = await notificationTemplatesApi.list()
+    const source = templates.value.find((template) => template.code === selected.value?.code) || templates.value[0]
+    if (source) await selectTemplate(getNotificationTemplateForContentLocale(source, notificationTemplateContentLocale.value))
+    else { selected.value = null; versions.value = []; notificationTemplateSelectionRequestSequence += 1 }
+  } catch (error) { toast.error(error instanceof Error ? error.message : '模板加载失败') } finally { loading.value = false }
 }
 
 const selectTemplate = async (template: NotificationTemplate) => {
+  if (selected.value?.code !== template.code && hasUnsavedNotificationTemplateChanges.value && !window.confirm('当前模板有未保存的修改，确定切换模板并放弃修改吗？')) return
+  const selectionRequestSequence = ++notificationTemplateSelectionRequestSequence
   selected.value = template
+  versions.value = []
   expandedNotificationTemplateGroupKey.value = getNotificationTemplateGroupKey(template)
   versionsHistoryExpanded.value = false
   applyDraft(template)
-  try { versions.value = await notificationTemplatesApi.versions(template.id) } catch (error) { toast.error(error instanceof Error ? error.message : '版本历史加载失败') }
+  if (!template.id) return
+  try {
+    const loadedVersions = await notificationTemplatesApi.versions(template.id)
+    if (selectionRequestSequence === notificationTemplateSelectionRequestSequence) versions.value = loadedVersions
+  } catch (error) { if (selectionRequestSequence === notificationTemplateSelectionRequestSequence) toast.error(error instanceof Error ? error.message : '版本历史加载失败') }
 }
 
 const saveTemplate = async () => {
-  if (!selected.value) return
+  if (!selected.value || saving.value || !canEditNotificationTemplates.value) return
+  if (!draft.name.trim() || !draft.subject_template.trim() || !convertNotificationTemplateHTMLToPlainText(draft.body_html)) {
+    toast.error('请填写模板名称、邮件标题和邮件正文')
+    return
+  }
   saving.value = true
   try {
     const updated = await notificationTemplatesApi.save({
@@ -360,7 +484,9 @@ const saveTemplate = async () => {
       body_text: convertNotificationTemplateHTMLToPlainText(draft.body_html),
     })
     selected.value = updated
-    templates.value = templates.value.map((item) => item.id === updated.id ? updated : item)
+    const existingTemplateIndex = templates.value.findIndex((item) => item.id === updated.id)
+    if (existingTemplateIndex >= 0) templates.value[existingTemplateIndex] = updated
+    else templates.value.push(updated)
     await selectTemplate(updated)
     toast.success('模板已保存')
   } catch (error) {
@@ -371,7 +497,7 @@ const saveTemplate = async () => {
 }
 
 const rollbackVersion = async (version: number) => {
-  if (!selected.value || !window.confirm(`确定将模板回滚到 v${version} 吗？这会生成一个新的当前版本。`)) return
+  if (!selected.value?.id || saving.value || rollingBack.value || !canEditNotificationTemplates.value || !window.confirm(`确定将模板回滚到 v${version} 吗？这会生成一个新的当前版本。`)) return
   rollingBack.value = true
   try {
     const updated = await notificationTemplatesApi.rollback(selected.value.id, version, `rollback to version ${version}`)
@@ -389,3 +515,23 @@ const rollbackVersion = async (version: number) => {
 const formatDate = (value: string) => value ? new Date(value).toLocaleString() : ''
 onMounted(loadTemplates)
 </script>
+
+<style scoped>
+.notification-template-body-editor {
+  min-height: 0;
+  border-radius: 1rem;
+  border-style: dashed;
+  border-color: color-mix(in oklab, var(--border) 70%, transparent);
+  background: color-mix(in oklab, var(--muted) 10%, transparent);
+  padding: 0.75rem;
+}
+
+.notification-template-body-editor :deep(.border-b) {
+  border-bottom-style: dashed;
+}
+
+.notification-template-body-editor :deep(.rich-text-editor__canvas) {
+  min-height: 0;
+  border-radius: 0.75rem;
+}
+</style>

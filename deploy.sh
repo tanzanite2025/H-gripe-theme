@@ -320,11 +320,30 @@ git clean -fd -e deployment/production.env -e 'deployment/production.env.bak-*'
 export IMAGE_TAG="sha-${release_sha}"
 echo "Deploying ${IMAGE_TAG} from ${deploy_ref}."
 
+source deployment/local-computer-backup-release-overlay-selection-and-existing-maintenance-gate-protection.sh
+local_backup_maintenance_enabled="$(env_value LOCAL_BACKUP_MAINTENANCE_ENABLED)"
+local_backup_maintenance_enabled="${local_backup_maintenance_enabled:-false}"
 compose=(docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}")
-if [[ "${redis_mode}" == "sentinel" ]]; then
-  compose+=(-f deployment/redis-sentinel.compose.yml)
-fi
+append_redis_sentinel_overlay_for_explicit_release_mode "$PWD" "${redis_mode}" compose
+append_local_computer_backup_overlay_for_explicit_release_setting "$PWD" "${local_backup_maintenance_enabled}" compose
 "${compose[@]}" config --quiet
+
+# Resolve only non-secret project/gate metadata. Never log the full Compose
+# JSON, whose environment includes application passwords and signing keys.
+local_backup_release_metadata="$("${compose[@]}" config --format json | "${PYTHON_CMD[@]}" -c '
+import json, sys
+configuration = json.load(sys.stdin)
+project = configuration.get("name")
+gate_mounts = [mount for mount in configuration["services"]["api"].get("volumes", []) if mount.get("target") == "/app/local-backup-maintenance-gate"]
+gate = gate_mounts[0].get("source") if len(gate_mounts) == 1 and gate_mounts[0].get("type") == "bind" else "-"
+if not isinstance(project, str) or not isinstance(gate, str) or "\n" in project or "\n" in gate:
+    raise SystemExit("invalid resolved local backup project/gate metadata")
+print(project)
+print(gate)
+')"
+local_backup_release_project="${local_backup_release_metadata%%$'\n'*}"
+local_backup_release_gate="${local_backup_release_metadata#*$'\n'}"
+verify_existing_local_computer_backup_gate_before_application_release "${local_backup_release_project}" "${local_backup_maintenance_enabled}" "${local_backup_release_gate}"
 
 pull_succeeded=false
 for ((attempt = 1; attempt <= PULL_ATTEMPTS; attempt++)); do

@@ -15,6 +15,7 @@ import (
 
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/database"
+	"commerce-platform/internal/pkg/maintenancegate"
 	"commerce-platform/internal/service"
 )
 
@@ -28,6 +29,15 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) error {
+	maintenanceContext, cancelMaintenanceWatch := context.WithCancel(context.Background())
+	defer cancelMaintenanceWatch()
+	lease, err := maintenancegate.AcquireApplicationProcessLease(maintenanceContext, os.Getenv("LOCAL_BACKUP_MAINTENANCE_DIRECTORY"), func() { os.Exit(1) })
+	if err != nil {
+		return err
+	}
+	if lease != nil {
+		defer lease.Close()
+	}
 	if len(args) == 0 {
 		printUsage(stderr)
 		return errors.New("command is required")

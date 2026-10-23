@@ -129,7 +129,7 @@ func applyQuickBuyCandidateScope(query *gorm.DB, input ProductQuickBuyCandidateQ
 					  AND pv_quick_buy_search.deleted_at IS NULL
 					  AND LOWER(pv_quick_buy_search.sku) LIKE ?
 				)
-				OR LOWER(products.short_desc) LIKE ?
+				OR LOWER(products.short_description) LIKE ?
 				OR LOWER(products.description) LIKE ?
 				OR LOWER(quick_buy_product_specification_templates.name) LIKE ?
 				OR LOWER(quick_buy_product_specification_templates.slug) LIKE ?
@@ -371,7 +371,7 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 					  AND pv_recommendation_search.deleted_at IS NULL
 					  AND LOWER(pv_recommendation_search.sku) LIKE ?
 				)
-				OR LOWER(products.short_desc) LIKE ?
+				OR LOWER(products.short_description) LIKE ?
 				OR LOWER(products.description) LIKE ?
 				OR LOWER(recommendation_product_specification_templates.name) LIKE ?
 				OR LOWER(recommendation_product_specification_templates.slug) LIKE ?
@@ -1027,7 +1027,7 @@ func applyPublicProductSearchFilters(query *gorm.DB, input ProductSearchQuery, d
 				  AND pv_search.deleted_at IS NULL
 				  AND LOWER(pv_search.sku) LIKE ?
 			)
-			OR LOWER(products.short_desc) LIKE ?
+			OR LOWER(products.short_description) LIKE ?
 			OR LOWER(products.description) LIKE ?
 		`, pattern, pattern, pattern, pattern)
 	}

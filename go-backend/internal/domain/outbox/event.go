@@ -298,8 +298,9 @@ type TrackingShipmentRegistrationPayload struct {
 	RequestedAt              time.Time `json:"requested_at"`
 }
 
-// OrderCompletedPayload is the durable trigger for post-completion
-// settlement processors such as loyalty rewards and referral completion.
+// OrderCompletedPayload triggers purchase loyalty points and the completion
+// notification. Referral registration points are issued during binding;
+// referrer settlement follows its separate payment/delivery lifecycle.
 type OrderCompletedPayload struct {
 	CanonicalDomainEventMetadata
 	NotificationAudienceSnapshot

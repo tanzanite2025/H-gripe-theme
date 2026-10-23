@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 
 	"commerce-platform/internal/domain/product"
 
@@ -150,7 +151,22 @@ func (r *ProductCategoryRepository) ListProductIDs(categoryIDs []uint) ([]uint, 
 
 func (r *ProductCategoryRepository) Create(category *product.ProductCategory) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := r.lockValidateAndResolveCategoryImageFromRegisteredAsset(tx, category); err != nil {
+		var assetIDs []uint
+		if category.ImageMediaAssetID != nil {
+			assetIDs = append(assetIDs, *category.ImageMediaAssetID)
+		}
+		fields := []templateOrCategoryRichTextMediaFieldMutation{{Requested: &category.SEOIntro}}
+		for index := range category.Translations {
+			fields = append(fields, templateOrCategoryRichTextMediaFieldMutation{Requested: &category.Translations[index].SEOIntro})
+		}
+		resolved, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextFieldsWithOneAssetLockPlan(tx, r.businessMediaReferenceResolver, fields, assetIDs)
+		if errors.Is(err, ErrProductMediaReferenceInvalid) {
+			return fmt.Errorf("%w: %v", ErrProductCategoryImageReferenceInvalid, err)
+		}
+		if err != nil {
+			return err
+		}
+		if err := validateAndResolveCategoryImageFromLockedRegisteredAsset(tx, category, resolved); err != nil {
 			return err
 		}
 		return tx.Select("*").Create(category).Error
@@ -192,38 +208,47 @@ func (r *ProductCategoryRepository) Update(category *product.ProductCategory, de
 	})
 }
 
-func (r *ProductCategoryRepository) UpdateSEO(categoryID uint, locale, metaTitle, metaDescription, intro string) error {
-	if locale == "en" {
-		return r.db.Model(&product.ProductCategory{}).
-			Where("id = ?", categoryID).
-			Updates(map[string]interface{}{
-				"meta_title":       metaTitle,
-				"meta_description": metaDescription,
-				"seo_intro":        intro,
-			}).Error
-	}
-
-	var translation product.ProductCategoryTranslation
-	err := r.db.Where("product_category_id = ? AND locale = ?", categoryID, locale).
-		First(&translation).Error
-	if err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
+func (r *ProductCategoryRepository) UpdateSEO(categoryID uint, locale string, metaTitle, metaDescription, intro *string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// The parent also serializes first writes for a previously absent locale
+		// with name/description replacement and category deletion.
+		var category product.ProductCategory
+		if err := tx.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&category, categoryID).Error; err != nil {
 			return err
 		}
-		return r.db.Create(&product.ProductCategoryTranslation{
-			ProductCategoryID: categoryID,
-			Locale:            locale,
-			MetaTitle:         metaTitle,
-			MetaDesc:          metaDescription,
-			SEOIntro:          intro,
-		}).Error
-	}
-
-	return r.db.Model(&translation).Updates(map[string]interface{}{
-		"meta_title":       metaTitle,
-		"meta_description": metaDescription,
-		"seo_intro":        intro,
-	}).Error
+		translation := product.ProductCategoryTranslation{ProductCategoryID: categoryID, Locale: locale}
+		currentTitle, currentDescription, currentIntro := category.MetaTitle, category.MetaDesc, category.SEOIntro
+		if locale != "en" {
+			err := tx.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Where("product_category_id = ? AND locale = ?", categoryID, locale).First(&translation).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			currentTitle, currentDescription, currentIntro = translation.MetaTitle, translation.MetaDesc, translation.SEOIntro
+		}
+		if metaTitle != nil {
+			currentTitle = *metaTitle
+		}
+		if metaDescription != nil {
+			currentDescription = *metaDescription
+		}
+		nextIntro := currentIntro
+		if intro != nil {
+			nextIntro = *intro
+		}
+		canonicalIntro, _, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx, r.businessMediaReferenceResolver, nextIntro, currentIntro, nil)
+		if err != nil {
+			return err
+		}
+		updates := map[string]interface{}{"meta_title": currentTitle, "meta_description": currentDescription, "seo_intro": canonicalIntro}
+		if locale == "en" {
+			return tx.Model(&category).Updates(updates).Error
+		}
+		if translation.ID == 0 {
+			translation.MetaTitle, translation.MetaDesc, translation.SEOIntro = currentTitle, currentDescription, canonicalIntro
+			return tx.Omit(clause.Associations).Create(&translation).Error
+		}
+		return tx.Model(&translation).Updates(updates).Error
+	})
 }
 
 func (r *ProductCategoryRepository) Delete(id uint) error {
@@ -239,15 +264,32 @@ func (r *ProductCategoryRepository) ListTranslations(categoryID uint) ([]product
 	return translations, err
 }
 
-func (r *ProductCategoryRepository) ReplaceTranslations(categoryID uint, translations []product.ProductCategoryTranslation) error {
+func (r *ProductCategoryRepository) ReplaceTranslationNamesAndDescriptionsPreservingLockedSEO(categoryID uint, translations []product.ProductCategoryTranslation) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("product_category_id = ?", categoryID).
-			Delete(&product.ProductCategoryTranslation{}).Error; err != nil {
+		var category product.ProductCategory
+		if err := tx.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&category, categoryID).Error; err != nil {
 			return err
 		}
-		if len(translations) == 0 {
-			return nil
+		retainedLocales := make([]string, 0, len(translations))
+		for _, requested := range translations {
+			retainedLocales = append(retainedLocales, requested.Locale)
+			var current product.ProductCategoryTranslation
+			err := tx.Where("product_category_id = ? AND locale = ?", categoryID, requested.Locale).First(&current).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				created := product.ProductCategoryTranslation{ProductCategoryID: categoryID, Locale: requested.Locale, Name: requested.Name, Description: requested.Description}
+				if err := tx.Omit(clause.Associations).Create(&created).Error; err != nil {
+					return err
+				}
+			} else if err != nil {
+				return err
+			} else if err := tx.Model(&current).Updates(map[string]interface{}{"name": requested.Name, "description": requested.Description}).Error; err != nil {
+				return err
+			}
 		}
-		return tx.Create(&translations).Error
+		removed := tx.Where("product_category_id = ?", categoryID)
+		if len(retainedLocales) > 0 {
+			removed = removed.Where("locale NOT IN ?", retainedLocales)
+		}
+		return removed.Delete(&product.ProductCategoryTranslation{}).Error
 	})
 }

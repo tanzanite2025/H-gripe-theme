@@ -144,12 +144,53 @@ func (h *TicketHandler) EvaluateCustomerServiceRetention(c *gin.Context) {
 	if !ok {
 		return
 	}
-	result, err := h.customerServiceRetention.Evaluate(ids)
+	result, err := h.customerServiceRetention.EvaluateWithAttachmentDiagnostics(ids)
 	if err != nil {
 		respondCustomerServiceRetentionError(c, err)
 		return
 	}
 	response.Success(c, gin.H{"eligibility": result})
+}
+
+func (h *TicketHandler) ListCustomerServiceRetentionRecords(c *gin.Context) {
+	if h.customerServiceRetention == nil {
+		apierror.RespondInternalError(c, errors.New("customer service retention service is not configured"))
+		return
+	}
+	status := normalizeAdminCustomerServiceFilterValue(c.Query("status"))
+	if !validAdminCustomerServiceStatusFilter(status) {
+		apierror.RespondBadRequest(c, "Invalid customer-service retention status filter")
+		return
+	}
+	params := pagination.ParsePagination(c)
+	records, total, err := h.customerServiceRetention.ListRecords(params.Page, params.PageSize, service.CustomerServiceRetentionRecordListInput{
+		Search: strings.TrimSpace(c.Query("search")),
+		Status: status,
+	})
+	if err != nil {
+		respondCustomerServiceRetentionError(c, err)
+		return
+	}
+	items := make([]gin.H, 0, len(records))
+	for _, record := range records {
+		var summary *service.CustomerServiceConversationSummary
+		if h.customerServiceContext != nil {
+			itemSummary := h.customerServiceContext.ConversationListSummary(record.Conversation)
+			summary = &itemSummary
+		}
+		item := adminCustomerServiceConversationResponse(record.Conversation, summary)
+		item["retention"] = record.Eligibility
+		items = append(items, item)
+	}
+	response.Success(c, gin.H{
+		"records": items,
+		"pagination": gin.H{
+			"page":        params.Page,
+			"page_size":   params.PageSize,
+			"total":       total,
+			"total_pages": (int(total) + params.PageSize - 1) / params.PageSize,
+		},
+	})
 }
 
 func (h *TicketHandler) GetCustomerServiceRetentionConfig(c *gin.Context) {

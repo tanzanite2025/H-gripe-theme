@@ -13,6 +13,7 @@ import (
 
 func TestProductViewCountBufferFlushesRedisDeltas(t *testing.T) {
 	db, productService := newTestProductService(t)
+	require.NoError(t, db.AutoMigrate(&product.ProductViewCountFlushReceipt{}))
 	record := product.Product{SKU: "VIEW-BUFFER-001", Name: "Buffered", Slug: "buffered", Currency: "USD", PriceMinor: 1000, Status: "active", Locale: "en"}
 	require.NoError(t, db.Create(&record).Error)
 	mini := miniredis.RunT(t)

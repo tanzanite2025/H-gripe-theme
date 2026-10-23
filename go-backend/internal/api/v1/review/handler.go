@@ -121,7 +121,7 @@ func (h *Handler) ListProductReviews(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": reviews,
+		"data": projectProductReviewsToPublicListFields(reviews),
 		"pagination": gin.H{
 			"page":       page,
 			"page_size":  pageSize,

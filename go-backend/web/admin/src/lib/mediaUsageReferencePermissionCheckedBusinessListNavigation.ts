@@ -7,6 +7,7 @@ export function mediaUsageReferenceAuthorizedBusinessListDestination(reference: 
   const destinations: Record<string, [string, string]> = {
     product_media: ['product:view', 'CatalogProducts'], product_rich_text: ['product:view', 'CatalogProducts'], product_option_swatch: ['product:view', 'CatalogProducts'],
     product_template_option_swatch: ['product:view', 'CatalogProductTemplates'], product_category: ['product:view', 'CatalogProductCategories'], product_brand_logo: ['product:view', 'CatalogProductBrands'],
+    product_information_template_rich_text: ['product:view', 'CatalogProductInformationTemplates'], product_category_rich_text: ['product:view', 'CatalogProductCategories'], product_category_translation_rich_text: ['product:view', 'CatalogProductCategories'],
     post: ['content:view', 'ContentBlog'], home_visual_tile: ['content:view', 'ContentVisualShowcase'], faq: ['faq:view', 'ContentFAQs'],
     gallery_cover: ['gallery:view', 'ContentBrandGallery'], gallery_image: ['gallery:view', 'ContentBrandGallery'], showcase: ['gallery:view', 'ContentShowcase'],
     review: ['review:view', 'ContentReviews'], workbench_feed_media: ['workbench_feed:view', 'WorkbenchFeed'],

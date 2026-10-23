@@ -10,6 +10,18 @@ import (
 )
 
 func (r *MediaRepository) productRichTextMediaAttributeReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
+	references, err := r.productDescriptionAndSummaryRichTextMediaAttributeReferences(query)
+	if err != nil {
+		return nil, err
+	}
+	additional, err := r.productInformationTemplateAndCategoryIntroRichTextMediaAttributeReferences(query)
+	if err != nil {
+		return nil, err
+	}
+	return append(references, additional...), nil
+}
+
+func (r *MediaRepository) productDescriptionAndSummaryRichTextMediaAttributeReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
 	references := make([]media.AssetReference, 0)
 	if !r.hasTable("products") {
 		return references, nil
@@ -18,16 +30,16 @@ func (r *MediaRepository) productRichTextMediaAttributeReferences(query mediaAss
 	// Bound memory with ID pages and verify parsed attributes exactly.
 	for afterID := uint(0); ; {
 		var rows []struct {
-			ID                           uint
-			Name, Description, ShortDesc string
-			DeletedAt                    *time.Time
+			ID                                  uint
+			Name, Description, ShortDescription string
+			DeletedAt                           *time.Time
 		}
-		if err := r.db.Table("products").Select("id, name, description, short_desc, deleted_at").Where("id > ? AND (COALESCE(description, '') <> '' OR COALESCE(short_desc, '') <> '')", afterID).Order("id ASC").Limit(256).Find(&rows).Error; err != nil {
+		if err := r.db.Table("products").Select("id, name, description, short_description, deleted_at").Where("id > ? AND (COALESCE(description, '') <> '' OR COALESCE(short_description, '') <> '')", afterID).Order("id ASC").Limit(256).Find(&rows).Error; err != nil {
 			return nil, err
 		}
 		for _, row := range rows {
 			var fields []string
-			for _, field := range []struct{ name, html string }{{"description", row.Description}, {"short_desc", row.ShortDesc}} {
+			for _, field := range []struct{ name, html string }{{"description", row.Description}, {"short_description", row.ShortDescription}} {
 				document, err := safehtml.ParseRichTextMediaSourceAndFileLinkAttributes(field.html)
 				if err != nil {
 					return nil, err

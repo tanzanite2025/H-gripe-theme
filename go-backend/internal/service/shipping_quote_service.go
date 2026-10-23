@@ -263,6 +263,10 @@ func (s *ShippingService) QuoteResolvedItems(input ShippingQuoteInput) (*Shippin
 		Items:           quoteItems,
 		Plans:           plans,
 	}
+	if s.readOnlyRecoveryVerification {
+		applyShippingQuotePlan(quote, &quote.Plans[0])
+		return quote, nil
+	}
 	if err := s.persistShippingQuote(input, quote); err != nil {
 		return nil, err
 	}

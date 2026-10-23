@@ -328,35 +328,39 @@ func (s *ProductCategoryService) UpdateSEO(id uint, locale string, metaTitle, me
 		return nil, err
 	}
 
-	current, err := s.GetSEO(id, normalizedLocale)
-	if err != nil {
+	if _, err := s.GetSEO(id, normalizedLocale); err != nil {
 		return nil, err
 	}
-
-	nextMetaTitle := current.MetaTitle
+	var nextMetaTitle, nextMetaDescription, nextIntro *string
 	if metaTitle != nil {
-		nextMetaTitle = strings.TrimSpace(*metaTitle)
+		trimmed := strings.TrimSpace(*metaTitle)
+		nextMetaTitle = &trimmed
+		if len([]rune(trimmed)) > seoMetaTitleLimit {
+			return nil, fmt.Errorf("%w: meta_title exceeds %d characters", ErrInvalidSEOSettings, seoMetaTitleLimit)
+		}
 	}
-	nextMetaDescription := current.MetaDescription
 	if metaDescription != nil {
-		nextMetaDescription = strings.TrimSpace(*metaDescription)
+		trimmed := strings.TrimSpace(*metaDescription)
+		nextMetaDescription = &trimmed
+		if len([]rune(trimmed)) > seoMetaDescriptionLimit {
+			return nil, fmt.Errorf("%w: meta_description exceeds %d characters", ErrInvalidSEOSettings, seoMetaDescriptionLimit)
+		}
 	}
-	nextIntro := current.Intro
 	if intro != nil {
-		nextIntro, err = safehtml.Sanitize(*intro)
+		sanitized, err := safehtml.Sanitize(*intro)
 		if err != nil {
 			return nil, fmt.Errorf("%w: invalid intro: %v", ErrProductCategorySEOInvalid, err)
 		}
-	}
-
-	if len([]rune(nextMetaTitle)) > seoMetaTitleLimit {
-		return nil, fmt.Errorf("%w: meta_title exceeds %d characters", ErrInvalidSEOSettings, seoMetaTitleLimit)
-	}
-	if len([]rune(nextMetaDescription)) > seoMetaDescriptionLimit {
-		return nil, fmt.Errorf("%w: meta_description exceeds %d characters", ErrInvalidSEOSettings, seoMetaDescriptionLimit)
+		nextIntro = &sanitized
 	}
 
 	if err := s.repo.UpdateSEO(id, normalizedLocale, nextMetaTitle, nextMetaDescription, nextIntro); err != nil {
+		if errors.Is(err, repository.ErrProductMediaReferenceInvalid) {
+			return nil, fmt.Errorf("%w: %v", ErrProductCategorySEOInvalid, err)
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrProductCategoryNotFound
+		}
 		return nil, err
 	}
 	s.invalidateCategoryProducts([]uint{id}, "product category SEO update")
@@ -397,15 +401,6 @@ func (s *ProductCategoryService) UpdateTranslations(id uint, inputs []ProductCat
 		return nil, err
 	}
 
-	existingTranslations, err := s.repo.ListTranslations(id)
-	if err != nil {
-		return nil, err
-	}
-	existingByLocale := make(map[string]product.ProductCategoryTranslation, len(existingTranslations))
-	for _, translation := range existingTranslations {
-		existingByLocale[locales.Normalize(translation.Locale)] = translation
-	}
-
 	translations := make([]product.ProductCategoryTranslation, 0, len(inputs))
 	seenLocales := make(map[string]struct{}, len(inputs))
 	for _, input := range inputs {
@@ -432,13 +427,10 @@ func (s *ProductCategoryService) UpdateTranslations(id uint, inputs []ProductCat
 			Locale:            locale,
 			Name:              name,
 			Description:       description,
-			MetaTitle:         existingByLocale[locale].MetaTitle,
-			MetaDesc:          existingByLocale[locale].MetaDesc,
-			SEOIntro:          existingByLocale[locale].SEOIntro,
 		})
 	}
 
-	if err := s.repo.ReplaceTranslations(id, translations); err != nil {
+	if err := s.repo.ReplaceTranslationNamesAndDescriptionsPreservingLockedSEO(id, translations); err != nil {
 		return nil, err
 	}
 	s.invalidateCategoryProducts([]uint{id}, "product category translation update")

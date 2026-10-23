@@ -277,6 +277,7 @@ func (b *dependencyServicesBuilder) build() error {
 	productService.ConfigureMediaService(mediaService)
 	productBrandService.ConfigureMediaService(mediaService)
 	b.repos.ProductCategory.ConfigurePublicBusinessMediaReferenceIdentityResolver(mediaService)
+	b.repos.ProductInformationTemplate.ConfigurePublicBusinessMediaReferenceIdentityResolver(mediaService)
 	seoResourceService.ConfigureMediaService(mediaService)
 	seoResourceService.ConfigureCanonicalBaseURL(storefrontBaseURL)
 	storefrontRouteCatalogService := service.NewStorefrontRouteCatalogService(

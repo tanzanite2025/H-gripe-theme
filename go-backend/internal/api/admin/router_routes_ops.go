@@ -26,6 +26,7 @@ func registerOperationsRoutes(
 	opsGroup.Use(middleware.RequirePermission(auth.PermOpsView))
 	{
 		opsGroup.GET("/overview", opsOverviewHandler.Get)
+		opsGroup.POST("/local-backups/session", middleware.RequirePermission(auth.PermOpsBackupView), issueLocalComputerBackupMaintenanceSession)
 		opsGroup.GET("/network/summary", opsNetworkSummaryHandler.Get)
 		opsGroup.GET("/outbox/unknown", outboxReconciliationHandler.ListUnknown)
 		opsGroup.POST("/outbox/unknown/:id/resume", middleware.RequirePermission(auth.PermSystemManage), outboxReconciliationHandler.Resume)

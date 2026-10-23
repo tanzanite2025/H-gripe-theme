@@ -505,6 +505,7 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'settings-markets', path: '/settings/markets', routeName: 'SettingsMarkets', label: '市场与本地化语种' },
       { id: 'settings-api', path: '/settings/api', routeName: 'SettingsApi', label: 'API 管理' },
       { id: 'settings-commercial-crawler', path: '/settings/commercial-crawler', routeName: 'SettingsCommercialCrawler', label: '商业爬虫防护' },
+      { id: 'settings-backup-recovery', path: '/settings/backup-recovery', routeName: 'SettingsBackupAndRecovery', label: '备份与恢复' },
     ],
   },
   { id: 'audit-logs', path: '/audit-logs', routeName: 'AuditLogs', code: 'AUDIT', label: '审计日志', icon: ScrollText, permission: 'logs:view' },

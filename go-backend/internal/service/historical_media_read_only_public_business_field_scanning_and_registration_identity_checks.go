@@ -26,11 +26,15 @@ func historicalMediaRecognizedPublicBusinessFieldSourcesForReadOnlyInventory() [
 		{Table: "product_media", Field: "thumbnail_url", ExpectedType: "image"},
 		{Table: "product_media", Field: "poster_url", ExpectedType: "image"},
 		{Table: "products", Field: "description", Markup: "product"},
-		{Table: "products", Field: "short_desc", Markup: "product"},
+		{Table: "products", Field: "short_description", Markup: "product"},
+		{Table: "product_information_templates", Field: "content", Markup: "product"},
+		{Table: "product_categories", Field: "seo_intro", Markup: "product"},
+		{Table: "product_category_translations", Field: "seo_intro", Markup: "product"},
 		{Table: "product_categories", Field: "image_url", AssetIDField: "image_media_asset_id", ExpectedType: "image"},
 		{Table: "product_brands", Field: "logo_url", ExpectedType: "image"},
 		{Table: "product_variant_option_values", Field: "swatch_url", AssetIDField: "swatch_media_asset_id", ExpectedType: "image"},
 		{Table: "product_spec_option_items", Field: "swatch_url", AssetIDField: "swatch_media_asset_id", ExpectedType: "image"},
+		{Table: "posts", Field: "featured_image", ExpectedType: "image"},
 		{Table: "posts", Field: "featured_img", ExpectedType: "image"},
 		{Table: "posts", Field: "content", Markup: "post"},
 		{Table: "faqs", Field: "answer_image_url", ExpectedType: "image"},
@@ -58,6 +62,15 @@ func historicalMediaRecognizedPublicBusinessFieldSourcesForReadOnlyInventory() [
 
 func (s *HistoricalMediaReadOnlyInventoryService) scanHistoricalMediaBusinessFieldsWithoutMutatingRecords(tx *gorm.DB, index *historicalMediaReadOnlyRegistrationIndex, report *HistoricalMediaReadOnlyInventoryReport) error {
 	for _, source := range historicalMediaRecognizedPublicBusinessFieldSourcesForReadOnlyInventory() {
+		if source.Table == "posts" && (source.Field == "featured_image" || source.Field == "featured_img") && tx.Migrator().HasTable("posts") && !tx.Migrator().HasColumn("posts", source.Field) {
+			otherColumn := "featured_image"
+			if source.Field == otherColumn {
+				otherColumn = "featured_img"
+			}
+			if tx.Migrator().HasColumn("posts", otherColumn) {
+				continue // An absent compatibility alias is not a missing source.
+			}
+		}
 		coverageField := source.Field
 		if source.SettingKey != "" {
 			coverageField += "(" + source.SettingKey + ")"

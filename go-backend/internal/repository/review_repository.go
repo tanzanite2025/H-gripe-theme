@@ -45,6 +45,7 @@ func (r *ReviewRepository) FindReviewsByProductID(productID uint, page, pageSize
 	offset := (page - 1) * pageSize
 	err := query.Preload("User").
 		Order("created_at DESC").
+		Order("id DESC").
 		Offset(offset).
 		Limit(pageSize).
 		Find(&reviews).Error

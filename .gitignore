@@ -73,3 +73,10 @@ release-evidence/
 
 # Local photo placement instructions are not website content
 /nuxt-i18n/public/media/company/about/hole-patterns/drilled-rim-lacing-photos/PHOTO-WALL-IMAGE-PLACEMENT-AND-NAMING-GUIDE.md
+
+# Local private BOM spreadsheets and one-off Excel repair tools
+/target.xlsx
+/fixed.xlsx
+/fix_excel.ps1
+/inspect_excel.ps1
+/repair.ps1

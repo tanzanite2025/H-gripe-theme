@@ -80,6 +80,9 @@ jobs:
           docker compose --env-file deployment/production.env.example -f compose.prod.yml config --quiet
           bash deployment/verify-vps-release-boundary.sh
 
+      - name: Validate local computer backup release boundaries without starting services
+        run: node --test deployment/validate-local-computer-backup-release-overlay-gate-preservation-and-maintenance-image-publication.cjs
+
       - name: Scan full Git history for secrets
         id: gitleaks
         if: always()
@@ -125,6 +128,10 @@ jobs:
           - image: commerce-platform-api
             context: ./go-backend
             dockerfile: ./go-backend/Dockerfile
+          - image: commerce-platform-local-backup-maintenance
+            context: ./go-backend
+            dockerfile: ./go-backend/Dockerfile
+            target: local-backup-maintenance
           - image: commerce-platform-storefront
             context: ./nuxt-i18n
             dockerfile: ./nuxt-i18n/Dockerfile
@@ -166,6 +173,7 @@ jobs:
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target || '' }}
           platforms: linux/amd64
           build-args: |
             VERSION=sha-${{ github.sha }}

@@ -171,6 +171,10 @@ const (
 	PermOpsDeployExecute   Permission = "ops:deploy:execute"
 	PermOpsDeployRollback  Permission = "ops:deploy:rollback"
 	PermOpsWorkflowApprove Permission = "ops:workflow:approve"
+	PermOpsBackupView      Permission = "ops:backup:view"
+	PermOpsBackupExport    Permission = "ops:backup:export"
+	PermOpsBackupUpload    Permission = "ops:backup:upload"
+	PermOpsBackupRestore   Permission = "ops:backup:restore"
 
 	PermServicesView   Permission = "services:view"
 	PermServicesManage Permission = "services:manage"
@@ -205,6 +209,7 @@ var RolePermissions = map[Role][]Permission{
 		PermSEOView, PermSEOEdit, PermURLView, PermURLEdit, PermAnalyticsView, PermAnalyticsEdit,
 		PermLogsView,
 		PermSystemManage,
+		PermOpsBackupView, PermOpsBackupExport, PermOpsBackupUpload, PermOpsBackupRestore,
 		PermOpsView, PermOpsDomainView, PermOpsDomainEdit, PermOpsDomainSync,
 		PermOpsConnectorView, PermOpsConnectorEdit,
 		PermOpsVPSView, PermOpsVPSEdit, PermOpsVPSSync,
@@ -214,6 +219,7 @@ var RolePermissions = map[Role][]Permission{
 		PermWorkbenchFeedView, PermWorkbenchFeedCreate, PermWorkbenchFeedEdit, PermWorkbenchFeedDelete,
 	},
 	RoleManager: {
+		PermOpsBackupView,
 		PermProductView, PermProductCreate, PermProductEdit, PermProductDelete,
 		PermSupplierCostView, PermSupplierCostCreate, PermSupplierCostEdit, PermSupplierCostDelete,
 		PermFitmentCatalogView, PermFitmentCatalogCreate, PermFitmentCatalogEdit, PermFitmentCatalogDelete,

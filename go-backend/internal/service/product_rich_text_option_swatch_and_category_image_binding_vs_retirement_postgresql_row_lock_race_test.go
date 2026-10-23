@@ -19,7 +19,7 @@ import (
 )
 
 func TestPostgreSQLProductRichTextSwatchesAndCategoryImagesSerializeBindingAndRetirement(t *testing.T) {
-	for _, field := range []string{"description", "short_desc", "video poster", "file link", "product swatch", "template swatch", "category image"} {
+	for _, field := range []string{"description", "short_description", "video poster", "file link", "product swatch", "template swatch", "category image"} {
 		for _, firstOperation := range []string{"bind", "retire"} {
 			t.Run(field+"/"+firstOperation+" first", func(t *testing.T) {
 				env, _, _ := createIsolatedPostgreSQLCustomerServiceAttachmentRetirementTestEnvironment(t)
@@ -85,7 +85,7 @@ func TestPostgreSQLProductRichTextSwatchesAndCategoryImagesSerializeBindingAndRe
 					switch field {
 					case "description":
 						item.Description = "<img src=\"/uploads/" + asset.StorageKey + "\">"
-					case "short_desc":
+					case "short_description":
 						item.ShortDesc = "<img src=\"/uploads/" + asset.StorageKey + "\">"
 					case "video poster":
 						item.Description = "<video src=\"https://external.example.test/video.webm\" poster=\"/uploads/" + asset.StorageKey + "\"></video>"

@@ -103,7 +103,7 @@ watch(() => props.modelValue, syncEditor)
     :contenteditable="disabled ? 'false' : 'true'"
     role="textbox"
     aria-multiline="false"
-    class="notification-template-subject-editor w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-2 focus:ring-ring"
+    class="notification-template-subject-editor min-h-9 w-full rounded-xl bg-muted/50 px-3 py-1.5 text-xs font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50"
     :class="{ 'pointer-events-none opacity-60': disabled }"
     :data-placeholder="placeholder"
     @input="emitContent"
@@ -114,15 +114,15 @@ watch(() => props.modelValue, syncEditor)
 
 <style scoped>
 .notification-template-subject-editor:empty::before {
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
   content: attr(data-placeholder);
   pointer-events: none;
 }
 
 .notification-template-subject-editor :deep(.notification-template-subject-editor__template-variable) {
-  background: hsl(var(--muted));
+  background: var(--admin-control-selected-soft);
   border-radius: 0.25rem;
-  color: hsl(var(--foreground));
+  color: var(--foreground);
   padding: 0.05rem 0.25rem;
   white-space: nowrap;
 }

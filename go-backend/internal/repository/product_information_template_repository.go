@@ -4,10 +4,16 @@ import (
 	"commerce-platform/internal/domain/product"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ProductInformationTemplateRepository struct {
-	db *gorm.DB
+	db                             *gorm.DB
+	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
+}
+
+func (r *ProductInformationTemplateRepository) ConfigurePublicBusinessMediaReferenceIdentityResolver(resolver PublicBusinessMediaReferenceObjectKeyResolver) {
+	r.businessMediaReferenceResolver = resolver
 }
 
 func NewProductInformationTemplateRepository(db *gorm.DB) *ProductInformationTemplateRepository {
@@ -52,18 +58,32 @@ func (r *ProductInformationTemplateRepository) ExistsByKindSlugLocale(kind, slug
 }
 
 func (r *ProductInformationTemplateRepository) Create(template *product.ProductInformationTemplate) error {
-	return r.db.Select("*").Create(template).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		content, _, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx, r.businessMediaReferenceResolver, template.Content, "", nil)
+		if err != nil {
+			return err
+		}
+		template.Content = content
+		return tx.Select("*").Omit(clause.Associations).Create(template).Error
+	})
 }
 
 func (r *ProductInformationTemplateRepository) Update(template *product.ProductInformationTemplate) error {
-	return r.db.Model(&product.ProductInformationTemplate{}).Where("id = ?", template.ID).Updates(map[string]interface{}{
-		"name":       template.Name,
-		"slug":       template.Slug,
-		"content":    template.Content,
-		"locale":     template.Locale,
-		"is_enabled": template.IsEnabled,
-		"sort_order": template.SortOrder,
-	}).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var current product.ProductInformationTemplate
+		if err := tx.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&current, template.ID).Error; err != nil {
+			return err
+		}
+		content, _, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx, r.businessMediaReferenceResolver, template.Content, current.Content, nil)
+		if err != nil {
+			return err
+		}
+		template.Content = content
+		return tx.Model(&product.ProductInformationTemplate{}).Where("id = ?", template.ID).Updates(map[string]interface{}{
+			"name": template.Name, "slug": template.Slug, "content": content,
+			"locale": template.Locale, "is_enabled": template.IsEnabled, "sort_order": template.SortOrder,
+		}).Error
+	})
 }
 
 func (r *ProductInformationTemplateRepository) Delete(id uint) error {

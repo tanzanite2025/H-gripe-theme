@@ -1,0 +1,97 @@
+# Explicit opt-in overlay. Review paths, identities, secrets and the exact
+# application image before use; this file never deploys or changes Hostinger.
+# docker compose -f compose.prod.yml -f compose.local-computer-backup-maintenance.yml ...
+services:
+  api:
+    environment:
+      LOCAL_BACKUP_MAINTENANCE_DIRECTORY: /app/local-backup-maintenance-gate
+      LOCAL_BACKUP_AUTHENTICATION_KEY_FILE: /run/secrets/local-backup-maintenance-authentication-key
+      LOCAL_BACKUP_SITE_ID: ${LOCAL_BACKUP_SITE_ID:?explicit storefront identity required}
+      LOCAL_BACKUP_ENVIRONMENT: ${LOCAL_BACKUP_ENVIRONMENT:?explicit environment required}
+      # Enable only after reconciling legacy buffers and enrolling ownership.
+      LOCAL_BACKUP_PRODUCT_VIEW_REDIS_OWNERSHIP_ENABLED: ${LOCAL_BACKUP_PRODUCT_VIEW_REDIS_OWNERSHIP_ENABLED:-false}
+    volumes:
+      - ${LOCAL_BACKUP_GATE_DIRECTORY:?pre-create private gate directory owned by uid 1000}:/app/local-backup-maintenance-gate
+      - ${LOCAL_BACKUP_AUTHENTICATION_KEY_FILE:?separately held maintenance authentication key}:/run/secrets/local-backup-maintenance-authentication-key:ro
+
+  migrate:
+    environment:
+      LOCAL_BACKUP_MAINTENANCE_DIRECTORY: /app/local-backup-maintenance-gate
+    volumes:
+      - ${LOCAL_BACKUP_GATE_DIRECTORY:?pre-create private gate directory owned by uid 1000}:/app/local-backup-maintenance-gate
+      - uploads:/app/uploads
+      - uploads_private:/app/uploads-private
+      - site_logo_uploads:/app/site-logo-uploads
+
+  media-derivatives-backfill:
+    environment:
+      LOCAL_BACKUP_MAINTENANCE_DIRECTORY: /app/local-backup-maintenance-gate
+    volumes:
+      - ${LOCAL_BACKUP_GATE_DIRECTORY:?pre-create private gate directory owned by uid 1000}:/app/local-backup-maintenance-gate
+      - uploads_private:/app/uploads-private
+
+  # Docker initializes this release-specific volume from the exact storefront
+  # image's company directory. Readers see the same bytes the storefront serves.
+  storefront:
+    volumes:
+      - type: volume
+        source: storefront_company_static_assets
+        target: /app/.output/public/company
+        read_only: true
+
+  local-backup-maintenance:
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/${IMAGE_NAMESPACE:?IMAGE_NAMESPACE is required}/${IMAGE_PREFIX:-commerce-platform}-local-backup-maintenance:${IMAGE_TAG:-master}
+    build:
+      context: ./go-backend
+      target: local-backup-maintenance
+    pull_policy: always
+    restart: unless-stopped
+    command: ["-config", "/run/secrets/local-backup-maintenance-configuration.json", "-listen", ":19090"]
+    environment:
+      GOMEMLIMIT: 768MiB
+      # Reuse the application's existing URL settings only to identify local
+      # historical media references. Backup never fetches these URLs over HTTP.
+      SERVER_BASE_URL: ${SERVER_BASE_URL:?SERVER_BASE_URL is required}
+      STOREFRONT_BASE_URL: ${STOREFRONT_BASE_URL:?STOREFRONT_BASE_URL is required}
+    volumes:
+      - ${LOCAL_BACKUP_CONFIGURATION_FILE:?explicit independent recovery configuration}:/run/secrets/local-backup-maintenance-configuration.json:ro
+      - ${LOCAL_BACKUP_AUTHENTICATION_KEY_FILE:?separately held maintenance authentication key}:/run/secrets/local-backup-maintenance-authentication-key:ro
+      - ${LOCAL_BACKUP_PACKAGE_PASSPHRASE_FILE:?separately held package encryption passphrase}:/run/secrets/local-backup-package-passphrase:ro
+      - ${LOCAL_BACKUP_GATE_DIRECTORY:?pre-create private gate directory owned by uid 1000}:/app/local-backup-maintenance-gate
+      - ${LOCAL_BACKUP_WORKSPACE_DIRECTORY:?pre-create private work directory owned by uid 1000}:/app/local-backup-workspace
+      # Filesystem capacity only: the non-root executor never reads or writes
+      # PostgreSQL data files; database changes go through PostgreSQL itself.
+      - postgres_data:/app/local-backup-postgresql-capacity:ro
+      - uploads:/app/uploads
+      - uploads_private:/app/uploads-private
+      - site_logo_uploads:/app/site-logo-uploads
+      - type: volume
+        source: storefront_company_static_assets
+        target: /app/product-static-assets/company
+        volume:
+          # Never populate an empty volume from the maintenance image.
+          nocopy: true
+    networks:
+      - db
+      - app
+    ports:
+      - "127.0.0.1:${LOCAL_BACKUP_LOOPBACK_PORT:-19090}:19090"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: 1024m
+    cpus: 1.00
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  storefront_company_static_assets:
+    name: ${COMPOSE_PROJECT_NAME:-commerce-platform}-storefront-company-static-${IMAGE_TAG:?explicit immutable release tag required for storefront static files}

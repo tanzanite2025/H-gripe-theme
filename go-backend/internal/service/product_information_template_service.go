@@ -77,6 +77,9 @@ func (s *ProductInformationTemplateService) Create(input ProductInformationTempl
 		return nil, ErrProductInformationTemplateSlugExists
 	}
 	if err := s.repo.Create(template); err != nil {
+		if errors.Is(err, repository.ErrProductMediaReferenceInvalid) {
+			return nil, fmt.Errorf("%w: %v", ErrProductInformationTemplateInvalid, err)
+		}
 		return nil, err
 	}
 	return s.Get(template.ID)
@@ -112,6 +115,12 @@ func (s *ProductInformationTemplateService) Update(id uint, input ProductInforma
 	normalized.Kind = template.Kind
 	normalized.Locale = currentLocale
 	if err := s.repo.Update(normalized); err != nil {
+		if errors.Is(err, repository.ErrProductMediaReferenceInvalid) {
+			return nil, fmt.Errorf("%w: %v", ErrProductInformationTemplateInvalid, err)
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrProductInformationTemplateNotFound
+		}
 		return nil, err
 	}
 	s.invalidateProductCacheByInformationTemplateID(id)

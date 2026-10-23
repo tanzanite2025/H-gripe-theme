@@ -51,6 +51,10 @@ export default defineConfig({
     port: adminPort,
     strictPort: true,
     proxy: {
+      '/local-backup-maintenance': {
+        target: process.env.VITE_LOCAL_BACKUP_MAINTENANCE_ORIGIN || 'http://127.0.0.1:19090',
+        changeOrigin: true,
+      },
       '/api': {
         target: apiOrigin,
         changeOrigin: true

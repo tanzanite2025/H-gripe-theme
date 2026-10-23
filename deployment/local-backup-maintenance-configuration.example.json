@@ -1,0 +1,35 @@
+{
+  "site_id": "replace-with-unique-storefront-identity",
+  "environment": "production",
+  "application_version": "replace-with-the-exact-running-build-version",
+  "expected_migration_version": 436,
+  "application_database_role": "replace-with-storefront-database-role",
+  "database_url": "postgres://maintenance-role:replace-with-password@db:5432/postgres?sslmode=disable",
+  "database_name": "replace_with_storefront_database",
+  "workspace": "/app/local-backup-workspace",
+  "maintenance_directory": "/app/local-backup-maintenance-gate",
+  "postgresql_capacity_directory": "/app/local-backup-postgresql-capacity",
+  "storage_roots": {
+    "uploads": "/app/uploads",
+    "uploads_private": "/app/uploads-private",
+    "site_logo_uploads": "/app/site-logo-uploads"
+  },
+  "recovery_secrets": {
+    "JWT_SECRET": "replace-with-the-original-application-JWT-secret",
+    "PAYMENT_CONFIG_MASTER_KEY": "replace-with-the-original-payment-master-key",
+    "OPS_CONNECTOR_MASTER_KEY": "replace-with-the-original-connector-master-key",
+    "ORDER_NUMBER_SECRET": "replace-with-the-effective-original-order-number-secret-or-JWT-fallback"
+  },
+  "public_origins": [],
+  "product_static_assets_directory": "/app/product-static-assets",
+  "passphrase_file": "/run/secrets/local-backup-package-passphrase",
+  "authentication_key_file": "/run/secrets/local-backup-maintenance-authentication-key",
+  "max_package_bytes": 107374182400,
+  "max_expanded_bytes": 214748364800,
+  "max_workspace_bytes": 536870912000,
+  "max_files": 1000000,
+  "work_copy_lifetime_hours": 24,
+  "product_view_recovery_redis": null,
+  "product_view_recovery_writer_inventory": [],
+  "stopped_product_local_media_verification": null
+}

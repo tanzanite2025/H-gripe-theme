@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
@@ -712,8 +711,8 @@ func (r *ProductRepository) UpdateSEO(id uint, metaTitle, metaDescription string
 		return gorm.ErrInvalidData
 	}
 	return r.db.Model(&product.Product{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"meta_title": metaTitle,
-		"meta_desc":  metaDescription,
+		"meta_title":       metaTitle,
+		"meta_description": metaDescription,
 	}).Error
 }
 
@@ -735,7 +734,7 @@ func productUpdateColumns(p *product.Product) map[string]interface{} {
 		"name":                              p.Name,
 		"slug":                              p.Slug,
 		"description":                       p.Description,
-		"short_desc":                        p.ShortDesc,
+		"short_description":                 p.ShortDesc,
 		"currency":                          p.Currency,
 		"price_minor":                       p.PriceMinor,
 		"fulfillment_mode":                  p.FulfillmentMode,
@@ -744,7 +743,7 @@ func productUpdateColumns(p *product.Product) map[string]interface{} {
 		"parent_id":                         p.ParentID,
 		"featured":                          p.Featured,
 		"meta_title":                        p.MetaTitle,
-		"meta_desc":                         p.MetaDesc,
+		"meta_description":                  p.MetaDesc,
 	}
 	if p.CarbonRimSpecificationDirty {
 		encodedSpecification, _ := json.Marshal(p.CarbonRimSpecification)
@@ -871,30 +870,6 @@ func (r *ProductRepository) IncrementViewCount(id uint) error {
 
 func (r *ProductRepository) IncrementViewCountContext(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Model(&product.Product{}).Where("id = ?", id).UpdateColumn("view_count", gorm.Expr("view_count + ?", 1)).Error
-}
-
-// IncrementViewCounts applies buffered view count deltas in one transaction.
-func (r *ProductRepository) IncrementViewCounts(ctx context.Context, counts map[uint]int64) error {
-	if len(counts) == 0 {
-		return nil
-	}
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		ids := make([]uint, 0, len(counts))
-		for id := range counts {
-			ids = append(ids, id)
-		}
-		sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
-		for _, id := range ids {
-			delta := counts[id]
-			if delta <= 0 {
-				continue
-			}
-			if err := tx.Model(&product.Product{}).Where("id = ?", id).UpdateColumn("view_count", gorm.Expr("view_count + ?", delta)).Error; err != nil {
-				return err
-			}
-		}
-		return nil
-	})
 }
 
 // UpdateStatus 鏇存柊鍟嗗搧鐘舵€?

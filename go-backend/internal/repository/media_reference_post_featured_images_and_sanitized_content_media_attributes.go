@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,17 +14,35 @@ func (r *MediaRepository) postReferences(query mediaAssetReferenceQuery) ([]medi
 	if !r.hasTable("posts") {
 		return references, nil
 	}
+	// Formal migrations use featured_image; older GORM-created schemas use
+	// featured_img. Scan both when present so neither copy loses protection.
+	featuredImageColumns := make([]string, 0, 2)
+	selects := []string{"id", "title", "content", "deleted_at"}
+	conditions := []string{"COALESCE(content, '') <> ''"}
+	for _, column := range []string{"featured_image", "featured_img"} {
+		if r.db.Migrator().HasColumn("posts", column) {
+			featuredImageColumns = append(featuredImageColumns, column)
+			selects = append(selects, column)
+			conditions = append(conditions, "COALESCE("+column+", '') <> ''")
+		}
+	}
+	if len(featuredImageColumns) == 0 {
+		return nil, fmt.Errorf("post media reference scan requires featured_image or featured_img")
+	}
 	for afterID := uint(0); ; {
 		var rows []struct {
-			ID                          uint
-			Title, Content, FeaturedImg string
-			DeletedAt                   *time.Time
+			ID                                         uint
+			Title, Content, FeaturedImage, FeaturedImg string
+			DeletedAt                                  *time.Time
 		}
-		if err := r.db.Table("posts").Select("id, title, content, featured_img, deleted_at").Where("id > ? AND (COALESCE(content, '') <> '' OR COALESCE(featured_img, '') <> '')", afterID).Order("id ASC").Limit(256).Find(&rows).Error; err != nil {
+		if err := r.db.Table("posts").Select(strings.Join(selects, ", ")).Where("id > ? AND ("+strings.Join(conditions, " OR ")+")", afterID).Order("id ASC").Limit(256).Find(&rows).Error; err != nil {
 			return nil, err
 		}
 		for _, row := range rows {
 			var fields []string
+			if r.matchesExactRegisteredOrTrustedMediaReference(query, row.FeaturedImage) {
+				fields = append(fields, "featured_image")
+			}
 			if r.matchesExactRegisteredOrTrustedMediaReference(query, row.FeaturedImg) {
 				fields = append(fields, "featured_img")
 			}

@@ -34,6 +34,9 @@ ARG VERSION=dev
 # Refresh Alpine packages on every release so runtime scans see patched OpenSSL libs.
 RUN echo "$VERSION" >/dev/null && apk upgrade --no-cache
 COPY --from=build /app/.output ./.output
+RUN test -d .output/public/company \
+    && printf '%s' "$VERSION" > .output/public/company/.storefront-release-version \
+    && chown -R node:node .output/public/company
 RUN find .output -type f -name '*.map' -delete \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 ENV NODE_ENV=production

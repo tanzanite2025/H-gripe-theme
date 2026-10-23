@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"commerce-platform/internal/api/restrictedmediaresponse"
 	"commerce-platform/internal/domain/auth"
 
 	"github.com/gin-gonic/gin"
@@ -18,13 +19,7 @@ func adminCustomerServiceRole(c *gin.Context) auth.Role {
 }
 
 func adminCustomerServiceScope(c *gin.Context) (uint, bool) {
-	if c == nil {
-		return 0, false
-	}
-	value, _ := c.Get("user_id")
-	userID, _ := value.(uint)
-	role := adminCustomerServiceRole(c)
-	return userID, role == auth.RoleAdmin || role == auth.RoleManager
+	return restrictedmediaresponse.AuthenticatedCustomerServiceAgentScope(c)
 }
 
 func adminCustomerServiceCanEdit(c *gin.Context) bool {

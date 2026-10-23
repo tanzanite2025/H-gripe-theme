@@ -10,20 +10,21 @@ import (
 )
 
 type ShippingService struct {
-	shippingRepo              *repository.ShippingRepository
-	productRepo               *repository.ProductRepository
-	yanwenPublishedCollection YanwenPublishedCollectionReferenceReader
-	orderRepo                 *repository.OrderRepository
-	txManager                 *repository.TxManager
-	currencyPolicy            *CurrencyPolicyService
-	exchangeRates             *ExchangeRateService
-	auditRecorder             AuditRecorder
-	trackingRun               TrackingPollingRunState
-	webhookRun                TrackingWebhookRunState
-	trackingMu                sync.RWMutex
-	trackingRetry             resilience.HTTPRetryPolicy
-	trackingBreaker           resilience.CircuitController
-	afterSalesService         *AfterSalesService
+	readOnlyRecoveryVerification bool
+	shippingRepo                 *repository.ShippingRepository
+	productRepo                  *repository.ProductRepository
+	yanwenPublishedCollection    YanwenPublishedCollectionReferenceReader
+	orderRepo                    *repository.OrderRepository
+	txManager                    *repository.TxManager
+	currencyPolicy               *CurrencyPolicyService
+	exchangeRates                *ExchangeRateService
+	auditRecorder                AuditRecorder
+	trackingRun                  TrackingPollingRunState
+	webhookRun                   TrackingWebhookRunState
+	trackingMu                   sync.RWMutex
+	trackingRetry                resilience.HTTPRetryPolicy
+	trackingBreaker              resilience.CircuitController
+	afterSalesService            *AfterSalesService
 }
 
 type TrackingCarrierResolutionInput struct {

@@ -31,6 +31,12 @@ export const mediaReferenceTypeLabel = (type?: string | null): string => {
       return '商品品牌 Logo'
     case 'product_rich_text':
       return '商品详情与简述'
+    case 'product_information_template_rich_text':
+      return '商品信息模板正文'
+    case 'product_category_rich_text':
+      return '商品分类导语'
+    case 'product_category_translation_rich_text':
+      return '商品分类翻译导语'
     case 'product_option_swatch':
       return '商品选项色板'
     case 'product_template_option_swatch':

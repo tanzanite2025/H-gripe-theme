@@ -60,7 +60,7 @@ type Product struct {
 	Name        string `gorm:"not null;index" json:"name"`
 	Slug        string `gorm:"uniqueIndex:idx_product_slug_locale_active,where:deleted_at IS NULL;not null" json:"slug"`
 	Description string `gorm:"type:text" json:"description"`
-	ShortDesc   string `gorm:"type:text" json:"short_description"`
+	ShortDesc   string `gorm:"column:short_description;type:text" json:"short_description"`
 	Currency    string `gorm:"size:3;not null;default:'USD';index" json:"currency"`
 	PriceMinor  int64  `gorm:"column:price_minor;not null;default:0" json:"price_minor"`
 	// DisplayPriceData is hydrated from ProductDisplayPriceSnapshot by the
@@ -78,7 +78,7 @@ type Product struct {
 	Featured                     bool                          `gorm:"default:false" json:"featured"`
 	ViewCount                    int                           `gorm:"default:0" json:"view_count"`
 	MetaTitle                    string                        `json:"meta_title"`
-	MetaDesc                     string                        `gorm:"type:text" json:"meta_description"`
+	MetaDesc                     string                        `gorm:"column:meta_description;type:text" json:"meta_description"`
 	Media                        []ProductMedia                `gorm:"foreignKey:ProductID" json:"media,omitempty"`
 	ProductSpecificationTemplate *ProductSpecificationTemplate `gorm:"foreignKey:ProductSpecificationTemplateID" json:"product_specification_template,omitempty"`
 	ProductCategory              *ProductCategory              `gorm:"foreignKey:ProductCategoryID;constraint:OnDelete:SET NULL" json:"product_category,omitempty"`

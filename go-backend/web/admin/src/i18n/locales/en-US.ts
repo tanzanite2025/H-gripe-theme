@@ -221,6 +221,7 @@ const enUS = {
     'settings-currency': 'Pricing Currency',
     'settings-markets': 'Markets & Locales',
     'settings-api': 'General APIs',
+    'settings-backup-recovery': 'Backup and recovery',
     'settings-commercial-crawler': 'Commercial Crawler Protection',
     'audit-logs': 'Audit Logs',
   },

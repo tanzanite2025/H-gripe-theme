@@ -45,15 +45,31 @@ type CustomerServiceRetentionRuntimeConfig struct {
 }
 
 type CustomerServiceRetentionEligibility struct {
-	TicketID        uint       `json:"ticket_id"`
-	Eligible        bool       `json:"eligible"`
-	Action          string     `json:"action"`
-	Reason          string     `json:"reason,omitempty"`
-	LifecycleStatus string     `json:"lifecycle_status"`
-	LastActivityAt  time.Time  `json:"last_activity_at"`
-	EligibleAfter   time.Time  `json:"eligible_after"`
-	SoftDeletedAt   *time.Time `json:"soft_deleted_at,omitempty"`
-	PurgeAfter      *time.Time `json:"purge_after,omitempty"`
+	TicketID                    uint       `json:"ticket_id"`
+	Eligible                    bool       `json:"eligible"`
+	Action                      string     `json:"action"`
+	Reason                      string     `json:"reason,omitempty"`
+	LifecycleStatus             string     `json:"lifecycle_status"`
+	LastActivityAt              time.Time  `json:"last_activity_at"`
+	EligibleAfter               time.Time  `json:"eligible_after"`
+	SoftDeletedAt               *time.Time `json:"soft_deleted_at,omitempty"`
+	PurgeAfter                  *time.Time `json:"purge_after,omitempty"`
+	AttachmentReferenceCount    int        `json:"attachment_reference_count,omitempty"`
+	MalformedAttachmentPayloads int        `json:"malformed_attachment_payloads,omitempty"`
+}
+
+// CustomerServiceRetentionRecord combines the searchable conversation
+// projection with the current retention decision and attachment diagnostics.
+// It is used by the administrator history workbench; it does not create a
+// second conversation source of truth.
+type CustomerServiceRetentionRecord struct {
+	Conversation ticket.Ticket
+	Eligibility  CustomerServiceRetentionEligibility
+}
+
+type CustomerServiceRetentionRecordListInput struct {
+	Search string
+	Status string
 }
 
 // CustomerServiceRetentionBatchResult describes one bounded worker pass. A
@@ -273,6 +289,17 @@ func (s *CustomerServiceRetentionService) PurgeEligibleBatch(limit int) (Custome
 }
 
 func (s *CustomerServiceRetentionService) Evaluate(ids []uint) ([]CustomerServiceRetentionEligibility, error) {
+	return s.evaluate(ids, false)
+}
+
+// EvaluateWithAttachmentDiagnostics includes the historical attachment scan
+// needed by the retention workbench. The default Evaluate path stays cheap for
+// command validation and compatibility callers.
+func (s *CustomerServiceRetentionService) EvaluateWithAttachmentDiagnostics(ids []uint) ([]CustomerServiceRetentionEligibility, error) {
+	return s.evaluate(ids, true)
+}
+
+func (s *CustomerServiceRetentionService) evaluate(ids []uint, includeAttachmentDiagnostics bool) ([]CustomerServiceRetentionEligibility, error) {
 	if s == nil || s.ticketRepo == nil {
 		return nil, errors.New("customer-service retention service is not configured")
 	}
@@ -302,9 +329,50 @@ func (s *CustomerServiceRetentionService) Evaluate(ids []uint) ([]CustomerServic
 			})
 			continue
 		}
-		result = append(result, s.evaluateRecord(record, now))
+		item := s.evaluateRecord(record, now)
+		if includeAttachmentDiagnostics {
+			scan, scanErr := s.ticketRepo.FindCustomerServiceConversationAttachmentReferenceScan(record.ID)
+			if scanErr != nil {
+				return nil, fmt.Errorf("load customer-service attachment diagnostics for ticket %d: %w", record.ID, scanErr)
+			}
+			item.AttachmentReferenceCount = len(scan.References)
+			item.MalformedAttachmentPayloads = scan.MalformedPayloads
+		}
+		result = append(result, item)
 	}
 	return result, nil
+}
+
+// ListRecords returns a paginated, administrator-scoped retention inventory.
+// Soft-deleted conversations are deliberately included so the recovery window
+// remains visible and operators can verify what is still recoverable through
+// approved database maintenance.
+func (s *CustomerServiceRetentionService) ListRecords(page, pageSize int, input CustomerServiceRetentionRecordListInput) ([]CustomerServiceRetentionRecord, int64, error) {
+	if s == nil || s.ticketRepo == nil {
+		return nil, 0, errors.New("customer-service retention service is not configured")
+	}
+	filters := repository.CustomerServiceConversationFilters{
+		View:   "all",
+		Status: strings.TrimSpace(input.Status),
+		Search: strings.TrimSpace(input.Search),
+	}
+	records, total, err := s.ticketRepo.FindCustomerServiceRetentionRecords(page, pageSize, filters)
+	if err != nil {
+		return nil, 0, err
+	}
+	now := s.currentTime()
+	result := make([]CustomerServiceRetentionRecord, 0, len(records))
+	for _, record := range records {
+		item := s.evaluateRecord(record, now)
+		scan, scanErr := s.ticketRepo.FindCustomerServiceConversationAttachmentReferenceScan(record.ID)
+		if scanErr != nil {
+			return nil, 0, fmt.Errorf("load customer-service attachment diagnostics for ticket %d: %w", record.ID, scanErr)
+		}
+		item.AttachmentReferenceCount = len(scan.References)
+		item.MalformedAttachmentPayloads = scan.MalformedPayloads
+		result = append(result, CustomerServiceRetentionRecord{Conversation: record, Eligibility: item})
+	}
+	return result, total, nil
 }
 
 func (s *CustomerServiceRetentionService) SoftDelete(ids []uint, actorID uint, reason string) ([]CustomerServiceRetentionEligibility, error) {

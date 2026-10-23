@@ -24,6 +24,63 @@ type CustomerServiceAttachmentReferenceScan struct {
 	MalformedPayloads int
 }
 
+// FindCustomerServiceRetentionRecords returns the administrator's searchable
+// retention inventory, including soft-deleted tombstones that remain inside
+// the recovery window. The caller applies retention eligibility and hold
+// checks after the records are loaded.
+func (r *TicketRepository) FindCustomerServiceRetentionRecords(page, pageSize int, filters CustomerServiceConversationFilters) ([]ticket.Ticket, int64, error) {
+	var records []ticket.Ticket
+	var total int64
+	if r == nil || r.db == nil {
+		return nil, 0, gorm.ErrInvalidDB
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+
+	baseQuery := func() *gorm.DB {
+		query := r.db.Unscoped().Model(&ticket.Ticket{}).
+			Where("tickets.category = ?", customerServiceTicketCategory).
+			Where(`
+				EXISTS (
+					SELECT 1
+					FROM ticket_messages customer_service_retention_messages
+					WHERE customer_service_retention_messages.ticket_id = tickets.id
+				)
+			`)
+		return applyCustomerServiceConversationFilters(query, filters)
+	}
+
+	if err := baseQuery().Distinct("tickets.id").Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	query := baseQuery().Select("tickets.*").
+		Preload("User").
+		Preload("Messages", func(db *gorm.DB) *gorm.DB {
+			// The inventory needs only the latest message preview. Searching and
+			// attachment diagnostics still inspect the complete retained history.
+			return db.Where(`content <> '' AND NOT EXISTS (
+				SELECT 1 FROM ticket_messages AS newer_retention_preview_messages
+				WHERE newer_retention_preview_messages.ticket_id = ticket_messages.ticket_id
+				AND newer_retention_preview_messages.content <> ''
+				AND (newer_retention_preview_messages.created_at > ticket_messages.created_at
+					OR (newer_retention_preview_messages.created_at = ticket_messages.created_at
+						AND newer_retention_preview_messages.id > ticket_messages.id))
+			)`)
+		}).
+		Order("tickets.updated_at DESC").
+		Order("tickets.id DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize)
+	if err := query.Find(&records).Error; err != nil {
+		return nil, 0, err
+	}
+	return records, total, nil
+}
+
 // FindCustomerServiceRetentionTickets reads the explicit administrator target
 // set, including soft-deleted rows for purge eligibility checks.
 func (r *TicketRepository) FindCustomerServiceRetentionTickets(ids []uint) ([]ticket.Ticket, error) {

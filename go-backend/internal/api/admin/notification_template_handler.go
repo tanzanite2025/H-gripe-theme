@@ -201,6 +201,7 @@ func registerNotificationTemplateRoutes(authenticated *gin.RouterGroup, handler 
 	group.Use(middleware.RequirePermission(auth.PermSettingsView))
 	{
 		group.GET("", handler.List)
+		group.POST("", middleware.RequirePermission(auth.PermSettingsEdit), handler.Save)
 		group.GET("/:id", handler.Get)
 		group.GET("/:id/versions", handler.Versions)
 		group.POST("/:id/versions/:version/rollback", middleware.RequirePermission(auth.PermSettingsEdit), handler.Rollback)

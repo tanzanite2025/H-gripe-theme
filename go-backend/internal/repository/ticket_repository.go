@@ -248,6 +248,10 @@ func applyCustomerServiceConversationFilters(query *gorm.DB, filters CustomerSer
 
 	search := customerServiceConversationSearchPattern(filters.Search)
 	if search != "" {
+		searchedTicketID, parseErr := strconv.ParseUint(strings.TrimSpace(filters.Search), 10, 63)
+		if parseErr == nil && searchedTicketID > 0 {
+			return query.Where("tickets.id = ?", searchedTicketID)
+		}
 		query = query.
 			Joins("LEFT JOIN users AS customer_users ON customer_users.id = tickets.customer_user_id AND customer_users.deleted_at IS NULL").
 			Joins("LEFT JOIN visitor_profiles AS conversation_visitors ON conversation_visitors.customer_service_visitor_hash = tickets.visitor_session_hash AND conversation_visitors.deleted_at IS NULL").

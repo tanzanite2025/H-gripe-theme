@@ -1013,6 +1013,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'VPS 中心', permission: 'ops:vps:view' }
       },
       {
+        path: 'ops/local-backups',
+        name: 'LocalComputerBackupAndConsistentRecovery',
+        redirect: { name: 'SettingsBackupAndRecovery', query: { tab: 'whole-storefront' } },
+        meta: { title: '备份与恢复', permission: 'settings:view' }
+      },
+      {
+        path: 'settings/backup-recovery',
+        name: 'SettingsBackupAndRecovery',
+        component: () => import('@/views/SettingsConfigurationExportImportAndWholeStorefrontBackupRecovery.vue'),
+        meta: { title: '备份与恢复', permission: 'settings:view' }
+      },
+      {
         path: 'ops/projects',
         name: 'OpsProjects',
         component: () => import('@/views/OpsProjects.vue'),
@@ -1039,6 +1051,8 @@ const routes: RouteRecordRaw[] = [
           markets: 'SettingsMarkets',
           api: 'SettingsApi',
           commercial_crawler: 'SettingsCommercialCrawler',
+          backup: 'SettingsBackupAndRecovery',
+          backup_recovery: 'SettingsBackupAndRecovery',
         }),
         meta: { permission: 'settings:view' }
       },

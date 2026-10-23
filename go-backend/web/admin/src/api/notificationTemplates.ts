@@ -50,8 +50,9 @@ export const notificationTemplatesApi = {
     return requireApiArrayField<NotificationTemplateVersion>(data, 'versions', path)
   },
   async save(input: Partial<NotificationTemplate> & { change_reason?: string }): Promise<NotificationTemplate> {
-    const path = `${endpoint}/${input.id}`
-    return requireApiObject(payload(await axios.put(path, input), path), path) as NotificationTemplate
+    const path = input.id ? `${endpoint}/${input.id}` : endpoint
+    const response = input.id ? await axios.put(path, input) : await axios.post(path, input)
+    return requireApiObject(payload(response, path), path) as NotificationTemplate
   },
   async preview(input: { code: string; locale: string; variables: Record<string, string> }): Promise<NotificationTemplatePreview> {
     const path = `${endpoint}/preview`

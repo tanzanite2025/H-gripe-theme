@@ -41,10 +41,18 @@ type ProductService struct {
 	txManager                      *repository.TxManager
 	displayPriceLeaseRepo          *repository.ExchangeRateRepository
 	viewCountBuffer                *ProductViewCountBuffer
+	readOnlyRecoveryVerification   bool
 }
 
 func NewProductService(productRepo *repository.ProductRepository, cache *cache.RedisCache, cacheTTL int) *ProductService {
 	return NewProductServiceWithCacheOptions(productRepo, cache, cacheTTL, 0)
+}
+
+// NewProductServiceForReadOnlyRecoveryVerification preserves public query and
+// response semantics while omitting telemetry, Redis and in-flight cache loads.
+// Callers must also restrict routes and supply an enforced read-only SQL transaction.
+func NewProductServiceForReadOnlyRecoveryVerification(productRepo *repository.ProductRepository) *ProductService {
+	return &ProductService{productRepo: productRepo, readOnlyRecoveryVerification: true}
 }
 
 func NewProductServiceWithCacheOptions(productRepo *repository.ProductRepository, cache *cache.RedisCache, cacheTTL, cacheLockTTL int) *ProductService {
@@ -364,6 +372,13 @@ func (s *ProductService) loadProduct(ctx context.Context, cacheKey string, loade
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if s.readOnlyRecoveryVerification {
+		result, err := loader(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return sanitizeProductHTML(result), nil
+	}
 	if s.cache == nil || s.cacheTTL <= 0 {
 		resultChan := s.cacheGroup.DoChan(cacheKey, func() (interface{}, error) {
 			result, err := loader(ctx)
@@ -570,9 +585,13 @@ func (s *ProductService) GetPublicByIDContext(ctx context.Context, id uint) (*pr
 }
 
 func (s *ProductService) recordProductView(ctx context.Context, id uint) {
+	if s.readOnlyRecoveryVerification {
+		return
+	}
 	if s.viewCountBuffer != nil {
 		// View telemetry must never put synchronous pressure back on PostgreSQL
-		// when Redis is unavailable. The next request/flush will retry naturally.
+		// when Redis is unavailable. Failed increments are best-effort telemetry
+		// and are not replayed; only successfully stored batches can be retried.
 		_ = s.viewCountBuffer.Increment(ctx, id)
 		return
 	}

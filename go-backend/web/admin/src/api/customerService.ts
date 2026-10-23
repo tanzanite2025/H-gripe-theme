@@ -2,14 +2,16 @@ import axios from '@/utils/axios'
 import {
   requireApiAcknowledgement,
   requireApiArrayField,
+  requireApiBooleanField,
   requireApiField,
+  requireApiNumberField,
   requireApiObject,
   requireApiObjectField,
   requireApiPagination,
   unwrapApiPayload,
 } from '@/utils/apiResponse'
 import { adminApiBaseUrl } from '@/lib/adminUrl'
-import type { CustomerConversationMessage } from '@/modules/customer-service/customerServiceTypes'
+import type { CustomerConversation, CustomerConversationMessage } from '@/modules/customer-service/customerServiceTypes'
 import type { MediaAsset } from '@/api/media'
 
 export interface CustomerServiceRetentionEligibility {
@@ -22,6 +24,18 @@ export interface CustomerServiceRetentionEligibility {
   eligible_after?: string | null
   soft_deleted_at?: string | null
   purge_after?: string | null
+  attachment_reference_count?: number
+  malformed_attachment_payloads?: number
+}
+
+export interface CustomerServiceRetentionRecord extends CustomerConversation {
+  retention: CustomerServiceRetentionEligibility
+}
+
+export const customerServiceConversationHistoryPageSize = 50
+
+export interface CustomerServiceConversationHistoryMessage extends CustomerConversationMessage {
+  conversation_id: string | number
 }
 
 export interface CustomerServiceRetentionRuntimeConfig {
@@ -134,6 +148,33 @@ export const customerServiceApi = {
     return requireApiArrayField(readObjectPayload(await axios.get(path, { suppressGlobalErrorToast }), path), 'messages', path)
   },
 
+  async listConversationMessageHistoryPage(conversationId: number | string, pageNumber: number, signal?: AbortSignal) {
+    const normalizedConversationId = String(conversationId)
+    if (!/^[1-9]\d*$/.test(normalizedConversationId) || !Number.isSafeInteger(Number(conversationId)) || Number(conversationId) > 4294967295 ||
+      !Number.isSafeInteger(pageNumber) || pageNumber < 1) {
+      throw new Error('Invalid conversation history identity or page number')
+    }
+    const path = `/api/admin/customer-service/conversations/${normalizedConversationId}/messages`
+    const offset = (pageNumber - 1) * customerServiceConversationHistoryPageSize
+    const payload = readObjectPayload(await axios.get(path, {
+      params: { limit: customerServiceConversationHistoryPageSize, offset },
+      signal,
+      suppressGlobalErrorToast: true,
+    }), path)
+    const messages = requireApiArrayField<CustomerServiceConversationHistoryMessage>(payload, 'messages', path)
+    const total = requireApiNumberField(payload, 'total', path)
+    const hasMore = requireApiBooleanField(payload, 'has_more', path)
+    if (messages.some((message) => String(requireApiObject(message, path).conversation_id) !== normalizedConversationId)) {
+      throw new Error('Conversation history response contains messages belonging to another conversation')
+    }
+    if (!Number.isSafeInteger(total) || total < 0 || messages.length > customerServiceConversationHistoryPageSize ||
+      (messages.length > 0 && offset + messages.length > total) || hasMore !== (offset + messages.length < total) ||
+      (hasMore && messages.length === 0)) {
+      throw new Error('Invalid conversation history pagination')
+    }
+    return { messages, total }
+  },
+
   async markMessagesRead(conversationId: number | string, suppressGlobalErrorToast = false) {
     const path = `/api/admin/customer-service/conversations/${conversationId}/messages/mark-read`
     return requireApiAcknowledgement(await axios.post(path, undefined, { suppressGlobalErrorToast }), path)
@@ -205,9 +246,21 @@ export const customerServiceApi = {
   async evaluateRetention(conversationIds: Array<number | string>) {
     const path = '/api/admin/customer-service/conversations/retention/eligibility'
     const payload = readObjectPayload(await axios.get(path, {
-      params: { conversation_ids: conversationIds.map((id) => Number(id)).join(',') },
+      params: {
+        conversation_ids: conversationIds.map((id) => Number(id)).join(','),
+        include_attachment_diagnostics: 'true',
+      },
     }), path)
     return requireApiArrayField<CustomerServiceRetentionEligibility>(payload, 'eligibility', path)
+  },
+  async listRetentionRecords(params: Record<string, any> = {}) {
+    const path = '/api/admin/customer-service/conversations/retention/records'
+    const response = await axios.get(path, { params, suppressGlobalErrorToast: true })
+    const body = requireApiObject(response.data, path, 'response body')
+    const payload = requireApiObject(unwrapApiPayload(response, path), path)
+    requireApiArrayField<CustomerServiceRetentionRecord>(payload, 'records', path)
+    requireApiPagination(body, payload, path)
+    return payload
   },
   async getRetentionConfig(): Promise<CustomerServiceRetentionRuntimeConfig> {
     const path = '/api/admin/customer-service/conversations/retention/config'

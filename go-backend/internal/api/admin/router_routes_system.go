@@ -34,6 +34,11 @@ func registerSystemRoutes(
 	{
 		settingsGroup.GET("", settingsHandler.GetAllSettings)
 		settingsGroup.GET("/groups", settingsHandler.GetGroups)
+		settingsGroup.GET("/backup-recovery/overview", settingsHandler.GetConfigurationBackupAndRecoveryOverview)
+		settingsGroup.GET("/backup-recovery/configuration/export", settingsHandler.DownloadPortableSettingsConfiguration)
+		settingsGroup.POST("/backup-recovery/configuration/preview", settingsHandler.PreviewPortableSettingsConfiguration)
+		settingsGroup.POST("/backup-recovery/configuration/import", middleware.RequirePermission(auth.PermSettingsEdit), settingsHandler.ImportPortableSettingsConfiguration)
+		settingsGroup.POST("/backup-recovery/maintenance-session", middleware.RequirePermission(auth.PermOpsBackupView), issueLocalComputerBackupMaintenanceSession)
 		settingsGroup.GET("/commercial-crawler-protection", commercialCrawlerHandler.GetStatus)
 		settingsGroup.GET("/public-chat-agents", publicChatAgentHandler.ListPublicChatAgents)
 		settingsGroup.GET("/public-chat-agent-candidates", publicChatAgentHandler.ListPublicChatAgentCandidates)

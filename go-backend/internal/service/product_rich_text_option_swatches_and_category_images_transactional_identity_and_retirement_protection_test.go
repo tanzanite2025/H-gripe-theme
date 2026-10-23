@@ -15,7 +15,7 @@ import (
 
 func TestProductRichTextMediaSourcesAndFileLinksRejectIneligibleOrUnregisteredFilesAtomically(t *testing.T) {
 	for _, manager := range []bool{false, true} {
-		for _, field := range []string{"description", "short_desc"} {
+		for _, field := range []string{"description", "short_description"} {
 			for _, placement := range []string{"image", "video", "poster", "file link"} {
 				t.Run(fmt.Sprintf("manager=%t/%s/%s", manager, field, placement), func(t *testing.T) {
 					db, products, _ := createProductMediaTransactionalBindingTestServices(t, manager)
@@ -78,19 +78,19 @@ func TestProductRichTextCanonicalReferencesProtectOriginalsAndIgnoreTextAndForei
 	require.NoError(t, err)
 	require.Len(t, report.References, 1)
 	require.Equal(t, "product_rich_text", report.References[0].ResourceType)
-	require.Equal(t, "description, short_desc", report.References[0].Field)
+	require.Equal(t, "description, short_description", report.References[0].Field)
 	require.ErrorIs(t, assets.DeleteAsset(t.Context(), image.ID, MediaAssetDeleteConfirmation(image.ID)), ErrMediaAssetInUse)
 	translated, _, err := products.CopyAdminProductTranslation(created.ID, "fr")
 	require.NoError(t, err)
 	require.Contains(t, translated.Description, image.URL)
 
 	// Historical HTML still using a derivative/encoded URL is also discoverable.
-	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", created.ID).Updates(map[string]any{"description": `<img src="https://shop.example.test/uploads/derivatives/photo.webp?a=1&amp;b=2">`, "short_desc": ""}).Error)
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", created.ID).Updates(map[string]any{"description": `<img src="https://shop.example.test/uploads/derivatives/photo.webp?a=1&amp;b=2">`, "short_description": ""}).Error)
 	report, err = assets.GetAssetReferences(image.ID)
 	require.NoError(t, err)
 	require.Len(t, report.References, 2)
 	for _, id := range []uint{created.ID, translated.ID} {
-		require.NoError(t, db.Model(&product.Product{}).Where("id = ?", id).Updates(map[string]any{"description": `<p>` + image.URL + `</p><img src="https://foreign.example.test/uploads/` + image.StorageKey + `"><img src="` + image.URL + `.backup">`, "short_desc": ""}).Error)
+		require.NoError(t, db.Model(&product.Product{}).Where("id = ?", id).Updates(map[string]any{"description": `<p>` + image.URL + `</p><img src="https://foreign.example.test/uploads/` + image.StorageKey + `"><img src="` + image.URL + `.backup">`, "short_description": ""}).Error)
 	}
 	report, err = assets.GetAssetReferences(image.ID)
 	require.NoError(t, err)
@@ -136,7 +136,7 @@ func TestOmittedProductRichTextFieldsReloadCurrentValuesRatherThanRestoringDetac
 	stale, err := products.productRepo.FindByID(created.ID)
 	require.NoError(t, err)
 	// A second edit detached both fields after the first request loaded them.
-	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", created.ID).Updates(map[string]any{"description": "", "short_desc": ""}).Error)
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", created.ID).Updates(map[string]any{"description": "", "short_description": ""}).Error)
 	require.NoError(t, assets.DeleteAsset(t.Context(), asset.ID, MediaAssetDeleteConfirmation(asset.ID)))
 	stale.Name = "Concurrent ordinary edit"
 	require.NoError(t, products.productRepo.UpdateWithSpecValuesVariantsOptionValuesAndMedia(stale, nil, false, nil, false, nil, false, nil, false, repository.ProductRichTextFieldMutation{}))

@@ -205,6 +205,7 @@ func registerContentRoutes(
 		customerServiceGroup.GET("/analytics", ticketHandler.GetCustomerServiceAnalytics)
 		customerServiceGroup.GET("/conversations", ticketHandler.ListCustomerServiceConversations)
 		customerServiceGroup.GET("/conversations/retention/eligibility", middleware.AdminOnly(), ticketHandler.EvaluateCustomerServiceRetention)
+		customerServiceGroup.GET("/conversations/retention/records", middleware.AdminOnly(), ticketHandler.ListCustomerServiceRetentionRecords)
 		customerServiceGroup.GET("/conversations/retention/config", middleware.AdminOnly(), ticketHandler.GetCustomerServiceRetentionConfig)
 		customerServiceGroup.PUT("/conversations/retention/config", middleware.AdminOnly(), ticketHandler.UpdateCustomerServiceRetentionConfig)
 		customerServiceGroup.POST("/conversations/retention/soft-delete", middleware.AdminOnly(), ticketHandler.SoftDeleteCustomerServiceConversations)

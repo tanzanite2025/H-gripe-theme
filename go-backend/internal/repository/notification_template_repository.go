@@ -87,8 +87,17 @@ func (r *NotificationTemplateRepository) SaveWithVersion(template *notification.
 			if template.Version != 1 {
 				return notification.ErrTemplateVersionConflict
 			}
+			isEnabled := template.IsEnabled
 			if err := tx.Create(template).Error; err != nil {
 				return err
+			}
+			// GORM applies the schema's true default to a false bool on create.
+			// Preserve an explicitly disabled locale draft inside this transaction.
+			if !isEnabled {
+				if err := tx.Model(template).UpdateColumn("is_enabled", false).Error; err != nil {
+					return err
+				}
+				template.IsEnabled = false
 			}
 		} else {
 			var current notification.EmailTemplate

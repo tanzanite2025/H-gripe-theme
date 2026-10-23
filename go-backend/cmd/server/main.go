@@ -20,6 +20,7 @@ import (
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/database"
 	"commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/pkg/maintenancegate"
 	"commerce-platform/internal/pkg/scheduler"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/pkg/worker"
@@ -27,6 +28,7 @@ import (
 	"commerce-platform/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gofrs/flock"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -38,6 +40,33 @@ var (
 
 func main() {
 	command := parseCommand()
+	maintenanceContext, cancelMaintenanceWatch := context.WithCancel(context.Background())
+	defer cancelMaintenanceWatch()
+	// The OS releases this shared lease only after the entire process exits,
+	// including every independent worker and scheduler. A persistent fence also
+	// blocks restart, migrations and backfill commands before database access.
+	var lease *flock.Flock
+	var err error
+	if command == "register-backup-boundary" {
+		directory := os.Getenv("LOCAL_BACKUP_MAINTENANCE_DIRECTORY")
+		if directory == "" {
+			log.Fatal("LOCAL_BACKUP_MAINTENANCE_DIRECTORY is required")
+		}
+		timeout, cancel := context.WithTimeout(maintenanceContext, 60*time.Second)
+		lease, err = maintenancegate.AcquireExclusiveRecoveryLease(timeout, directory)
+		cancel()
+	} else {
+		lease, err = maintenancegate.AcquireApplicationProcessLease(maintenanceContext, os.Getenv("LOCAL_BACKUP_MAINTENANCE_DIRECTORY"), func() {
+			log.Print("application process stopped for independent backup/recovery maintenance")
+			os.Exit(0)
+		})
+	}
+	if err != nil {
+		log.Fatalf("maintenance gate: %v", err)
+	}
+	if lease != nil {
+		defer lease.Close()
+	}
 	if command == "render-edge-config" {
 		applyEdgeConfigLoadDefaults()
 	}
@@ -46,7 +75,28 @@ func main() {
 	if err != nil {
 		log.Fatalf("load config: %v", err)
 	}
+	if directory := os.Getenv("LOCAL_BACKUP_MAINTENANCE_DIRECTORY"); directory != "" {
+		sharedStorage := storage.LoadConfigFromEnv()
+		logoStorage := storage.LoadSiteLogoConfigFromEnv(sharedStorage)
+		if string(sharedStorage.Type) != "local" || string(logoStorage.Type) != "local" {
+			log.Fatal("local computer backup requires explicitly configured local application media")
+		}
+		recoveryKeys := collectRecoverySigningAndEncryptionKeysFromApplicationConfiguration(cfg)
+		externalProjections, err := collectRegisteredRecoveryExternalProjectionConfiguration(cfg, sharedStorage, logoStorage)
+		if err != nil {
+			log.Fatalf("register recovery external projections: %v", err)
+		}
+		if err := maintenancegate.RegisterApplicationBoundary(directory, cfg.Database.Database, Version,
+			map[string]string{"uploads": sharedStorage.LocalPath, "uploads_private": sharedStorage.PrivateLocalPath, "site_logo_uploads": logoStorage.LocalPath},
+			recoveryKeys, externalProjections); err != nil {
+			log.Fatalf("register recovery boundary: %v", err)
+		}
+	}
 
+	if command == "register-backup-boundary" {
+		log.Print("offline recovery boundary registered; no database, migration or business job was started")
+		return
+	}
 	if err := logger.Init(cfg.Log); err != nil {
 		log.Fatalf("init logger: %v", err)
 	}
@@ -163,6 +213,20 @@ func main() {
 	defer func() {
 		_ = redisCache.Close()
 	}()
+	if os.Getenv("LOCAL_BACKUP_PRODUCT_VIEW_REDIS_OWNERSHIP_ENABLED") == "true" {
+		if !cfg.Worker.ProductViewCountFlushEnabled || (cfg.Redis.NormalizedMode() != "standalone" && cfg.Redis.NormalizedMode() != "sentinel") {
+			logger.Fatal("product view Redis recovery ownership requires standalone or Sentinel buffered views")
+		}
+		ownershipContext, cancelOwnership := context.WithTimeout(maintenanceContext, 15*time.Second)
+		projection := service.DescribeProductCatalogRuntimeProjectionBoundaryForRecovery(true)
+		ownershipErr := maintenancegate.RegisterProductViewRedisRuntimeOwnershipBeforeStartingWriters(ownershipContext,
+			os.Getenv("LOCAL_BACKUP_MAINTENANCE_DIRECTORY"), os.Getenv("LOCAL_BACKUP_SITE_ID"), os.Getenv("LOCAL_BACKUP_ENVIRONMENT"), cfg.Database.Database,
+			maintenancegate.FingerprintRedisRecoveryDestination(cfg.Redis.NormalizedMode(), cfg.Redis.GetRedisAddrs(), cfg.Redis.DB, cfg.Redis.MasterName), projection.ViewCountKeysSHA256, redisCache.Client())
+		cancelOwnership()
+		if ownershipErr != nil {
+			logger.Fatal("product view Redis ownership registration refused", zap.Error(ownershipErr))
+		}
+	}
 
 	deps, err := app.NewDependencies(db, redisCache, cfg)
 	if err != nil {
@@ -493,11 +557,35 @@ func main() {
 	logger.Info("server stopped")
 }
 
+func collectRecoverySigningAndEncryptionKeysFromApplicationConfiguration(cfg *config.Config) map[string]string {
+	keys := map[string]string{
+		"JWT_SECRET":                cfg.JWT.Secret,
+		"PAYMENT_CONFIG_MASTER_KEY": os.Getenv("PAYMENT_CONFIG_MASTER_KEY"),
+		"OPS_CONNECTOR_MASTER_KEY":  os.Getenv("OPS_CONNECTOR_MASTER_KEY"),
+		"ORDER_NUMBER_SECRET":       cfg.OrderNumber.EffectiveSecret(cfg.JWT.Secret),
+	}
+	for name, value := range map[string]string{
+		"ORDER_NUMBER_PREVIOUS_SECRET":         cfg.OrderNumber.EffectivePreviousSecret(),
+		"GOOGLE_MERCHANT_TOKEN_ENCRYPTION_KEY": cfg.GoogleMerchant.TokenEncryptionKey,
+		"SOCIAL_OAUTH_TOKEN_ENCRYPTION_KEY":    cfg.SocialOAuth.TokenEncryptionKey,
+	} {
+		if value != "" {
+			keys[name] = value
+		}
+	}
+	for _, name := range []string{"EMAIL_PROVIDER_MASTER_KEY", "SECURITY_MASTER_KEY", "FPX_API_MASTER_KEY", "YANWEN_API_MASTER_KEY"} {
+		if value := os.Getenv(name); value != "" {
+			keys[name] = value
+		}
+	}
+	return keys
+}
+
 func parseCommand() string {
 	if len(os.Args) <= 1 {
 		return "serve"
 	}
-	if len(os.Args) == 2 && (os.Args[1] == "migrate" || os.Args[1] == "render-edge-config" || os.Args[1] == "backfill-media-derivatives") {
+	if len(os.Args) == 2 && (os.Args[1] == "migrate" || os.Args[1] == "render-edge-config" || os.Args[1] == "backfill-media-derivatives" || os.Args[1] == "register-backup-boundary") {
 		return os.Args[1]
 	}
 	log.Fatalf("unsupported command: %v", os.Args[1:])

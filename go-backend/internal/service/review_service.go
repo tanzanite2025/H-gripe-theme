@@ -7,8 +7,9 @@ import (
 )
 
 type ReviewService struct {
-	reviewRepo       *repository.ReviewRepository
-	mediaURLResolver PublicMediaURLResolver
+	readOnlyRecoveryVerification bool
+	reviewRepo                   *repository.ReviewRepository
+	mediaURLResolver             PublicMediaURLResolver
 }
 
 var ErrReviewNotPublic = errors.New("review is not public")
@@ -147,6 +148,12 @@ func (s *ReviewService) MarkHelpful(reviewID, userID uint, isHelpful bool) error
 func (s *ReviewService) GetReviewSummary(productID uint) (*review.ReviewSummary, error) {
 	summary, err := s.reviewRepo.FindReviewSummaryByProductID(productID)
 	if err != nil {
+		if s.readOnlyRecoveryVerification {
+			if repository.IsRecordNotFound(err) {
+				return &review.ReviewSummary{ProductID: productID}, nil
+			}
+			return nil, err
+		}
 		return s.reviewRepo.GetOrCreateReviewSummary(productID)
 	}
 	return summary, nil

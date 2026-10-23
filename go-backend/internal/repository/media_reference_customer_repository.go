@@ -3,9 +3,15 @@ package repository
 import "commerce-platform/internal/domain/media"
 
 func (r *MediaRepository) warrantyClaimReferences(query mediaAssetReferenceQuery) ([]media.AssetReference, error) {
+	videoColumn := ""
+	// The original formal warranty schema has images only. Scan video_url
+	// whenever the later application-created column is actually present.
+	if r.hasTable("warranty_claims") && r.db.Migrator().HasColumn("warranty_claims", "video_url") {
+		videoColumn = "video_url"
+	}
 	return r.scanDecodedLegacyJSONAndDirectMediaReferenceRows(query, legacyJSONAndDirectMediaReferenceSource{
 		Table: "warranty_claims", ResourceType: "warranty_claim", Category: media.ReferenceCategoryCustomer,
-		JSONColumn: "images", DirectMediaColumn: "video_url", ParentColumn: "0", HasSoftDeletion: true,
+		JSONColumn: "images", DirectMediaColumn: videoColumn, ParentColumn: "0", HasSoftDeletion: true,
 	})
 }
 

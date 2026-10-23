@@ -215,6 +215,7 @@ const zhCN = {
     'settings-currency': '价格币种',
     'settings-markets': '市场与本地化语种',
     'settings-api': '通用 API',
+    'settings-backup-recovery': '备份与恢复',
     'settings-commercial-crawler': '商业爬虫防护',
     'audit-logs': '审计日志',
   },

@@ -25,6 +25,9 @@ func (r *MediaRepository) dedicatedPublicObjectLegacyCommunityAndPrivateAttachme
 		if !r.hasTable(source.table) {
 			continue
 		}
+		if source.table == "warranty_claims" && source.column == "video_url" && !r.db.Migrator().HasColumn(source.table, source.column) {
+			continue // Formal migrations provide images; this later column is optional.
+		}
 		for afterID := uint(0); ; {
 			var rows []struct {
 				ID, ParentID uint
