@@ -4,12 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/audit"
-	"commerce-platform/internal/domain/ticket"
-	"commerce-platform/internal/domain/user"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/audit"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/domain/user"
 )
 
 func TestFindCustomerServiceConversationAttachmentReferenceScanDeduplicatesValidPayloads(t *testing.T) {

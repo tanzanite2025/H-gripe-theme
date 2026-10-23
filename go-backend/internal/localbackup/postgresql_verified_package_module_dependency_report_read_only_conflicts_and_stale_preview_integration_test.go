@@ -11,9 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestPostgreSQLModuleDependencyReportDetectsConflictsWithoutChangingDataOrRestorePreview(t *testing.T) {
@@ -130,7 +131,7 @@ CREATE TABLE outbox_events(id bigserial PRIMARY KEY,status text);INSERT INTO out
 	}
 	orderAuthenticationKey, err := readProtectedCredential(cfg.AuthenticationKeyFile)
 	require.NoError(t, err)
-	orderRequest := httptest.NewRequest(http.MethodPost, ConsolePrefix+"/api/tasks/"+verified.ID+"/module-dependency-report", strings.NewReader(`{"module":"orders"}`))
+	orderRequest := httptest.NewRequestWithContext(context.Background(), http.MethodPost, ConsolePrefix+"/api/tasks/"+verified.ID+"/module-dependency-report", strings.NewReader(`{"module":"orders"}`))
 	orderRequest.Header.Set("Authorization", "Bearer "+orderAuthenticationKey)
 	orderResponse := httptest.NewRecorder()
 	manager.HTTPHandler().ServeHTTP(orderResponse, orderRequest)
@@ -180,7 +181,7 @@ CREATE TABLE outbox_events(id bigserial PRIMARY KEY,status text);INSERT INTO out
 	require.NoError(t, err)
 	key, err := readProtectedCredential(cfg.AuthenticationKeyFile)
 	require.NoError(t, err)
-	request := httptest.NewRequest(http.MethodPost, ConsolePrefix+"/api/tasks/"+verified.ID+"/module-dependency-report", strings.NewReader(`{"module":"customer_service"}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, ConsolePrefix+"/api/tasks/"+verified.ID+"/module-dependency-report", strings.NewReader(`{"module":"customer_service"}`))
 	request.Header.Set("Authorization", "Bearer "+key)
 	response := httptest.NewRecorder()
 	manager.HTTPHandler().ServeHTTP(response, request)

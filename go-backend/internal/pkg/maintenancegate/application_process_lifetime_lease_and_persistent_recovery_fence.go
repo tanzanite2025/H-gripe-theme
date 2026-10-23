@@ -42,7 +42,7 @@ func AcquireApplicationProcessLease(ctx context.Context, directory string, onFen
 			if locked {
 				fenced, err = IsApplicationFenced(directory)
 				if err != nil {
-					lease.Close()
+					_ = lease.Close()
 					return nil, err
 				}
 				if !fenced {
@@ -93,7 +93,7 @@ func AcquireExclusiveRecoveryLease(ctx context.Context, directory string) (*floc
 	lease := flock.New(filepath.Join(directory, "application-runtime.lock"))
 	locked, err := lease.TryLockContext(ctx, 200*time.Millisecond)
 	if err != nil || !locked {
-		lease.Close()
+		_ = lease.Close()
 		return nil, fmt.Errorf("application processes have not stopped: %w", err)
 	}
 	return lease, nil

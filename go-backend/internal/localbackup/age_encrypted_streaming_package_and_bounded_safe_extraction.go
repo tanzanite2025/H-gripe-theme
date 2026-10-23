@@ -25,14 +25,14 @@ func WriteEncryptedPackage(destination string, sourceDirectory string, manifest 
 	if err := validateExtractedWholeApplicationCompanyStaticReleaseMarker(manifest, sourceDirectory); err != nil {
 		return err
 	}
-	file, err := os.OpenFile(destination, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	file, err := os.OpenFile(destination, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600) // #nosec G304 -- The caller supplies the private task package destination; O_EXCL prevents overwriting an existing file.
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
-			file.Close()
-			os.Remove(destination)
+			_ = file.Close()
+			_ = os.Remove(destination)
 		}
 	}()
 	recipient, err := age.NewScryptRecipient(passphrase)
@@ -65,7 +65,7 @@ func WriteEncryptedPackage(destination string, sourceDirectory string, manifest 
 		if err = archive.WriteHeader(&tar.Header{Name: entry.Path, Mode: 0600, Size: entry.Size}); err != nil {
 			return err
 		}
-		source, openErr := os.Open(filepath.Join(sourceDirectory, filepath.FromSlash(entry.Path)))
+		source, openErr := os.Open(filepath.Join(sourceDirectory, filepath.FromSlash(entry.Path))) // #nosec G304 -- Package paths are scope-validated manifest entries inside the private extraction workspace.
 		if openErr != nil {
 			return openErr
 		}
@@ -100,11 +100,11 @@ func ExtractAndVerifyEncryptedPackage(source, destination, passphrase string, ma
 
 func extractAndVerifyEncryptedPackageWithAllowedScopes(source, destination, passphrase string, maxBytes int64, maxFiles int, allowProductModule bool, capacityChecks ...func(int64) error) (Manifest, error) {
 	var manifest Manifest
-	file, err := os.Open(source)
+	file, err := os.Open(source) // #nosec G304,G703 -- The caller supplies the uploaded package path in the private task workspace, not an archive entry path.
 	if err != nil {
 		return manifest, err
 	}
-	defer file.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 	identity, err := age.NewScryptIdentity(passphrase)
 	if err != nil {
 		return manifest, err
@@ -119,7 +119,7 @@ func extractAndVerifyEncryptedPackageWithAllowedScopes(source, destination, pass
 	if err != nil {
 		return manifest, errors.New("invalid compressed package")
 	}
-	defer compressed.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(compressed.Close)
 	compressed.Multistream(false)
 	archive := tar.NewReader(compressed)
 	header, err := archive.Next()
@@ -139,7 +139,7 @@ func extractAndVerifyEncryptedPackageWithAllowedScopes(source, destination, pass
 	if err := validateWholeApplicationCompanyStaticManifestReleaseBinding(manifest); err != nil {
 		return manifest, err
 	}
-	if !safeTaskID.MatchString(manifest.PackageID) || (manifest.Scope != "whole_application" && !(allowProductModule && manifest.Scope == productCatalogBackupScope)) || len(manifest.Files) > maxFiles {
+	if !safeTaskID.MatchString(manifest.PackageID) || (manifest.Scope != "whole_application" && (!allowProductModule || manifest.Scope != productCatalogBackupScope)) || len(manifest.Files) > maxFiles {
 		return manifest, errors.New("unsupported package format or scope")
 	}
 	entries := make(map[string]FileIdentity, len(manifest.Files))
@@ -177,7 +177,7 @@ func extractAndVerifyEncryptedPackageWithAllowedScopes(source, destination, pass
 	succeeded := false
 	defer func() {
 		if !succeeded {
-			os.RemoveAll(destination)
+			_ = os.RemoveAll(destination)
 		}
 	}()
 	for {
@@ -196,12 +196,12 @@ func extractAndVerifyEncryptedPackageWithAllowedScopes(source, destination, pass
 		if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
 			return manifest, err
 		}
-		output, err := os.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		output, err := os.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600) // #nosec G304 -- Package paths are scope-validated manifest entries inside the private extraction workspace.
 		if err != nil {
 			return manifest, err
 		}
 		hash := sha256.New()
-		size, copyErr := io.Copy(io.MultiWriter(output, hash), archive)
+		size, copyErr := io.CopyN(io.MultiWriter(output, hash), archive, entry.Size)
 		syncErr, closeErr := output.Sync(), output.Close()
 		if err := errors.Join(copyErr, syncErr, closeErr); err != nil {
 			return manifest, err
@@ -216,10 +216,10 @@ func extractAndVerifyEncryptedPackageWithAllowedScopes(source, destination, pass
 	}
 	// Drain both layers: tar EOF alone does not authenticate the final age frame
 	// or verify gzip's checksum. Reject appended plaintext/concatenated streams.
-	if remaining, err := io.Copy(io.Discard, compressed); err != nil || remaining != 0 {
+	if remaining, err := io.CopyN(io.Discard, compressed, 1); (err != nil && err != io.EOF) || remaining != 0 {
 		return manifest, errors.New("invalid archive trailer")
 	}
-	if remaining, err := io.Copy(io.Discard, bufferedPlaintext); err != nil || remaining != 0 {
+	if remaining, err := io.CopyN(io.Discard, bufferedPlaintext, 1); (err != nil && err != io.EOF) || remaining != 0 {
 		return manifest, errors.New("invalid encrypted package trailer")
 	}
 	if err := validateExtractedWholeApplicationCompanyStaticReleaseMarker(manifest, destination); err != nil {

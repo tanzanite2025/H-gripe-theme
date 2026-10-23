@@ -16,16 +16,16 @@ func verifyProductCatalogRichTextMediaTypesLegacyOccurrencesAndAtomicRollback(t 
 	t.Helper()
 	ctx, cfg := context.Background(), manager.Configuration
 	var productID, translatedProductID int64
-	require.NoError(t, stage.QueryRow(`SELECT id FROM products WHERE slug='product-backup-original' AND locale='en'`).Scan(&productID))
-	require.NoError(t, stage.QueryRow(`SELECT id FROM products WHERE slug='product-backup-original' AND locale='zh'`).Scan(&translatedProductID))
-	_, err := stage.Exec(`INSERT INTO media_assets(id,filename,url,storage_key,media_type) VALUES
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM products WHERE slug='product-backup-original' AND locale='en'`).Scan(&productID))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM products WHERE slug='product-backup-original' AND locale='zh'`).Scan(&translatedProductID))
+	_, err := stage.ExecContext(context.Background(), `INSERT INTO media_assets(id,filename,url,storage_key,media_type) VALUES
 (920001,'synthetic-video.mp4','/uploads/products/synthetic-video.mp4','products/synthetic-video.mp4','video'),
 (920002,'synthetic-manual.pdf','/uploads/products/synthetic-manual','products/synthetic-manual','document'),
 (920003,'synthetic-owned.png','/uploads/visual-showcase/synthetic-owned.png','visual-showcase/synthetic-owned.png','image');
 INSERT INTO media_asset_derivatives(id,media_asset_id,preset,url,storage_key) VALUES(920004,920003,'synthetic-owned-derivative','/uploads/products/synthetic-owned-derivative.png','products/synthetic-owned-derivative.png')`)
 	require.NoError(t, err)
 	defer func() {
-		_, err := stage.Exec(`DELETE FROM media_asset_derivatives WHERE id=920004; DELETE FROM media_assets WHERE id IN (920001,920002,920003)`)
+		_, err := stage.ExecContext(context.Background(), `DELETE FROM media_asset_derivatives WHERE id=920004; DELETE FROM media_assets WHERE id IN (920001,920002,920003)`)
 		require.NoError(t, err)
 	}()
 
@@ -70,20 +70,20 @@ INSERT INTO media_asset_derivatives(id,media_asset_id,preset,url,storage_key) VA
 		} {
 			t.Run("product_rich_text_"+column+"_"+scenario.name, func(t *testing.T) {
 				t.Cleanup(func() {
-					_, err := stage.Exec(`DELETE FROM products WHERE id=920010`)
+					_, err := stage.ExecContext(context.Background(), `DELETE FROM products WHERE id=920010`)
 					require.NoError(t, err)
-					_, err = stage.Exec(`UPDATE products SET description=NULL,short_description=NULL WHERE id=$1`, translatedProductID)
+					_, err = stage.ExecContext(context.Background(), `UPDATE products SET description=NULL,short_description=NULL WHERE id=$1`, translatedProductID)
 					require.NoError(t, err)
-					_, err = stage.Exec(`UPDATE products SET description='Original complete description',short_description=NULL WHERE id=$1`, productID)
+					_, err = stage.ExecContext(context.Background(), `UPDATE products SET description='Original complete description',short_description=NULL WHERE id=$1`, productID)
 					require.NoError(t, err)
 				})
 				otherColumn := "short_description"
 				if column == "short_description" {
 					otherColumn = "description"
 				}
-				_, err := stage.Exec(`UPDATE products SET `+column+`=$1,`+otherColumn+`=$2 WHERE id=$3`, scenario.previous, scenario.otherField, productID)
+				_, err := stage.ExecContext(context.Background(), `UPDATE products SET `+column+`=$1,`+otherColumn+`=$2 WHERE id=$3`, scenario.previous, scenario.otherField, productID)
 				require.NoError(t, err)
-				_, err = stage.Exec(`UPDATE products SET `+column+`=$1 WHERE id=$2`, scenario.translated, translatedProductID)
+				_, err = stage.ExecContext(context.Background(), `UPDATE products SET `+column+`=$1 WHERE id=$2`, scenario.translated, translatedProductID)
 				require.NoError(t, err)
 				mutation, err := json.Marshal(map[string]any{column: scenario.incoming})
 				require.NoError(t, err)
@@ -132,17 +132,17 @@ INSERT INTO media_asset_derivatives(id,media_asset_id,preset,url,storage_key) VA
 				require.NoError(t, err)
 				require.NotNil(t, result)
 				var persisted string
-				require.NoError(t, stage.QueryRow(`SELECT `+column+` FROM products WHERE id=$1`, productID).Scan(&persisted))
+				require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT `+column+` FROM products WHERE id=$1`, productID).Scan(&persisted))
 				require.Equal(t, scenario.incoming, persisted, "restore must preserve the exact HTML instead of rewriting URLs")
 			})
 		}
 	}
 	for _, deleted := range []bool{false, true} {
 		t.Run(fmt.Sprintf("product_rich_text_retained_invalid_type_deleted_%t", deleted), func(t *testing.T) {
-			_, err := stage.Exec(`UPDATE products SET description='<img src="/uploads/products/synthetic-video.mp4">',deleted_at=CASE WHEN $1 THEN now() ELSE NULL END WHERE slug='target-only-product'`, deleted)
+			_, err := stage.ExecContext(context.Background(), `UPDATE products SET description='<img src="/uploads/products/synthetic-video.mp4">',deleted_at=CASE WHEN $1 THEN now() ELSE NULL END WHERE slug='target-only-product'`, deleted)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				_, err := stage.Exec(`UPDATE products SET description=NULL,deleted_at=NULL WHERE slug='target-only-product'`)
+				_, err := stage.ExecContext(context.Background(), `UPDATE products SET description=NULL,deleted_at=NULL WHERE slug='target-only-product'`)
 				require.NoError(t, err)
 			})
 			_, before, _, err := captureDatabaseInventory(ctx, stage)
@@ -186,13 +186,13 @@ func verifyProductCatalogRichTextVideoAndExtensionlessFileEncryptedRoundTrip(t *
 	const html = `<p>/uploads/products/not-an-attachment.png</p><video src="/uploads/products/synthetic-video.mp4" poster="/uploads/products/product-small.png"></video><a href="/uploads/products/synthetic-manual#page=2">Manual</a><a href="https://external.invalid/product.jpg">External link</a>`
 	const summary = `<p>Canonical summary &amp; exact</p><img src="/uploads/products/product-original.png">`
 	const seo = "Canonical SEO description & exact"
-	_, err = db.Exec(`INSERT INTO media_assets(id,filename,url,storage_key,media_type) VALUES(920001,'synthetic-video.mp4','/uploads/products/synthetic-video.mp4','products/synthetic-video.mp4','video'),(920002,'synthetic-manual.pdf','/uploads/products/synthetic-manual','products/synthetic-manual','document'); INSERT INTO products(id,name,slug,price_minor,currency) VALUES(920010,'Synthetic rich text product','synthetic-rich-text-product',100,'USD')`)
+	_, err = db.ExecContext(context.Background(), `INSERT INTO media_assets(id,filename,url,storage_key,media_type) VALUES(920001,'synthetic-video.mp4','/uploads/products/synthetic-video.mp4','products/synthetic-video.mp4','video'),(920002,'synthetic-manual.pdf','/uploads/products/synthetic-manual','products/synthetic-manual','document'); INSERT INTO products(id,name,slug,price_minor,currency) VALUES(920010,'Synthetic rich text product','synthetic-rich-text-product',100,'USD')`)
 	require.NoError(t, err)
-	_, err = db.Exec(`UPDATE products SET description=$1,short_description=$2,meta_description=$3 WHERE id=920010`, html, summary, seo)
+	_, err = db.ExecContext(context.Background(), `UPDATE products SET description=$1,short_description=$2,meta_description=$3 WHERE id=920010`, html, summary, seo)
 	require.NoError(t, err)
 	files := map[string][]byte{"products/synthetic-video.mp4": []byte("synthetic-video-file-content"), "products/synthetic-manual": []byte("synthetic-extensionless-document-content")}
 	t.Cleanup(func() {
-		_, err := db.Exec(`DELETE FROM products WHERE id=920010; DELETE FROM media_assets WHERE id IN (920001,920002)`)
+		_, err := db.ExecContext(context.Background(), `DELETE FROM products WHERE id=920010; DELETE FROM media_assets WHERE id IN (920001,920002)`)
 		require.NoError(t, err)
 		for key := range files {
 			require.NoError(t, os.Remove(filepath.Join(cfg.StorageRoots["uploads"], filepath.FromSlash(key))))
@@ -200,7 +200,7 @@ func verifyProductCatalogRichTextVideoAndExtensionlessFileEncryptedRoundTrip(t *
 	})
 	for key, body := range files {
 		require.NoError(t, os.WriteFile(filepath.Join(cfg.StorageRoots["uploads"], filepath.FromSlash(key)), body, 0600))
-		_, err := db.Exec(`UPDATE media_assets SET size=$1 WHERE storage_key=$2`, len(body), key)
+		_, err := db.ExecContext(context.Background(), `UPDATE media_assets SET size=$1 WHERE storage_key=$2`, len(body), key)
 		require.NoError(t, err)
 	}
 	_, before, _, err := captureDatabaseInventory(ctx, db)
@@ -228,7 +228,7 @@ func verifyProductCatalogRichTextVideoAndExtensionlessFileEncryptedRoundTrip(t *
 	require.NoError(t, err)
 	defer clone.Close()
 	var restoredHTML, restoredSummary, restoredSEO string
-	require.NoError(t, clone.QueryRow(`SELECT description,short_description,meta_description FROM products WHERE id=920010`).Scan(&restoredHTML, &restoredSummary, &restoredSEO))
+	require.NoError(t, clone.QueryRowContext(context.Background(), `SELECT description,short_description,meta_description FROM products WHERE id=920010`).Scan(&restoredHTML, &restoredSummary, &restoredSEO))
 	require.Equal(t, html, restoredHTML)
 	require.Equal(t, summary, restoredSummary)
 	require.Equal(t, seo, restoredSEO)

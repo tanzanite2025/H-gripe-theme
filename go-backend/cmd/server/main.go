@@ -50,7 +50,7 @@ func main() {
 	if command == "register-backup-boundary" {
 		directory := os.Getenv("LOCAL_BACKUP_MAINTENANCE_DIRECTORY")
 		if directory == "" {
-			log.Fatal("LOCAL_BACKUP_MAINTENANCE_DIRECTORY is required")
+			log.Fatal("LOCAL_BACKUP_MAINTENANCE_DIRECTORY is required") //nolint:gocritic // Fatal startup exits the whole process and releases its process-lifetime maintenance lease.
 		}
 		timeout, cancel := context.WithTimeout(maintenanceContext, 60*time.Second)
 		lease, err = maintenancegate.AcquireExclusiveRecoveryLease(timeout, directory)
@@ -65,7 +65,7 @@ func main() {
 		log.Fatalf("maintenance gate: %v", err)
 	}
 	if lease != nil {
-		defer lease.Close()
+		defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	}
 	if command == "render-edge-config" {
 		applyEdgeConfigLoadDefaults()
@@ -328,11 +328,7 @@ func main() {
 		logger.Info("visitor profile cleanup scheduler disabled")
 	}
 
-	var customerServiceRetentionScheduler *scheduler.CustomerServiceRetentionScheduler
-	// The scheduler is always started, but performs no work while the
-	// administrator-controlled database setting is disabled. This allows the
-	// retention policy to be changed from the admin workbench without a restart.
-	customerServiceRetentionScheduler = scheduler.NewCustomerServiceRetentionScheduler(deps.Services.CustomerServiceRetention, cfg.Worker)
+	customerServiceRetentionScheduler := scheduler.NewCustomerServiceRetentionScheduler(deps.Services.CustomerServiceRetention, cfg.Worker)
 	customerServiceRetentionScheduler.ConfigureBusinessDraftMediaUploadExpiry(deps.Services.Media)
 	customerServiceRetentionScheduler.Start(context.Background())
 

@@ -9,9 +9,10 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/lib/pq"
+
 	"commerce-platform/internal/pkg/safehtml"
 	"commerce-platform/internal/pkg/storage"
-	"github.com/lib/pq"
 )
 
 const productCatalogRichTextMediaGuardVersion = 1
@@ -211,7 +212,7 @@ func (cfg Configuration) validateProductCatalogIncomingRichTextLegacyMediaOccurr
 						for rows.Next() {
 							var assetKey, assetURL string
 							if err := rows.Scan(&assetKey, &assetURL); err != nil {
-								rows.Close()
+								_ = rows.Close()
 								return err
 							}
 							_, urlKey := cfg.resolveLocalMediaReference(assetURL)
@@ -219,7 +220,7 @@ func (cfg Configuration) validateProductCatalogIncomingRichTextLegacyMediaOccurr
 							dedicated = dedicated || storage.DedicatedPublicObjectNamespaceForStorageKey(assetKey) != "" || storage.DedicatedPublicObjectNamespaceForStorageKey(urlKey) != ""
 						}
 						err = rows.Err()
-						rows.Close()
+						_ = rows.Close()
 						if err != nil {
 							return err
 						}

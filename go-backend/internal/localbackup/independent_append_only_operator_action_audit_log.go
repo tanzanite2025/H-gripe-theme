@@ -14,7 +14,7 @@ func (manager *Manager) recordMaintenanceOperatorAction(actor, method, path stri
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 	record := struct {
 		OccurredAt time.Time `json:"occurred_at"`
 		Actor      string    `json:"actor"`

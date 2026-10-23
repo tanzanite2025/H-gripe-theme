@@ -66,23 +66,23 @@ func readProductViewRedisPrimaryServerIdentity(ctx context.Context, client redis
 	}
 	info, err := client.Info(ctx, "server").Result()
 	if err != nil {
-		return "", errors.New("Redis server identity is unavailable; recovery refused")
+		return "", errors.New("redis server identity is unavailable; recovery refused")
 	}
 	for _, line := range strings.Split(info, "\n") {
 		if value, ok := strings.CutPrefix(strings.TrimSpace(line), "run_id:"); ok && len(value) == 40 {
 			for _, character := range value {
 				if !strings.ContainsRune("0123456789abcdef", character) {
-					return "", errors.New("Redis server identity is invalid")
+					return "", errors.New("redis server identity is invalid")
 				}
 			}
 			return FingerprintExternalProjectionConfiguration(value), nil
 		}
 	}
-	return "", errors.New("Redis server identity is missing; recovery refused")
+	return "", errors.New("redis server identity is missing; recovery refused")
 }
 
 func ReadRegisteredProductViewRedisRuntimeOwnership(directory string) (*ProductViewRedisRuntimeOwnership, error) {
-	data, err := os.ReadFile(filepath.Join(directory, ProductViewRedisOwnershipFilename))
+	data, err := os.ReadFile(filepath.Join(directory, ProductViewRedisOwnershipFilename)) // #nosec G304 -- The directory is administrator-configured private maintenance storage; the ownership filename is fixed.
 	if err != nil {
 		return nil, errors.New("product view Redis ownership has not been registered by the business runtime")
 	}
@@ -105,12 +105,12 @@ func RegisterProductViewRedisRuntimeOwnershipBeforeStartingWriters(ctx context.C
 	lease := flock.New(filepath.Join(directory, "product-view-redis-ownership-registration.lock"))
 	locked, err := lease.TryLockContext(ctx, 100*time.Millisecond)
 	if err != nil || !locked {
-		lease.Close()
-		return errors.New("Redis ownership registration is busy")
+		_ = lease.Close()
+		return errors.New("redis ownership registration is busy")
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	if fenced, err := IsApplicationFenced(directory); err != nil || fenced {
-		return errors.New("Redis ownership registration is forbidden during maintenance")
+		return errors.New("redis ownership registration is forbidden during maintenance")
 	}
 	server, err := readProductViewRedisPrimaryServerIdentity(ctx, client)
 	if err != nil {
@@ -132,12 +132,12 @@ func RegisterProductViewRedisRuntimeOwnershipBeforeStartingWriters(ctx context.C
 		candidate, _ := json.Marshal(struct{ SiteID, Environment, Database, DestinationSHA256, KeysSHA256, Nonce string }{siteID, environment, database, destinationSHA256, keysSHA256, uuid.NewString()})
 		marker, err = initializeOnlyEmptyProductViewRedisOwnershipScript.Run(ctx, client, []string{ProductViewRedisOwnershipKey, "product:view_counts", "product:view_counts:processing", "product:view_counts:processing_batch_id"}, string(candidate)).Text()
 		if err != nil {
-			return errors.New("Redis ownership enrollment refused; existing or invalid buffers require provenance reconciliation")
+			return errors.New("redis ownership enrollment refused; existing or invalid buffers require provenance reconciliation")
 		}
 	}
 	var scope struct{ SiteID, Environment, Database, DestinationSHA256, KeysSHA256, Nonce string }
 	if json.Unmarshal([]byte(marker), &scope) != nil || scope.SiteID != siteID || scope.Environment != environment || scope.Database != database || scope.DestinationSHA256 != destinationSHA256 || scope.KeysSHA256 != keysSHA256 || uuid.Validate(scope.Nonce) != nil {
-		return errors.New("Redis logical database belongs to a different or unknown product view owner")
+		return errors.New("redis logical database belongs to a different or unknown product view owner")
 	}
 	record := ProductViewRedisRuntimeOwnership{1, siteID, environment, database, destinationSHA256, keysSHA256, FingerprintExternalProjectionConfiguration(marker), server}
 	if err := VerifyRegisteredProductViewRedisRuntimeOwnership(ctx, client, &record); err != nil {
@@ -148,9 +148,9 @@ func RegisterProductViewRedisRuntimeOwnershipBeforeStartingWriters(ctx context.C
 	if err != nil {
 		return err
 	}
-	defer os.Remove(file.Name())
+	defer func(cleanupPath string) { _ = os.Remove(cleanupPath) }(file.Name())
 	if err := file.Chmod(0600); err != nil {
-		file.Close()
+		_ = file.Close()
 		return err
 	}
 	_, writeErr := file.Write(data)
@@ -161,7 +161,7 @@ func RegisterProductViewRedisRuntimeOwnershipBeforeStartingWriters(ctx context.C
 		return err
 	}
 	if runtime.GOOS != "windows" {
-		directoryFile, err := os.Open(directory)
+		directoryFile, err := os.Open(directory) // #nosec G304 -- The directory is administrator-configured private maintenance storage; the ownership filename is fixed.
 		if err != nil {
 			return err
 		}
@@ -176,15 +176,15 @@ func VerifyRegisteredProductViewRedisRuntimeOwnership(ctx context.Context, clien
 	}
 	server, err := readProductViewRedisPrimaryServerIdentity(ctx, client)
 	if err != nil || server != record.ServerRunIDSHA256 {
-		return errors.New("Redis instance restarted or changed since runtime registration; recovery refused")
+		return errors.New("redis instance restarted or changed since runtime registration; recovery refused")
 	}
 	marker, err := client.Get(ctx, ProductViewRedisOwnershipKey).Result()
 	if err != nil || FingerprintExternalProjectionConfiguration(marker) != record.MarkerSHA256 {
-		return errors.New("Redis ownership marker mismatch; recovery refused")
+		return errors.New("redis ownership marker mismatch; recovery refused")
 	}
 	ttl, err := client.PTTL(ctx, ProductViewRedisOwnershipKey).Result()
 	if err != nil || ttl != -1 {
-		return errors.New("Redis ownership marker must be persistent")
+		return errors.New("redis ownership marker must be persistent")
 	}
 	return nil
 }

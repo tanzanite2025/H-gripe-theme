@@ -79,19 +79,19 @@ func (cfg Configuration) copyMediaSnapshot(ctx context.Context, directory string
 }
 
 func copyVerifiedRegularFile(source, destination, packagePath string) (FileIdentity, error) {
-	input, err := os.Open(source)
+	input, err := os.Open(source) // #nosec G304 -- Callers supply registered media roots and validated manifest paths; copies use exclusive creation in private workspaces.
 	if err != nil {
 		return FileIdentity{}, err
 	}
-	defer input.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(input.Close)
 	before, err := input.Stat()
 	if err != nil || !before.Mode().IsRegular() {
 		return FileIdentity{}, errors.New("source is not a regular file")
 	}
-	if err := os.MkdirAll(filepath.Dir(destination), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destination), 0700); err != nil { // #nosec G703 -- Callers supply registered media roots and validated manifest paths; copies use exclusive creation in private workspaces.
 		return FileIdentity{}, err
 	}
-	output, err := os.OpenFile(destination, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	output, err := os.OpenFile(destination, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600) // #nosec G304,G703 -- Callers supply registered media roots and validated manifest paths; copies use exclusive creation in private workspaces.
 	if err != nil {
 		return FileIdentity{}, err
 	}
@@ -136,7 +136,7 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 			var key, visibility, reference, expectedHash string
 			var expectedSize int64
 			if err := rows.Scan(&id, &key, &visibility, &reference, &expectedHash, &expectedSize); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return err
 			}
 			root := registeredMediaStorageRootForObjectKeyAndVisibility(key, visibility)
@@ -153,7 +153,7 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 			}
 		}
 		err = rows.Err()
-		rows.Close()
+		_ = rows.Close()
 		if err != nil {
 			return err
 		}
@@ -162,7 +162,7 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 		if _, exists := manifest.Tables[source.table]; !exists {
 			continue
 		}
-		rows, err := db.QueryContext(ctx, `SELECT id,coalesce(storage_key,''),coalesce(to_jsonb(asset)->>'sha256',to_jsonb(asset)->>'content_sha256',''),coalesce((to_jsonb(asset)->>'size_bytes')::bigint,(to_jsonb(asset)->>'size')::bigint,0) FROM public.`+pq.QuoteIdentifier(source.table)+` asset`)
+		rows, err := db.QueryContext(ctx, `SELECT id,coalesce(storage_key,''),coalesce(to_jsonb(asset)->>'sha256',to_jsonb(asset)->>'content_sha256',''),coalesce((to_jsonb(asset)->>'size_bytes')::bigint,(to_jsonb(asset)->>'size')::bigint,0) FROM public.`+pq.QuoteIdentifier(source.table)+` asset`) // #nosec G202 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		if err != nil {
 			return err
 		}
@@ -170,7 +170,7 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 			var id, size int64
 			var key, digest string
 			if err := rows.Scan(&id, &key, &digest, &size); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return err
 			}
 			objectPath := "media/" + source.root + "/" + key
@@ -184,7 +184,7 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 			}
 		}
 		err = rows.Err()
-		rows.Close()
+		_ = rows.Close()
 		if err != nil {
 			return err
 		}
@@ -198,7 +198,7 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 			var id int64
 			var key, visibility string
 			if err := rows.Scan(&id, &key, &visibility); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return err
 			}
 			root := registeredMediaStorageRootForObjectKeyAndVisibility(key, visibility)
@@ -207,7 +207,7 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 			}
 		}
 		err = rows.Err()
-		rows.Close()
+		_ = rows.Close()
 		if err != nil {
 			return err
 		}
@@ -222,18 +222,18 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 	for columns.Next() {
 		var table string
 		if err := columns.Scan(&table); err != nil {
-			columns.Close()
+			_ = columns.Close()
 			return err
 		}
 		tables = append(tables, table)
 	}
 	err = columns.Err()
-	columns.Close()
+	_ = columns.Close()
 	if err != nil {
 		return err
 	}
 	for _, table := range tables {
-		rows, err := db.QueryContext(ctx, `SELECT id,attachments::text FROM public.`+pq.QuoteIdentifier(table)+` WHERE attachments IS NOT NULL AND btrim(attachments::text) NOT IN ('','null','[]')`)
+		rows, err := db.QueryContext(ctx, `SELECT id,attachments::text FROM public.`+pq.QuoteIdentifier(table)+` WHERE attachments IS NOT NULL AND btrim(attachments::text) NOT IN ('','null','[]')`) // #nosec G202 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		if err != nil {
 			return err
 		}
@@ -241,7 +241,7 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 			var id int64
 			var raw string
 			if err := rows.Scan(&id, &raw); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return err
 			}
 			var refs []string
@@ -271,7 +271,7 @@ func (cfg Configuration) findMediaReferenceGaps(ctx context.Context, db *sql.DB,
 			}
 		}
 		err = rows.Err()
-		rows.Close()
+		_ = rows.Close()
 		if err != nil {
 			return err
 		}
@@ -413,7 +413,7 @@ func (cfg Configuration) estimateBackupWorkspaceBytes(ctx context.Context) (int6
 	if err != nil {
 		return 0, err
 	}
-	defer db.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(db.Close)
 	var total int64
 	if err := db.QueryRowContext(ctx, `SELECT pg_database_size(current_database())`).Scan(&total); err != nil {
 		return 0, err
@@ -467,7 +467,7 @@ func fingerprintManifestMedia(manifest Manifest) string {
 		}
 		sort.Slice(entries, func(i, j int) bool { return entries[i].Path < entries[j].Path })
 		for _, entry := range entries {
-			fmt.Fprintf(hash, "%q:%d:%s\n", strings.TrimPrefix(entry.Path, "media/"), entry.Size, entry.SHA256)
+			_, _ = fmt.Fprintf(hash, "%q:%d:%s\n", strings.TrimPrefix(entry.Path, "media/"), entry.Size, entry.SHA256)
 		}
 	}
 	return hex.EncodeToString(hash.Sum(nil))
@@ -482,7 +482,7 @@ func (cfg Configuration) findAdditionalDeclaredMediaReferenceGaps(ctx context.Co
 	for columns.Next() {
 		var table string
 		if err := columns.Scan(&table); err != nil {
-			columns.Close()
+			_ = columns.Close()
 			return err
 		}
 		if !knownStorageTables[table] {
@@ -490,7 +490,7 @@ func (cfg Configuration) findAdditionalDeclaredMediaReferenceGaps(ctx context.Co
 		}
 	}
 	readErr := columns.Err()
-	columns.Close()
+	_ = columns.Close()
 	if readErr != nil {
 		return readErr
 	}
@@ -498,7 +498,7 @@ func (cfg Configuration) findAdditionalDeclaredMediaReferenceGaps(ctx context.Co
 		if _, exists := manifest.Tables[source[0]]; !exists {
 			continue
 		}
-		rows, err := db.QueryContext(ctx, `SELECT id,to_jsonb(record)->>$1 FROM public.`+pq.QuoteIdentifier(source[0])+` record WHERE coalesce(to_jsonb(record)->>$1,'')<>''`, source[1])
+		rows, err := db.QueryContext(ctx, `SELECT id,to_jsonb(record)->>$1 FROM public.`+pq.QuoteIdentifier(source[0])+` record WHERE coalesce(to_jsonb(record)->>$1,'')<>''`, source[1]) // #nosec G202 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		if err != nil {
 			return err
 		}
@@ -506,7 +506,7 @@ func (cfg Configuration) findAdditionalDeclaredMediaReferenceGaps(ctx context.Co
 			var id int64
 			var reference string
 			if err := rows.Scan(&id, &reference); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return err
 			}
 			packagePath := cfg.wholeBackupBusinessReferencePackagePath(reference)
@@ -517,7 +517,7 @@ func (cfg Configuration) findAdditionalDeclaredMediaReferenceGaps(ctx context.Co
 			}
 		}
 		readErr := rows.Err()
-		rows.Close()
+		_ = rows.Close()
 		if readErr != nil {
 			return readErr
 		}

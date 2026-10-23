@@ -73,14 +73,15 @@ func TestPostgreSQLProductDescriptionColumnMigrationPreservesContentAndRejectsAm
 			require.NoError(t, tx.QueryRowContext(t.Context(), `SELECT json_agg(attname ORDER BY attname) FROM pg_attribute WHERE attrelid='products'::regclass AND attname IN ('short_desc','short_description','meta_desc','meta_description') AND attnum>0 AND NOT attisdropped`).Scan(&columns))
 			require.JSONEq(t, `["meta_description","short_description"]`, string(columns))
 			var actual string
-			if scenario.name == "canonical_columns_are_unchanged" {
+			switch scenario.name {
+			case "canonical_columns_are_unchanged":
 				require.Equal(t, before, captureProductDescriptionMigrationColumnsRowsAndSequenceFingerprint(t, tx))
-			} else if scenario.name == "legacy_only_columns_are_renamed_with_indexes_and_deleted_rows_preserved" {
+			case "legacy_only_columns_are_renamed_with_indexes_and_deleted_rows_preserved":
 				require.NoError(t, tx.QueryRowContext(t.Context(), `SELECT jsonb_build_array(short_description,meta_description,deleted_at IS NOT NULL,preserved_fact)::text FROM products WHERE id=1`).Scan(&actual))
 				require.JSONEq(t, `["<img src=\"/uploads/exact.png\">","Legacy SEO",true,"unchanged"]`, actual)
 				require.NoError(t, tx.QueryRowContext(t.Context(), `SELECT pg_get_indexdef('product_legacy_description_index'::regclass)`).Scan(&actual))
 				require.Contains(t, actual, "(short_description)")
-			} else {
+			default:
 				require.NoError(t, tx.QueryRowContext(t.Context(), `SELECT jsonb_agg(jsonb_build_array(id,short_description,meta_description,preserved_fact) ORDER BY id)::text FROM products`).Scan(&actual))
 				require.JSONEq(t, `[[1,"<p>Legacy &amp; exact</p>","Legacy SEO","unchanged"],[2,"Keep canonical","Equal","unchanged"],[3,"Same",null,"unchanged"],[4,"   ","  ","unchanged"],[5,null,null,"unchanged"],[6,"","","unchanged"]]`, actual)
 			}

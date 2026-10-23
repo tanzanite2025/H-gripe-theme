@@ -12,15 +12,16 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
-	"commerce-platform/internal/repository"
-	"commerce-platform/internal/service"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/pkg/maintenancegate"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 )
 
 func verifyProductViewStoppedRedisOwnershipDrainRestartRetryAndFreshCandidatePreservation(t *testing.T, managerReference **Manager, packageBytes []byte) {
@@ -126,7 +127,7 @@ func verifyProductViewStoppedRedisOwnershipDrainRestartRetryAndFreshCandidatePre
 		require.NoError(t, err)
 		startStoppedProductViewDrainThroughAuthenticatedMaintenanceHTTPAndWaitForResult := func() *Task {
 			body, _ := json.Marshal(ProductViewStoppedDrainAndCandidateRebuildRequest{Confirmation: "DRAIN PRODUCT VIEWS " + cfg.SiteID + "/" + cfg.Environment + "/" + candidate.ID, AllListedWritersStoppedAndUseThisSingleHostGate: true})
-			request := httptest.NewRequest(http.MethodPost, "/api/tasks/"+candidate.ID+"/product-view-stopped-drain-and-rebuild", strings.NewReader(string(body)))
+			request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/tasks/"+candidate.ID+"/product-view-stopped-drain-and-rebuild", strings.NewReader(string(body)))
 			request.Header.Set("Authorization", "Bearer "+token)
 			response := httptest.NewRecorder()
 			manager.HTTPHandler().ServeHTTP(response, request)

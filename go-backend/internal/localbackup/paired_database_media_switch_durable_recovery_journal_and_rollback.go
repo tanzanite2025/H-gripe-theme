@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -78,12 +77,12 @@ func (manager *Manager) applyPairedRecovery(ctx context.Context, task *Task) err
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	control, err := cfg.connectDatabase(ctx, "postgres")
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	if err := assertNoUnfencedDatabaseSessions(ctx, control, cfg.DatabaseName); err != nil {
 		return err
 	}
@@ -107,13 +106,13 @@ func (manager *Manager) applyPairedRecovery(ctx context.Context, task *Task) err
 	}
 	_, stageFingerprint, _, inventoryErr := captureDatabaseInventory(ctx, stage)
 	if inventoryErr != nil || stageFingerprint != task.StageFingerprint {
-		stage.Close()
+		_ = stage.Close()
 		return errors.New("isolated database changed after validation")
 	}
 	// Grant the application's configured role ownership before the database is
 	// sealed. Nothing is imported into the online database.
 	_, err = stage.ExecContext(ctx, `REASSIGN OWNED BY local_backup_isolated_owner TO `+pq.QuoteIdentifier(cfg.ApplicationDatabaseRole))
-	stage.Close()
+	_ = stage.Close()
 	if err != nil {
 		return err
 	}
@@ -136,10 +135,10 @@ func (manager *Manager) applyPairedRecovery(ctx context.Context, task *Task) err
 		rootName, root := storageRoot.Name, storageRoot.Directory
 		stageRoot := filepath.Join(root, ".local-backup-stage-"+task.ID)
 		oldRoot := filepath.Join(root, ".local-backup-old-"+task.ID)
-		if err := os.Mkdir(stageRoot, 0700); err != nil {
+		if err := os.Mkdir(stageRoot, 0700); err != nil { // #nosec G703 -- Paths are bound to registered storage roots and validated task IDs; journal topology is checked before mutation.
 			return err
 		}
-		if err := os.Mkdir(oldRoot, 0700); err != nil {
+		if err := os.Mkdir(oldRoot, 0700); err != nil { // #nosec G703 -- Paths are bound to registered storage roots and validated task IDs; journal topology is checked before mutation.
 			return err
 		}
 		if err := manager.prepareReplacementMediaTree(task, rootName, stageRoot); err != nil {
@@ -177,7 +176,7 @@ func (manager *Manager) applyPairedRecovery(ctx context.Context, task *Task) err
 		if err := sealDatabase(ctx, control, cfg.DatabaseName); err != nil {
 			return err
 		}
-		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` RENAME TO `+pq.QuoteIdentifier(journal.RollbackDatabase)); err != nil {
+		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` RENAME TO `+pq.QuoteIdentifier(journal.RollbackDatabase)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 			return err
 		}
 	}
@@ -198,7 +197,7 @@ func (manager *Manager) applyPairedRecovery(ctx context.Context, task *Task) err
 			return err
 		}
 	}
-	if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(task.StageDatabase)+` RENAME TO `+pq.QuoteIdentifier(cfg.DatabaseName)); err != nil {
+	if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(task.StageDatabase)+` RENAME TO `+pq.QuoteIdentifier(cfg.DatabaseName)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		return err
 	}
 	journal.DatabaseSwitched = true
@@ -258,31 +257,11 @@ func (manager *Manager) prepareReplacementMediaTree(task *Task, rootName, destin
 			return errors.New("replacement media verification failed")
 		}
 	}
-	return filepath.WalkDir(destination, func(filename string, entry fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if filename == destination {
-			return nil
-		}
-		mode := os.FileMode(0600)
-		if entry.IsDir() {
-			mode = 0700
-		}
-		if rootName != "uploads_private" {
-			mode = 0644
-			if entry.IsDir() {
-				mode = 0755
-			}
-		}
-		if err := os.Chmod(filename, mode); err != nil {
-			return err
-		}
-		if entry.IsDir() {
-			return syncDirectory(filename)
-		}
-		return nil
-	})
+	fileMode, directoryMode := os.FileMode(0600), os.FileMode(0700)
+	if rootName != "uploads_private" {
+		fileMode, directoryMode = 0644, 0755
+	}
+	return applyRecoveryMediaTreePermissionsWithinOpenedRoot(context.Background(), destination, fileMode, directoryMode, true)
 }
 
 func performJournaledFileMove(move *RecoveryFileMove) error {
@@ -340,12 +319,12 @@ func (manager *Manager) rollbackPairedRecovery(ctx context.Context, task *Task) 
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	control, err := cfg.connectDatabase(ctx, "postgres")
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	journal := task.Journal
 	var targetOID, oldOID, stageOID int64
 	if err := readDatabaseOID(ctx, control, cfg.DatabaseName, &targetOID); err != nil {
@@ -373,7 +352,7 @@ func (manager *Manager) rollbackPairedRecovery(ctx context.Context, task *Task) 
 		if err := sealDatabase(ctx, control, cfg.DatabaseName); err != nil {
 			return err
 		}
-		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` RENAME TO `+pq.QuoteIdentifier(task.StageDatabase)); err != nil {
+		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` RENAME TO `+pq.QuoteIdentifier(task.StageDatabase)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 			return err
 		}
 		targetOID = 0
@@ -383,8 +362,8 @@ func (manager *Manager) rollbackPairedRecovery(ctx context.Context, task *Task) 
 		if !move.Started {
 			continue
 		}
-		_, sourceErr := os.Lstat(move.Source)
-		_, destinationErr := os.Lstat(move.Destination)
+		_, sourceErr := os.Lstat(move.Source)           // #nosec G703 -- Paths are bound to registered storage roots and validated task IDs; journal topology is checked before mutation.
+		_, destinationErr := os.Lstat(move.Destination) // #nosec G703 -- Paths are bound to registered storage roots and validated task IDs; journal topology is checked before mutation.
 		if sourceErr == nil && errors.Is(destinationErr, os.ErrNotExist) {
 			move.Completed = false
 			move.Started = false
@@ -410,7 +389,7 @@ func (manager *Manager) rollbackPairedRecovery(ctx context.Context, task *Task) 
 		if oldOID != journal.OldDatabaseOID {
 			return errors.New("paired previous database is missing")
 		}
-		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(journal.RollbackDatabase)+` RENAME TO `+pq.QuoteIdentifier(cfg.DatabaseName)); err != nil {
+		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(journal.RollbackDatabase)+` RENAME TO `+pq.QuoteIdentifier(cfg.DatabaseName)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 			return err
 		}
 	}
@@ -462,12 +441,12 @@ func (manager *Manager) CompleteReconciledRecovery(id, confirmation string, evid
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	control, err := cfg.connectDatabase(ctx, "postgres")
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var targetOID int64
 	if err := readDatabaseOID(ctx, control, cfg.DatabaseName, &targetOID); err != nil {
 		return err
@@ -530,7 +509,7 @@ func readDatabaseOID(ctx context.Context, db *sql.DB, name string, oid *int64) e
 	return err
 }
 func sealDatabase(ctx context.Context, db *sql.DB, name string) error {
-	if _, err := db.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(name)+` ALLOW_CONNECTIONS false`); err != nil {
+	if _, err := db.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(name)+` ALLOW_CONNECTIONS false`); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		return err
 	}
 	_, err := db.ExecContext(ctx, `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=$1 AND pid<>pg_backend_pid()`, name)
@@ -545,8 +524,8 @@ func (cfg Configuration) dropOwnedStageDatabase(ctx context.Context, name string
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-	if _, err := db.ExecContext(ctx, `DROP DATABASE IF EXISTS `+pq.QuoteIdentifier(name)+` WITH (FORCE)`); err != nil {
+	defer func(closeResource func() error) { _ = closeResource() }(db.Close)
+	if _, err := db.ExecContext(ctx, `DROP DATABASE IF EXISTS `+pq.QuoteIdentifier(name)+` WITH (FORCE)`); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		return err
 	}
 	return nil
@@ -566,11 +545,11 @@ func (manager *Manager) cleanupUnswitchedPreparedMedia(task *Task) error {
 		if len(entries) > 0 {
 			return errors.New("unjournaled previous media exists; maintenance retained for manual inspection")
 		}
-		if err := os.RemoveAll(filepath.Join(root, ".local-backup-stage-"+task.ID)); err != nil {
+		if err := os.RemoveAll(filepath.Join(root, ".local-backup-stage-"+task.ID)); err != nil { // #nosec G703 -- Paths are bound to registered storage roots and validated task IDs; journal topology is checked before mutation.
 			return err
 		}
 		if err == nil {
-			if err := os.Remove(oldRoot); err != nil {
+			if err := os.Remove(oldRoot); err != nil { // #nosec G703 -- Paths are bound to registered storage roots and validated task IDs; journal topology is checked before mutation.
 				return err
 			}
 		}

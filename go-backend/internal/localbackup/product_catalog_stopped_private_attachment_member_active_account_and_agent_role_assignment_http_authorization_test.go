@@ -10,15 +10,16 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/visitorcookie"
-	"commerce-platform/internal/service"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/visitorcookie"
+	"commerce-platform/internal/service"
 )
 
 func seedStoppedProductMediaMemberAndStaffAccountsBeforeRecoverySnapshots(t *testing.T, database *sql.DB) {
 	t.Helper()
-	_, err := database.Exec(`
+	_, err := database.ExecContext(context.Background(), `
 INSERT INTO users(email,username,password,role,status) VALUES
 ('recovery-other@example.invalid','recovery-other-member','synthetic','user','active'),
 ('recovery-assigned@example.invalid','recovery-assigned-support','synthetic','support','active'),
@@ -33,16 +34,16 @@ INSERT INTO tickets(ticket_number,user_id,customer_user_id,conversation_id,subje
 SELECT 'stopped-recovery-member',id,id,'stopped-recovery-member','Member authorization recovery fixture','customer_service',
 (SELECT id FROM users WHERE username='recovery-assigned-support') FROM users WHERE username='product-backup-customer';
 INSERT INTO ticket_messages(ticket_id,content,is_internal,attachments,attachment_reference_format)
-SELECT id,'Member attachment',false,'["/uploads/` + stoppedProductMediaSyntheticOriginalKey + `"]','legacy_urls'
+SELECT id,'Member attachment',false,'["/uploads/`+stoppedProductMediaSyntheticOriginalKey+`"]','legacy_urls'
 FROM tickets WHERE conversation_id='stopped-recovery-member';
 INSERT INTO ticket_messages(ticket_id,content,is_internal,attachments,attachment_reference_format)
-SELECT id,'Internal attachment',true,'["/uploads/` + stoppedProductMediaSyntheticOriginalKey + `"]','legacy_urls'
+SELECT id,'Internal attachment',true,'["/uploads/`+stoppedProductMediaSyntheticOriginalKey+`"]','legacy_urls'
 FROM tickets WHERE conversation_id='stopped-recovery-member';
 INSERT INTO tickets(ticket_number,user_id,customer_user_id,conversation_id,subject,category)
 SELECT 'stopped-'||username,id,id,'stopped-'||username,'Unavailable member own conversation','customer_service'
 FROM users WHERE username IN ('recovery-inactive-support','recovery-deleted-support');
 INSERT INTO ticket_messages(ticket_id,content,attachments,attachment_reference_format)
-SELECT id,'Unavailable member own attachment','["/uploads/` + stoppedProductMediaSyntheticOriginalKey + `"]','legacy_urls'
+SELECT id,'Unavailable member own attachment','["/uploads/`+stoppedProductMediaSyntheticOriginalKey+`"]','legacy_urls'
 FROM tickets WHERE conversation_id IN ('stopped-recovery-inactive-support','stopped-recovery-deleted-support');`)
 	require.NoError(t, err)
 }
@@ -73,7 +74,7 @@ func verifyStoppedProductMediaActualMemberAccountAndAgentPermissionsWithoutChang
 	unavailableMemberMessages := map[string]string{}
 	var conversationID, memberMessageID, internalMessageID, guestMessageID string
 	require.NoError(t, manager.withBoundStoppedProductReadOnlyTransaction(ctx, manager.Configuration.DatabaseName, before.ProductCatalogPreviewBinding.Candidate, func(tx *sql.Tx) error {
-		rows, err := tx.Query(`SELECT username,id FROM users WHERE username='product-backup-customer' OR username LIKE 'recovery-%'`)
+		rows, err := tx.QueryContext(context.Background(), `SELECT username,id FROM users WHERE username='product-backup-customer' OR username LIKE 'recovery-%'`)
 		if err != nil {
 			return err
 		}
@@ -95,21 +96,21 @@ func verifyStoppedProductMediaActualMemberAccountAndAgentPermissionsWithoutChang
 		}
 		for _, username := range []string{"recovery-inactive-support", "recovery-deleted-support"} {
 			var messageID string
-			if err := tx.QueryRow(`SELECT m.id::text FROM ticket_messages m JOIN tickets t ON t.id=m.ticket_id WHERE t.conversation_id=$1`, "stopped-"+username).Scan(&messageID); err != nil {
+			if err := tx.QueryRowContext(context.Background(), `SELECT m.id::text FROM ticket_messages m JOIN tickets t ON t.id=m.ticket_id WHERE t.conversation_id=$1`, "stopped-"+username).Scan(&messageID); err != nil {
 				return err
 			}
 			unavailableMemberMessages[username] = messageID
 		}
-		if err := tx.QueryRow(`SELECT id::text FROM tickets WHERE conversation_id='stopped-recovery-member'`).Scan(&conversationID); err != nil {
+		if err := tx.QueryRowContext(context.Background(), `SELECT id::text FROM tickets WHERE conversation_id='stopped-recovery-member'`).Scan(&conversationID); err != nil {
 			return err
 		}
-		if err := tx.QueryRow(`SELECT id::text FROM ticket_messages WHERE content='Member attachment'`).Scan(&memberMessageID); err != nil {
+		if err := tx.QueryRowContext(context.Background(), `SELECT id::text FROM ticket_messages WHERE content='Member attachment'`).Scan(&memberMessageID); err != nil {
 			return err
 		}
-		if err := tx.QueryRow(`SELECT id::text FROM ticket_messages WHERE content='Internal attachment'`).Scan(&internalMessageID); err != nil {
+		if err := tx.QueryRowContext(context.Background(), `SELECT id::text FROM ticket_messages WHERE content='Internal attachment'`).Scan(&internalMessageID); err != nil {
 			return err
 		}
-		return tx.QueryRow(`SELECT m.id::text FROM ticket_messages m JOIN tickets t ON t.id=m.ticket_id WHERE t.conversation_id='stopped-recovery-guest'`).Scan(&guestMessageID)
+		return tx.QueryRowContext(context.Background(), `SELECT m.id::text FROM ticket_messages m JOIN tickets t ON t.id=m.ticket_id WHERE t.conversation_id='stopped-recovery-guest'`).Scan(&guestMessageID)
 	}))
 	secret := manager.Configuration.RecoverySecrets["JWT_SECRET"]
 	for _, scenario := range []string{

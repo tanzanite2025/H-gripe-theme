@@ -10,8 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func createCustomerServiceCompleteMediaUnionPlanTestFixture(t *testing.T) (*Manager, *Task, *customerServicePersistentCandidateLifecycle, *CustomerServiceEffectiveSelectionInspection, *Manifest, string) {

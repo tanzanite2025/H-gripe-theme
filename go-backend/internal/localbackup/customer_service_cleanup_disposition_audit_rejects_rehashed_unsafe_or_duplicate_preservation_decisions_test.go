@@ -7,8 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/domain/outbox"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/domain/outbox"
 )
 
 func TestCustomerServiceCleanupDispositionAuditKeepsLegacyCandidateDigestReadableForSafeDisposal(t *testing.T) {

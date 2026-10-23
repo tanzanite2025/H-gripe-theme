@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestModuleDependencyReportProtectsIncomingReferencesAndTraversesCompositeDependencies(t *testing.T) {
@@ -79,19 +80,19 @@ func TestModuleDependencyInspectionRequiresRestorePermissionAndVerifiedUnexpired
 	for _, permission := range []string{PermissionView, PermissionExport, PermissionUpload} {
 		token, err := IssueMaintenanceSession(key, cfg.SiteID, cfg.Environment, "operator", []string{permission})
 		require.NoError(t, err)
-		request := httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{"module":"customer_service"}`))
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, path, strings.NewReader(`{"module":"customer_service"}`))
 		request.Header.Set("Authorization", "Bearer "+token)
 		response := httptest.NewRecorder()
 		manager.HTTPHandler().ServeHTTP(response, request)
 		require.Equal(t, http.StatusForbidden, response.Code, permission)
 	}
-	request := httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{"module":"customer_service"}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, path, strings.NewReader(`{"module":"customer_service"}`))
 	request.Header.Set("Authorization", "Bearer "+key)
 	response := httptest.NewRecorder()
 	manager.HTTPHandler().ServeHTTP(response, request)
 	require.Equal(t, http.StatusConflict, response.Code)
 	require.Contains(t, response.Body.String(), "verified whole-storefront upload")
-	request = httptest.NewRequest(http.MethodPost, ConsolePrefix+"/api/tasks/"+task.ID+"/apply", strings.NewReader(`{"module":"customer_service","confirmation":"synthetic"}`))
+	request = httptest.NewRequestWithContext(context.Background(), http.MethodPost, ConsolePrefix+"/api/tasks/"+task.ID+"/apply", strings.NewReader(`{"module":"customer_service","confirmation":"synthetic"}`))
 	request.Header.Set("Authorization", "Bearer "+key)
 	response = httptest.NewRecorder()
 	manager.HTTPHandler().ServeHTTP(response, request)

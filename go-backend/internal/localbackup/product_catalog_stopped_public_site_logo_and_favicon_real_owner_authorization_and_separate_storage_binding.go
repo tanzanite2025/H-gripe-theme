@@ -3,11 +3,12 @@ package localbackup
 import (
 	"net/http"
 
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/api/publicuploadresponse"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"gorm.io/gorm"
 )
 
 const stoppedProductSiteIdentityImageVerification = "site_identity_owner_authorized_image_bytes_bound_read_only_sql_and_resealed_before_delivery"

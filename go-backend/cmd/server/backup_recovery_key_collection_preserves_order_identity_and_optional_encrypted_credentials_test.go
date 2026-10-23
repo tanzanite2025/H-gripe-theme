@@ -3,8 +3,9 @@ package main
 import (
 	"testing"
 
-	"commerce-platform/internal/pkg/config"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/config"
 )
 
 func TestRecoveryKeysIncludeEffectiveOrderIdentityAndEveryConfiguredEncryptionKey(t *testing.T) {

@@ -12,11 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/repository"
 	"github.com/golang-migrate/migrate/v4"
 	migrationpostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -27,6 +22,12 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/repository"
 )
 
 func createCompletelyMigratedDisposableTemplateCategoryMediaBindingTestDatabase(t *testing.T) *gorm.DB {

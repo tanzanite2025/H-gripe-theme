@@ -1,12 +1,13 @@
 package service
 
 import (
+	"errors"
+	"fmt"
+
 	"commerce-platform/internal/domain/currency"
 	domainmoney "commerce-platform/internal/domain/money"
 	"commerce-platform/internal/domain/shipping"
 	shippingrating "commerce-platform/internal/domain/shipping/rating"
-	"errors"
-	"fmt"
 )
 
 func (s *ShippingService) QuoteCart(input ShippingQuoteInput) (*ShippingQuote, error) {

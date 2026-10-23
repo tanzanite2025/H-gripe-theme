@@ -11,12 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/product"
-	"commerce-platform/internal/repository"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/product"
+	"commerce-platform/internal/repository"
 )
 
 func createProductViewReceiptIntegrationProduct(t *testing.T, db *gorm.DB) uint {

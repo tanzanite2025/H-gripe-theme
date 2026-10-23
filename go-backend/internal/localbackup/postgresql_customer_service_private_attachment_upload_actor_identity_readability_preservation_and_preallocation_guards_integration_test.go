@@ -9,8 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 const customerServiceRecoveryValidVisitorUploadActorSyntheticRows = `
@@ -75,7 +76,7 @@ func TestPostgreSQLCustomerServicePrivateAttachmentUploadActorsMatchActualReadId
 					statement += scenario.targetSQL
 				}
 				if statement != "" {
-					_, err := database.Exec(statement)
+					_, err := database.ExecContext(context.Background(), statement)
 					require.NoError(t, err)
 				}
 			}
@@ -129,7 +130,7 @@ func TestPostgreSQLCustomerServicePrivateAttachmentUploadActorsMatchActualReadId
 func TestPostgreSQLCustomerServicePrivateUploadActorConflictRejectsPersistentCandidateBeforeAllocation(t *testing.T) {
 	fixture := createCustomerServiceDisposableCandidateRehearsalTestFixture(t)
 	ctx := context.Background()
-	_, err := fixture.Target.Exec(`UPDATE media_assets SET uploader_actor_type='administrator' WHERE id=1;`)
+	_, err := fixture.Target.ExecContext(context.Background(), `UPDATE media_assets SET uploader_actor_type='administrator' WHERE id=1;`)
 	require.NoError(t, err)
 	cfg := fixture.Configuration
 	require.NoError(t, maintenancegate.RegisterApplicationBoundary(cfg.MaintenanceDirectory, cfg.DatabaseName, cfg.ApplicationVersion, cfg.StorageRoots, cfg.RecoverySecrets))
@@ -143,7 +144,7 @@ func TestPostgreSQLCustomerServicePrivateUploadActorConflictRejectsPersistentCan
 	require.Zero(t, record.Identity.DatabaseOID)
 	require.Nil(t, record.MediaUnion)
 	var candidates int
-	require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
+	require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
 	require.Zero(t, candidates)
 	after, err := cfg.mediaFingerprint(ctx)
 	require.NoError(t, err)
@@ -167,7 +168,7 @@ func verifyCustomerServicePrivateUploadActorReadabilityAgainstActualMigrationSch
 			require.NoError(t, err)
 			defer transaction.Rollback()
 			if scenario.statement != "" {
-				_, err = transaction.Exec(scenario.statement)
+				_, err = transaction.ExecContext(context.Background(), scenario.statement)
 				require.NoError(t, err)
 			}
 			observation, err := inspectModuleRecoveryDatabaseObservation(ctx, transaction)

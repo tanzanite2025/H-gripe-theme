@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/domain/media"
-	"commerce-platform/internal/domain/product"
 	"github.com/golang-migrate/migrate/v4"
 	migrationpostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -19,6 +17,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/media"
+	"commerce-platform/internal/domain/product"
 )
 
 func createCompletelyMigratedDisposableProductDescriptionRepositoryTestDatabase(t *testing.T) *gorm.DB {

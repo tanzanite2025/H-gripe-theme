@@ -169,7 +169,7 @@ func (cfg Configuration) inventoryCustomerServiceMediaTreesWithMaintenanceArtifa
 			inventory.Files = append(inventory.Files, customerServiceCandidateMediaFile{rootName, key, "current_target", identity})
 			return nil
 		})
-		root.Close()
+		_ = root.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -377,7 +377,7 @@ func copyCustomerServiceCandidateBoundedVerifiedMediaFile(ctx context.Context, s
 	if err != nil {
 		return err
 	}
-	defer source.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(source.Close)
 	var componentPath string
 	for _, component := range strings.Split(sourceKey, "/") {
 		componentPath = filepath.Join(componentPath, component)
@@ -393,7 +393,7 @@ func copyCustomerServiceCandidateBoundedVerifiedMediaFile(ctx context.Context, s
 	if err != nil {
 		return err
 	}
-	defer input.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(input.Close)
 	before, err := input.Stat()
 	if err != nil {
 		return err
@@ -405,7 +405,7 @@ func copyCustomerServiceCandidateBoundedVerifiedMediaFile(ctx context.Context, s
 	if err != nil {
 		return err
 	}
-	defer destination.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(destination.Close)
 	if err := destination.MkdirAll(filepath.Dir(filepath.FromSlash(destinationKey)), mode|0100); err != nil {
 		return err
 	}
@@ -497,12 +497,12 @@ func (manager *Manager) constructCustomerServiceCompleteMediaUnionOnOwnedVolumes
 		for _, entry := range inventory.Directories {
 			if entry.RootName == volume.RootName {
 				if err := root.MkdirAll(filepath.FromSlash(entry.Key), directoryMode); err != nil {
-					root.Close()
+					_ = root.Close()
 					return err
 				}
 			}
 		}
-		root.Close()
+		_ = root.Close()
 		for _, entry := range inventory.Files {
 			if entry.RootName != volume.RootName {
 				continue
@@ -515,21 +515,7 @@ func (manager *Manager) constructCustomerServiceCompleteMediaUnionOnOwnedVolumes
 				return err
 			}
 		}
-		if err := filepath.WalkDir(tree, func(filename string, entry fs.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-			if err := ctx.Err(); err != nil {
-				return err
-			}
-			if entry.IsDir() {
-				if err := os.Chmod(filename, directoryMode); err != nil {
-					return err
-				}
-				return syncDirectory(filename)
-			}
-			return nil
-		}); err != nil {
+		if err := applyRecoveryMediaTreePermissionsWithinOpenedRoot(ctx, tree, 0, directoryMode, false); err != nil {
 			return err
 		}
 		if err := syncDirectory(directory); err != nil {
@@ -625,7 +611,7 @@ func (manager *Manager) cleanupCustomerServiceCandidateMediaVolumesByRecordedIde
 		if !info.Mode().IsRegular() || info.Size() > 4096 {
 			return errors.New("candidate media cleanup identity is unsafe")
 		}
-		data, err := os.ReadFile(filename)
+		data, err := os.ReadFile(filename) // #nosec G304 -- This fixed identity record belongs to the validated, privately owned candidate volume.
 		if err != nil {
 			return err
 		}

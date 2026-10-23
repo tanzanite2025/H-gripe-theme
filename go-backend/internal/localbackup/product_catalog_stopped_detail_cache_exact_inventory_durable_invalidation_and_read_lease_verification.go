@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+
 	"commerce-platform/internal/pkg/maintenancegate"
 	"commerce-platform/internal/service"
-	"github.com/redis/go-redis/v9"
 )
 
 const maximumStoppedProductDetailCacheKeys = 10000
@@ -77,9 +78,9 @@ return redis.sha1hex(redis.call('GET', KEYS[1]))
 
 func (manager *Manager) saveStoppedProductDetailCacheInvalidationProgress(task *Task) error {
 	progress := task.ProductCatalogStoppedDetailCacheInvalidation
-	copy := *progress
-	copy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(copy)
+	snapshotCopy := *progress
+	snapshotCopy.SHA256 = ""
+	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
 	if err != nil {
 		return err
 	}
@@ -92,9 +93,9 @@ func validateStoppedProductDetailCacheInvalidationBinding(task *Task, report *Pr
 	if progress == nil {
 		return nil
 	}
-	copy := *progress
-	copy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(copy)
+	snapshotCopy := *progress
+	snapshotCopy.SHA256 = ""
+	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
 	contract := service.DescribeProductCatalogRuntimeProjectionBoundaryForRecovery(true)
 	if err != nil || digest != progress.SHA256 || progress.Version != 1 || progress.TaskID != task.ID || progress.WindowID != report.WindowID || progress.SwitchJournalSHA256 != report.SwitchJournalSHA256 || progress.PostSwitchContractSHA256 != report.ContractSHA256 || progress.RedisOwnershipSHA256 != report.RedisOwnershipSHA256 || progress.DetailCacheContractSHA256 != contract.DetailCacheContractSHA256 || strings.TrimSpace(progress.Operator) == "" || progress.StartedAt.IsZero() || (progress.Phase != "deleting" && progress.Phase != "verified_absent") {
 		return errors.New("stopped product cache intent identity or digest changed; retain isolation")
@@ -164,7 +165,7 @@ func (manager *Manager) invalidateProductDetailCacheWithinContinuouslyStoppedSwi
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(client.Close)
 	if err := manager.verifyStoppedProductDetailCacheRedisBoundary(ctx, task, client, ownership); err != nil {
 		return err
 	}
@@ -251,7 +252,7 @@ func (manager *Manager) invalidateProductDetailCacheWithinContinuouslyStoppedSwi
 	if err != nil {
 		return err
 	}
-	defer finalClient.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(finalClient.Close)
 	if err := manager.verifyStoppedProductDetailCacheRedisBoundary(ctx, task, finalClient, finalOwnership); err != nil {
 		return err
 	}
@@ -299,7 +300,7 @@ func inspectExactStoppedProductDetailCacheAndReadLeaseKeys(ctx context.Context, 
 		}
 		scanned += len(keys)
 		if scanned > 1000000 {
-			return nil, errors.New("Redis inventory exceeds the supported stopped cache inspection size")
+			return nil, errors.New("redis inventory exceeds the supported stopped cache inspection size")
 		}
 		for _, key := range keys {
 			detail, lease := service.RecognizeProductDetailCacheAndReadLeaseKeyForStoppedRecovery(key)

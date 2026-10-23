@@ -6,14 +6,15 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/localbackup"
-	"github.com/gin-gonic/gin"
 )
 
 func issueLocalComputerBackupMaintenanceSession(c *gin.Context) {
 	keyFile := os.Getenv("LOCAL_BACKUP_AUTHENTICATION_KEY_FILE")
-	key, err := os.ReadFile(keyFile)
+	key, err := os.ReadFile(keyFile) // #nosec G304,G703 -- The credential path is administrator-controlled environment configuration, never an HTTP parameter.
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "独立备份维护服务尚未配置；请先按运行手册配置维护进程、私有工作区及独立凭据"})
 		return

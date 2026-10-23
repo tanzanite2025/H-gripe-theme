@@ -59,7 +59,7 @@ func (r *ProductInformationTemplateRepository) ExistsByKindSlugLocale(kind, slug
 
 func (r *ProductInformationTemplateRepository) Create(template *product.ProductInformationTemplate) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		content, _, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx, r.businessMediaReferenceResolver, template.Content, "", nil)
+		content, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx, r.businessMediaReferenceResolver, template.Content, "", nil)
 		if err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func (r *ProductInformationTemplateRepository) Update(template *product.ProductI
 		if err := tx.Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&current, template.ID).Error; err != nil {
 			return err
 		}
-		content, _, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx, r.businessMediaReferenceResolver, template.Content, current.Content, nil)
+		content, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx, r.businessMediaReferenceResolver, template.Content, current.Content, nil)
 		if err != nil {
 			return err
 		}

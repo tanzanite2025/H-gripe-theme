@@ -8,10 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/domain/outbox"
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/domain/outbox"
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestPostgreSQLCustomerServiceCleanupDispositionAuditsEveryCurrentReceiptWithoutChangingEventState(t *testing.T) {
@@ -69,7 +70,7 @@ func TestPostgreSQLCustomerServiceCleanupDispositionAuditsEveryCurrentReceiptWit
 			if eventType == outbox.EventTypeCustomerServiceAvatarCleanup {
 				aggregateType, aggregateID = outbox.AggregateTypeCustomerServiceAgentProfile, "99"
 			}
-			_, err := fixture.Target.Exec(`INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status,locked_at,locked_by,deleted_at) VALUES(51,'synthetic-private-cleanup-receipt-key',$1,$2,$3,$4::jsonb,$5,CASE WHEN $6 THEN clock_timestamp() END,CASE WHEN $6 THEN 'synthetic-private-lease' ELSE '' END,CASE WHEN $7 THEN clock_timestamp() END)`, eventType, aggregateType, aggregateID, payload, scenario.status, scenario.leased, scenario.deleted)
+			_, err := fixture.Target.ExecContext(context.Background(), `INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status,locked_at,locked_by,deleted_at) VALUES(51,'synthetic-private-cleanup-receipt-key',$1,$2,$3,$4::jsonb,$5,CASE WHEN $6 THEN clock_timestamp() END,CASE WHEN $6 THEN 'synthetic-private-lease' ELSE '' END,CASE WHEN $7 THEN clock_timestamp() END)`, eventType, aggregateType, aggregateID, payload, scenario.status, scenario.leased, scenario.deleted)
 			require.NoError(t, err)
 			source, target, plan, review, request := fixture.inspectAndBindSavedCandidateRehearsalSelections(t, nil)
 			selection, err := fixture.Configuration.inspectCustomerServiceEffectiveSelectedRows(context.Background(), source, target, plan, review, request, fixture.Manifest, fixture.VerifiedDirectory)
@@ -108,9 +109,9 @@ func TestPostgreSQLCustomerServiceCleanupDispositionFullAuditSurvivesDiscardAndG
 	ctx := context.Background()
 	cfg := fixture.Configuration
 	require.NoError(t, maintenancegate.RegisterApplicationBoundary(cfg.MaintenanceDirectory, cfg.DatabaseName, cfg.ApplicationVersion, cfg.StorageRoots, cfg.RecoverySecrets))
-	_, err := fixture.Source.Exec(`INSERT INTO ticket_messages(id,ticket_id,content,attachments,attachment_reference_format,is_internal) VALUES(100,1,'private package message','[]','legacy_urls',true)`)
+	_, err := fixture.Source.ExecContext(context.Background(), `INSERT INTO ticket_messages(id,ticket_id,content,attachments,attachment_reference_format,is_internal) VALUES(100,1,'private package message','[]','legacy_urls',true)`)
 	require.NoError(t, err)
-	_, err = fixture.Target.Exec(`UPDATE ticket_messages SET content='private current body' WHERE id=1;
+	_, err = fixture.Target.ExecContext(context.Background(), `UPDATE ticket_messages SET content='private current body' WHERE id=1;
 INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status,attempts) VALUES
 (51,'synthetic-private-ignored-overlap','storage.object_cleanup_requested','media_asset','1','{"resource_type":"media_asset","resource_id":"1","object_keys":["legacy-attachment.txt"]}','ignored',17),
 (52,'synthetic-private-disjoint-pending','customer_service.retention_cleanup_requested','customer_service_conversation','99','{"ticket_id":99,"attachment_references":[]}','pending',3),
@@ -119,7 +120,7 @@ INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,pa
 	require.NoError(t, err)
 	var expectedEventFingerprint string
 	const eventFingerprintQuery = `SELECT encode(sha256(convert_to(jsonb_agg(to_jsonb(record) ORDER BY id)::text,'UTF8')),'hex') FROM outbox_events record`
-	require.NoError(t, fixture.Target.QueryRow(eventFingerprintQuery).Scan(&expectedEventFingerprint))
+	require.NoError(t, fixture.Target.QueryRowContext(context.Background(), eventFingerprintQuery).Scan(&expectedEventFingerprint))
 	manager, task, request := registerVerifiedUploadAndSavedSelectionsForCustomerServicePersistentCandidateTest(t, fixture)
 	selection, err := manager.InspectCustomerServiceRecoveryEffectiveSelection(ctx, task.ID, request)
 	require.NoError(t, err)
@@ -188,12 +189,12 @@ INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,pa
 	journal, err = manager.prepareCustomerServiceIndependentPairedSwitchRehearsalJournal(ctx, task.ID, record.SHA256)
 	require.NoError(t, err)
 	require.NoError(t, manager.executeCustomerServiceIndependentPairedSwitchRehearsal(ctx, task.ID, journal.SHA256))
-	_, err = fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(cfg.DatabaseName) + ` ALLOW_CONNECTIONS true`)
+	_, err = fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` ALLOW_CONNECTIONS true`)
 	require.NoError(t, err)
 	candidate, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 	require.NoError(t, err)
 	var actualEventFingerprint string
-	require.NoError(t, candidate.QueryRow(eventFingerprintQuery).Scan(&actualEventFingerprint))
+	require.NoError(t, candidate.QueryRowContext(context.Background(), eventFingerprintQuery).Scan(&actualEventFingerprint))
 	require.Equal(t, expectedEventFingerprint, actualEventFingerprint, "all current outbox rows, payloads, attempts and fences must stay exact")
 	require.NoError(t, candidate.Close())
 	require.NoError(t, sealDatabase(ctx, fixture.Control, cfg.DatabaseName))
@@ -220,16 +221,16 @@ func TestPostgreSQLCustomerServiceUnsafeCleanupDispositionIsRejectedBeforeCandid
 			require.NoError(t, maintenancegate.RegisterApplicationBoundary(cfg.MaintenanceDirectory, cfg.DatabaseName, cfg.ApplicationVersion, cfg.StorageRoots, cfg.RecoverySecrets))
 			var err error
 			if resourceType == "package_only_cleanup_receipt" {
-				_, err = fixture.Source.Exec(`INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(51,'synthetic-private-package-only-cleanup','customer_service.retention_cleanup_requested','customer_service_conversation','99','{"ticket_id":99,"attachment_references":[]}','pending')`)
+				_, err = fixture.Source.ExecContext(context.Background(), `INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(51,'synthetic-private-package-only-cleanup','customer_service.retention_cleanup_requested','customer_service_conversation','99','{"ticket_id":99,"attachment_references":[]}','pending')`)
 			} else {
-				_, err = fixture.Target.Exec(`INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(51,'synthetic-private-unsafe-cleanup','storage.object_cleanup_requested','order','55',jsonb_build_object('resource_type',$1::text,'resource_id','55','object_keys',jsonb_build_array('legacy-attachment.txt')),'processed')`, resourceType)
+				_, err = fixture.Target.ExecContext(context.Background(), `INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(51,'synthetic-private-unsafe-cleanup','storage.object_cleanup_requested','order','55',jsonb_build_object('resource_type',$1::text,'resource_id','55','object_keys',jsonb_build_array('legacy-attachment.txt')),'processed')`, resourceType)
 			}
 			require.NoError(t, err)
 			manager, task, request := registerVerifiedUploadAndSavedSelectionsForCustomerServicePersistentCandidateTest(t, fixture)
 			_, err = manager.prepareCustomerServicePersistentCandidateUnderStoppedApplication(context.Background(), task.ID, request)
 			require.ErrorContains(t, err, "repair blockers")
 			var candidates int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname ~ '^local_backup_candidate_'`).Scan(&candidates))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname ~ '^local_backup_candidate_'`).Scan(&candidates))
 			require.Zero(t, candidates)
 			record, err := manager.loadCustomerServicePersistentCandidateLifecycle(task.ID)
 			require.NoError(t, err)
@@ -237,7 +238,7 @@ func TestPostgreSQLCustomerServiceUnsafeCleanupDispositionIsRejectedBeforeCandid
 			require.Nil(t, record.MediaUnion)
 			if resourceType == "package_only_cleanup_receipt" {
 				var importedReceipts int
-				require.NoError(t, fixture.Target.QueryRow(`SELECT count(*) FROM outbox_events WHERE id=51`).Scan(&importedReceipts))
+				require.NoError(t, fixture.Target.QueryRowContext(context.Background(), `SELECT count(*) FROM outbox_events WHERE id=51`).Scan(&importedReceipts))
 				require.Zero(t, importedReceipts)
 			}
 		})

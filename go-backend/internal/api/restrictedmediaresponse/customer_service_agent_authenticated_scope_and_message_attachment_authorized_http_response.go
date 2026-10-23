@@ -6,10 +6,11 @@ import (
 	"os"
 	"strconv"
 
-	"commerce-platform/internal/domain/auth"
-	"commerce-platform/internal/service"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/auth"
+	"commerce-platform/internal/service"
 )
 
 // AuthenticatedCustomerServiceAgentScope reads only claims installed by the

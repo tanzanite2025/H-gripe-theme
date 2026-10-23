@@ -19,7 +19,7 @@ import (
 
 func seedStoppedStorefrontApprovedPendingRejectedAndDeletedReviewPaginationBeforeSnapshots(t *testing.T, database *sql.DB) (uint, uint) {
 	t.Helper()
-	_, err := database.Exec(`
+	_, err := database.ExecContext(context.Background(), `
 INSERT INTO users(email,username,password)
 SELECT 'product-backup@example.invalid','product-backup-customer','synthetic-password'
 WHERE NOT EXISTS(SELECT 1 FROM users WHERE email='product-backup@example.invalid');
@@ -50,8 +50,8 @@ ON CONFLICT(product_id) DO UPDATE SET total_reviews=7,average_rating=5,rating_5_
 DELETE FROM review_summaries WHERE product_id IN (SELECT id FROM products WHERE slug='product-backup-original' AND locale='zh');`)
 	require.NoError(t, err)
 	var productID, missingSummaryProductID uint
-	require.NoError(t, database.QueryRow(`SELECT id FROM products WHERE slug='product-backup-original' AND locale='en'`).Scan(&productID))
-	require.NoError(t, database.QueryRow(`SELECT id FROM products WHERE slug='product-backup-original' AND locale='zh'`).Scan(&missingSummaryProductID))
+	require.NoError(t, database.QueryRowContext(context.Background(), `SELECT id FROM products WHERE slug='product-backup-original' AND locale='en'`).Scan(&productID))
+	require.NoError(t, database.QueryRowContext(context.Background(), `SELECT id FROM products WHERE slug='product-backup-original' AND locale='zh'`).Scan(&missingSummaryProductID))
 	return productID, missingSummaryProductID
 }
 

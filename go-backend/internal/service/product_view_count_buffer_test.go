@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"testing"
 
-	"commerce-platform/internal/domain/product"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/domain/product"
 )
 
 func TestProductViewCountBufferFlushesRedisDeltas(t *testing.T) {

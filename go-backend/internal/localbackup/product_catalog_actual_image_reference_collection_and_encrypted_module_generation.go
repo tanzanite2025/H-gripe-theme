@@ -219,7 +219,7 @@ func (manager *Manager) generateProductCatalogEncryptedModule(ctx context.Contex
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	defer func() { resultErr = errors.Join(resultErr, manager.releaseMaintenance(task)) }()
 	if err := cfg.validateCompanyStaticSourceReleaseVersion(); err != nil {
 		return err
@@ -228,7 +228,7 @@ func (manager *Manager) generateProductCatalogEncryptedModule(ctx context.Contex
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(db.Close)
 	if err := assertNoUnfencedDatabaseSessions(ctx, db, cfg.DatabaseName); err != nil {
 		return err
 	}
@@ -236,7 +236,7 @@ func (manager *Manager) generateProductCatalogEncryptedModule(ctx context.Contex
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(tx.Rollback)
 	_, beforeFingerprint, migration, err := captureDatabaseTransactionInventory(ctx, tx)
 	if err != nil {
 		return err
@@ -260,7 +260,7 @@ func (manager *Manager) generateProductCatalogEncryptedModule(ctx context.Contex
 	if err := os.Mkdir(snapshotDirectory, 0700); err != nil {
 		return err
 	}
-	defer os.RemoveAll(snapshotDirectory)
+	defer func(cleanupPath string) { _ = os.RemoveAll(cleanupPath) }(snapshotDirectory)
 	if err := writeDurableFile(filepath.Join(snapshotDirectory, productCatalogRowsFilename), data); err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func (manager *Manager) generateProductCatalogEncryptedModule(ctx context.Contex
 		paths = append(paths, filename)
 	}
 	sort.Strings(paths)
-	var total int64 = int64(len(data))
+	var total = int64(len(data))
 	for _, filename := range paths {
 		if err := ctx.Err(); err != nil {
 			return err

@@ -10,8 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func verifyProductCatalogHandoffHTTPInspectsActualCandidateWithoutChangingCustodyDatabaseMediaOrTask(t *testing.T, manager *Manager, task *Task) {
@@ -52,7 +53,7 @@ func verifyProductCatalogHandoffHTTPInspectsActualCandidateWithoutChangingCustod
 			require.NoError(t, err)
 			beforeTaskJSON, err := json.Marshal(beforeTask)
 			require.NoError(t, err)
-			request := httptest.NewRequest(http.MethodPost, "/api/tasks/"+task.ID+"/product-catalog-handoff-inspection", strings.NewReader("{}"))
+			request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/tasks/"+task.ID+"/product-catalog-handoff-inspection", strings.NewReader("{}"))
 			request.Header.Set("Authorization", "Bearer "+token)
 			response := httptest.NewRecorder()
 			manager.HTTPHandler().ServeHTTP(response, request)
@@ -69,14 +70,15 @@ func verifyProductCatalogHandoffHTTPInspectsActualCandidateWithoutChangingCustod
 			require.False(t, report.OnlineOverwriteAvailable)
 			require.False(t, report.CustodyTransferAvailable)
 			require.True(t, report.StoppedRevalidationRequired)
-			if mode == "unregistered" {
+			switch mode {
+			case "unregistered":
 				require.Contains(t, report.Blockers, "product_projection_configuration_unknown_reregister_current_business_build")
-			} else if mode == "redis_delta_buffer" {
+			case "redis_delta_buffer":
 				require.Contains(t, report.Blockers, "buffered_product_view_delta_drain_and_inflight_idempotency_contract_not_implemented")
-			} else if mode == "idempotent_redis_delta_buffer" {
+			case "idempotent_redis_delta_buffer":
 				require.Contains(t, report.Blockers, "buffered_product_view_delta_stopped_handoff_and_target_verification_not_implemented")
 				require.Equal(t, 2, report.ProjectionConfiguration.ProductCatalog.Version)
-			} else {
+			default:
 				require.Len(t, report.Blockers, 3)
 			}
 			_, err = manager.ApplyVerifiedRecovery(task.ID, "RESTORE "+cfg.SiteID+"/"+cfg.Environment+"/"+task.Manifest.PackageID)

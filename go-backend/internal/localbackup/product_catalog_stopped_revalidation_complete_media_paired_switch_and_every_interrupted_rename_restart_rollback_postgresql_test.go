@@ -9,9 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func verifyProductCatalogStoppedRevalidationPairedSwitchAndEveryInterruptedRenameRollback(t *testing.T, managerPointer **Manager, packageData []byte) {
@@ -29,7 +30,7 @@ func verifyProductCatalogStoppedRevalidationPairedSwitchAndEveryInterruptedRenam
 			db, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 			require.NoError(t, err)
 			defer db.Close()
-			_, err = db.Exec(`UPDATE product_variants SET stock=stock+1 WHERE sku='product-backup-sku'`)
+			_, err = db.ExecContext(context.Background(), `UPDATE product_variants SET stock=stock+1 WHERE sku='product-backup-sku'`)
 			require.NoError(t, err)
 			return func() {}
 		}},
@@ -37,7 +38,7 @@ func verifyProductCatalogStoppedRevalidationPairedSwitchAndEveryInterruptedRenam
 			db, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 			require.NoError(t, err)
 			defer db.Close()
-			_, err = db.Exec(`UPDATE order_items SET product_name='Updated retained order description' WHERE product_name='Historical order description'`)
+			_, err = db.ExecContext(context.Background(), `UPDATE order_items SET product_name='Updated retained order description' WHERE product_name='Historical order description'`)
 			require.NoError(t, err)
 			return func() {}
 		}},
@@ -45,7 +46,7 @@ func verifyProductCatalogStoppedRevalidationPairedSwitchAndEveryInterruptedRenam
 			db, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 			require.NoError(t, err)
 			defer db.Close()
-			_, err = db.Exec(`UPDATE ticket_messages SET content='Latest message after product preview' WHERE ticket_id=(SELECT id FROM tickets WHERE ticket_number='product-backup-chat')`)
+			_, err = db.ExecContext(context.Background(), `UPDATE ticket_messages SET content='Latest message after product preview' WHERE ticket_id=(SELECT id FROM tickets WHERE ticket_number='product-backup-chat')`)
 			require.NoError(t, err)
 			return func() {}
 		}},
@@ -60,14 +61,14 @@ func verifyProductCatalogStoppedRevalidationPairedSwitchAndEveryInterruptedRenam
 		{"target_schema", func(task *Task) func() {
 			db, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 			require.NoError(t, err)
-			_, err = db.Exec(`CREATE INDEX synthetic_target_product_name_index ON products(name)`)
+			_, err = db.ExecContext(context.Background(), `CREATE INDEX synthetic_target_product_name_index ON products(name)`)
 			require.NoError(t, err)
 			db.Close()
 			return func() {
 				db, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 				require.NoError(t, err)
 				defer db.Close()
-				_, err = db.Exec(`DROP INDEX synthetic_target_product_name_index`)
+				_, err = db.ExecContext(context.Background(), `DROP INDEX synthetic_target_product_name_index`)
 				require.NoError(t, err)
 			}
 		}},
@@ -75,7 +76,7 @@ func verifyProductCatalogStoppedRevalidationPairedSwitchAndEveryInterruptedRenam
 			db, err := cfg.connectDatabase(ctx, task.StageDatabase)
 			require.NoError(t, err)
 			defer db.Close()
-			_, err = db.Exec(`UPDATE products SET name='Tampered candidate' WHERE locale='en'`)
+			_, err = db.ExecContext(context.Background(), `UPDATE products SET name='Tampered candidate' WHERE locale='en'`)
 			require.NoError(t, err)
 			return func() {}
 		}},
@@ -83,7 +84,7 @@ func verifyProductCatalogStoppedRevalidationPairedSwitchAndEveryInterruptedRenam
 			db, err := cfg.connectDatabase(ctx, task.StageDatabase)
 			require.NoError(t, err)
 			defer db.Close()
-			_, err = db.Exec(`SELECT nextval(pg_get_serial_sequence('products','id'))`)
+			_, err = db.ExecContext(context.Background(), `SELECT nextval(pg_get_serial_sequence('products','id'))`)
 			require.NoError(t, err)
 			return func() {}
 		}},
@@ -91,7 +92,7 @@ func verifyProductCatalogStoppedRevalidationPairedSwitchAndEveryInterruptedRenam
 			db, err := cfg.connectDatabase(ctx, task.StageDatabase)
 			require.NoError(t, err)
 			defer db.Close()
-			_, err = db.Exec(`CREATE INDEX synthetic_candidate_product_name_index ON products(name)`)
+			_, err = db.ExecContext(context.Background(), `CREATE INDEX synthetic_candidate_product_name_index ON products(name)`)
 			require.NoError(t, err)
 			return func() {}
 		}},
@@ -155,7 +156,7 @@ func verifyProductCatalogStoppedRevalidationPairedSwitchAndEveryInterruptedRenam
 				require.False(t, taskHasSwitchedWholeApplicationRecoveryJournal(current))
 				var oid int64
 				var allowed bool
-				require.NoError(t, control.QueryRow(`SELECT oid::bigint,datallowconn FROM pg_database WHERE datname=$1`, cfg.DatabaseName).Scan(&oid, &allowed))
+				require.NoError(t, control.QueryRowContext(context.Background(), `SELECT oid::bigint,datallowconn FROM pg_database WHERE datname=$1`, cfg.DatabaseName).Scan(&oid, &allowed))
 				require.Equal(t, current.Journal.NewDatabaseOID, oid)
 				require.False(t, allowed)
 				require.NoError(t, manager.validateProductCatalogPairedPhysicalLayout(ctx, current))
@@ -281,22 +282,22 @@ func verifyProductCatalogInterruptedRollbackRejectsChangedDatabaseMediaJournalAn
 					require.NoError(t, (*managerPointer).saveTask(current))
 				}
 			case "candidate_owner":
-				_, err := control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(cfg.DatabaseName) + ` OWNER TO ` + pq.QuoteIdentifier(cfg.ApplicationDatabaseRole))
+				_, err := control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` OWNER TO `+pq.QuoteIdentifier(cfg.ApplicationDatabaseRole))
 				require.NoError(t, err)
 				restore = func() {
-					_, err := control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(cfg.DatabaseName) + ` OWNER TO local_backup_isolated_owner`)
+					_, err := control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` OWNER TO local_backup_isolated_owner`)
 					require.NoError(t, err)
 				}
 			case "rollback_database_oid":
 				holdingName := "local_backup_fixture_original_" + task.ID[:16]
-				_, err := control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(task.Journal.RollbackDatabase) + ` RENAME TO ` + pq.QuoteIdentifier(holdingName))
+				_, err := control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(task.Journal.RollbackDatabase)+` RENAME TO `+pq.QuoteIdentifier(holdingName))
 				require.NoError(t, err)
-				_, err = control.Exec(`CREATE DATABASE ` + pq.QuoteIdentifier(task.Journal.RollbackDatabase))
+				_, err = control.ExecContext(context.Background(), `CREATE DATABASE `+pq.QuoteIdentifier(task.Journal.RollbackDatabase))
 				require.NoError(t, err)
 				restore = func() {
-					_, err := control.Exec(`DROP DATABASE ` + pq.QuoteIdentifier(task.Journal.RollbackDatabase))
+					_, err := control.ExecContext(context.Background(), `DROP DATABASE `+pq.QuoteIdentifier(task.Journal.RollbackDatabase))
 					require.NoError(t, err)
-					_, err = control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(holdingName) + ` RENAME TO ` + pq.QuoteIdentifier(task.Journal.RollbackDatabase))
+					_, err = control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(holdingName)+` RENAME TO `+pq.QuoteIdentifier(task.Journal.RollbackDatabase))
 					require.NoError(t, err)
 				}
 			}

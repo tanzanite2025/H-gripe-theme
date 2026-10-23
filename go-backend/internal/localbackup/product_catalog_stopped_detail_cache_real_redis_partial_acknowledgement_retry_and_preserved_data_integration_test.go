@@ -14,9 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func verifyStoppedProductDetailCacheExactInvalidationPartialAcknowledgementRetryAndPreservedRedisData(t *testing.T, manager *Manager, taskID string, redisOptions *redis.Options, invokeHTTP func(string, any, int) *httptest.ResponseRecorder) {
@@ -227,7 +228,7 @@ func TestStoppedProductDetailCacheHTTPRejectsCallerChosenKeysAndRedisAddresses(t
 	token, err := IssueMaintenanceSession(key, manager.Configuration.SiteID, manager.Configuration.Environment, "synthetic-cache-http-operator", []string{PermissionRestore})
 	require.NoError(t, err)
 	for _, body := range []string{`{"confirmation":"synthetic","keys":["product:view_counts"]}`, `{"confirmation":"synthetic","redis_url":"redis://other.invalid"}`} {
-		request := httptest.NewRequest(http.MethodPost, "/api/tasks/"+strings.Repeat("a", 32)+"/product-catalog-stopped-detail-cache-invalidation", strings.NewReader(body))
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/tasks/"+strings.Repeat("a", 32)+"/product-catalog-stopped-detail-cache-invalidation", strings.NewReader(body))
 		request.Header.Set("Authorization", "Bearer "+token)
 		response := httptest.NewRecorder()
 		manager.HTTPHandler().ServeHTTP(response, request)

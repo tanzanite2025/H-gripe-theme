@@ -11,10 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/gofrs/flock"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 // Reuses the preceding fixture's explicitly enrolled disposable Redis instance;
@@ -43,7 +44,7 @@ func verifyContinuouslyStoppedProductCatalogHandoffPreparationRestartAndCancella
 		invokeStoppedProductHandoffRouteAndWait := func(route string, body any) *Task {
 			encoded, err := json.Marshal(body)
 			require.NoError(t, err)
-			request := httptest.NewRequest(http.MethodPost, "/api/tasks/"+candidate.ID+"/"+route, strings.NewReader(string(encoded)))
+			request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/tasks/"+candidate.ID+"/"+route, strings.NewReader(string(encoded)))
 			request.Header.Set("Authorization", "Bearer "+token)
 			response := httptest.NewRecorder()
 			manager.HTTPHandler().ServeHTTP(response, request)

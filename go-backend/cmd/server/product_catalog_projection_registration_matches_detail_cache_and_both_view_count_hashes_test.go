@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/pkg/config"
 	"commerce-platform/internal/pkg/maintenancegate"
 	"commerce-platform/internal/pkg/storage"
-	"github.com/stretchr/testify/require"
 )
 
 func TestProductCatalogProjectionRegistrationMatchesRuntimeViewBufferAndExcludesPrivateConfiguration(t *testing.T) {

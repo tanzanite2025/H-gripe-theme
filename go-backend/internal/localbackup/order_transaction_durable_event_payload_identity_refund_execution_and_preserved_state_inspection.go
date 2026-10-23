@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"commerce-platform/internal/domain/outbox"
 	"github.com/lib/pq"
+
+	"commerce-platform/internal/domain/outbox"
 )
 
 // These fields identify relationships, never email bodies, addresses or complete
@@ -163,7 +164,7 @@ func inspectOrderTransactionDurableEventPayloadAndExecutionState(ctx context.Con
 			orderID = refund.referenceColumnText("order_id")
 		}
 	}
-	if orderID == "" && !(eventType == outbox.EventTypePaymentRefundExecutionRequested && refund == nil) {
+	if orderID == "" && (eventType != outbox.EventTypePaymentRefundExecutionRequested || refund != nil) {
 		recordModuleRecoveryDurableEventIssue(graph, event, "order_event_order_identity_invalid", "blocking", "事件无法解析出数值型订单身份，不能按字符串编号或客户身份猜测。", false)
 	} else if orderID != "" {
 		orders, err := graph.readRowsMatchingReferenceKeys(ctx, "orders", []string{"id"}, []map[string]json.RawMessage{{"id": json.RawMessage(orderID)}}, 1)

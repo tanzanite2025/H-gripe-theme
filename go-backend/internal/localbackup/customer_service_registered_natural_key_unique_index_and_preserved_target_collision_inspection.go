@@ -23,7 +23,7 @@ func inspectModuleRecoveryDatabaseIndexDefinitions(ctx context.Context, transact
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(rows.Close)
 	definitions := map[string][]moduleRecoveryIndexDefinition{}
 	for rows.Next() {
 		var table string

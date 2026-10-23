@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func createSyntheticProductCatalogCandidateHandoffTaskAndRuntimeBoundary(t *testing.T) (*Manager, *Task, maintenancegate.ApplicationBoundary) {
@@ -111,12 +112,13 @@ func TestProductCatalogHandoffInspectionKeepsUnknownAndBufferedViewCountsBlocked
 	for _, mode := range []string{"unregistered", "sql_direct", "redis_delta_buffer", "idempotent_redis_delta_buffer"} {
 		t.Run(mode, func(t *testing.T) {
 			manager, task, boundary := createSyntheticProductCatalogCandidateHandoffTaskAndRuntimeBoundary(t)
-			if mode == "unregistered" {
+			switch mode {
+			case "unregistered":
 				boundary.ExternalProjections.ProductCatalog = nil
-			} else if mode == "redis_delta_buffer" {
+			case "redis_delta_buffer":
 				boundary.ExternalProjections.ProductCatalog.ViewCountMode = mode
 				boundary.ExternalProjections.ProductCatalog.ViewCountKeysSHA256 = strings.Repeat("e", 64)
-			} else if mode == "idempotent_redis_delta_buffer" {
+			case "idempotent_redis_delta_buffer":
 				boundary.Protocol = 3
 				boundary.ExternalProjections.ProductCatalog.Version = 2
 				boundary.ExternalProjections.ProductCatalog.ViewCountMode = "redis_delta_buffer"
@@ -188,7 +190,7 @@ func TestProductCatalogHandoffHTTPRequiresRestorePermissionAndRejectsClientSuppl
 		t.Run(permission, func(t *testing.T) {
 			token, err := IssueMaintenanceSession(key, cfg.SiteID, cfg.Environment, "synthetic-operator", []string{permission})
 			require.NoError(t, err)
-			request := httptest.NewRequest(http.MethodPost, endpoint, strings.NewReader(`{}`))
+			request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, strings.NewReader(`{}`))
 			request.Header.Set("Authorization", "Bearer "+token)
 			response := httptest.NewRecorder()
 			manager.HTTPHandler().ServeHTTP(response, request)
@@ -200,7 +202,7 @@ func TestProductCatalogHandoffHTTPRequiresRestorePermissionAndRejectsClientSuppl
 			}
 		})
 	}
-	request := httptest.NewRequest(http.MethodPost, endpoint, strings.NewReader(`{"contract_sha256":"forged","online_overwrite_available":true}`))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, strings.NewReader(`{"contract_sha256":"forged","online_overwrite_available":true}`))
 	request.Header.Set("Authorization", "Bearer "+key)
 	response := httptest.NewRecorder()
 	manager.HTTPHandler().ServeHTTP(response, request)

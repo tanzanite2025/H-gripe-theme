@@ -153,7 +153,7 @@ func writeCustomerServiceSelectedFullRowsAndValidateRetainedTables(ctx context.C
 		for _, column := range observation.PrimaryKeys[row.Table] {
 			primaryKeys = append(primaryKeys, pq.QuoteIdentifier(column))
 		}
-		query := `INSERT INTO public.` + pq.QuoteIdentifier(row.Table) + ` (` + strings.Join(columns, ",") + `) OVERRIDING SYSTEM VALUE SELECT ` + strings.Join(columns, ",") + ` FROM jsonb_populate_record(NULL::public.` + pq.QuoteIdentifier(row.Table) + `,$1::jsonb) ON CONFLICT (` + strings.Join(primaryKeys, ",") + `) DO UPDATE SET ` + strings.Join(updates, ",")
+		query := `INSERT INTO public.` + pq.QuoteIdentifier(row.Table) + ` (` + strings.Join(columns, ",") + `) OVERRIDING SYSTEM VALUE SELECT ` + strings.Join(columns, ",") + ` FROM jsonb_populate_record(NULL::public.` + pq.QuoteIdentifier(row.Table) + `,$1::jsonb) ON CONFLICT (` + strings.Join(primaryKeys, ",") + `) DO UPDATE SET ` + strings.Join(updates, ",") // #nosec G202 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		if _, err := transaction.ExecContext(ctx, query, string(row.Content)); err != nil {
 			return errors.New("candidate selected row violates a database constraint; rehearsal rejected")
 		}
@@ -199,13 +199,13 @@ func readCustomerServiceCandidateSequenceStates(ctx context.Context, transaction
 	for result.Next() {
 		var state customerServiceCandidateSequenceState
 		if err := result.Scan(&state.Name, &state.Table, &state.Column, &state.Definition, &state.Increment, &state.Minimum, &state.Maximum, &state.Cycle); err != nil {
-			result.Close()
+			_ = result.Close()
 			return nil, err
 		}
 		states = append(states, state)
 	}
 	err = result.Err()
-	result.Close()
+	_ = result.Close()
 	if err != nil {
 		return nil, err
 	}

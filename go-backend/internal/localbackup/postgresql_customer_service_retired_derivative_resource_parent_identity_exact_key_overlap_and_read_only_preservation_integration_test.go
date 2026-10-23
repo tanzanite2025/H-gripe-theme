@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 const customerServiceRetiredDerivativeCleanupSyntheticRegistration = `
@@ -77,9 +78,9 @@ func TestPostgreSQLCustomerServiceMediaCleanupUsesResourceSpecificIdentitiesAndP
 			encodedPayload, err := json.Marshal(payload)
 			require.NoError(t, err)
 			for _, database := range []*sql.DB{fixture.Source, fixture.Target} {
-				_, err := database.Exec(customerServiceRetiredDerivativeCleanupSyntheticRegistration + scenario.bothSQL)
+				_, err := database.ExecContext(context.Background(), customerServiceRetiredDerivativeCleanupSyntheticRegistration+scenario.bothSQL)
 				require.NoError(t, err)
-				_, err = database.Exec(`INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(91,'private-retired-derivative-receipt','storage.object_cleanup_requested','media_asset',$1,$2::jsonb,$3)`, aggregateID, string(encodedPayload), status)
+				_, err = database.ExecContext(context.Background(), `INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(91,'private-retired-derivative-receipt','storage.object_cleanup_requested','media_asset',$1,$2::jsonb,$3)`, aggregateID, string(encodedPayload), status)
 				require.NoError(t, err)
 			}
 			var before []string
@@ -137,7 +138,7 @@ func TestPostgreSQLCustomerServiceRetiredDerivativeParentConflictRejectsPersiste
 	fixture := createCustomerServiceDisposableCandidateRehearsalTestFixture(t)
 	ctx := context.Background()
 	for _, database := range []*sql.DB{fixture.Source, fixture.Target} {
-		_, err := database.Exec(customerServiceRetiredDerivativeCleanupSyntheticRegistration + `INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(91,'private-retired-derivative-receipt','storage.object_cleanup_requested','media_asset','501','{"resource_type":"retired_media_derivative","resource_id":"501","object_keys":["media-derivatives/9001/retired.png"]}','processed');`)
+		_, err := database.ExecContext(context.Background(), customerServiceRetiredDerivativeCleanupSyntheticRegistration+`INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(91,'private-retired-derivative-receipt','storage.object_cleanup_requested','media_asset','501','{"resource_type":"retired_media_derivative","resource_id":"501","object_keys":["media-derivatives/9001/retired.png"]}','processed');`)
 		require.NoError(t, err)
 	}
 	cfg := fixture.Configuration
@@ -152,7 +153,7 @@ func TestPostgreSQLCustomerServiceRetiredDerivativeParentConflictRejectsPersiste
 	require.Zero(t, record.Identity.DatabaseOID)
 	require.Nil(t, record.MediaUnion)
 	var candidates int
-	require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
+	require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
 	require.Zero(t, candidates)
 	after, err := cfg.mediaFingerprint(ctx)
 	require.NoError(t, err)
@@ -178,10 +179,10 @@ func verifyCustomerServiceRetiredDerivativeCleanupIdentitiesAgainstActualMigrati
 			transaction, err := database.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 			require.NoError(t, err)
 			defer transaction.Rollback()
-			_, err = transaction.Exec(`INSERT INTO media_assets(id,filename,storage_key,url,visibility) VALUES(900101,'private-retired-derivative-parent.png','private-retired-derivative-parent.png','/uploads/private-retired-derivative-parent.png','public');
-INSERT INTO media_asset_derivatives(id,media_asset_id,preset,storage_key,url,size,deleted_at) VALUES(900102,900101,'private-retired-generation','media-derivatives/900101/private-retired.png','/uploads/media-derivatives/900101/private-retired.png',8,'2026-10-01');` + scenario.statement)
+			_, err = transaction.ExecContext(context.Background(), `INSERT INTO media_assets(id,filename,storage_key,url,visibility) VALUES(900101,'private-retired-derivative-parent.png','private-retired-derivative-parent.png','/uploads/private-retired-derivative-parent.png','public');
+INSERT INTO media_asset_derivatives(id,media_asset_id,preset,storage_key,url,size,deleted_at) VALUES(900102,900101,'private-retired-generation','media-derivatives/900101/private-retired.png','/uploads/media-derivatives/900101/private-retired.png',8,'2026-10-01');`+scenario.statement)
 			require.NoError(t, err)
-			_, err = transaction.Exec(`INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(900103,'private-complete-migration-retired-derivative-receipt','storage.object_cleanup_requested','media_asset',$1,'{"resource_type":"retired_media_derivative","resource_id":"900102","object_keys":["media-derivatives/900101/private-retired.png"]}','processed')`, scenario.aggregateID)
+			_, err = transaction.ExecContext(context.Background(), `INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(900103,'private-complete-migration-retired-derivative-receipt','storage.object_cleanup_requested','media_asset',$1,'{"resource_type":"retired_media_derivative","resource_id":"900102","object_keys":["media-derivatives/900101/private-retired.png"]}','processed')`, scenario.aggregateID)
 			require.NoError(t, err)
 			observation, err := inspectModuleRecoveryDatabaseObservation(ctx, transaction)
 			require.NoError(t, err)

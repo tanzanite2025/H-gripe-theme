@@ -36,7 +36,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	if lease != nil {
-		defer lease.Close()
+		defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	}
 	if len(args) == 0 {
 		printUsage(stderr)

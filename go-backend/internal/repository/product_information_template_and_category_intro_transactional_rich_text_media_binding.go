@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"commerce-platform/internal/pkg/safehtml"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/pkg/safehtml"
 )
 
 type templateOrCategoryRichTextMediaFieldMutation struct {
@@ -13,9 +14,9 @@ type templateOrCategoryRichTextMediaFieldMutation struct {
 // The business row is locked by the caller before this plan is built. Every
 // requested asset joins one sorted lock order, shared with retirement. Exact
 // unchanged HTML keeps its existing relationships without adding a placement.
-func lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx *gorm.DB, resolver PublicBusinessMediaReferenceObjectKeyResolver, requested, previous string, additionalAssetIDs []uint) (string, *lockedPublicBusinessMediaReferenceIdentities, error) {
-	resolved, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextFieldsWithOneAssetLockPlan(tx, resolver, []templateOrCategoryRichTextMediaFieldMutation{{Requested: &requested, Previous: previous}}, additionalAssetIDs)
-	return requested, resolved, err
+func lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx *gorm.DB, resolver PublicBusinessMediaReferenceObjectKeyResolver, requested, previous string, additionalAssetIDs []uint) (string, error) {
+	_, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextFieldsWithOneAssetLockPlan(tx, resolver, []templateOrCategoryRichTextMediaFieldMutation{{Requested: &requested, Previous: previous}}, additionalAssetIDs)
+	return requested, err
 }
 
 func lockValidateAndCanonicalizeTemplateOrCategoryRichTextFieldsWithOneAssetLockPlan(tx *gorm.DB, resolver PublicBusinessMediaReferenceObjectKeyResolver, fields []templateOrCategoryRichTextMediaFieldMutation, additionalAssetIDs []uint) (*lockedPublicBusinessMediaReferenceIdentities, error) {

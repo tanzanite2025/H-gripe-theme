@@ -42,14 +42,14 @@ func (store *readOnlyLocalRecoveryObjectStorage) Open(ctx context.Context, key s
 	if err != nil {
 		return nil, err
 	}
-	defer root.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(root.Close)
 	file, err := root.Open(filepath.FromSlash(key))
 	if err != nil {
 		return nil, err
 	}
 	info, err := file.Stat()
 	if err != nil || !info.Mode().IsRegular() {
-		file.Close()
+		_ = file.Close()
 		return nil, os.ErrNotExist
 	}
 	return &StoredObject{ReadCloser: file, Name: filepath.Base(key), MimeType: detectContentType(key), Size: info.Size(), ModTime: info.ModTime()}, nil

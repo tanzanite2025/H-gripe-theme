@@ -12,8 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/lib/pq"
@@ -42,13 +40,16 @@ func (cfg Configuration) connectDatabase(ctx context.Context, databaseName strin
 	}
 	db.SetMaxOpenConns(2)
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, errors.New("cannot connect to configured PostgreSQL target")
 	}
 	return db, nil
 }
 
 func (cfg Configuration) runPostgreSQLTool(ctx context.Context, executable, databaseName string, args ...string) error {
+	if executable != "pg_dump" && executable != "pg_restore" {
+		return errors.New("unsupported PostgreSQL backup executable")
+	}
 	connectionURL, err := cfg.databaseConnectionURL(databaseName)
 	if err != nil {
 		return err
@@ -56,7 +57,7 @@ func (cfg Configuration) runPostgreSQLTool(ctx context.Context, executable, data
 	parsed, _ := url.Parse(connectionURL)
 	password, _ := parsed.User.Password()
 	parsed.User = url.User(parsed.User.Username())
-	command := exec.CommandContext(ctx, executable, append([]string{"--dbname", parsed.String()}, args...)...)
+	command := exec.CommandContext(ctx, executable, append([]string{"--dbname", parsed.String()}, args...)...) // #nosec G204 -- The executable is allowlisted to pg_dump/pg_restore; internal argv uses no shell and credentials stay in the environment.
 	// Passwords never appear in argv, output, or task errors. No shell is used.
 	command.Env = append(os.Environ(), "PGPASSWORD="+password, "PGOPTIONS=-c statement_timeout=900000 -c lock_timeout=10000")
 	command.Stdout, command.Stderr = nil, nil
@@ -82,7 +83,7 @@ func captureDatabaseInventory(ctx context.Context, db *sql.DB) (map[string]int64
 	if err != nil {
 		return nil, "", 0, err
 	}
-	defer tx.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(tx.Rollback)
 	counts, fingerprint, migration, err := captureDatabaseTransactionInventory(ctx, tx)
 	if err != nil {
 		return nil, "", 0, err
@@ -116,13 +117,13 @@ func captureDatabaseTransactionInventory(ctx context.Context, tx *sql.Tx) (map[s
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, "", 0, err
 		}
 		tables = append(tables, name)
 	}
 	readErr := rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if readErr != nil {
 		return nil, "", 0, readErr
 	}
@@ -136,7 +137,7 @@ func captureDatabaseTransactionInventory(ctx context.Context, tx *sql.Tx) (map[s
 			return nil, "", 0, err
 		}
 		counts[table] = count
-		fmt.Fprintf(hash, "%q:%d:%s:%s\n", table, count, first, second)
+		_, _ = fmt.Fprintf(hash, "%q:%d:%s:%s\n", table, count, first, second)
 	}
 	if err := appendPostgreSQLSequenceStateToDatabaseFingerprint(ctx, tx, hash); err != nil {
 		return nil, "", 0, err
@@ -157,7 +158,7 @@ func (cfg Configuration) captureSnapshotAndDump(ctx context.Context, directory s
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(db.Close)
 	if err := assertNoUnfencedDatabaseSessions(ctx, db, cfg.DatabaseName); err != nil {
 		return err
 	}
@@ -165,7 +166,7 @@ func (cfg Configuration) captureSnapshotAndDump(ctx context.Context, directory s
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(tx.Rollback)
 	if err := tx.QueryRowContext(ctx, `SELECT pg_export_snapshot()`).Scan(&manifest.SnapshotID); err != nil {
 		return err
 	}
@@ -190,7 +191,7 @@ func (cfg Configuration) restoreIsolatedDatabase(ctx context.Context, directory,
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	if !strings.HasPrefix(name, "local_backup_stage_") || !safeDatabaseName.MatchString(name) {
 		return errors.New("invalid isolated database name")
 	}
@@ -204,7 +205,7 @@ func (cfg Configuration) restoreIsolatedDatabase(ctx context.Context, directory,
 	if err := control.QueryRowContext(ctx, `SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolcanlogin OR rolbypassrls FROM pg_roles WHERE rolname='local_backup_isolated_owner'`).Scan(&privileged); err != nil || privileged {
 		return errors.New("isolated restore owner has unsafe privileges")
 	}
-	if _, err = control.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(name)+` WITH TEMPLATE template0 OWNER local_backup_isolated_owner`); err != nil {
+	if _, err = control.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(name)+` WITH TEMPLATE template0 OWNER local_backup_isolated_owner`); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		return err
 	}
 	if err := cfg.runPostgreSQLTool(ctx, "pg_restore", name, "--exit-on-error", "--single-transaction", "--no-owner", "--no-privileges", "--no-tablespaces", "--role=local_backup_isolated_owner", filepath.Join(directory, "database.dump")); err != nil {
@@ -214,7 +215,7 @@ func (cfg Configuration) restoreIsolatedDatabase(ctx context.Context, directory,
 	if err != nil {
 		return err
 	}
-	defer restored.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(restored.Close)
 	counts, restoredFingerprint, version, err := captureDatabaseInventory(ctx, restored)
 	if err != nil {
 		return err
@@ -238,13 +239,13 @@ func (cfg Configuration) restoreIsolatedDatabase(ctx context.Context, directory,
 	for rows.Next() {
 		var table, name string
 		if err := rows.Scan(&table, &name); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		constraints = append(constraints, [2]string{table, name})
 	}
 	readErr := rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if readErr != nil {
 		return readErr
 	}
@@ -256,31 +257,8 @@ func (cfg Configuration) restoreIsolatedDatabase(ctx context.Context, directory,
 	return nil
 }
 
-func sameTableCounts(first, second map[string]int64) bool {
-	if len(first) != len(second) {
-		return false
-	}
-	for name, count := range first {
-		if value, ok := second[name]; !ok || value != count {
-			return false
-		}
-	}
-	return true
-}
-
-func sortedTableNames(tables map[string]int64) []string {
-	names := make([]string, 0, len(tables))
-	for name := range tables {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
-func migrationString(version int64) string { return strconv.FormatInt(version, 10) }
-
 func readRecoveryMaterials(directory string) (map[string]string, error) {
-	data, err := os.ReadFile(filepath.Join(directory, "recovery-secrets.json"))
+	data, err := os.ReadFile(filepath.Join(directory, "recovery-secrets.json")) // #nosec G304 -- This fixed recovery material filename is inside the validated private task workspace.
 	if err != nil {
 		return nil, err
 	}

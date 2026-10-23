@@ -90,18 +90,18 @@ func (manager *Manager) saveCustomerServiceIndependentPairedSwitchJournal(journa
 }
 
 func readCustomerServicePairedRecoveryBoundedRegularFile(filename string, maximum int64) ([]byte, error) {
-	info, err := os.Lstat(filename)
+	info, err := os.Lstat(filename) // #nosec G703 -- Only bound journal and registered media paths reach this helper; symlinks and unsafe types are rejected.
 	if err != nil {
 		return nil, err
 	}
 	if !info.Mode().IsRegular() || info.Size() > maximum {
 		return nil, errors.New("paired recovery requires a bounded regular record")
 	}
-	file, err := os.Open(filename)
+	file, err := os.Open(filename) // #nosec G304,G703 -- Only bound journal and registered media paths reach this helper; symlinks and unsafe types are rejected.
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 	data, err := io.ReadAll(io.LimitReader(file, maximum+1))
 	if err != nil || int64(len(data)) > maximum {
 		return nil, errors.New("paired recovery record exceeds its size limit")
@@ -257,7 +257,7 @@ func customerServicePairedSwitchMediaEntryDigest(inventory *customerServiceCandi
 }
 
 func (cfg Configuration) inspectCustomerServicePairedSwitchActualMediaEntryDigest(ctx context.Context, directory, rootName, entryName string) (string, error) {
-	rootInfo, err := os.Lstat(directory)
+	rootInfo, err := os.Lstat(directory) // #nosec G703 -- Only bound journal and registered media paths reach this helper; symlinks and unsafe types are rejected.
 	if err != nil {
 		return "", err
 	}
@@ -268,7 +268,7 @@ func (cfg Configuration) inspectCustomerServicePairedSwitchActualMediaEntryDiges
 	if err != nil {
 		return "", err
 	}
-	defer root.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(root.Close)
 	inventory := &customerServiceCandidateCompleteMediaUnionInventory{}
 	err = fs.WalkDir(root.FS(), entryName, func(key string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -360,28 +360,28 @@ func buildCustomerServicePairedSwitchExpectedMediaMoves(baseline, candidate *cus
 	return moves, nil
 }
 
-func reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal *customerServiceIndependentPairedSwitchJournal, inventory *customerServiceCandidateCompleteMediaUnionInventory) (*customerServiceCandidateCompleteMediaUnionInventory, error) {
+func reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal *customerServiceIndependentPairedSwitchJournal, inventory *customerServiceCandidateCompleteMediaUnionInventory) error {
 	baseline := &customerServiceCandidateCompleteMediaUnionInventory{Version: 1, Files: []customerServiceCandidateMediaFile{}, Directories: journal.BaselineDirectories, CurrentBytes: inventory.CurrentBytes, TotalBytes: inventory.CurrentBytes}
 	for _, file := range inventory.Files {
 		if file.Origin == "current_target" {
 			baseline.Files = append(baseline.Files, file)
 		} else if file.Origin != "selected_package" {
-			return nil, errors.New("paired inventory file origin is unsupported")
+			return errors.New("paired inventory file origin is unsupported")
 		}
 	}
 	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(baseline)
 	if err != nil || digest != inventory.BaselineTreeSHA256 {
-		return nil, errors.New("paired switch baseline directory or file identity changed")
+		return errors.New("paired switch baseline directory or file identity changed")
 	}
 	expectedMoves, err := buildCustomerServicePairedSwitchExpectedMediaMoves(baseline, inventory)
 	if err != nil || len(expectedMoves) != len(journal.Moves) {
-		return nil, errors.New("paired switch media move set changed")
+		return errors.New("paired switch media move set changed")
 	}
 	for index, move := range journal.Moves {
 		move.Started, move.Completed, move.RollbackStarted, move.RolledBack = false, false, false, false
 		if !reflect.DeepEqual(move, expectedMoves[index]) {
-			return nil, errors.New("paired switch media move identity changed")
+			return errors.New("paired switch media move identity changed")
 		}
 	}
-	return baseline, nil
+	return nil
 }

@@ -235,7 +235,7 @@ func (r *ProductCategoryRepository) UpdateSEO(categoryID uint, locale string, me
 		if intro != nil {
 			nextIntro = *intro
 		}
-		canonicalIntro, _, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx, r.businessMediaReferenceResolver, nextIntro, currentIntro, nil)
+		canonicalIntro, err := lockValidateAndCanonicalizeTemplateOrCategoryRichTextMediaWithinTransaction(tx, r.businessMediaReferenceResolver, nextIntro, currentIntro, nil)
 		if err != nil {
 			return err
 		}

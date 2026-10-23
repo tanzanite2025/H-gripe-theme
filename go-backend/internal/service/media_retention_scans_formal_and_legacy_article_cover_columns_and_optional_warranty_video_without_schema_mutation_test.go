@@ -4,9 +4,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMediaRetentionScansFormalAndLegacyArticleCoverColumnsWithoutChangingSchema(t *testing.T) {

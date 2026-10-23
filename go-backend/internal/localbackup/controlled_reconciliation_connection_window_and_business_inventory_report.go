@@ -39,12 +39,12 @@ func (manager *Manager) OpenReconciliationConnections(id, confirmation string) e
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	control, err := cfg.connectDatabase(ctx, "postgres")
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var oid int64
 	if err := readDatabaseOID(ctx, control, cfg.DatabaseName, &oid); err != nil {
 		return err
@@ -81,17 +81,17 @@ func (manager *Manager) InspectReconciliation(id string) (*ReconciliationReport,
 	if err != nil {
 		return nil, err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	return manager.inspectReconciliationUnderMaintenance(ctx, task)
 }
 
-func (manager *Manager) inspectReconciliationUnderMaintenance(ctx context.Context, task *Task) (*ReconciliationReport, error) {
+func (manager *Manager) inspectReconciliationUnderMaintenance(ctx context.Context, task *Task) (report *ReconciliationReport, resultErr error) {
 	cfg := manager.Configuration
 	control, err := cfg.connectDatabase(ctx, "postgres")
 	if err != nil {
 		return nil, err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var oid int64
 	if err := readDatabaseOID(ctx, control, cfg.DatabaseName, &oid); err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (manager *Manager) inspectReconciliationUnderMaintenance(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(db.Close)
 	// Sealing affects new logins, not this already-open inspection connection.
 	// It prevents the final report from racing another administrative session.
 	if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` ALLOW_CONNECTIONS false`); err != nil {
@@ -119,15 +119,17 @@ func (manager *Manager) inspectReconciliationUnderMaintenance(ctx context.Contex
 		if task.ReconciliationConnectionsEnabled {
 			reopenContext, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			control.ExecContext(reopenContext, `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` ALLOW_CONNECTIONS true`)
+			if _, err := control.ExecContext(reopenContext, `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` ALLOW_CONNECTIONS true`); err != nil {
+				resultErr = errors.Join(resultErr, errors.New("cannot reopen the controlled reconciliation connection window"))
+			}
 		}
 	}()
 	tx, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
-	report := &ReconciliationReport{CapturedAt: time.Now().UTC(), FinancialTotalsByCurrency: map[string]map[string]string{}, Gaps: []string{}}
+	defer func(closeResource func() error) { _ = closeResource() }(tx.Rollback)
+	report = &ReconciliationReport{CapturedAt: time.Now().UTC(), FinancialTotalsByCurrency: map[string]map[string]string{}, Gaps: []string{}}
 	report.Tables, report.DatabaseFingerprint, report.MigrationVersion, err = captureDatabaseTransactionInventory(ctx, tx)
 	if err != nil {
 		return nil, err
@@ -136,7 +138,7 @@ func (manager *Manager) inspectReconciliationUnderMaintenance(ctx context.Contex
 		if _, exists := report.Tables[table]; !exists {
 			continue
 		}
-		rows, err := tx.QueryContext(ctx, `SELECT coalesce(to_jsonb(record)->>'currency','unspecified'),coalesce(sum((to_jsonb(record)->>$1)::numeric),0)::text FROM public.`+pq.QuoteIdentifier(table)+` record GROUP BY 1`, column)
+		rows, err := tx.QueryContext(ctx, `SELECT coalesce(to_jsonb(record)->>'currency','unspecified'),coalesce(sum((to_jsonb(record)->>$1)::numeric),0)::text FROM public.`+pq.QuoteIdentifier(table)+` record GROUP BY 1`, column) // #nosec G202 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		if err != nil {
 			return nil, err
 		}
@@ -144,13 +146,13 @@ func (manager *Manager) inspectReconciliationUnderMaintenance(ctx context.Contex
 		for rows.Next() {
 			var currency, total string
 			if err := rows.Scan(&currency, &total); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return nil, err
 			}
 			totals[currency] = total
 		}
 		readErr := rows.Err()
-		rows.Close()
+		_ = rows.Close()
 		if readErr != nil {
 			return nil, readErr
 		}

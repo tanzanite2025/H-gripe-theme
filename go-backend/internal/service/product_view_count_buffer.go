@@ -7,9 +7,10 @@ import (
 	"sort"
 	"strconv"
 
-	"commerce-platform/internal/repository"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+
+	"commerce-platform/internal/repository"
 )
 
 const productViewCountRedisKey = "product:view_counts"

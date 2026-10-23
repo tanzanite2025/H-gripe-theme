@@ -102,10 +102,10 @@ func TestPostgreSQLStoppedSharedPublicImageBytesUseRealAuthorizationAndPreserveA
 		if key == "products/private.png" {
 			visibility = "private"
 		}
-		_, err = database.Exec(`INSERT INTO media_assets(filename,url,storage_key,size,mime_type,media_type,visibility,status) VALUES($1,$2,$1,$3,'image/png','image',$4,'active')`, key, "/uploads/"+key, len(body), visibility)
+		_, err = database.ExecContext(context.Background(), `INSERT INTO media_assets(filename,url,storage_key,size,mime_type,media_type,visibility,status) VALUES($1,$2,$1,$3,'image/png','image',$4,'active')`, key, "/uploads/"+key, len(body), visibility)
 		require.NoError(t, err)
 	}
-	_, err = database.Exec(`UPDATE media_assets SET deleted_at=now() WHERE storage_key='products/deleted.png';
+	_, err = database.ExecContext(context.Background(), `UPDATE media_assets SET deleted_at=now() WHERE storage_key='products/deleted.png';
 INSERT INTO media_asset_derivatives(media_asset_id,preset,url,storage_key,mime_type,size)
 SELECT id,'small','/uploads/products/small.png','products/small.png','image/png',size FROM media_assets WHERE storage_key='products/original.png'`)
 	require.NoError(t, err)
@@ -181,7 +181,7 @@ func verifyStoppedProductPublicImageActualNetworkBytesAndFailureResealingPreserv
 			query := StoppedProductReadOnlyPublicImageHTTPRequest{ContractSHA256: baseline.ContractSHA256, ObjectKey: scenario.ObjectKey}
 			encoded, err := json.Marshal(query)
 			require.NoError(t, err)
-			request, err := http.NewRequest(http.MethodPost, server.URL+"/api/tasks/"+taskID+"/product-catalog-stopped-read-only-public-image-http-query", bytes.NewReader(encoded))
+			request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, server.URL+"/api/tasks/"+taskID+"/product-catalog-stopped-read-only-public-image-http-query", bytes.NewReader(encoded))
 			require.NoError(t, err)
 			request.Header.Set("Authorization", "Bearer "+token)
 			request.Header.Set("Content-Type", "application/json")

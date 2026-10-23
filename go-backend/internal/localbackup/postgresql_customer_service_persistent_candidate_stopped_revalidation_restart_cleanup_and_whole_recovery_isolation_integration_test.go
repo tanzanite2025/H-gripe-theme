@@ -12,9 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func createCustomerServicePersistentCandidateLifecycleTestFixture(t *testing.T) (*customerServiceDisposableCandidateTestFixture, *Manager, *Task, CustomerServiceEffectiveSelectionInspectionRequest) {
@@ -342,7 +343,7 @@ func TestPostgreSQLCustomerServicePersistentCandidateRevalidatesSavedBindingsAft
 			_, err := manager.prepareCustomerServicePersistentCandidateUnderStoppedApplication(ctx, task.ID, request)
 			require.Error(t, err)
 			var count int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&count))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&count))
 			require.Zero(t, count)
 			if scenario == "expired_work_copy" {
 				return
@@ -386,7 +387,7 @@ func TestPostgreSQLCustomerServicePersistentCandidateMediaIdentityFailureRetains
 			require.Equal(t, "inspection_required", loaded.State)
 			require.Error(t, restarted.ReleaseUnmodifiedMaintenance(task.ID))
 			var count int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE oid=$1`, record.Identity.DatabaseOID).Scan(&count))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE oid=$1`, record.Identity.DatabaseOID).Scan(&count))
 			require.Equal(t, 1, count, "ambiguous media must retain the candidate database as well")
 			for _, volume := range loaded.MediaUnion.Volumes {
 				volumeDirectory, err := customerServiceCandidateMediaVolumeDirectory(loaded, volume)
@@ -431,7 +432,7 @@ func TestPostgreSQLCustomerServicePersistentCandidateRejectsPeakWorkspaceLimitAn
 			require.Equal(t, "allocation_not_attempted", record.Identity.State)
 			require.Zero(t, record.Identity.DatabaseOID)
 			var count int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&count))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&count))
 			require.Zero(t, count)
 			for _, rootName := range mediaRoots {
 				matches, err := filepath.Glob(filepath.Join(fixture.Configuration.StorageRoots[rootName], ".local-backup-customer-service-candidate-*"))
@@ -488,13 +489,13 @@ func createRecordedCustomerServiceCandidateDatabaseForLifecycleRecoveryTest(t *t
 	require.NoError(t, manager.saveCustomerServicePersistentCandidateLifecycle(record))
 	if identityState != "allocation_not_attempted" {
 		require.NoError(t, ensureCustomerServiceDisposableCandidateOwnerAndApplicationIsolation(context.Background(), control, manager.Configuration.ApplicationDatabaseRole))
-		_, err := control.Exec(`CREATE DATABASE ` + pq.QuoteIdentifier(record.Identity.DatabaseName) + ` WITH OWNER ` + pq.QuoteIdentifier(customerServiceDisposableCandidateOwner) + ` ALLOW_CONNECTIONS false`)
+		_, err := control.ExecContext(context.Background(), `CREATE DATABASE `+pq.QuoteIdentifier(record.Identity.DatabaseName)+` WITH OWNER `+pq.QuoteIdentifier(customerServiceDisposableCandidateOwner)+` ALLOW_CONNECTIONS false`)
 		require.NoError(t, err)
 		t.Cleanup(func() {
-			_, _ = control.Exec(`DROP DATABASE IF EXISTS ` + pq.QuoteIdentifier(record.Identity.DatabaseName) + ` WITH (FORCE)`)
+			_, _ = control.ExecContext(context.Background(), `DROP DATABASE IF EXISTS `+pq.QuoteIdentifier(record.Identity.DatabaseName)+` WITH (FORCE)`)
 		})
 		if identityState == "allocated_not_switchable" {
-			require.NoError(t, control.QueryRow(`SELECT oid::bigint FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&record.Identity.DatabaseOID))
+			require.NoError(t, control.QueryRowContext(context.Background(), `SELECT oid::bigint FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&record.Identity.DatabaseOID))
 			record.Identity.State = "allocated_not_switchable"
 		}
 	}
@@ -519,33 +520,33 @@ func TestPostgreSQLCustomerServicePersistentCandidateRestartCleanupPreservesAmbi
 			require.NoError(t, lease.Close())
 			switch scenario {
 			case "owner_changed":
-				_, err = fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(record.Identity.DatabaseName) + ` OWNER TO postgres`)
+				_, err = fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(record.Identity.DatabaseName)+` OWNER TO postgres`)
 				require.NoError(t, err)
 			case "database_renamed":
 				renamed := "synthetic_renamed_" + newTaskID()[:12]
-				_, err = fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(record.Identity.DatabaseName) + ` RENAME TO ` + pq.QuoteIdentifier(renamed))
+				_, err = fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(record.Identity.DatabaseName)+` RENAME TO `+pq.QuoteIdentifier(renamed))
 				require.NoError(t, err)
 				t.Cleanup(func() {
-					_, _ = fixture.Control.Exec(`DROP DATABASE IF EXISTS ` + pq.QuoteIdentifier(renamed) + ` WITH (FORCE)`)
+					_, _ = fixture.Control.ExecContext(context.Background(), `DROP DATABASE IF EXISTS `+pq.QuoteIdentifier(renamed)+` WITH (FORCE)`)
 				})
 			case "same_name_new_oid":
-				_, err = fixture.Control.Exec(`DROP DATABASE ` + pq.QuoteIdentifier(record.Identity.DatabaseName))
+				_, err = fixture.Control.ExecContext(context.Background(), `DROP DATABASE `+pq.QuoteIdentifier(record.Identity.DatabaseName))
 				require.NoError(t, err)
-				_, err = fixture.Control.Exec(`CREATE DATABASE ` + pq.QuoteIdentifier(record.Identity.DatabaseName) + ` WITH OWNER ` + pq.QuoteIdentifier(customerServiceDisposableCandidateOwner))
+				_, err = fixture.Control.ExecContext(context.Background(), `CREATE DATABASE `+pq.QuoteIdentifier(record.Identity.DatabaseName)+` WITH OWNER `+pq.QuoteIdentifier(customerServiceDisposableCandidateOwner))
 				require.NoError(t, err)
 			case "drop_failed":
-				_, err = fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(record.Identity.DatabaseName) + ` ALLOW_CONNECTIONS true`)
+				_, err = fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(record.Identity.DatabaseName)+` ALLOW_CONNECTIONS true`)
 				require.NoError(t, err)
 				database, err := fixture.Configuration.connectDatabase(context.Background(), record.Identity.DatabaseName)
 				require.NoError(t, err)
-				_, err = database.Exec(`CREATE TABLE synthetic_disposal_blocker(id integer); BEGIN; INSERT INTO synthetic_disposal_blocker VALUES(1); PREPARE TRANSACTION 'synthetic_candidate_cleanup_blocker'`)
+				_, err = database.ExecContext(context.Background(), `CREATE TABLE synthetic_disposal_blocker(id integer); BEGIN; INSERT INTO synthetic_disposal_blocker VALUES(1); PREPARE TRANSACTION 'synthetic_candidate_cleanup_blocker'`)
 				require.NoError(t, err)
 				require.NoError(t, database.Close())
 				t.Cleanup(func() {
-					_, _ = fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(record.Identity.DatabaseName) + ` ALLOW_CONNECTIONS true`)
+					_, _ = fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(record.Identity.DatabaseName)+` ALLOW_CONNECTIONS true`)
 					database, err := fixture.Configuration.connectDatabase(context.Background(), record.Identity.DatabaseName)
 					if err == nil {
-						_, _ = database.Exec(`ROLLBACK PREPARED 'synthetic_candidate_cleanup_blocker'`)
+						_, _ = database.ExecContext(context.Background(), `ROLLBACK PREPARED 'synthetic_candidate_cleanup_blocker'`)
 						database.Close()
 					}
 				})
@@ -572,7 +573,7 @@ func TestPostgreSQLCustomerServicePersistentCandidateRestartCleanupPreservesAmbi
 			require.True(t, fenced)
 			if scenario == "same_name_new_oid" {
 				var newOID int64
-				require.NoError(t, fixture.Control.QueryRow(`SELECT oid::bigint FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&newOID))
+				require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT oid::bigint FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&newOID))
 				require.NotEqual(t, record.Identity.DatabaseOID, newOID)
 			}
 		})
@@ -596,7 +597,7 @@ func TestPostgreSQLCustomerServiceDisposableCandidateStartupCleansRecordedOIDAnd
 			require.NoError(t, err)
 			defer restarted.Close()
 			var count int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&count))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&count))
 			_, err = os.Stat(directory)
 			if identityState == "allocated_not_switchable" {
 				require.Zero(t, count)

@@ -63,7 +63,7 @@ func validateStoppedProductReadOnlyPublicHTTPRequest(request StoppedProductReadO
 		}
 	}
 	for _, char := range request.Locale {
-		if !(char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || char == '-' || char == '_') {
+		if (char < 'a' || char > 'z') && (char < 'A' || char > 'Z') && (char < '0' || char > '9') && char != '-' && char != '_' {
 			return errors.New("product query locale must be a simple explicit locale identity")
 		}
 	}
@@ -132,7 +132,7 @@ func (manager *Manager) withBoundStoppedProductReadOnlyTransaction(ctx context.C
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var oid int64
 	var owner string
 	var allowed bool
@@ -152,19 +152,19 @@ func (manager *Manager) withBoundStoppedProductReadOnlyTransaction(ctx context.C
 		}
 		resultErr = errors.Join(resultErr, sealDatabase(cleanup, control, name))
 	}()
-	if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(name)+` ALLOW_CONNECTIONS true`); err != nil {
+	if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(name)+` ALLOW_CONNECTIONS true`); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		return err
 	}
 	db, err := manager.Configuration.connectDatabase(ctx, name)
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(db.Close)
 	tx, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(tx.Rollback)
 	var connectedOID int64
 	var connectedOwner string
 	if err := tx.QueryRowContext(ctx, `SELECT oid::bigint,pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()`).Scan(&connectedOID, &connectedOwner); err != nil || connectedOID != expected.OID || connectedOwner != expected.Owner {

@@ -11,16 +11,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	publicproduct "commerce-platform/internal/api/v1/product"
 	publicsettings "commerce-platform/internal/api/v1/settings"
 	publicstorefront "commerce-platform/internal/api/v1/storefront"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 type StoppedProductReadOnlyStorefrontHTTPRequest struct {

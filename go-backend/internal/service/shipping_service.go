@@ -1,12 +1,13 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/shipping"
-	"commerce-platform/internal/pkg/resilience"
-	"commerce-platform/internal/repository"
 	"errors"
 	"sync"
 	"time"
+
+	"commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/pkg/resilience"
+	"commerce-platform/internal/repository"
 )
 
 type ShippingService struct {

@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func insertCustomerServiceVersionedRealtimeReservationForRecoveryTest(t *testing.T, fixture *customerServiceDisposableCandidateTestFixture, eventKey, payloadType, eventStatus string, payload map[string]any, softDeleted, unrelatedRouting bool) {
@@ -18,7 +19,7 @@ func insertCustomerServiceVersionedRealtimeReservationForRecoveryTest(t *testing
 	if unrelatedRouting {
 		eventType, aggregateType = "order.paid", "order"
 	}
-	_, err = fixture.Target.Exec(`INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status,deleted_at) VALUES(100,$1,$2,$3,'1',$4,$5,CASE WHEN $6 THEN now() ELSE NULL END)`, eventKey, eventType, aggregateType, string(body), eventStatus, softDeleted)
+	_, err = fixture.Target.ExecContext(context.Background(), `INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status,deleted_at) VALUES(100,$1,$2,$3,'1',$4,$5,CASE WHEN $6 THEN now() ELSE NULL END)`, eventKey, eventType, aggregateType, string(body), eventStatus, softDeleted)
 	require.NoError(t, err)
 }
 
@@ -114,7 +115,7 @@ func TestPostgreSQLCustomerServiceEffectiveRecoveryRejectsVersionRegressionAndRe
 
 func TestPostgreSQLCustomerServicePersistentCandidateRejectsRewoundRealtimeVersionBeforeAllocation(t *testing.T) {
 	fixture := createCustomerServiceDisposableCandidateRehearsalTestFixture(t)
-	_, err := fixture.Target.Exec(`UPDATE tickets SET status_version=9 WHERE id=1`)
+	_, err := fixture.Target.ExecContext(context.Background(), `UPDATE tickets SET status_version=9 WHERE id=1`)
 	require.NoError(t, err)
 	cfg := fixture.Configuration
 	require.NoError(t, maintenancegate.RegisterApplicationBoundary(cfg.MaintenanceDirectory, cfg.DatabaseName, cfg.ApplicationVersion, cfg.StorageRoots, cfg.RecoverySecrets))
@@ -122,10 +123,10 @@ func TestPostgreSQLCustomerServicePersistentCandidateRejectsRewoundRealtimeVersi
 	_, err = manager.prepareCustomerServicePersistentCandidateUnderStoppedApplication(context.Background(), task.ID, request)
 	require.ErrorContains(t, err, "repair blockers")
 	var candidates int
-	require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
+	require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
 	require.Zero(t, candidates)
 	var version int
-	require.NoError(t, fixture.Target.QueryRow(`SELECT status_version FROM tickets WHERE id=1`).Scan(&version))
+	require.NoError(t, fixture.Target.QueryRowContext(context.Background(), `SELECT status_version FROM tickets WHERE id=1`).Scan(&version))
 	require.Equal(t, 9, version)
 	t.Logf("rewound version refused before candidate allocation; current version remains %d", version)
 }

@@ -14,14 +14,14 @@ func verifyProductCatalogMediaPlacementOwnersAssetBindingsAndLegacyURLAtomicRoll
 	t.Helper()
 	ctx, cfg := context.Background(), manager.Configuration
 	var mediaID, productID, assetID, otherProductID, otherVariantID, templateDefinitionID int64
-	require.NoError(t, stage.QueryRow(`SELECT id,product_id,media_asset_id FROM product_media WHERE url='/uploads/products/product-original.png'`).Scan(&mediaID, &productID, &assetID))
-	require.NoError(t, stage.QueryRow(`SELECT id FROM products WHERE slug='target-only-product'`).Scan(&otherProductID))
-	require.NoError(t, stage.QueryRow(`SELECT id FROM product_variants WHERE sku='target-only-translated-sku'`).Scan(&otherVariantID))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id,product_id,media_asset_id FROM product_media WHERE url='/uploads/products/product-original.png'`).Scan(&mediaID, &productID, &assetID))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM products WHERE slug='target-only-product'`).Scan(&otherProductID))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM product_variants WHERE sku='target-only-translated-sku'`).Scan(&otherVariantID))
 	templateDefinitionID = 910011
-	_, err := stage.Exec(`INSERT INTO product_specification_templates(id,name,slug) VALUES(910010,'Synthetic media placement template','synthetic-media-placement-template'); INSERT INTO product_spec_definitions(id,product_specification_template_id,name,slug) VALUES(910011,910010,'Synthetic media placement definition','synthetic-media-placement-definition')`)
+	_, err := stage.ExecContext(context.Background(), `INSERT INTO product_specification_templates(id,name,slug) VALUES(910010,'Synthetic media placement template','synthetic-media-placement-template'); INSERT INTO product_spec_definitions(id,product_specification_template_id,name,slug) VALUES(910011,910010,'Synthetic media placement definition','synthetic-media-placement-definition')`)
 	require.NoError(t, err)
 	defer func() {
-		_, err := stage.Exec(`DELETE FROM product_spec_definitions WHERE id=910011; DELETE FROM product_specification_templates WHERE id=910010`)
+		_, err := stage.ExecContext(context.Background(), `DELETE FROM product_spec_definitions WHERE id=910011; DELETE FROM product_specification_templates WHERE id=910010`)
 		require.NoError(t, err)
 	}()
 	snapshot = copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, snapshot, "", "", "")
@@ -39,7 +39,7 @@ func verifyProductCatalogMediaPlacementOwnersAssetBindingsAndLegacyURLAtomicRoll
 		snapshot.Tables[table.name] = selected
 	}
 	var originalMedia string
-	require.NoError(t, stage.QueryRow(`SELECT to_jsonb(m)::text FROM product_media m WHERE id=$1`, mediaID).Scan(&originalMedia))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT to_jsonb(m)::text FROM product_media m WHERE id=$1`, mediaID).Scan(&originalMedia))
 	for _, scenario := range []struct {
 		name, mutationJSON, setupSQL, expectedError string
 		newPlacement                                bool
@@ -74,13 +74,13 @@ func verifyProductCatalogMediaPlacementOwnersAssetBindingsAndLegacyURLAtomicRoll
 	} {
 		t.Run("product_media_placement_"+scenario.name, func(t *testing.T) {
 			t.Cleanup(func() {
-				_, err := stage.Exec(`DELETE FROM product_media WHERE id=910003; DELETE FROM product_variant_option_values WHERE id=910002; DELETE FROM media_assets WHERE id=910001`)
+				_, err := stage.ExecContext(context.Background(), `DELETE FROM product_media WHERE id=910003; DELETE FROM product_variant_option_values WHERE id=910002; DELETE FROM media_assets WHERE id=910001`)
 				require.NoError(t, err)
-				_, err = stage.Exec(`UPDATE product_media SET url=r.url,media_asset_id=r.media_asset_id,variant_id=r.variant_id,variant_option_value_id=r.variant_option_value_id,product_id=r.product_id,media_type=r.media_type,thumbnail_url=r.thumbnail_url,poster_url=r.poster_url,image_variants=r.image_variants FROM jsonb_populate_record(NULL::product_media,$1::jsonb) r WHERE product_media.id=r.id`, originalMedia)
+				_, err = stage.ExecContext(context.Background(), `UPDATE product_media SET url=r.url,media_asset_id=r.media_asset_id,variant_id=r.variant_id,variant_option_value_id=r.variant_option_value_id,product_id=r.product_id,media_type=r.media_type,thumbnail_url=r.thumbnail_url,poster_url=r.poster_url,image_variants=r.image_variants FROM jsonb_populate_record(NULL::product_media,$1::jsonb) r WHERE product_media.id=r.id`, originalMedia)
 				require.NoError(t, err)
 			})
 			if scenario.setupSQL != "" {
-				_, err := stage.Exec(scenario.setupSQL)
+				_, err := stage.ExecContext(context.Background(), scenario.setupSQL)
 				require.NoError(t, err)
 			}
 			changed := copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, snapshot, "", "", "")
@@ -148,12 +148,12 @@ func verifyProductCatalogMediaPlacementOwnersAssetBindingsAndLegacyURLAtomicRoll
 					// Keep all three typed parameters in both fixture statements.
 					insert += ` RETURNING $1::bigint`
 				}
-				_, err := stage.Exec(insert, productID, templateDefinitionID, assetID)
+				_, err := stage.ExecContext(context.Background(), insert, productID, templateDefinitionID, assetID)
 				require.NoError(t, err)
-				_, err = stage.Exec(`INSERT INTO media_assets(id,filename,url,storage_key) VALUES(910001,'other.png','/uploads/products/other.png','products/other.png')`)
+				_, err = stage.ExecContext(context.Background(), `INSERT INTO media_assets(id,filename,url,storage_key) VALUES(910001,'other.png','/uploads/products/other.png','products/other.png')`)
 				require.NoError(t, err)
 				t.Cleanup(func() {
-					_, err := stage.Exec(`DELETE FROM ` + tableName + ` WHERE id=910005; DELETE FROM media_assets WHERE id=910001`)
+					_, err := stage.ExecContext(context.Background(), `DELETE FROM `+tableName+` WHERE id=910005; DELETE FROM media_assets WHERE id=910001`)
 					require.NoError(t, err)
 				})
 				changed := copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, snapshot, "", "", "")
@@ -187,14 +187,17 @@ func verifyProductCatalogMediaPlacementOwnersAssetBindingsAndLegacyURLAtomicRoll
 	}
 	for _, field := range []string{"variant_id", "media_asset_id"} {
 		t.Run("product_media_placement_retained_invalid_"+field, func(t *testing.T) {
-			_, err := stage.Exec(`INSERT INTO product_media(id,product_id,media_asset_id,url) VALUES(910004,$1,$2,'/uploads/products/product-original.png')`, otherProductID, assetID)
+			_, err := stage.ExecContext(context.Background(), `INSERT INTO product_media(id,product_id,media_asset_id,url) VALUES(910004,$1,$2,'/uploads/products/product-original.png')`, otherProductID, assetID)
 			require.NoError(t, err)
-			t.Cleanup(func() { _, err := stage.Exec(`DELETE FROM product_media WHERE id=910004`); require.NoError(t, err) })
+			t.Cleanup(func() {
+				_, err := stage.ExecContext(context.Background(), `DELETE FROM product_media WHERE id=910004`)
+				require.NoError(t, err)
+			})
 			expectedError := "belonging to another product"
 			if field == "variant_id" {
-				_, err = stage.Exec(`UPDATE product_media SET variant_id=(SELECT id FROM product_variants WHERE sku='product-backup-sku') WHERE id=910004`)
+				_, err = stage.ExecContext(context.Background(), `UPDATE product_media SET variant_id=(SELECT id FROM product_variants WHERE sku='product-backup-sku') WHERE id=910004`)
 			} else {
-				_, err = stage.Exec(`UPDATE product_media SET url='/uploads/products/product-small.png',media_asset_id=NULL,media_type='video' WHERE id=910004`)
+				_, err = stage.ExecContext(context.Background(), `UPDATE product_media SET url='/uploads/products/product-small.png',media_asset_id=NULL,media_type='video' WHERE id=910004`)
 				expectedError = "type does not match"
 			}
 			require.NoError(t, err)

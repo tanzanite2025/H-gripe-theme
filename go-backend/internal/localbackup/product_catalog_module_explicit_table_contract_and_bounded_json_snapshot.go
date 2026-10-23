@@ -94,18 +94,18 @@ func inspectProductCatalogTableSchema(ctx context.Context, tx *sql.Tx, table str
 		var name, typ, identity, generated, defaultValue string
 		var required bool
 		if err := rows.Scan(&name, &typ, &required, &identity, &generated, &defaultValue); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return "", nil, err
 		}
 		if generated != "" || identity != "" {
-			rows.Close()
+			_ = rows.Close()
 			return "", nil, errors.New("product module requires an explicit generated-column contract")
 		}
 		columns = append(columns, name)
 		fmt.Fprintf(&contract, "%q:%q:%t:%q\n", name, typ, required, defaultValue)
 	}
 	err = rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if err != nil {
 		return "", nil, err
 	}
@@ -122,11 +122,11 @@ func captureProductCatalogConstraintFingerprint(ctx context.Context, tx *sql.Tx,
 }
 
 func readProductCatalogRows(ctx context.Context, tx *sql.Tx, table, predicate string, arguments ...any) ([]json.RawMessage, error) {
-	rows, err := tx.QueryContext(ctx, `SELECT to_jsonb(r)::text FROM public.`+pq.QuoteIdentifier(table)+` r WHERE `+predicate+` ORDER BY r.id LIMIT 100001`, arguments...)
+	rows, err := tx.QueryContext(ctx, `SELECT to_jsonb(r)::text FROM public.`+pq.QuoteIdentifier(table)+` r WHERE `+predicate+` ORDER BY r.id LIMIT 100001`, arguments...) // #nosec G202 -- The predicate comes from internal fixed recovery selectors; table identifiers are quoted and values are bound.
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(rows.Close)
 	result := []json.RawMessage{}
 	total := 0
 	for rows.Next() {
@@ -148,7 +148,7 @@ func inspectProductCatalogForeignKeys(ctx context.Context, tx *sql.Tx) ([]produc
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(rows.Close)
 	var keys []productCatalogForeignKey
 	for rows.Next() {
 		var key productCatalogForeignKey
@@ -318,13 +318,13 @@ func (cfg Configuration) captureProductCatalogModuleSnapshot(ctx context.Context
 			for rows.Next() {
 				var id string
 				if err := rows.Scan(&id); err != nil {
-					rows.Close()
+					_ = rows.Close()
 					return snapshot, err
 				}
 				assetIDs[id] = true
 			}
 			err = rows.Err()
-			rows.Close()
+			_ = rows.Close()
 			if err != nil {
 				return snapshot, err
 			}
@@ -390,7 +390,7 @@ func requireRegisteredStorefrontTablesForProductCatalogModule(ctx context.Contex
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(rows.Close)
 	count := 0
 	for rows.Next() {
 		var name string

@@ -16,6 +16,11 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/gin-gonic/gin"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/api/publicuploadresponse"
 	"commerce-platform/internal/api/restrictedmediaresponse"
@@ -28,10 +33,6 @@ import (
 	"commerce-platform/internal/pkg/visitorcookie"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 // These are URL identities only. They must match the running business boundary;
@@ -98,7 +99,7 @@ func validateStoppedProductReadOnlyMediaHTTPRequest(request StoppedProductReadOn
 		}
 	}
 	for _, credential := range []string{request.VisitorCookie, request.StorefrontAuthCookie, request.AdminAuthCookie} {
-		if strings.ContainsAny(credential, " ;,\"\\") || (&http.Cookie{Name: "business_cookie", Value: credential}).Valid() != nil {
+		if strings.ContainsAny(credential, " ;,\"\\") || (&http.Cookie{Name: "business_cookie", Value: credential}).Valid() != nil { // #nosec G124 -- This is a request cookie or value validation, not a Set-Cookie response; browser response flags do not apply.
 			return errors.New("only individual existing business cookie values are accepted")
 		}
 	}
@@ -298,7 +299,7 @@ func (manager *Manager) invokeStoppedProductMediaHandlersWithReadOnlyTransaction
 		// owners. Other dedicated owners, and the legacy digest-only contract,
 		// retain their explicit unsupported boundary.
 		siteIdentityImage := service.IsSiteLogoStorageKey(request.ObjectKey) || service.IsSiteFaviconStorageKey(request.ObjectKey)
-		if (storage.DedicatedPublicObjectNamespaceForStorageKey(request.ObjectKey) != "" || service.IsCustomerServiceAvatarStorageKey(request.ObjectKey) || siteIdentityImage || service.IsHomeVisualTileStorageKey(request.ObjectKey)) && !(capturePublicImage && siteIdentityImage) {
+		if (storage.DedicatedPublicObjectNamespaceForStorageKey(request.ObjectKey) != "" || service.IsCustomerServiceAvatarStorageKey(request.ObjectKey) || siteIdentityImage || service.IsHomeVisualTileStorageKey(request.ObjectKey)) && (!capturePublicImage || !siteIdentityImage) {
 			return nil, errors.New("this check supports shared registered uploads; dedicated owner namespaces require their own verification")
 		}
 		var logoFileServer http.Handler
@@ -334,13 +335,13 @@ func (manager *Manager) invokeStoppedProductMediaHandlersWithReadOnlyTransaction
 		return nil, errors.New("cannot construct bounded media request")
 	}
 	if request.VisitorCookie != "" {
-		httpRequest.AddCookie(&http.Cookie{Name: visitorcookie.CustomerServiceVisitorCookie, Value: request.VisitorCookie})
+		httpRequest.AddCookie(&http.Cookie{Name: visitorcookie.CustomerServiceVisitorCookie, Value: request.VisitorCookie}) // #nosec G124 -- This is a request cookie or value validation, not a Set-Cookie response; browser response flags do not apply.
 	}
 	if request.StorefrontAuthCookie != "" {
-		httpRequest.AddCookie(&http.Cookie{Name: securecookie.StorefrontAuthTokenCookie, Value: request.StorefrontAuthCookie})
+		httpRequest.AddCookie(&http.Cookie{Name: securecookie.StorefrontAuthTokenCookie, Value: request.StorefrontAuthCookie}) // #nosec G124 -- This is a request cookie or value validation, not a Set-Cookie response; browser response flags do not apply.
 	}
 	if request.AdminAuthCookie != "" {
-		httpRequest.AddCookie(&http.Cookie{Name: securecookie.AdminAuthTokenCookie, Value: request.AdminAuthCookie})
+		httpRequest.AddCookie(&http.Cookie{Name: securecookie.AdminAuthTokenCookie, Value: request.AdminAuthCookie}) // #nosec G124 -- This is a request cookie or value validation, not a Set-Cookie response; browser response flags do not apply.
 	}
 	if request.Range != "" {
 		httpRequest.Header.Set("Range", request.Range)

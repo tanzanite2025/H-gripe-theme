@@ -104,28 +104,28 @@ func TestStoppedProductProjectionOperatorEvidenceRejectsWrongScopeActionsMissing
 	require.NoError(t, validateStoppedProductProjectionOperatorAttestations(report, valid))
 	for _, scenario := range []string{"missing", "duplicate", "whole_storefront_action", "bad_digest", "empty_reference", "stale_contract", "claims_release", "wrong_scope"} {
 		t.Run(scenario, func(t *testing.T) {
-			copy := valid
-			copy.Attestations = append([]ExternalProjectionReconciliationAttestation{}, valid.Attestations...)
+			snapshotCopy := valid
+			snapshotCopy.Attestations = append([]ExternalProjectionReconciliationAttestation{}, valid.Attestations...)
 			reportCopy := *report
 			switch scenario {
 			case "missing":
-				copy.Attestations = copy.Attestations[:2]
+				snapshotCopy.Attestations = snapshotCopy.Attestations[:2]
 			case "duplicate":
-				copy.Attestations[1] = copy.Attestations[0]
+				snapshotCopy.Attestations[1] = snapshotCopy.Attestations[0]
 			case "whole_storefront_action":
-				copy.Attestations[0].Action = "sql_search_verified_without_external_index"
+				snapshotCopy.Attestations[0].Action = "sql_search_verified_without_external_index"
 			case "bad_digest":
-				copy.Attestations[0].EvidenceSHA256 = strings.Repeat("0", 64)
+				snapshotCopy.Attestations[0].EvidenceSHA256 = strings.Repeat("0", 64)
 			case "empty_reference":
-				copy.Attestations[0].EvidenceReference = "  "
+				snapshotCopy.Attestations[0].EvidenceReference = "  "
 			case "stale_contract":
-				copy.ContractSHA256 = strings.Repeat("c", 64)
+				snapshotCopy.ContractSHA256 = strings.Repeat("c", 64)
 			case "claims_release":
 				reportCopy.OnlineOverwriteAvailable = true
 			case "wrong_scope":
 				reportCopy.Scope = "whole_application"
 			}
-			require.Error(t, validateStoppedProductProjectionOperatorAttestations(&reportCopy, copy))
+			require.Error(t, validateStoppedProductProjectionOperatorAttestations(&reportCopy, snapshotCopy))
 		})
 	}
 }

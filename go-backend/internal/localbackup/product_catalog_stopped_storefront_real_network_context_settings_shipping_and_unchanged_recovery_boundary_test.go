@@ -13,17 +13,18 @@ import (
 	"testing"
 	"time"
 
-	shippingdomain "commerce-platform/internal/domain/shipping"
-	"commerce-platform/internal/repository"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	shippingdomain "commerce-platform/internal/domain/shipping"
+	"commerce-platform/internal/repository"
 )
 
 func seedStoppedStorefrontDatabaseMarketSettingsAndWeightedProductShippingBeforeSnapshots(t *testing.T, database *sql.DB) {
 	t.Helper()
-	_, err := database.Exec(`
+	_, err := database.ExecContext(context.Background(), `
 INSERT INTO settings(key,value,type,locale,"group",is_public) VALUES
 ('site_name','Recovered storefront from SQL','string','en','site',true),
 ('recovery_private_configuration_marker','synthetic-private-setting-must-not-leak','string','en','site',false)
@@ -50,7 +51,7 @@ UPDATE product_variants SET weight_grams=900 WHERE sku='product-backup-sku';`)
 	template.RouteGroupID = &routeGroup.ID
 	require.NoError(t, shippingRepository.UpdateTemplateWithRules(&template, template.Rules))
 	var productID, variantID uint
-	require.NoError(t, database.QueryRow(`SELECT product_id,id FROM product_variants WHERE sku='product-backup-sku'`).Scan(&productID, &variantID))
+	require.NoError(t, database.QueryRowContext(context.Background(), `SELECT product_id,id FROM product_variants WHERE sku='product-backup-sku'`).Scan(&productID, &variantID))
 	require.NoError(t, repository.NewProductRepository(bound).ReplaceSkuShippingTemplateBindings(productID, variantID, []uint{template.ID}))
 }
 
@@ -67,7 +68,7 @@ func verifyStoppedStorefrontComposedDependenciesInReadOnlySQLBeforeBackupRoundTr
 	_, err = tx.ExecContext(ctx, `SET LOCAL statement_timeout='15s'`)
 	require.NoError(t, err)
 	var before, after int
-	require.NoError(t, tx.QueryRow(`SELECT (SELECT count(*) FROM review_summaries)+(SELECT count(*) FROM shipping_quote_snapshots)`).Scan(&before))
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT (SELECT count(*) FROM review_summaries)+(SELECT count(*) FROM shipping_quote_snapshots)`).Scan(&before))
 	for _, operation := range []string{"detail", "context", "site_settings", "categories", "list", "search", "redirects", "seo_home", "social_settings", "website_profile", "website_name", "specification_templates", "currency_policy", "product_page_faq"} {
 		query := StoppedProductReadOnlyStorefrontHTTPRequest{ContractSHA256: strings.Repeat("a", 64), Operation: operation, Locale: "en", Country: "AQ", Currency: "USD"}
 		if operation == "detail" {
@@ -85,12 +86,12 @@ func verifyStoppedStorefrontComposedDependenciesInReadOnlySQLBeforeBackupRoundTr
 		}
 	}
 	var missingSummaryProductID uint
-	require.NoError(t, tx.QueryRow(`SELECT id FROM products WHERE slug='product-backup-original' AND locale='zh'`).Scan(&missingSummaryProductID))
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT id FROM products WHERE slug='product-backup-original' AND locale='zh'`).Scan(&missingSummaryProductID))
 	status, body, err := manager.invokeStoppedProductStorefrontGETWithBoundReadOnlyTransaction(ctx, tx, StoppedProductReadOnlyStorefrontHTTPRequest{Operation: "product_review_summary", Locale: "en", Country: "AQ", Currency: "USD", ProductID: missingSummaryProductID})
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, status)
 	require.Contains(t, string(body), `"total_reviews":0`)
-	require.NoError(t, tx.QueryRow(`SELECT (SELECT count(*) FROM review_summaries)+(SELECT count(*) FROM shipping_quote_snapshots)`).Scan(&after))
+	require.NoError(t, tx.QueryRowContext(context.Background(), `SELECT (SELECT count(*) FROM review_summaries)+(SELECT count(*) FROM shipping_quote_snapshots)`).Scan(&after))
 	require.Equal(t, before, after)
 }
 
@@ -112,7 +113,7 @@ func verifyStoppedStorefrontActualNetworkHTTPUsesRecoveredSQLWithoutWritingOrRel
 		queryTest.Helper()
 		encoded, err := json.Marshal(body)
 		require.NoError(queryTest, err)
-		request, err := http.NewRequest(http.MethodPost, server.URL+"/api/tasks/"+taskID+"/product-catalog-stopped-read-only-storefront-http-query", bytes.NewReader(encoded))
+		request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, server.URL+"/api/tasks/"+taskID+"/product-catalog-stopped-read-only-storefront-http-query", bytes.NewReader(encoded))
 		require.NoError(queryTest, err)
 		request.Header.Set("Authorization", "Bearer "+token)
 		request.Header.Set("Content-Type", "application/json")

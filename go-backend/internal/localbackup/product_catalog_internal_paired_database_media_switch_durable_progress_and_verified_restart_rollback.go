@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -75,9 +74,9 @@ func (manager *Manager) validateProductCatalogPairedRehearsalBinding(task *Task)
 		return errors.New("product paired rehearsal binding is missing")
 	}
 	journal, binding := task.Journal.ProductCatalog, task.ProductCatalogPreviewBinding
-	copy := *journal
-	copy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(copy)
+	snapshotCopy := *journal
+	snapshotCopy.SHA256 = ""
+	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
 	if err != nil || digest != journal.SHA256 || journal.Version != 1 || journal.TaskID != task.ID || binding.Version != 1 {
 		return errors.New("product paired rehearsal journal identity or digest changed")
 	}
@@ -263,28 +262,11 @@ func (manager *Manager) prepareProductCatalogPairedCompleteMediaVolumes(ctx cont
 				return errors.New("product paired complete media copy changed")
 			}
 		}
-		if err := filepath.WalkDir(filepath.Join(volume, "candidate"), func(path string, entry fs.DirEntry, walkErr error) error {
-			if walkErr != nil {
-				return walkErr
-			}
-			mode := os.FileMode(0600)
-			if entry.IsDir() {
-				mode = 0700
-			}
-			if rootName != "uploads_private" {
-				mode = 0644
-				if entry.IsDir() {
-					mode = 0755
-				}
-			}
-			if err := os.Chmod(path, mode); err != nil {
-				return err
-			}
-			if entry.IsDir() {
-				return syncDirectory(path)
-			}
-			return nil
-		}); err != nil {
+		fileMode, directoryMode := os.FileMode(0600), os.FileMode(0700)
+		if rootName != "uploads_private" {
+			fileMode, directoryMode = 0644, 0755
+		}
+		if err := applyRecoveryMediaTreePermissionsWithinOpenedRoot(ctx, filepath.Join(volume, "candidate"), fileMode, directoryMode, false); err != nil {
 			return err
 		}
 		if err := syncDirectory(volume); err != nil {
@@ -333,7 +315,7 @@ func (manager *Manager) verifyProductCatalogBoundDatabaseContents(ctx context.Co
 			}
 			resultErr = errors.Join(resultErr, sealDatabase(cleanup, control, name))
 		}()
-		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(name)+` ALLOW_CONNECTIONS true`); err != nil {
+		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(name)+` ALLOW_CONNECTIONS true`); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 			return err
 		}
 	}
@@ -402,7 +384,7 @@ func (manager *Manager) rehearseProductCatalogPairedSwitchAndVerifiedRollback(ct
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	defer func() {
 		if task.Journal == nil {
 			_ = manager.releaseMaintenance(task)
@@ -415,7 +397,7 @@ func (manager *Manager) rehearseProductCatalogPairedSwitchAndVerifiedRollback(ct
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var unsafeApplicationRole bool
 	if err := control.QueryRowContext(ctx, `SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolbypassrls OR pg_has_role(oid,'local_backup_isolated_owner','MEMBER') FROM pg_roles WHERE rolname=$1`, cfg.ApplicationDatabaseRole).Scan(&unsafeApplicationRole); err != nil {
 		return err
@@ -575,8 +557,8 @@ func (manager *Manager) renameProductCatalogPairedMediaEntryAfterLayoutValidatio
 	if err != nil {
 		return err
 	}
-	_, sourceErr := os.Lstat(source)
-	_, destinationErr := os.Lstat(destination)
+	_, sourceErr := os.Lstat(source)           // #nosec G703 -- productCatalogPairedMediaLogicalPath validates journal paths against the registered root and task-owned volume.
+	_, destinationErr := os.Lstat(destination) // #nosec G703 -- productCatalogPairedMediaLogicalPath validates journal paths against the registered root and task-owned volume.
 	if reverse && destinationErr == nil {
 		digest, err := manager.Configuration.inspectModuleRecoveryMediaEntryDigest(ctx, filepath.Dir(destination), move.RootName, move.EntryName)
 		if err == nil && digest == move.EntrySHA256 && (errors.Is(sourceErr, os.ErrNotExist) || !move.Completed) {
@@ -590,7 +572,7 @@ func (manager *Manager) renameProductCatalogPairedMediaEntryAfterLayoutValidatio
 	if err != nil || digest != move.EntrySHA256 {
 		return errors.New("product paired media rename source content changed")
 	}
-	if err := os.Rename(source, destination); err != nil {
+	if err := os.Rename(source, destination); err != nil { // #nosec G703 -- productCatalogPairedMediaLogicalPath validates journal paths against the registered root and task-owned volume.
 		return err
 	}
 	return errors.Join(syncDirectory(filepath.Dir(source)), syncDirectory(filepath.Dir(destination)))
@@ -604,12 +586,12 @@ func (manager *Manager) rollbackProductCatalogPairedRehearsal(ctx context.Contex
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	control, err := manager.Configuration.connectDatabase(ctx, "postgres")
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	return manager.rollbackProductCatalogPairedRehearsalWithHeldLease(ctx, task, control, checkpoint)
 }
 
@@ -624,7 +606,7 @@ func (manager *Manager) rollbackProductCatalogPairedRehearsalWithHeldLease(ctx c
 		return err
 	}
 	if candidateOID == task.Journal.NewDatabaseOID {
-		if _, err := control.ExecContext(ctx, `REVOKE ALL ON DATABASE `+pq.QuoteIdentifier(task.StageDatabase)+` FROM PUBLIC,`+pq.QuoteIdentifier(manager.Configuration.ApplicationDatabaseRole)); err != nil {
+		if _, err := control.ExecContext(ctx, `REVOKE ALL ON DATABASE `+pq.QuoteIdentifier(task.StageDatabase)+` FROM PUBLIC,`+pq.QuoteIdentifier(manager.Configuration.ApplicationDatabaseRole)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 			return err
 		}
 	}
@@ -641,7 +623,7 @@ func (manager *Manager) rollbackProductCatalogPairedRehearsalWithHeldLease(ctx c
 		}
 	}
 	if candidate == manager.Configuration.DatabaseName {
-		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(candidate)+` RENAME TO `+pq.QuoteIdentifier(task.StageDatabase)); err != nil {
+		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(candidate)+` RENAME TO `+pq.QuoteIdentifier(task.StageDatabase)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 			return err
 		}
 		if checkpoint != nil {
@@ -673,7 +655,7 @@ func (manager *Manager) rollbackProductCatalogPairedRehearsalWithHeldLease(ctx c
 		}
 	}
 	if original == task.Journal.RollbackDatabase {
-		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(original)+` RENAME TO `+pq.QuoteIdentifier(manager.Configuration.DatabaseName)); err != nil {
+		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(original)+` RENAME TO `+pq.QuoteIdentifier(manager.Configuration.DatabaseName)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 			return err
 		}
 		if checkpoint != nil {

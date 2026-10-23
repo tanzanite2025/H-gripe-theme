@@ -37,7 +37,7 @@ func seedStoppedProductCurrentSiteLogoAndFaviconBeforeRecoverySnapshots(t *testi
 		filename := filepath.Join(root, filepath.FromSlash(key))
 		require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0700))
 		require.NoError(t, os.WriteFile(filename, body, 0600))
-		_, err := database.Exec(`INSERT INTO `+table+`(id,filename,url,storage_key,mime_type,size,content_sha256,width,height) VALUES(1,$1,$2,$1,'image/png',$3,$4,512,512)`, key, "/uploads/"+key, len(body), productCatalogBytesSHA256(body))
+		_, err := database.ExecContext(context.Background(), `INSERT INTO `+table+`(id,filename,url,storage_key,mime_type,size,content_sha256,width,height) VALUES(1,$1,$2,$1,'image/png',$3,$4,512,512)`, key, "/uploads/"+key, len(body), productCatalogBytesSHA256(body))
 		require.NoError(t, err)
 	}
 	return bodies
@@ -77,7 +77,7 @@ func TestPostgreSQLStoppedSiteIdentityImagesUseCurrentHistoricalOwnersSeparateRo
 	defer database.Close()
 	configuration.StoppedProductLocalMediaVerification = &StoppedProductLocalMediaVerificationConfiguration{SharedBaseURL: "https://synthetic.example.test", LogoBaseURL: "https://logos.example.test"}
 	bodies := seedStoppedProductCurrentSiteLogoAndFaviconBeforeRecoverySnapshots(t, database, configuration)
-	_, err = database.Exec(`INSERT INTO users(email,username,password) VALUES('stopped-site-identity-author@example.invalid','stopped-site-identity-author','synthetic-password')`)
+	_, err = database.ExecContext(context.Background(), `INSERT INTO users(email,username,password) VALUES('stopped-site-identity-author@example.invalid','stopped-site-identity-author','synthetic-password')`)
 	require.NoError(t, err)
 	for _, namespace := range []string{"site-logo", "site-favicon"} {
 		root := configuration.StorageRoots["uploads"]
@@ -93,7 +93,7 @@ func TestPostgreSQLStoppedSiteIdentityImagesUseCurrentHistoricalOwnersSeparateRo
 			require.NoError(t, os.WriteFile(filename, body, 0600))
 			// A shared registration is deliberately present even for orphaned
 			// dedicated objects; only their owning service may grant access.
-			_, err = database.Exec(`INSERT INTO media_assets(filename,url,storage_key,size,mime_type,media_type,visibility,status) VALUES($1,$2,$1,$3,'image/png','image','public','active')`, key, "/uploads/"+key, len(body))
+			_, err = database.ExecContext(context.Background(), `INSERT INTO media_assets(filename,url,storage_key,size,mime_type,media_type,visibility,status) VALUES($1,$2,$1,$3,'image/png','image','public','active')`, key, "/uploads/"+key, len(body))
 			require.NoError(t, err)
 			if suffix != "orphaned" {
 				status := "draft"
@@ -115,7 +115,7 @@ func TestPostgreSQLStoppedSiteIdentityImagesUseCurrentHistoricalOwnersSeparateRo
 					}
 					reference = origin + reference
 				}
-				_, err = database.Exec(`INSERT INTO posts(title,slug,content,status,author_id) SELECT $1,$1,$2,$3,id FROM users WHERE username='stopped-site-identity-author'`, namespace+"-"+suffix, `<img src="`+reference+`">`, status)
+				_, err = database.ExecContext(context.Background(), `INSERT INTO posts(title,slug,content,status,author_id) SELECT $1,$1,$2,$3,id FROM users WHERE username='stopped-site-identity-author'`, namespace+"-"+suffix, `<img src="`+reference+`">`, status)
 				require.NoError(t, err)
 			}
 		}
@@ -160,7 +160,7 @@ func TestPostgreSQLStoppedSiteIdentityImagesUseCurrentHistoricalOwnersSeparateRo
 	require.Equal(t, beforeCounts, afterCounts)
 	require.Equal(t, beforeFingerprint, afterFingerprint)
 	require.Equal(t, beforeMigration, afterMigration)
-	_, err = database.Exec(`UPDATE posts SET status='draft' WHERE slug IN ('site-logo-published-old','site-favicon-published-old')`)
+	_, err = database.ExecContext(context.Background(), `UPDATE posts SET status='draft' WHERE slug IN ('site-logo-published-old','site-favicon-published-old')`)
 	require.NoError(t, err)
 	beforeCounts, beforeFingerprint, beforeMigration, err = captureDatabaseInventory(ctx, database)
 	require.NoError(t, err)
@@ -174,7 +174,7 @@ func TestPostgreSQLStoppedSiteIdentityImagesUseCurrentHistoricalOwnersSeparateRo
 	require.Equal(t, beforeCounts, afterCounts)
 	require.Equal(t, beforeFingerprint, afterFingerprint)
 	require.Equal(t, beforeMigration, afterMigration)
-	_, err = database.Exec(`UPDATE site_favicon_assets SET storage_key='site-favicon/missing.png',url='/uploads/site-favicon/missing.png' WHERE id=1`)
+	_, err = database.ExecContext(context.Background(), `UPDATE site_favicon_assets SET storage_key='site-favicon/missing.png',url='/uploads/site-favicon/missing.png' WHERE id=1`)
 	require.NoError(t, err)
 	beforeCounts, beforeFingerprint, beforeMigration, err = captureDatabaseInventory(ctx, database)
 	require.NoError(t, err)

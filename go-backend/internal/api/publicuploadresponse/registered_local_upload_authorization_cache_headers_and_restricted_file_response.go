@@ -1,17 +1,19 @@
 package publicuploadresponse
 
 import (
-	"commerce-platform/internal/pkg/logger"
-	"commerce-platform/internal/pkg/storage"
-	"commerce-platform/internal/service"
 	"context"
 	"errors"
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+
+	"commerce-platform/internal/pkg/logger"
+	"commerce-platform/internal/pkg/storage"
+	"commerce-platform/internal/service"
 )
 
 type PublicUploadAccessVerifier interface {
@@ -141,9 +143,14 @@ func OpenRestrictedLocalUploadFile(root, name string) (http.File, error) {
 		return nil, os.ErrNotExist
 	}
 
-	file, err := os.Open(cleanPath)
+	file, err := os.OpenInRoot(realRoot, realRel)
 	if err != nil {
 		return nil, err
+	}
+	openedInfo, err := file.Stat()
+	if err != nil || !openedInfo.Mode().IsRegular() {
+		_ = file.Close()
+		return nil, os.ErrNotExist
 	}
 	return file, nil
 }

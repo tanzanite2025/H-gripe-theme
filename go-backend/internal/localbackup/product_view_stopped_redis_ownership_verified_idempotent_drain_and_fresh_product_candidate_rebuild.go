@@ -10,13 +10,14 @@ import (
 	"strings"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
-	"commerce-platform/internal/repository"
-	"commerce-platform/internal/service"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	"commerce-platform/internal/pkg/maintenancegate"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 )
 
 // Private operator configuration. No endpoint accepts addresses or credentials.
@@ -63,7 +64,7 @@ func (configuration ProductViewRecoveryRedisConnectionConfiguration) validateExp
 	}
 	for _, address := range configuration.Addresses {
 		if strings.TrimSpace(address) != address || address == "" || strings.ContainsAny(address, "/@\r\n") {
-			return errors.New("Redis recovery addresses must contain host and port only")
+			return errors.New("redis recovery addresses must contain host and port only")
 		}
 	}
 	return nil
@@ -85,9 +86,9 @@ func (manager *Manager) validateProductViewStoppedDrainProgress(task *Task) erro
 	if progress == nil {
 		return nil
 	}
-	copy := *progress
-	copy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(copy)
+	snapshotCopy := *progress
+	snapshotCopy.SHA256 = ""
+	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
 	configurationDigest, configurationErr := customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
 	if err != nil || configurationErr != nil || digest != progress.SHA256 || progress.Version != 1 || progress.TaskID != task.ID || task.Manifest == nil || progress.PackageID != task.Manifest.PackageID || progress.ConfigurationSHA256 != configurationDigest || progress.Operator == "" || progress.TargetDatabaseOID <= 0 {
 		return errors.New("product view drain progress binding changed; retain maintenance for inspection")
@@ -170,7 +171,7 @@ func (manager *Manager) connectAndVerifyRuntimeOwnedProductViewRedis(ctx context
 	// One connection lets CLIENT LIST distinguish the executor's own socket.
 	client := redis.NewUniversalClient(&redis.UniversalOptions{Addrs: connection.Addresses, DB: connection.Database, Username: connection.Username, Password: connection.Password, MasterName: connection.MasterName, SentinelUsername: connection.SentinelUsername, SentinelPassword: connection.SentinelPassword, PoolSize: 1, MaxActiveConns: 1, ContextTimeoutEnabled: true, DialTimeout: 5 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 5 * time.Second})
 	if err := maintenancegate.VerifyRegisteredProductViewRedisRuntimeOwnership(ctx, client, ownership); err != nil {
-		client.Close()
+		_ = client.Close()
 		return nil, nil, err
 	}
 	return client, ownership, nil
@@ -183,7 +184,7 @@ func requireNoOtherProductViewRedisLogicalDatabaseClients(ctx context.Context, c
 	}
 	clients, err := client.Do(ctx, "CLIENT", "LIST").Text()
 	if err != nil {
-		return errors.New("Redis CLIENT LIST permission is required for stopped verification")
+		return errors.New("redis CLIENT LIST permission is required for stopped verification")
 	}
 	for _, line := range strings.Split(strings.TrimSpace(clients), "\n") {
 		fields := map[string]string{}
@@ -194,7 +195,7 @@ func requireNoOtherProductViewRedisLogicalDatabaseClients(ctx context.Context, c
 			}
 		}
 		if fields["id"] == "" || fields["db"] == "" {
-			return errors.New("Redis client inspection shape is invalid")
+			return errors.New("redis client inspection shape is invalid")
 		}
 		// Replication sockets do not issue application writes. Include subscribed
 		// clients: RESP3 permits ordinary commands on a subscribed connection.
@@ -211,7 +212,7 @@ func (manager *Manager) drainProductViewsAndRebuildCandidateUnderOneMaintenanceL
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	if err := manager.drainProductViewsAndRebuildCandidateWithHeldMaintenanceLease(ctx, task, actor); err != nil {
 		return err
 	}
@@ -247,7 +248,7 @@ func (manager *Manager) drainProductViewsAndRebuildCandidateWithHeldMaintenanceL
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(client.Close)
 	if err := requireNoOtherProductViewRedisLogicalDatabaseClients(ctx, client, cfg.ProductViewRecoveryRedis.Database); err != nil {
 		return err
 	}
@@ -255,7 +256,7 @@ func (manager *Manager) drainProductViewsAndRebuildCandidateWithHeldMaintenanceL
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	if err := assertNoUnfencedDatabaseSessions(ctx, control, cfg.DatabaseName); err != nil {
 		return err
 	}
@@ -293,12 +294,12 @@ func (manager *Manager) drainProductViewsAndRebuildCandidateWithHeldMaintenanceL
 	}
 	database, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent), DisableAutomaticPing: true})
 	if err != nil {
-		sqlDB.Close()
+		_ = sqlDB.Close()
 		return errors.New("cannot construct product view receipt repository")
 	}
 	buffer := service.NewProductViewCountBuffer(client, repository.NewProductRepository(database), 500)
 	err = func() error {
-		defer sqlDB.Close()
+		defer func(closeResource func() error) { _ = closeResource() }(sqlDB.Close)
 		before, err := buffer.InspectReadOnlyProductViewRecoveryBoundary(ctx)
 		if err != nil {
 			return errors.New("product view buffer or SQL receipt validation failed; preserve state for reconciliation")
@@ -365,8 +366,5 @@ func (manager *Manager) drainProductViewsAndRebuildCandidateWithHeldMaintenanceL
 	}
 	progress.Phase = "candidate_rebuilt"
 	task.Phase = "product_view_drain_and_fresh_candidate_rebuild_verified"
-	if err := manager.saveProductViewStoppedDrainProgress(task); err != nil {
-		return err
-	}
-	return nil
+	return manager.saveProductViewStoppedDrainProgress(task)
 }

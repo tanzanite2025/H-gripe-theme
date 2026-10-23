@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/pkg/maintenancegate"
 	"commerce-platform/internal/service"
-	"github.com/stretchr/testify/require"
 )
 
 func createSyntheticStoppedProductSwitchWithVerifiedOriginalReleaseIntent(t *testing.T) (*Manager, *Task) {

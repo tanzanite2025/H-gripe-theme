@@ -5,8 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestRestartCompletesPersistedReleaseOnlyAfterMaintenanceFenceWasReleased(t *testing.T) {

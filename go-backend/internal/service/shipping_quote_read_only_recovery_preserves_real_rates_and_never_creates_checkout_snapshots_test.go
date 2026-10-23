@@ -3,9 +3,10 @@ package service
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	shippingdomain "commerce-platform/internal/domain/shipping"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
 )
 
 func TestReadOnlyRecoveryShippingUsesActualRateCalculationWithoutCheckoutSnapshots(t *testing.T) {

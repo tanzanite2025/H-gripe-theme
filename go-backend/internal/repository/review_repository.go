@@ -1,9 +1,10 @@
 package repository
 
 import (
-	"commerce-platform/internal/domain/review"
 	"strings"
 	"time"
+
+	"commerce-platform/internal/domain/review"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

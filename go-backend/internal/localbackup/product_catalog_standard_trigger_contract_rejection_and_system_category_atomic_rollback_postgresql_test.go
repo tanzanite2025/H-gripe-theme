@@ -19,7 +19,7 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 	originalFunctions, originalTriggers := []string{}, []string{}
 	for _, contract := range productCatalogApprovedStandardTriggerContracts() {
 		var function, trigger string
-		require.NoError(t, stage.QueryRow(`SELECT pg_get_functiondef(tgfoid),pg_get_triggerdef(oid) FROM pg_trigger WHERE tgrelid=$1::regclass AND tgname=$2`, "public."+contract.Table, contract.Name).Scan(&function, &trigger))
+		require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT pg_get_functiondef(tgfoid),pg_get_triggerdef(oid) FROM pg_trigger WHERE tgrelid=$1::regclass AND tgname=$2`, "public."+contract.Table, contract.Name).Scan(&function, &trigger))
 		originalFunctions = append(originalFunctions, function)
 		originalTriggers = append(originalTriggers, trigger)
 	}
@@ -51,17 +51,17 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 		t.Run("product_standard_trigger_"+scenario.name, func(t *testing.T) {
 			t.Cleanup(func() {
 				for _, table := range []string{"products", "product_categories", "media_assets", "media_asset_derivatives"} {
-					_, err := stage.Exec(`DROP TRIGGER IF EXISTS synthetic_product_restore_guard ON public.` + pq.QuoteIdentifier(table) + `; DROP RULE IF EXISTS synthetic_product_restore_rule ON public.` + pq.QuoteIdentifier(table))
+					_, err := stage.ExecContext(context.Background(), `DROP TRIGGER IF EXISTS synthetic_product_restore_guard ON public.`+pq.QuoteIdentifier(table)+`; DROP RULE IF EXISTS synthetic_product_restore_rule ON public.`+pq.QuoteIdentifier(table))
 					require.NoError(t, err)
 				}
 				for i, contract := range productCatalogApprovedStandardTriggerContracts() {
-					_, err := stage.Exec(`DROP TRIGGER IF EXISTS ` + pq.QuoteIdentifier(contract.Name) + ` ON public.` + pq.QuoteIdentifier(contract.Table) + `; ` + originalFunctions[i] + `; ` + originalTriggers[i])
+					_, err := stage.ExecContext(context.Background(), `DROP TRIGGER IF EXISTS `+pq.QuoteIdentifier(contract.Name)+` ON public.`+pq.QuoteIdentifier(contract.Table)+`; `+originalFunctions[i]+`; `+originalTriggers[i])
 					require.NoError(t, err)
 				}
-				_, err := stage.Exec(`DROP FUNCTION IF EXISTS synthetic_product_restore_side_effect_guard()`)
+				_, err := stage.ExecContext(context.Background(), `DROP FUNCTION IF EXISTS synthetic_product_restore_side_effect_guard()`)
 				require.NoError(t, err)
 			})
-			_, err := stage.Exec(scenario.setupSQL)
+			_, err := stage.ExecContext(context.Background(), scenario.setupSQL)
 			require.NoError(t, err)
 			_, before, _, err := captureDatabaseInventory(ctx, stage)
 			require.NoError(t, err)
@@ -81,9 +81,9 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 	}
 
 	var rootID, carbonID, originalProductID int64
-	require.NoError(t, stage.QueryRow(`SELECT id FROM product_categories WHERE slug='wheel-components'`).Scan(&rootID))
-	require.NoError(t, stage.QueryRow(`SELECT id FROM product_categories WHERE slug='carbon-rim'`).Scan(&carbonID))
-	require.NoError(t, stage.QueryRow(`SELECT id FROM products WHERE slug='product-backup-original' AND locale='en'`).Scan(&originalProductID))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM product_categories WHERE slug='wheel-components'`).Scan(&rootID))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM product_categories WHERE slug='carbon-rim'`).Scan(&carbonID))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM products WHERE slug='product-backup-original' AND locale='en'`).Scan(&originalProductID))
 	for _, scenario := range []struct {
 		name, table, slug, mutationJSON, currentSQL, cleanupSQL, expectedError string
 	}{
@@ -103,10 +103,13 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 	} {
 		t.Run("product_system_category_"+scenario.name, func(t *testing.T) {
 			if scenario.cleanupSQL != "" {
-				t.Cleanup(func() { _, err := stage.Exec(scenario.cleanupSQL); require.NoError(t, err) })
+				t.Cleanup(func() {
+					_, err := stage.ExecContext(context.Background(), scenario.cleanupSQL)
+					require.NoError(t, err)
+				})
 			}
 			if scenario.currentSQL != "" {
-				_, err := stage.Exec(scenario.currentSQL)
+				_, err := stage.ExecContext(context.Background(), scenario.currentSQL)
 				require.NoError(t, err)
 			}
 			changed := copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, snapshot, scenario.table, scenario.slug, scenario.mutationJSON)
@@ -128,7 +131,7 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 				changed = copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, changed, "product_categories", "carbon-rim", `{"parent_id":900004}`)
 			}
 			var replacement string
-			require.NoError(t, stage.QueryRow(`SELECT (to_jsonb(c)||'{"id":900004}'::jsonb)::text FROM product_categories c WHERE slug=$1`, systemSlug).Scan(&replacement))
+			require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT (to_jsonb(c)||'{"id":900004}'::jsonb)::text FROM product_categories c WHERE slug=$1`, systemSlug).Scan(&replacement))
 			table := changed.Tables["product_categories"]
 			table.Rows = append(table.Rows, json.RawMessage(replacement))
 			changed.Tables["product_categories"] = table
@@ -146,7 +149,7 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 		t.Run(fmt.Sprintf("product_system_category_new_carbon_valid_binding_%t", validBinding), func(t *testing.T) {
 			changed := copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, snapshot, "", "", "")
 			var rawRow string
-			require.NoError(t, stage.QueryRow(`SELECT (to_jsonb(p)||jsonb_build_object('id',900003,'slug','synthetic-new-carbon-product','parent_id',NULL,'product_type','carbon_rim','carbon_rim_specification','{"schema_version":1}'::jsonb,'product_category_id',$1::bigint))::text FROM products p WHERE id=$2`, carbonID, originalProductID).Scan(&rawRow))
+			require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT (to_jsonb(p)||jsonb_build_object('id',900003,'slug','synthetic-new-carbon-product','parent_id',NULL,'product_type','carbon_rim','carbon_rim_specification','{"schema_version":1}'::jsonb,'product_category_id',$1::bigint))::text FROM products p WHERE id=$2`, carbonID, originalProductID).Scan(&rawRow))
 			row := json.RawMessage(rawRow)
 			if !validBinding {
 				row = copyProductCatalogRowWithJSONFieldsChanged(t, row, fmt.Sprintf(`{"product_category_id":%d}`, rootID))
@@ -154,7 +157,10 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 			table := changed.Tables["products"]
 			table.Rows = append(table.Rows, row)
 			changed.Tables["products"] = table
-			t.Cleanup(func() { _, err := stage.Exec(`DELETE FROM products WHERE id=900003`); require.NoError(t, err) })
+			t.Cleanup(func() {
+				_, err := stage.ExecContext(context.Background(), `DELETE FROM products WHERE id=900003`)
+				require.NoError(t, err)
+			})
 			_, before, _, err := captureDatabaseInventory(ctx, stage)
 			require.NoError(t, err)
 			_, _, result, err := cfg.applyProductCatalogRowsOnlyToIsolatedDatabase(ctx, stage, changed)
@@ -162,7 +168,7 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 				require.NoError(t, err)
 				require.NotNil(t, result)
 				var restoredType string
-				require.NoError(t, stage.QueryRow(`SELECT product_type FROM products WHERE id=900003 AND product_category_id=$1`, carbonID).Scan(&restoredType))
+				require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT product_type FROM products WHERE id=900003 AND product_category_id=$1`, carbonID).Scan(&restoredType))
 				require.Equal(t, "carbon_rim", restoredType)
 			} else {
 				require.ErrorContains(t, err, "system category bindings")

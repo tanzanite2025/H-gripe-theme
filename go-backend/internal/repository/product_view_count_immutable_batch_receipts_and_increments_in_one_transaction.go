@@ -6,10 +6,11 @@ import (
 	"math"
 	"sort"
 
-	"commerce-platform/internal/domain/product"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"commerce-platform/internal/domain/product"
 )
 
 func validateProductViewCountBatchIdentityAndSortProductIDs(batchID string, counts map[uint]int64) ([]uint, error) {

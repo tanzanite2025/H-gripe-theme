@@ -417,7 +417,7 @@ func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidat
 	query = applyQuickBuyCandidateScope(query, input)
 	query = r.excludeSpokeRepairKitProductsFromQuickBuy(query)
 	var err error
-	query, err = applyProductSpecFilters(query, input.SpecFilters, r.db.Dialector.Name())
+	query, err = applyProductSpecFilters(query, input.SpecFilters, r.db.Name())
 	if err != nil {
 		return nil, 0, err
 	}
@@ -835,7 +835,7 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 func (r *ProductRepository) quickBuyCandidateProductIDs(input ProductQuickBuyCandidateQuery) ([]uint, error) {
 	query := applyQuickBuyCandidateScope(r.db.Model(&product.Product{}), input)
 	query = r.excludeSpokeRepairKitProductsFromQuickBuy(query)
-	filteredQuery, err := applyProductSpecFilters(query, input.SpecFilters, r.db.Dialector.Name())
+	filteredQuery, err := applyProductSpecFilters(query, input.SpecFilters, r.db.Name())
 	if err != nil {
 		return nil, err
 	}
@@ -906,7 +906,7 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 		Where(activeVariantExistsSQL("pv_public"))
 
 	var err error
-	query, err = applyPublicProductSearchFilters(query, input, r.db.Dialector.Name())
+	query, err = applyPublicProductSearchFilters(query, input, r.db.Name())
 	if err != nil {
 		return nil, 0, err
 	}
@@ -945,7 +945,7 @@ func (r *ProductRepository) SearchPublicCompact(input ProductSearchQuery) ([]pro
 	query = r.preloadSpokeRepairKitModels(query)
 
 	var err error
-	query, err = applyPublicProductSearchFilters(query, input, r.db.Dialector.Name())
+	query, err = applyPublicProductSearchFilters(query, input, r.db.Name())
 	if err != nil {
 		return nil, err
 	}

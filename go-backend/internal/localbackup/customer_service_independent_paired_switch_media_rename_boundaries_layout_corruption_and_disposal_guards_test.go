@@ -23,7 +23,7 @@ func createCustomerServicePairedSwitchMediaAndJournalWithoutDatabaseTestFixture(
 	moves, err := buildCustomerServicePairedSwitchExpectedMediaMoves(baseline, inventory)
 	require.NoError(t, err)
 	journal := &customerServiceIndependentPairedSwitchJournal{Version: 1, State: "prepared_isolated_rehearsal", DatabasePhase: "not_started", TaskID: task.ID, AttemptID: record.AttemptID, CreatedAt: time.Now().UTC(), TargetDatabase: manager.Configuration.DatabaseName, CandidateDatabase: record.Identity.DatabaseName, RollbackDatabase: "local_backup_cs_old_" + record.AttemptID[:16], OriginalDatabaseOID: 101, CandidateDatabaseOID: 102, OriginalDatabaseOwner: "synthetic_owner", ConfigurationSHA256: strings.Repeat("a", 64), OriginalTaskSHA256: strings.Repeat("a", 64), CandidateLifecycleSHA256: record.SHA256, InventorySHA256: inventory.SHA256, PlanSHA256: inventory.PlanSHA256, SelectionSHA256: inventory.SelectionSHA256, BaselineDatabaseFingerprint: strings.Repeat("b", 64), CandidateDatabaseFingerprint: strings.Repeat("c", 64), BaselineDirectories: baseline.Directories, Moves: moves}
-	_, err = reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory)
+	err = reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory)
 	require.NoError(t, err)
 	for _, volume := range record.MediaUnion.Volumes {
 		directory, err := customerServiceCandidateMediaVolumeDirectory(record, volume)
@@ -92,13 +92,13 @@ func TestCustomerServiceIndependentPairedSwitchMediaLayoutRejectsUnexpectedConte
 				journal.Moves[0].EntryName = "unregistered-name"
 				inventory, _, err := manager.Configuration.planCustomerServiceCompleteCurrentMediaUnion(context.Background(), &CustomerServiceEffectiveSelectionInspection{SelectionDependenciesSatisfied: true, Binding: CustomerServiceRecoveryPlanSnapshotBinding{TargetMediaFingerprint: record.MediaUnion.BaselineMediaFingerprint}}, &Manifest{}, "")
 				require.NoError(t, err)
-				_, err = reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory)
+				err = reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory)
 				require.Error(t, err)
 				return
 			case "changed_baseline_directory":
 				journal.BaselineDirectories = append(journal.BaselineDirectories, customerServiceCandidateMediaDirectory{volume.RootName, "unknown-directory"})
 				inventory := &customerServiceCandidateCompleteMediaUnionInventory{BaselineTreeSHA256: strings.Repeat("a", 64)}
-				_, err := reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory)
+				err := reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory)
 				require.Error(t, err)
 				return
 			}

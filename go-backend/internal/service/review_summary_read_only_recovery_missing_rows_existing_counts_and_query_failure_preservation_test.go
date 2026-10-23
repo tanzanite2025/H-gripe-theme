@@ -3,9 +3,10 @@ package service
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/review"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
 )
 
 func TestReadOnlyRecoveryReviewSummaryPreservesExistingCountsAndNeverCreatesMissingRows(t *testing.T) {

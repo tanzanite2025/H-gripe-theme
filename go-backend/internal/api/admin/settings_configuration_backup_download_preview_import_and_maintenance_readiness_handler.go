@@ -8,8 +8,9 @@ import (
 	"os"
 	"time"
 
-	"commerce-platform/internal/service"
 	"github.com/gin-gonic/gin"
+
+	"commerce-platform/internal/service"
 )
 
 func (h *SettingsHandler) GetConfigurationBackupAndRecoveryOverview(c *gin.Context) {

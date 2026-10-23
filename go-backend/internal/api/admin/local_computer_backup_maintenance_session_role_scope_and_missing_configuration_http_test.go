@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -9,11 +10,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/api/middleware"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/localbackup"
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 )
 
 func TestLocalBackupSessionPreservesRoleScopesWithoutOpeningBusinessDatabase(t *testing.T) {
@@ -28,7 +30,7 @@ func TestLocalBackupSessionPreservesRoleScopesWithoutOpeningBusinessDatabase(t *
 			router.Use(func(c *gin.Context) { c.Set("user_role", string(role)); c.Set("user_id", uint(42)) })
 			router.POST("/session", middleware.RequirePermission(auth.PermOpsBackupView), issueLocalComputerBackupMaintenanceSession)
 			response := httptest.NewRecorder()
-			router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/session", strings.NewReader(`{}`)))
+			router.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/session", strings.NewReader(`{}`)))
 			if role == auth.RoleSupport {
 				require.Equal(t, 403, response.Code)
 				return
@@ -54,6 +56,6 @@ func TestLocalBackupSessionPreservesRoleScopesWithoutOpeningBusinessDatabase(t *
 	router := gin.New()
 	router.POST("/session", issueLocalComputerBackupMaintenanceSession)
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/session", nil))
+	router.ServeHTTP(response, httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/session", nil))
 	require.Equal(t, 503, response.Code)
 }

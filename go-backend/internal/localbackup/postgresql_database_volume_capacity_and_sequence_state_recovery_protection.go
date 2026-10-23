@@ -44,13 +44,13 @@ func findOwnedUniqueSequenceCollisionOrExhaustionGaps(ctx context.Context, db *s
 	for rows.Next() {
 		var entry [3]string
 		if err := rows.Scan(&entry[0], &entry[1], &entry[2]); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		ownedSequences = append(ownedSequences, entry)
 	}
 	readErr := rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if readErr != nil {
 		return readErr
 	}
@@ -79,13 +79,13 @@ func appendPostgreSQLSequenceStateToDatabaseFingerprint(ctx context.Context, tx 
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		sequences = append(sequences, name)
 	}
 	readErr := rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if readErr != nil {
 		return readErr
 	}
@@ -99,7 +99,7 @@ func appendPostgreSQLSequenceStateToDatabaseFingerprint(ctx context.Context, tx 
 		if err := tx.QueryRowContext(ctx, `SELECT jsonb_build_array(seqstart,seqincrement,seqmax,seqmin,seqcache,seqcycle)::text FROM pg_sequence WHERE seqrelid=$1::regclass`, pq.QuoteIdentifier("public")+"."+pq.QuoteIdentifier(name)).Scan(&definition); err != nil {
 			return err
 		}
-		fmt.Fprintf(fingerprint, "sequence:%q:%d:%t:%s\n", name, lastValue, called, definition)
+		_, _ = fmt.Fprintf(fingerprint, "sequence:%q:%d:%t:%s\n", name, lastValue, called, definition)
 	}
 	return nil
 }

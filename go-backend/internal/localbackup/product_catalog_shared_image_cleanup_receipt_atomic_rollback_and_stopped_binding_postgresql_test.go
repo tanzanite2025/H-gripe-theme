@@ -13,7 +13,7 @@ func verifyProductCatalogRequiredImagesSharedRegistrationsAndRetainedCleanupRece
 	t.Helper()
 	ctx, cfg := context.Background(), manager.Configuration
 	var assetID int64
-	require.NoError(t, stage.QueryRow(`SELECT id FROM media_assets WHERE storage_key='products/product-original.png'`).Scan(&assetID))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM media_assets WHERE storage_key='products/product-original.png'`).Scan(&assetID))
 	basePayload := fmt.Sprintf(`{"resource_type":"media_asset","resource_id":"%d","object_keys":["products/product-original.png"]}`, assetID)
 	for _, scenario := range []struct {
 		name, payload, eventType, aggregateType, aggregateID, status, extraSQL, expectedError string
@@ -78,7 +78,7 @@ func verifyProductCatalogRequiredImagesSharedRegistrationsAndRetainedCleanupRece
 			_, before, _, err := captureDatabaseInventory(ctx, stage)
 			require.NoError(t, err)
 			var originalReceipt string
-			require.NoError(t, stage.QueryRow(`SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&originalReceipt))
+			require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&originalReceipt))
 			if scenario.expectedCleanupInspectionError != "" {
 				// Isolate retirement on the existing required original/thumbnail
 				// inside a rolled-back fixture transaction. Then the untouched
@@ -105,7 +105,7 @@ func verifyProductCatalogRequiredImagesSharedRegistrationsAndRetainedCleanupRece
 				require.NotNil(t, result)
 			}
 			var retainedReceipt string
-			require.NoError(t, stage.QueryRow(`SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&retainedReceipt))
+			require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&retainedReceipt))
 			require.Equal(t, originalReceipt, retainedReceipt, "never reset, consume, suppress or rewrite the original receipt")
 		})
 	}
@@ -138,9 +138,12 @@ func verifyProductCatalogRequiredImagesSharedRegistrationsAndRetainedCleanupRece
 			db, err := cfg.connectDatabase(ctx, databaseName)
 			require.NoError(t, err)
 			defer db.Close()
-			_, err = db.Exec(`INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(900000,'synthetic-new-cleanup-after-product-preview','storage.object_cleanup_requested','media_asset',$1,$2::jsonb,'processed')`, fmt.Sprint(assetID), basePayload)
+			_, err = db.ExecContext(context.Background(), `INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(900000,'synthetic-new-cleanup-after-product-preview','storage.object_cleanup_requested','media_asset',$1,$2::jsonb,'processed')`, fmt.Sprint(assetID), basePayload)
 			require.NoError(t, err)
-			defer func() { _, err := db.Exec(`DELETE FROM outbox_events WHERE id=900000`); require.NoError(t, err) }()
+			defer func() {
+				_, err := db.ExecContext(context.Background(), `DELETE FROM outbox_events WHERE id=900000`)
+				require.NoError(t, err)
+			}()
 			err = manager.rehearseProductCatalogPairedSwitchAndVerifiedRollback(ctx, task.ID, nil)
 			require.ErrorContains(t, err, "changed after preview")
 			task, err = manager.GetTask(task.ID)
@@ -172,22 +175,22 @@ func verifyProductCatalogRequiredImagesSharedRegistrationsAndRetainedCleanupRece
 		require.NoError(t, err)
 		require.Equal(t, mediaBefore, mediaAfter)
 		var stageExists bool
-		require.NoError(t, live.QueryRow(`SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname=$1)`, task.StageDatabase).Scan(&stageExists))
+		require.NoError(t, live.QueryRowContext(context.Background(), `SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname=$1)`, task.StageDatabase).Scan(&stageExists))
 		require.False(t, stageExists, "a failed upload must remove only its disposable candidate")
 	})
 	t.Run("product_cleanup_ignored_receipt_survives_encrypted_upload_paired_switch_and_rollback", func(t *testing.T) {
 		live, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 		require.NoError(t, err)
-		_, err = live.Exec(`INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(900000,'synthetic-ignored-cleanup-through-product-pair','storage.object_cleanup_requested','media_asset',$1,$2::jsonb,'ignored')`, fmt.Sprint(assetID), basePayload)
+		_, err = live.ExecContext(context.Background(), `INSERT INTO outbox_events(id,event_key,event_type,aggregate_type,aggregate_id,payload,status) VALUES(900000,'synthetic-ignored-cleanup-through-product-pair','storage.object_cleanup_requested','media_asset',$1,$2::jsonb,'ignored')`, fmt.Sprint(assetID), basePayload)
 		require.NoError(t, err)
 		var originalReceipt string
-		require.NoError(t, live.QueryRow(`SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&originalReceipt))
+		require.NoError(t, live.QueryRowContext(context.Background(), `SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&originalReceipt))
 		require.NoError(t, live.Close())
 		defer func() {
 			live, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 			require.NoError(t, err)
 			defer live.Close()
-			_, err = live.Exec(`DELETE FROM outbox_events WHERE id=900000`)
+			_, err = live.ExecContext(context.Background(), `DELETE FROM outbox_events WHERE id=900000`)
 			require.NoError(t, err)
 		}()
 		task := uploadProductCatalogPackageForIntegrationTest(t, manager, packageData)
@@ -196,7 +199,7 @@ func verifyProductCatalogRequiredImagesSharedRegistrationsAndRetainedCleanupRece
 		candidate, err := cfg.connectDatabase(ctx, task.StageDatabase)
 		require.NoError(t, err)
 		var candidateReceipt string
-		require.NoError(t, candidate.QueryRow(`SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&candidateReceipt))
+		require.NoError(t, candidate.QueryRowContext(context.Background(), `SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&candidateReceipt))
 		require.NoError(t, candidate.Close())
 		require.Equal(t, originalReceipt, candidateReceipt)
 		require.NoError(t, manager.rehearseProductCatalogPairedSwitchAndVerifiedRollback(ctx, task.ID, nil))
@@ -207,7 +210,7 @@ func verifyProductCatalogRequiredImagesSharedRegistrationsAndRetainedCleanupRece
 		restored, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 		require.NoError(t, err)
 		var retainedReceipt string
-		require.NoError(t, restored.QueryRow(`SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&retainedReceipt))
+		require.NoError(t, restored.QueryRowContext(context.Background(), `SELECT to_jsonb(r)::text FROM outbox_events r WHERE id=900000`).Scan(&retainedReceipt))
 		require.NoError(t, restored.Close())
 		require.Equal(t, originalReceipt, retainedReceipt)
 	})

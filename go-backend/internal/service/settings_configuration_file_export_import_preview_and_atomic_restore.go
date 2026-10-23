@@ -219,8 +219,8 @@ func buildSettingsConfigurationImportPreview(entries []setting.UpdateSettingRequ
 		change.CurrentIsPublic, change.ImportedIsPublic = previous.IsPublic, entry.IsPublic
 		change.CurrentDescription, change.ImportedDescription = previous.Description, entry.Description
 		if exists {
-			copy := previous
-			target = append(target, &copy)
+			snapshotCopy := previous
+			target = append(target, &snapshotCopy)
 			if previous == entry {
 				change.Action = "unchanged"
 				preview.UnchangedCount++

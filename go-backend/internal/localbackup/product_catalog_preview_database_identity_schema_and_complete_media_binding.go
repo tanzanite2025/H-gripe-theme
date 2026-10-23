@@ -37,7 +37,7 @@ func (cfg Configuration) captureProductCatalogRecoveryDatabaseBinding(ctx contex
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(db.Close)
 	result := &productCatalogRecoveryDatabaseBinding{}
 	if err := db.QueryRowContext(ctx, `SELECT oid::bigint,pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()`).Scan(&result.OID, &result.Owner); err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (cfg Configuration) captureProductCatalogRecoveryDatabaseBinding(ctx contex
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(tx.Rollback)
 	observation, err := inspectModuleRecoveryDatabaseObservation(ctx, tx)
 	if err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ func (manager *Manager) dropProductCatalogStageOnlyWithBoundIdentity(ctx context
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var oid int64
 	if err := readDatabaseOID(ctx, control, task.StageDatabase, &oid); err != nil {
 		return err
@@ -240,6 +240,6 @@ func (manager *Manager) dropProductCatalogStageOnlyWithBoundIdentity(ctx context
 	if task.StageDatabase != "local_backup_stage_"+task.ID[:16] || oid != task.ProductCatalogPreviewBinding.Candidate.OID || owner != task.ProductCatalogPreviewBinding.Candidate.Owner {
 		return errors.New("product stage cleanup identity changed; database retained for inspection")
 	}
-	_, err = control.ExecContext(ctx, `DROP DATABASE `+pq.QuoteIdentifier(task.StageDatabase)+` WITH (FORCE)`)
+	_, err = control.ExecContext(ctx, `DROP DATABASE `+pq.QuoteIdentifier(task.StageDatabase)+` WITH (FORCE)`) // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 	return err
 }

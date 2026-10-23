@@ -297,11 +297,11 @@ func (cfg Configuration) inspectProductCatalogRequiredImageCleanupProtectionInDa
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(db.Close)
 	tx, err := db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(tx.Rollback)
 	return cfg.inspectProductCatalogRequiredImagesAndRetainedCleanupReceipts(ctx, tx)
 }

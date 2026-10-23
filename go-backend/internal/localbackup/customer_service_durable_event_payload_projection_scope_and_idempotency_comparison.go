@@ -5,8 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"commerce-platform/internal/domain/outbox"
 	"github.com/lib/pq"
+
+	"commerce-platform/internal/domain/outbox"
 )
 
 // Extract only registered routing identities and object references. In

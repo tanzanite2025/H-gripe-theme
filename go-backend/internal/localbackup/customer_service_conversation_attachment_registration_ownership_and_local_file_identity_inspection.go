@@ -358,7 +358,7 @@ func inspectBoundedModuleRecoveryRegularFileIdentity(ctx context.Context, direct
 	if err != nil {
 		return FileIdentity{}, err
 	}
-	defer root.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(root.Close)
 	var componentPath string
 	for _, component := range strings.Split(key, "/") {
 		componentPath = filepath.Join(componentPath, component)
@@ -377,7 +377,7 @@ func inspectBoundedModuleRecoveryRegularFileIdentity(ctx context.Context, direct
 	if err != nil {
 		return FileIdentity{}, err
 	}
-	defer file.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 	before, err := file.Stat()
 	if err != nil {
 		return FileIdentity{}, err

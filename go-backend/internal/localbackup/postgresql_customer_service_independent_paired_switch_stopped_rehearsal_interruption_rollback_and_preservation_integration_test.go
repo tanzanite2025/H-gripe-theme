@@ -8,9 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func verifyCustomerServiceIndependentPairedSwitchRehearsalAndRollbackWithCompleteMigrationCandidate(t *testing.T, manager *Manager, task *Task, record *customerServicePersistentCandidateLifecycle) {
@@ -74,24 +75,24 @@ func TestPostgreSQLCustomerServiceIndependentPairedSwitchRehearsalRetainsCurrent
 	require.Equal(t, record.Identity.DatabaseOID, targetOID)
 	for _, name := range []string{journal.TargetDatabase, journal.RollbackDatabase} {
 		var allowed bool
-		require.NoError(t, fixture.Control.QueryRow(`SELECT datallowconn FROM pg_database WHERE datname=$1`, name).Scan(&allowed))
+		require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT datallowconn FROM pg_database WHERE datname=$1`, name).Scan(&allowed))
 		require.False(t, allowed)
 	}
 	_, err = fixture.Configuration.connectDatabase(ctx, journal.TargetDatabase)
 	require.Error(t, err)
 	// A deliberate privileged test connection proves the changed message and
 	// the preserved current event state. It is resealed before any recovery.
-	_, err = fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(journal.TargetDatabase) + ` ALLOW_CONNECTIONS true`)
+	_, err = fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(journal.TargetDatabase)+` ALLOW_CONNECTIONS true`)
 	require.NoError(t, err)
 	candidate, err := fixture.Configuration.connectDatabase(ctx, journal.TargetDatabase)
 	require.NoError(t, err)
 	var body, status string
 	var attempts, messages int
-	require.NoError(t, candidate.QueryRow(`SELECT content FROM ticket_messages WHERE id=1`).Scan(&body))
+	require.NoError(t, candidate.QueryRowContext(context.Background(), `SELECT content FROM ticket_messages WHERE id=1`).Scan(&body))
 	require.Equal(t, "private retained synthetic message", body)
-	require.NoError(t, candidate.QueryRow(`SELECT count(*) FROM ticket_messages WHERE id=100`).Scan(&messages))
+	require.NoError(t, candidate.QueryRowContext(context.Background(), `SELECT count(*) FROM ticket_messages WHERE id=100`).Scan(&messages))
 	require.Equal(t, 1, messages)
-	require.NoError(t, candidate.QueryRow(`SELECT status,attempts FROM outbox_events WHERE id=1`).Scan(&status, &attempts))
+	require.NoError(t, candidate.QueryRowContext(context.Background(), `SELECT status,attempts FROM outbox_events WHERE id=1`).Scan(&status, &attempts))
 	require.Equal(t, "ignored", status)
 	require.Equal(t, 7, attempts)
 	require.NoError(t, candidate.Close())
@@ -207,7 +208,7 @@ func TestPostgreSQLCustomerServiceIndependentPairedSwitchRestartRollsBackEachDur
 			require.NoError(t, err)
 			require.Equal(t, "discarded_not_switchable", loaded.State)
 			var candidateCount int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE oid=$1`, record.Identity.DatabaseOID).Scan(&candidateCount))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE oid=$1`, record.Identity.DatabaseOID).Scan(&candidateCount))
 			require.Zero(t, candidateCount)
 			for _, volume := range record.MediaUnion.Volumes {
 				directory, _ := customerServiceCandidateMediaVolumeDirectory(record, volume)
@@ -251,11 +252,11 @@ func TestPostgreSQLCustomerServiceIndependentPairedSwitchIdentityFailureRetainsC
 				repairKnownTestChange = func() { require.NoError(t, os.Remove(filename)) }
 			case "candidate_content_changed":
 				changeCandidateContent := func(body string) {
-					_, err := fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(journal.CandidateDatabase) + ` ALLOW_CONNECTIONS true`)
+					_, err := fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(journal.CandidateDatabase)+` ALLOW_CONNECTIONS true`)
 					require.NoError(t, err)
 					database, err := fixture.Configuration.connectDatabase(ctx, journal.CandidateDatabase)
 					require.NoError(t, err)
-					_, err = database.Exec(`UPDATE ticket_messages SET content=$1 WHERE id=1`, body)
+					_, err = database.ExecContext(context.Background(), `UPDATE ticket_messages SET content=$1 WHERE id=1`, body)
 					require.NoError(t, err)
 					require.NoError(t, database.Close())
 					require.NoError(t, sealDatabase(ctx, fixture.Control, journal.CandidateDatabase))
@@ -263,21 +264,21 @@ func TestPostgreSQLCustomerServiceIndependentPairedSwitchIdentityFailureRetainsC
 				changeCandidateContent("synthetic changed candidate")
 				repairKnownTestChange = func() { changeCandidateContent("private retained synthetic message") }
 			case "candidate_connections_enabled":
-				_, err := fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(journal.CandidateDatabase) + ` ALLOW_CONNECTIONS true`)
+				_, err := fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(journal.CandidateDatabase)+` ALLOW_CONNECTIONS true`)
 				require.NoError(t, err)
 				repairKnownTestChange = func() { require.NoError(t, sealDatabase(ctx, fixture.Control, journal.CandidateDatabase)) }
 			case "rollback_name_occupied":
-				_, err := fixture.Control.Exec(`CREATE DATABASE ` + pq.QuoteIdentifier(journal.RollbackDatabase))
+				_, err := fixture.Control.ExecContext(context.Background(), `CREATE DATABASE `+pq.QuoteIdentifier(journal.RollbackDatabase))
 				require.NoError(t, err)
 				repairKnownTestChange = func() {
-					_, err := fixture.Control.Exec(`DROP DATABASE ` + pq.QuoteIdentifier(journal.RollbackDatabase))
+					_, err := fixture.Control.ExecContext(context.Background(), `DROP DATABASE `+pq.QuoteIdentifier(journal.RollbackDatabase))
 					require.NoError(t, err)
 				}
 			case "original_owner_changed":
-				_, err := fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(journal.TargetDatabase) + ` OWNER TO ` + pq.QuoteIdentifier(fixture.Configuration.ApplicationDatabaseRole))
+				_, err := fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(journal.TargetDatabase)+` OWNER TO `+pq.QuoteIdentifier(fixture.Configuration.ApplicationDatabaseRole))
 				require.NoError(t, err)
 				repairKnownTestChange = func() {
-					_, err := fixture.Control.Exec(`ALTER DATABASE ` + pq.QuoteIdentifier(journal.TargetDatabase) + ` OWNER TO ` + pq.QuoteIdentifier(journal.OriginalDatabaseOwner))
+					_, err := fixture.Control.ExecContext(context.Background(), `ALTER DATABASE `+pq.QuoteIdentifier(journal.TargetDatabase)+` OWNER TO `+pq.QuoteIdentifier(journal.OriginalDatabaseOwner))
 					require.NoError(t, err)
 				}
 			case "forged_rolled_back_flag":
@@ -306,7 +307,7 @@ func TestPostgreSQLCustomerServiceIndependentPairedSwitchIdentityFailureRetainsC
 			require.Error(t, restarted.discardCustomerServicePersistentCandidate(ctx, task.ID))
 			require.Error(t, restarted.ReleaseUnmodifiedMaintenance(task.ID))
 			var candidateCount int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE oid=$1`, record.Identity.DatabaseOID).Scan(&candidateCount))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE oid=$1`, record.Identity.DatabaseOID).Scan(&candidateCount))
 			require.Equal(t, 1, candidateCount)
 			for _, volume := range record.MediaUnion.Volumes {
 				directory, _ := customerServiceCandidateMediaVolumeDirectory(record, volume)

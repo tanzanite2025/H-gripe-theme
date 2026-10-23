@@ -18,9 +18,10 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 const independentServerLargeFixtureName = "whole-storefront-gibibyte-package-downloaded-to-computer-before-source-server-removal.age"
@@ -79,7 +80,7 @@ func TestPostgreSQLGibibyteComputerPackageSurvivesSourceRemovalAndRestoresToInde
 		computerFile, err := os.OpenFile(packagePath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 		require.NoError(t, err)
 		for _, interval := range []string{"bytes=0-16777215", "bytes=16777216-"} {
-			request, err := http.NewRequest(http.MethodGet, server.URL+"/downloads/"+backup.ID, nil)
+			request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/downloads/"+backup.ID, nil)
 			require.NoError(t, err)
 			request.Header.Set("Authorization", "Bearer "+credential)
 			request.Header.Set("Range", interval)
@@ -240,7 +241,7 @@ func uploadLargeComputerFileWithMaintenanceRestart(t *testing.T, cfg Configurati
 	defer func() { server.Close() }()
 	requestJSON := func(method, path string, body io.Reader, headers map[string]string) *Task {
 		t.Helper()
-		request, err := http.NewRequest(method, server.URL+path, body)
+		request, err := http.NewRequestWithContext(context.Background(), method, server.URL+path, body)
 		require.NoError(t, err)
 		request.Header.Set("Authorization", "Bearer "+credential)
 		for name, value := range headers {

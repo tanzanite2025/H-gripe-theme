@@ -1,21 +1,22 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"commerce-platform/internal/api/middleware"
-	"commerce-platform/internal/domain/ticket"
-	"commerce-platform/internal/repository"
-	"commerce-platform/internal/service"
-
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/domain/ticket"
+	"commerce-platform/internal/repository"
+	"commerce-platform/internal/service"
 )
 
 func TestCustomerServiceRetentionHistoryInventoryRequiresAdminAndPreservesRecoveryWindowAndAttachmentDiagnostics(t *testing.T) {
@@ -61,7 +62,7 @@ func TestCustomerServiceRetentionHistoryInventoryRequiresAdminAndPreservesRecove
 			})
 			router.GET("/api/admin/customer-service/conversations/retention/records", middleware.AdminOnly(), handler.ListCustomerServiceRetentionRecords)
 			recorder := httptest.NewRecorder()
-			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/admin/customer-service/conversations/retention/records"+scenario.query, nil))
+			router.ServeHTTP(recorder, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/admin/customer-service/conversations/retention/records"+scenario.query, nil))
 			require.Equal(t, scenario.expectedStatus, recorder.Code, recorder.Body.String())
 			if recorder.Code != http.StatusOK {
 				return

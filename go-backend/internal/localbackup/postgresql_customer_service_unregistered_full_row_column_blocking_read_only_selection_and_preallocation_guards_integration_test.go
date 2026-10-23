@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestPostgreSQLCustomerServiceUnknownFullRowColumnsBlockEvenMatchingEmptySchemasAndPreserveCurrentSelections(t *testing.T) {
@@ -36,7 +37,7 @@ func TestPostgreSQLCustomerServiceUnknownFullRowColumnsBlockEvenMatchingEmptySch
 				_, err := database.ExecContext(ctx, `ALTER TABLE `+pq.QuoteIdentifier(scenario.table)+` ADD COLUMN custom_unregistered_reference `+scenario.definition)
 				require.NoError(t, err)
 			}
-			_, err := fixture.Target.Exec(`UPDATE ticket_messages SET content='private chosen current body' WHERE id=1`)
+			_, err := fixture.Target.ExecContext(context.Background(), `UPDATE ticket_messages SET content='private chosen current body' WHERE id=1`)
 			require.NoError(t, err)
 			before := []string{}
 			for _, database := range []*sql.DB{fixture.Source, fixture.Target} {
@@ -81,7 +82,7 @@ func TestPostgreSQLCustomerServiceUnknownFullRowColumnsBlockEvenMatchingEmptySch
 				require.Equal(t, before[index], fingerprint)
 			}
 			var candidates int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
 			require.Zero(t, candidates)
 			encoded, err := json.Marshal(selection)
 			require.NoError(t, err)
@@ -104,7 +105,7 @@ func TestPostgreSQLCustomerServiceUnknownColumnOrPreviousRegistryPlanCannotAlloc
 			require.NoError(t, maintenancegate.RegisterApplicationBoundary(cfg.MaintenanceDirectory, cfg.DatabaseName, cfg.ApplicationVersion, cfg.StorageRoots, cfg.RecoverySecrets))
 			if scenario == "matching_unregistered_columns" {
 				for _, database := range []*sql.DB{fixture.Source, fixture.Target} {
-					_, err := database.Exec(`ALTER TABLE ticket_messages ADD COLUMN custom_unregistered_reference jsonb`)
+					_, err := database.ExecContext(context.Background(), `ALTER TABLE ticket_messages ADD COLUMN custom_unregistered_reference jsonb`)
 					require.NoError(t, err)
 				}
 			}
@@ -138,7 +139,7 @@ func TestPostgreSQLCustomerServiceUnknownColumnOrPreviousRegistryPlanCannotAlloc
 			require.Zero(t, record.Identity.DatabaseOID)
 			require.Nil(t, record.MediaUnion)
 			var candidates int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
 			require.Zero(t, candidates)
 			after, err := cfg.mediaFingerprint(ctx)
 			require.NoError(t, err)

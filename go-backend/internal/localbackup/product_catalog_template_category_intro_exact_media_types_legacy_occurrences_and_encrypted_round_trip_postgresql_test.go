@@ -16,7 +16,7 @@ import (
 func verifyProductCatalogTemplateAndCategoryRichTextMediaTypesLegacyOccurrencesAndAtomicRollback(t *testing.T, manager *Manager, stage *sql.DB, packageData []byte) {
 	t.Helper()
 	ctx, cfg := context.Background(), manager.Configuration
-	_, err := stage.Exec(`INSERT INTO media_assets(id,filename,url,storage_key,media_type) VALUES
+	_, err := stage.ExecContext(context.Background(), `INSERT INTO media_assets(id,filename,url,storage_key,media_type) VALUES
 (930001,'template-video.mp4','/uploads/products/template-video.mp4','products/template-video.mp4','video'),
 (930002,'template-manual.pdf','/uploads/products/template-manual','products/template-manual','document'),
 (930003,'template-owned.png','/uploads/visual-showcase/template-owned.png','visual-showcase/template-owned.png','image');
@@ -32,7 +32,7 @@ INSERT INTO product_category_translations(id,product_category_id,locale,name) VA
 (930030,930020,'fr','Synthetic French category'),(930031,930020,'de','Synthetic German category')`)
 	require.NoError(t, err)
 	defer func() {
-		_, err := stage.Exec(`DELETE FROM product_information_templates WHERE id IN (930010,930011,930012);
+		_, err := stage.ExecContext(context.Background(), `DELETE FROM product_information_templates WHERE id IN (930010,930011,930012);
 DELETE FROM product_categories WHERE id IN (930020,930021,930022);
 DELETE FROM media_asset_derivatives WHERE id=930004; DELETE FROM media_assets WHERE id IN (930001,930002,930003)`)
 		require.NoError(t, err)
@@ -92,18 +92,18 @@ DELETE FROM media_asset_derivatives WHERE id=930004; DELETE FROM media_assets WH
 			}
 			t.Run("product_template_category_rich_text_"+source.table+"_"+scenario.name, func(t *testing.T) {
 				t.Cleanup(func() {
-					_, err := stage.Exec(`DELETE FROM `+pq.QuoteIdentifier(source.table)+` WHERE id=$1`, source.newID)
+					_, err := stage.ExecContext(context.Background(), `DELETE FROM `+pq.QuoteIdentifier(source.table)+` WHERE id=$1`, source.newID)
 					require.NoError(t, err)
-					_, err = stage.Exec(`UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`='' WHERE id IN ($1,$2)`, source.id, source.otherID)
+					_, err = stage.ExecContext(context.Background(), `UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`='' WHERE id IN ($1,$2)`, source.id, source.otherID)
 					require.NoError(t, err)
 					if source.table == "product_information_templates" {
-						_, err = stage.Exec(`UPDATE product_information_templates SET deleted_at=NULL WHERE id=$1`, source.id)
+						_, err = stage.ExecContext(context.Background(), `UPDATE product_information_templates SET deleted_at=NULL WHERE id=$1`, source.id)
 						require.NoError(t, err)
 					}
 				})
-				_, err := stage.Exec(`UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`=$1 WHERE id=$2`, scenario.previous, source.id)
+				_, err := stage.ExecContext(context.Background(), `UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`=$1 WHERE id=$2`, scenario.previous, source.id)
 				require.NoError(t, err)
-				_, err = stage.Exec(`UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`=$1 WHERE id=$2`, scenario.otherPrevious, source.otherID)
+				_, err = stage.ExecContext(context.Background(), `UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`=$1 WHERE id=$2`, scenario.otherPrevious, source.otherID)
 				require.NoError(t, err)
 				mutation := map[string]any{source.column: scenario.incoming}
 				if scenario.deletedTemplate {
@@ -158,7 +158,7 @@ DELETE FROM media_asset_derivatives WHERE id=930004; DELETE FROM media_assets WH
 				require.NoError(t, err)
 				require.NotNil(t, result)
 				var restored string
-				require.NoError(t, stage.QueryRow(`SELECT `+pq.QuoteIdentifier(source.column)+` FROM `+pq.QuoteIdentifier(source.table)+` WHERE id=$1`, source.id).Scan(&restored))
+				require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT `+pq.QuoteIdentifier(source.column)+` FROM `+pq.QuoteIdentifier(source.table)+` WHERE id=$1`, source.id).Scan(&restored))
 				require.Equal(t, scenario.incoming, restored)
 			})
 		}
@@ -192,17 +192,17 @@ DELETE FROM media_asset_derivatives WHERE id=930004; DELETE FROM media_assets WH
 					}
 					changed.Tables["product_category_translations"] = translations
 				}
-				_, err := stage.Exec(`UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`='<img src="/uploads/products/template-video.mp4">' WHERE id=$1`, source.id)
+				_, err := stage.ExecContext(context.Background(), `UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`='<img src="/uploads/products/template-video.mp4">' WHERE id=$1`, source.id)
 				require.NoError(t, err)
 				if deleted {
-					_, err = stage.Exec(`UPDATE product_information_templates SET deleted_at=now() WHERE id=$1`, source.id)
+					_, err = stage.ExecContext(context.Background(), `UPDATE product_information_templates SET deleted_at=now() WHERE id=$1`, source.id)
 					require.NoError(t, err)
 				}
 				t.Cleanup(func() {
-					_, err := stage.Exec(`UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`='' WHERE id=$1`, source.id)
+					_, err := stage.ExecContext(context.Background(), `UPDATE `+pq.QuoteIdentifier(source.table)+` SET `+pq.QuoteIdentifier(source.column)+`='' WHERE id=$1`, source.id)
 					require.NoError(t, err)
 					if deleted {
-						_, err = stage.Exec(`UPDATE product_information_templates SET deleted_at=NULL WHERE id=$1`, source.id)
+						_, err = stage.ExecContext(context.Background(), `UPDATE product_information_templates SET deleted_at=NULL WHERE id=$1`, source.id)
 						require.NoError(t, err)
 					}
 				})
@@ -245,7 +245,7 @@ func verifyProductCatalogTemplateAndCategoryRichTextEncryptedFileAndExactPersist
 	db, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, db.Close()) })
-	_, err = db.Exec(`INSERT INTO media_assets(id,filename,url,storage_key,media_type) VALUES
+	_, err = db.ExecContext(context.Background(), `INSERT INTO media_assets(id,filename,url,storage_key,media_type) VALUES
 (930001,'template-video.mp4','/uploads/products/template-video.mp4','products/template-video.mp4','video'),
 (930002,'template-manual.pdf','/uploads/products/template-manual','products/template-manual','document');
 INSERT INTO product_information_templates(id,kind,name,slug,locale,is_enabled,deleted_at) VALUES
@@ -256,10 +256,10 @@ INSERT INTO product_category_translations(id,product_category_id,locale,name) VA
 	require.NoError(t, err)
 	const html = `<p>Exact &amp; body /uploads/products/missing-body.png</p><video src='/uploads/products/template-video.mp4' poster="/uploads/products/product-small.png"></video><a href="/uploads/products/template-manual#page=2">Manual</a><img src="/uploads/products/product-original.png" alt="/uploads/products/missing-alt.png"><a href="https://external.invalid/photo.jpg">External</a>`
 	const text = `<img src="/uploads/products/missing-plain-text.png">`
-	_, err = db.Exec(`UPDATE product_information_templates SET content=$1 WHERE id IN (930010,930011)`, html)
+	_, err = db.ExecContext(context.Background(), `UPDATE product_information_templates SET content=$1 WHERE id IN (930010,930011)`, html)
 	require.NoError(t, err)
 	for _, table := range []string{"product_categories", "product_category_translations"} {
-		_, err = db.Exec(`UPDATE `+pq.QuoteIdentifier(table)+` SET seo_intro=$1,description=$2::text,meta_title=$2::text,meta_description=$2::text WHERE id IN (930020,930030)`, html, text)
+		_, err = db.ExecContext(context.Background(), `UPDATE `+pq.QuoteIdentifier(table)+` SET seo_intro=$1,description=$2::text,meta_title=$2::text,meta_description=$2::text WHERE id IN (930020,930030)`, html, text)
 		require.NoError(t, err)
 	}
 	files := map[string][]byte{
@@ -267,7 +267,7 @@ INSERT INTO product_category_translations(id,product_category_id,locale,name) VA
 		"products/template-manual":    []byte("synthetic-template-extensionless-document-content"),
 	}
 	t.Cleanup(func() {
-		_, err := db.Exec(`DELETE FROM product_information_templates WHERE id IN (930010,930011); DELETE FROM product_categories WHERE id=930020; DELETE FROM media_assets WHERE id IN (930001,930002)`)
+		_, err := db.ExecContext(context.Background(), `DELETE FROM product_information_templates WHERE id IN (930010,930011); DELETE FROM product_categories WHERE id=930020; DELETE FROM media_assets WHERE id IN (930001,930002)`)
 		require.NoError(t, err)
 		for key := range files {
 			require.NoError(t, os.Remove(filepath.Join(cfg.StorageRoots["uploads"], filepath.FromSlash(key))))
@@ -275,7 +275,7 @@ INSERT INTO product_category_translations(id,product_category_id,locale,name) VA
 	})
 	for key, body := range files {
 		require.NoError(t, os.WriteFile(filepath.Join(cfg.StorageRoots["uploads"], filepath.FromSlash(key)), body, 0600))
-		_, err := db.Exec(`UPDATE media_assets SET size=$1 WHERE storage_key=$2`, len(body), key)
+		_, err := db.ExecContext(context.Background(), `UPDATE media_assets SET size=$1 WHERE storage_key=$2`, len(body), key)
 		require.NoError(t, err)
 	}
 	_, before, _, err := captureDatabaseInventory(ctx, db)
@@ -312,8 +312,8 @@ INSERT INTO product_category_translations(id,product_category_id,locale,name) VA
 	} {
 		query := `SELECT jsonb_agg(to_jsonb(p) ORDER BY id)::text FROM ` + pq.QuoteIdentifier(source.table) + ` p WHERE ` + source.predicate
 		var expected, actual string
-		require.NoError(t, db.QueryRow(query).Scan(&expected))
-		require.NoError(t, clone.QueryRow(query).Scan(&actual))
+		require.NoError(t, db.QueryRowContext(context.Background(), query).Scan(&expected))
+		require.NoError(t, clone.QueryRowContext(context.Background(), query).Scan(&actual))
 		require.JSONEq(t, expected, actual, "all persisted row fields, HTML and disabled/deleted status must survive")
 	}
 	_, after, _, err := captureDatabaseInventory(ctx, db)

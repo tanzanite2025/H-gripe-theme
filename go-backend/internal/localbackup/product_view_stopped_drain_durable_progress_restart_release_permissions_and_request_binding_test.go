@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestProductViewStoppedDrainUnfinishedProgressSurvivesRestartAndCannotReleaseExpireOrReverify(t *testing.T) {
@@ -75,7 +76,7 @@ func TestProductViewStoppedDrainHTTPRequiresRestorePermissionAndRejectsClientCon
 		t.Run(scenario.name, func(t *testing.T) {
 			token, err := IssueMaintenanceSession(key, cfg.SiteID, cfg.Environment, "synthetic", []string{scenario.permission})
 			require.NoError(t, err)
-			request := httptest.NewRequest(http.MethodPost, "/api/tasks/"+strings.Repeat("a", 32)+"/product-view-stopped-drain-and-rebuild", strings.NewReader(scenario.body))
+			request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/tasks/"+strings.Repeat("a", 32)+"/product-view-stopped-drain-and-rebuild", strings.NewReader(scenario.body))
 			request.Header.Set("Authorization", "Bearer "+token)
 			response := httptest.NewRecorder()
 			manager.HTTPHandler().ServeHTTP(response, request)

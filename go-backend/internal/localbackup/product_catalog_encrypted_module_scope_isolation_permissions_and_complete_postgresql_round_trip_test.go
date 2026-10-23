@@ -19,11 +19,12 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/golang-migrate/migrate/v4"
 	migrationpostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestProductCatalogPackagesCannotContainWholeDatabaseSecretsOrPrivateMedia(t *testing.T) {
@@ -41,7 +42,7 @@ func TestProductCatalogPackagesCannotContainWholeDatabaseSecretsOrPrivateMedia(t
 	for _, permission := range []string{PermissionView, PermissionUpload, PermissionRestore} {
 		token, err := IssueMaintenanceSession(key, cfg.SiteID, cfg.Environment, "synthetic", []string{permission})
 		require.NoError(t, err)
-		request := httptest.NewRequest("POST", "/api/product-catalog-backups", strings.NewReader(`{}`))
+		request := httptest.NewRequestWithContext(context.Background(), "POST", "/api/product-catalog-backups", strings.NewReader(`{}`))
 		request.Header.Set("Authorization", "Bearer "+token)
 		response := httptest.NewRecorder()
 		manager.HTTPHandler().ServeHTTP(response, request)
@@ -89,7 +90,7 @@ func uploadProductCatalogPackageForIntegrationTest(t *testing.T, manager *Manage
 	token, err := IssueMaintenanceSession(key, manager.Configuration.SiteID, manager.Configuration.Environment, "synthetic-product-operator", []string{PermissionUpload})
 	require.NoError(t, err)
 	invoke := func(method, path string, body []byte, headers map[string]string) *Task {
-		request := httptest.NewRequest(method, path, bytes.NewReader(body))
+		request := httptest.NewRequestWithContext(context.Background(), method, path, bytes.NewReader(body))
 		request.Header.Set("Authorization", "Bearer "+token)
 		for name, value := range headers {
 			request.Header.Set(name, value)
@@ -248,7 +249,7 @@ END $$`)
 	require.NoError(t, err)
 	exportToken, err := IssueMaintenanceSession(key, cfg.SiteID, cfg.Environment, "synthetic-exporter", []string{PermissionExport})
 	require.NoError(t, err)
-	downloadRequest := httptest.NewRequest("GET", "/downloads/"+backup.ID, nil)
+	downloadRequest := httptest.NewRequestWithContext(context.Background(), "GET", "/downloads/"+backup.ID, nil)
 	downloadRequest.Header.Set("Authorization", "Bearer "+exportToken)
 	downloadResponse := httptest.NewRecorder()
 	manager.HTTPHandler().ServeHTTP(downloadResponse, downloadRequest)

@@ -134,23 +134,23 @@ func captureProductCatalogExistingInventoryAndIdentityFingerprint(ctx context.Co
 		{"products", "id,slug,locale,parent_id,created_at,view_count", facts.ProductIDs},
 		{"product_variants", "id,product_id,sku,master_variant_id,option_values,created_at,stock", facts.VariantIDs},
 	} {
-		rows, err := tx.QueryContext(ctx, `SELECT to_jsonb(facts)::text FROM (SELECT `+selected.columns+` FROM public.`+pq.QuoteIdentifier(selected.table)+` WHERE id::text=ANY($1) ORDER BY id) facts`, pq.Array(selected.ids))
+		rows, err := tx.QueryContext(ctx, `SELECT to_jsonb(facts)::text FROM (SELECT `+selected.columns+` FROM public.`+pq.QuoteIdentifier(selected.table)+` WHERE id::text=ANY($1) ORDER BY id) facts`, pq.Array(selected.ids)) // #nosec G202 -- Column lists are fixed literals; table identifiers are quoted and selected IDs are bound parameters.
 		if err != nil {
 			return "", err
 		}
-		fmt.Fprintf(digest, "%q:%d\n", selected.table, len(selected.ids))
+		_, _ = fmt.Fprintf(digest, "%q:%d\n", selected.table, len(selected.ids))
 		count := 0
 		for rows.Next() {
 			var raw string
 			if err := rows.Scan(&raw); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return "", err
 			}
-			fmt.Fprintf(digest, "%d:%s\n", len(raw), raw)
+			_, _ = fmt.Fprintf(digest, "%d:%s\n", len(raw), raw)
 			count++
 		}
 		err = rows.Err()
-		rows.Close()
+		_ = rows.Close()
 		if err != nil {
 			return "", err
 		}

@@ -82,7 +82,7 @@ type Manifest struct {
 
 func LoadConfiguration(filename string) (Configuration, error) {
 	var cfg Configuration
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) // #nosec G304 -- This filename is the operator-supplied maintenance configuration path, not an HTTP parameter.
 	if err != nil {
 		return cfg, err
 	}
@@ -206,7 +206,7 @@ func readProtectedCredential(filename string) (string, error) {
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0077 != 0 {
 		return "", errors.New("credential files must be private (mode 0600 or stricter)")
 	}
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) // #nosec G304 -- This operator-configured credential file has already passed regular-file, size and private-permission checks.
 	if err != nil {
 		return "", err
 	}
@@ -246,7 +246,7 @@ func writeDurableJSON(filename string, value any) error {
 }
 
 func writeDurableFile(filename string, data []byte) error {
-	temporary, err := os.OpenFile(filename+".next", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	temporary, err := os.OpenFile(filename+".next", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600) // #nosec G304,G703 -- Callers supply operator-configured or manager-owned private workspace paths, never raw HTTP filenames.
 	if err != nil {
 		return err
 	}
@@ -256,27 +256,27 @@ func writeDurableFile(filename string, data []byte) error {
 	if err := errors.Join(writeErr, syncErr, closeErr); err != nil {
 		return err
 	}
-	if err := os.Rename(filename+".next", filename); err != nil {
+	if err := os.Rename(filename+".next", filename); err != nil { // #nosec G703 -- Callers supply operator-configured or manager-owned private workspace paths, never raw HTTP filenames.
 		return err
 	}
 	return syncDirectory(filepath.Dir(filename))
 }
 
 func syncDirectory(directory string) error {
-	file, err := os.Open(directory)
+	file, err := os.Open(directory) // #nosec G304,G703 -- Callers supply operator-configured or manager-owned private workspace paths, never raw HTTP filenames.
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 	return syncDirectoryFile(file)
 }
 
 func fileIdentity(filename, packagePath string) (FileIdentity, error) {
-	file, err := os.Open(filename)
+	file, err := os.Open(filename) // #nosec G304,G703 -- Callers supply operator-configured or manager-owned private workspace paths, never raw HTTP filenames.
 	if err != nil {
 		return FileIdentity{}, err
 	}
-	defer file.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 	hash := sha256.New()
 	size, err := io.Copy(hash, file)
 	return FileIdentity{Path: packagePath, Size: size, SHA256: hex.EncodeToString(hash.Sum(nil))}, err

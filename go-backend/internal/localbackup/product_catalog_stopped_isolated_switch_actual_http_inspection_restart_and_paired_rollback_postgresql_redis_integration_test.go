@@ -11,10 +11,11 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/gofrs/flock"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func verifyStoppedProductCatalogIsolatedSwitchPostSwitchInspectionAndInterruptedPairedRollback(t *testing.T, managerReference **Manager, packageBytes []byte, redisOptions *redis.Options) {
@@ -33,7 +34,7 @@ func verifyStoppedProductCatalogIsolatedSwitchPostSwitchInspectionAndInterrupted
 			invokeProductSwitchHTTP := func(route string, body any, expectedStatus int) *httptest.ResponseRecorder {
 				encoded, err := json.Marshal(body)
 				require.NoError(t, err)
-				request := httptest.NewRequest(http.MethodPost, "/api/tasks/"+candidate.ID+"/"+route, strings.NewReader(string(encoded)))
+				request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/tasks/"+candidate.ID+"/"+route, strings.NewReader(string(encoded)))
 				request.Header.Set("Authorization", "Bearer "+token)
 				response := httptest.NewRecorder()
 				manager.HTTPHandler().ServeHTTP(response, request)

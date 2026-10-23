@@ -76,7 +76,7 @@ func RegisterApplicationBoundary(directory, database, version string, storageRoo
 		digest := sha256.Sum256([]byte(value))
 		boundary.RecoverySecretSHA256[name] = hex.EncodeToString(digest[:])
 	}
-	if guardBytes, err := os.ReadFile(filepath.Join(directory, "restored-data-identity-boundary.json")); err == nil {
+	if guardBytes, err := os.ReadFile(filepath.Join(directory, "restored-data-identity-boundary.json")); err == nil { // #nosec G304 -- The fixed boundary record is read from administrator-configured private maintenance storage.
 		var guard ApplicationBoundary
 		if json.Unmarshal(guardBytes, &guard) != nil || guard.ValidateRegisteredRecoveryProjectionProtocol() != nil || (guard.Protocol >= 2 && boundary.Protocol != guard.Protocol) || guard.Database != boundary.Database || !reflect.DeepEqual(guard.StorageRoots, boundary.StorageRoots) || !reflect.DeepEqual(guard.RecoverySecretSHA256, boundary.RecoverySecretSHA256) {
 			return errors.New("restored data requires the recorded database, storage mapping and recovery signing/encryption keys before application startup")
@@ -95,9 +95,9 @@ func RegisterApplicationBoundary(directory, database, version string, storageRoo
 	if err != nil {
 		return err
 	}
-	defer os.Remove(file.Name())
+	defer func(cleanupPath string) { _ = os.Remove(cleanupPath) }(file.Name())
 	if err := file.Chmod(0600); err != nil {
-		file.Close()
+		_ = file.Close()
 		return err
 	}
 	_, writeErr := file.Write(data)

@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/golang-migrate/migrate/v4"
 	migrationpostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestPostgreSQLCompleteMigrationSchemaBacksUpAndRestoresWithoutChangingTheSource(t *testing.T) {

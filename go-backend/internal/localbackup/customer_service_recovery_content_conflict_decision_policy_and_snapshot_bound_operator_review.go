@@ -222,14 +222,14 @@ func (manager *Manager) loadCustomerServiceRecoveryConflictReviewWhileOperationL
 	if err != nil {
 		return nil, err
 	}
-	file, err := os.Open(filepath.Join(directory, customerServiceConflictReviewCurrentFilename))
+	file, err := os.Open(filepath.Join(directory, customerServiceConflictReviewCurrentFilename)) // #nosec G304 -- taskDirectory validates the task ID; the filename is a fixed private review record.
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 	data, err := io.ReadAll(io.LimitReader(file, 32<<20+1))
 	if err != nil || len(data) > 32<<20 {
 		return nil, errors.New("stored conflict review exceeds its size limit")

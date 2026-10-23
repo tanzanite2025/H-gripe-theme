@@ -74,11 +74,11 @@ func (manager *Manager) AppendUploadChunk(id string, offset int64, data []byte, 
 		return nil, errors.New("upload offset or task state is invalid")
 	}
 	directory, _ := manager.taskDirectory(id)
-	file, err := os.OpenFile(filepath.Join(directory, "upload.partial"), os.O_CREATE|os.O_RDWR, 0600)
+	file, err := os.OpenFile(filepath.Join(directory, "upload.partial"), os.O_CREATE|os.O_RDWR, 0600) // #nosec G304 -- GetTask validates the task ID; both endpoints are fixed filenames in its private workspace.
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 	if offset < task.UploadedBytes {
 		if int64(len(data)) > task.UploadedBytes-offset {
 			return nil, errors.New("chunk overlaps an uncommitted upload range")
@@ -131,12 +131,12 @@ func (manager *Manager) CommitUpload(id string) (*Task, error) {
 	}
 	directory, _ := manager.taskDirectory(id)
 	destination, _ := manager.taskPackagePath(id)
-	if _, err := os.Stat(destination); errors.Is(err, os.ErrNotExist) {
-		if err := os.Rename(filepath.Join(directory, "upload.partial"), destination); err != nil {
+	if _, err := os.Stat(destination); errors.Is(err, os.ErrNotExist) { // #nosec G703 -- GetTask validates the task ID; both endpoints are fixed filenames in its private workspace.
+		if err := os.Rename(filepath.Join(directory, "upload.partial"), destination); err != nil { // #nosec G703 -- GetTask validates the task ID; both endpoints are fixed filenames in its private workspace.
 			return nil, err
 		}
 	}
-	info, err := os.Stat(destination)
+	info, err := os.Stat(destination) // #nosec G703 -- GetTask validates the task ID; both endpoints are fixed filenames in its private workspace.
 	if err != nil || info.Size() != task.Size {
 		return nil, errors.New("committed upload length mismatch")
 	}

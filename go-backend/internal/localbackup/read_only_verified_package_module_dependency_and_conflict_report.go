@@ -105,12 +105,12 @@ func (manager *Manager) inspectVerifiedPackageModuleDependenciesWithCustomerServ
 	if err != nil {
 		return nil, err
 	}
-	defer source.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(source.Close)
 	sourceTransaction, err := source.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 	if err != nil {
 		return nil, err
 	}
-	defer sourceTransaction.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(sourceTransaction.Rollback)
 	sourceObservation, err := inspectModuleRecoveryDatabaseObservation(ctx, sourceTransaction)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (manager *Manager) inspectVerifiedPackageModuleDependenciesWithCustomerServ
 	if err != nil {
 		return nil, err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var targetExists bool
 	if err := control.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname=$1)`, cfg.DatabaseName).Scan(&targetExists); err != nil {
 		return nil, err
@@ -134,12 +134,12 @@ func (manager *Manager) inspectVerifiedPackageModuleDependenciesWithCustomerServ
 		if err != nil {
 			return nil, err
 		}
-		defer target.Close()
+		defer func(closeResource func() error) { _ = closeResource() }(target.Close)
 		targetTransaction, err = target.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 		if err != nil {
 			return nil, err
 		}
-		defer targetTransaction.Rollback()
+		defer func(closeResource func() error) { _ = closeResource() }(targetTransaction.Rollback)
 		targetObservation, err = inspectModuleRecoveryDatabaseObservation(ctx, targetTransaction)
 		if err != nil {
 			return nil, err
@@ -263,7 +263,7 @@ func inspectModuleRecoveryDatabaseObservation(ctx context.Context, transaction *
 	for rows.Next() {
 		var table, column, shape string
 		if err := rows.Scan(&table, &column, &shape); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		if observation.Columns[table] == nil {
@@ -273,7 +273,7 @@ func inspectModuleRecoveryDatabaseObservation(ctx context.Context, transaction *
 		observation.Shapes[table] += fmt.Sprintf("%q:%s\n", column, shape)
 	}
 	readErr := rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if readErr != nil {
 		return nil, readErr
 	}
@@ -284,13 +284,13 @@ func inspectModuleRecoveryDatabaseObservation(ctx context.Context, transaction *
 	for primaryKeyRows.Next() {
 		var table, column string
 		if err := primaryKeyRows.Scan(&table, &column); err != nil {
-			primaryKeyRows.Close()
+			_ = primaryKeyRows.Close()
 			return nil, err
 		}
 		observation.PrimaryKeys[table] = append(observation.PrimaryKeys[table], column)
 	}
 	readErr = primaryKeyRows.Err()
-	primaryKeyRows.Close()
+	_ = primaryKeyRows.Close()
 	if readErr != nil {
 		return nil, readErr
 	}
@@ -302,13 +302,13 @@ func inspectModuleRecoveryDatabaseObservation(ctx context.Context, transaction *
 		var table, definition string
 		var validated bool
 		if err := rows.Scan(&table, &definition, &validated); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		observation.Shapes[table] += fmt.Sprintf("constraint:%q:%t\n", definition, validated)
 	}
 	readErr = rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if readErr != nil {
 		return nil, readErr
 	}
@@ -320,19 +320,19 @@ func inspectModuleRecoveryDatabaseObservation(ctx context.Context, transaction *
 		var reference ModuleRecoveryDependencyReference
 		var childNamespace, parentNamespace, childColumns, parentColumns string
 		if err := rows.Scan(&reference.SourceTable, &reference.TargetTable, &childNamespace, &parentNamespace, &childColumns, &parentColumns); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		if childNamespace != "public" || parentNamespace != "public" {
-			rows.Close()
+			_ = rows.Close()
 			return nil, errors.New("module dependency inspection refuses cross-schema references")
 		}
 		if err := json.Unmarshal([]byte(childColumns), &reference.SourceColumns); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(parentColumns), &reference.TargetColumns); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		reference.Kind = "foreign_key"
@@ -340,7 +340,7 @@ func inspectModuleRecoveryDatabaseObservation(ctx context.Context, transaction *
 		observation.References = append(observation.References, reference)
 	}
 	readErr = rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if readErr != nil {
 		return nil, readErr
 	}
@@ -479,7 +479,7 @@ func fingerprintModuleRecoveryTableContent(ctx context.Context, transaction *sql
 		return "", err
 	}
 	hash := sha256.New()
-	fmt.Fprintf(hash, "%s:%d:%s:%s", shape, count, first, second)
+	_, _ = fmt.Fprintf(hash, "%s:%d:%s:%s", shape, count, first, second)
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 

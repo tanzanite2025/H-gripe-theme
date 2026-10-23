@@ -210,7 +210,9 @@ func (cfg Configuration) inspectOrderTransactionRows(ctx context.Context, source
 		}
 		for index := range report.Tables {
 			comparison := &report.Tables[index]
-			if !strings.Contains(" coupon_usage loyalty_transactions referral_records referrals referral_reward_logs referral_transitions ", " "+comparison.Table+" ") {
+			switch comparison.Table {
+			case "coupon_usage", "loyalty_transactions", "referral_records", "referrals", "referral_reward_logs", "referral_transitions":
+			default:
 				continue
 			}
 			for identity, row := range graphs[1].Rows[comparison.Table] {

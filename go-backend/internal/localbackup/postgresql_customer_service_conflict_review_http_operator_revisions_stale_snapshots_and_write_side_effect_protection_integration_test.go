@@ -10,9 +10,10 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestPostgreSQLCustomerServiceConflictReviewRecordsOperatorChoicesWithoutWaivingIdentityOrWritingBusinessData(t *testing.T) {
@@ -81,7 +82,7 @@ UPDATE ticket_messages SET attachments='[]'; CREATE SEQUENCE synthetic_review_fr
 			encoded, err = json.Marshal(body)
 			require.NoError(t, err)
 		}
-		request := httptest.NewRequest(method, path, strings.NewReader(string(encoded)))
+		request := httptest.NewRequestWithContext(context.Background(), method, path, strings.NewReader(string(encoded)))
 		request.Header.Set("Authorization", "Bearer "+token)
 		response := httptest.NewRecorder()
 		manager.HTTPHandler().ServeHTTP(response, request)
@@ -90,7 +91,7 @@ UPDATE ticket_messages SET attachments='[]'; CREATE SEQUENCE synthetic_review_fr
 	callEffectiveSelectionHTTP := func(token string, body any) *httptest.ResponseRecorder {
 		encoded, err := json.Marshal(body)
 		require.NoError(t, err)
-		request := httptest.NewRequest(http.MethodPost, ConsolePrefix+"/api/tasks/"+verified.ID+"/customer-service-effective-selection-inspection", strings.NewReader(string(encoded)))
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, ConsolePrefix+"/api/tasks/"+verified.ID+"/customer-service-effective-selection-inspection", strings.NewReader(string(encoded)))
 		request.Header.Set("Authorization", "Bearer "+token)
 		response := httptest.NewRecorder()
 		manager.HTTPHandler().ServeHTTP(response, request)

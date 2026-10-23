@@ -282,7 +282,7 @@ func (graph *moduleRecoveryRowDependencyGraph) readBoundedRelationshipRows(ctx c
 		return nil, err
 	}
 	arguments = append(arguments, maximum+1)
-	query := `SELECT CASE WHEN octet_length((` + projection + `)::text)<=65536 THEN (` + projection + `)::text ELSE '{}' END, ` + digest + ` FROM ` + relation + ` WHERE ` + predicate + ` ORDER BY `
+	query := `SELECT CASE WHEN octet_length((` + projection + `)::text)<=65536 THEN (` + projection + `)::text ELSE '{}' END, ` + digest + ` FROM ` + relation + ` WHERE ` + predicate + ` ORDER BY ` // #nosec G202 -- SQL fragments come from the registered recovery contract, identifiers use pq.QuoteIdentifier, and values are bound parameters.
 	var ordering []string
 	for _, column := range graph.Observation.PrimaryKeys[table] {
 		ordering = append(ordering, "record."+pq.QuoteIdentifier(column))
@@ -292,7 +292,7 @@ func (graph *moduleRecoveryRowDependencyGraph) readBoundedRelationshipRows(ctx c
 	if err != nil {
 		return nil, fmt.Errorf("inspect %s module row references: %w", table, err)
 	}
-	defer rows.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(rows.Close)
 	result := make([]*moduleRecoveryDependencyRow, 0)
 	for rows.Next() {
 		var projectionText, digest string

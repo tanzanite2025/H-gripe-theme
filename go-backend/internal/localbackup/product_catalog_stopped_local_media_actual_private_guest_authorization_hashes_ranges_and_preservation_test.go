@@ -11,8 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/visitorcookie"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/visitorcookie"
 )
 
 const stoppedProductMediaSyntheticVisitorSessionID = "33333333-3333-4333-8333-333333333333"
@@ -20,19 +21,19 @@ const stoppedProductMediaSyntheticOriginalKey = "customer-service/attachments/or
 
 func seedStoppedProductMediaPrivateGuestConversationBeforeRecoverySnapshots(t *testing.T, database *sql.DB, configuration Configuration) {
 	t.Helper()
-	_, err := database.Exec(`DO $$ DECLARE conversation bigint; asset bigint; BEGIN
+	_, err := database.ExecContext(context.Background(), `DO $$ DECLARE conversation bigint; asset bigint; BEGIN
 INSERT INTO tickets(ticket_number,user_id,conversation_id,visitor_session_hash,subject,category)
-VALUES('stopped-recovery-guest',(SELECT id FROM users WHERE username='product-backup-customer'),'stopped-recovery-guest','` + visitorcookie.CustomerServiceVisitorHash(stoppedProductMediaSyntheticVisitorSessionID) + `','Guest media recovery fixture','customer_service') RETURNING id INTO conversation;
+VALUES('stopped-recovery-guest',(SELECT id FROM users WHERE username='product-backup-customer'),'stopped-recovery-guest','`+visitorcookie.CustomerServiceVisitorHash(stoppedProductMediaSyntheticVisitorSessionID)+`','Guest media recovery fixture','customer_service') RETURNING id INTO conversation;
 INSERT INTO media_assets(filename,url,storage_key,size,mime_type,media_type,visibility,status,library_partition,upload_origin,classification_method,customer_service_media_purpose)
-VALUES('stopped-recovery-private.png','/uploads/` + stoppedProductMediaSyntheticOriginalKey + `','` + stoppedProductMediaSyntheticOriginalKey + `',26,'image/png','image','private','active','customer_service','customer_service_conversation_upload','recorded_upload_context','conversation_attachment') RETURNING id INTO asset;
+VALUES('stopped-recovery-private.png','/uploads/`+stoppedProductMediaSyntheticOriginalKey+`','`+stoppedProductMediaSyntheticOriginalKey+`',26,'image/png','image','private','active','customer_service','customer_service_conversation_upload','recorded_upload_context','conversation_attachment') RETURNING id INTO asset;
 INSERT INTO media_asset_derivatives(media_asset_id,preset,preset_version,url,storage_key,mime_type,size)
 VALUES(asset,'thumbnail',1,'/uploads/customer-service/attachments/derivatives/'||asset||'/thumbnail/v1/stopped-recovery-private.png','customer-service/attachments/derivatives/'||asset||'/thumbnail/v1/stopped-recovery-private.png','image/png',24);
 INSERT INTO ticket_messages(ticket_id,content,attachments,attachment_reference_format)
-VALUES(conversation,'Retained guest media message','["/uploads/` + stoppedProductMediaSyntheticOriginalKey + `"]','legacy_urls');
+VALUES(conversation,'Retained guest media message','["/uploads/`+stoppedProductMediaSyntheticOriginalKey+`"]','legacy_urls');
 END $$`)
 	require.NoError(t, err)
 	var derivativeKey string
-	require.NoError(t, database.QueryRow(`SELECT storage_key FROM media_asset_derivatives WHERE storage_key LIKE 'customer-service/attachments/derivatives/%/thumbnail/v1/stopped-recovery-private.png'`).Scan(&derivativeKey))
+	require.NoError(t, database.QueryRowContext(context.Background(), `SELECT storage_key FROM media_asset_derivatives WHERE storage_key LIKE 'customer-service/attachments/derivatives/%/thumbnail/v1/stopped-recovery-private.png'`).Scan(&derivativeKey))
 	for key, body := range map[string]string{stoppedProductMediaSyntheticOriginalKey: "private-original-fixture-v1", derivativeKey: "private-thumbnail-fixture"} {
 		filename := filepath.Join(configuration.StorageRoots["uploads_private"], filepath.FromSlash(key))
 		require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0700))
@@ -49,7 +50,7 @@ func verifyStoppedProductMediaActualGuestAuthorizationHashesRangesAndUnchangedRe
 	require.NoError(t, err)
 	var messageID string
 	require.NoError(t, manager.withBoundStoppedProductReadOnlyTransaction(ctx, manager.Configuration.DatabaseName, before.ProductCatalogPreviewBinding.Candidate, func(tx *sql.Tx) error {
-		return tx.QueryRow(`SELECT m.id::text FROM ticket_messages m JOIN tickets t ON t.id=m.ticket_id WHERE t.conversation_id='stopped-recovery-guest'`).Scan(&messageID)
+		return tx.QueryRowContext(context.Background(), `SELECT m.id::text FROM ticket_messages m JOIN tickets t ON t.id=m.ticket_id WHERE t.conversation_id='stopped-recovery-guest'`).Scan(&messageID)
 	}))
 	cookie := visitorcookie.SignCustomerServiceVisitorSessionID(stoppedProductMediaSyntheticVisitorSessionID, []byte(manager.Configuration.RecoverySecrets["JWT_SECRET"]))
 	for _, scenario := range []string{"public_original", "public_derivative", "public_range", "private_direct_anonymous", "private_original_anonymous", "private_original_owner", "private_thumbnail_owner", "private_owner_range", "private_owner_invalid_range", "private_foreign_visitor", "private_tampered_cookie", "private_missing_message"} {

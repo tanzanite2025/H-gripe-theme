@@ -43,6 +43,8 @@ linters:
       locale: US
       ignore-rules:
         - cancelled
+        # Persisted recovery-journal protocol spelling must remain compatible.
+        - cancelling
     nakedret:
       max-func-lines: 30
     revive:

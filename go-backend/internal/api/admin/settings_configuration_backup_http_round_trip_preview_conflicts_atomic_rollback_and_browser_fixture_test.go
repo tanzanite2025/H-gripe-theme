@@ -2,6 +2,7 @@ package admin
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net"
 	"net/http"
@@ -10,17 +11,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/setting"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
-	"github.com/gin-gonic/gin"
-	"github.com/glebarez/sqlite"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func newSettingsConfigurationBackupHTTPTestDatabaseAndRouter(t *testing.T) (*gorm.DB, *gin.Engine) {
@@ -75,7 +77,7 @@ func performSettingsConfigurationBackupTestRequest(t *testing.T, router http.Han
 		body, err = json.Marshal(payload)
 		require.NoError(t, err)
 	}
-	request := httptest.NewRequest(method, "/api/admin/settings/backup-recovery/"+path, bytes.NewReader(body))
+	request := httptest.NewRequestWithContext(context.Background(), method, "/api/admin/settings/backup-recovery/"+path, bytes.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("X-Synthetic-Backup-Test-Role", string(role))
 	response := httptest.NewRecorder()
@@ -159,11 +161,12 @@ func TestSettingsConfigurationBackupStalePreviewAndChangedFileCannotOverwriteCur
 				require.NoError(t, db.Create(&setting.Setting{Key: "site_name", Value: "Before preview", Group: "site", Locale: "en"}).Error)
 			}
 			preview := previewSettingsConfigurationTestFile(t, router, file)
-			if scenario == "existing destination changed" {
+			switch scenario {
+			case "existing destination changed":
 				require.NoError(t, db.Model(&setting.Setting{}).Where("key = ?", "site_name").Update("value", "Concurrent edit").Error)
-			} else if scenario == "missing destination created" {
+			case "missing destination created":
 				require.NoError(t, db.Create(&setting.Setting{Key: "site_name", Value: "Concurrent edit", Group: "site", Locale: "en"}).Error)
-			} else {
+			default:
 				file.Settings[0].Value = "Different file"
 			}
 			response := performSettingsConfigurationBackupTestRequest(t, router, auth.RoleAdmin, http.MethodPost, "configuration/import", gin.H{"backup": file, "expected_target_sha256": preview.TargetSHA256, "confirmation": "IMPORT CONFIGURATION"})
@@ -278,7 +281,7 @@ func TestServeLoopbackOnlySyntheticSettingsConfigurationBackupBrowserFixture(t *
 		{Key: "title", Value: "本地测试网站介绍", Group: "website_profile", Locale: "zh-CN"},
 		{Key: "smtp_password", Value: "synthetic-excluded-value", Group: "email", Locale: "global"},
 	}).Error)
-	listener, err := net.Listen("tcp", net.JoinHostPort("127.0.0.1", port))
+	listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", net.JoinHostPort("127.0.0.1", port))
 	require.NoError(t, err)
 	defer listener.Close()
 	t.Logf("Synthetic browser fixture listening on %s", listener.Addr())

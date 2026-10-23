@@ -51,9 +51,9 @@ func taskHasUnresolvedProductCatalogStoppedHandoffPreparation(task *Task) bool {
 	if journal.Phase != "cancelled" {
 		return true
 	}
-	copy := *journal
-	copy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(copy)
+	snapshotCopy := *journal
+	snapshotCopy.SHA256 = ""
+	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
 	// A damaged terminal marker must not turn off release/TTL protection. A
 	// valid historical cancellation need not match a later reverified preview.
 	return err != nil || digest != journal.SHA256 || journal.Version != 1 || journal.TaskID != task.ID || journal.CancellationVerifiedAt.IsZero()
@@ -84,9 +84,9 @@ func (manager *Manager) validateProductCatalogStoppedHandoffPreparationJournal(t
 	if journal == nil {
 		return errors.New("stopped product handoff preparation journal is missing")
 	}
-	copy := *journal
-	copy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(copy)
+	snapshotCopy := *journal
+	snapshotCopy.SHA256 = ""
+	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
 	packageDigest, packageErr := productCatalogStoppedHandoffImmutablePackageSHA256(task)
 	configurationDigest, configurationErr := customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
 	if err != nil || packageErr != nil || configurationErr != nil || journal.SHA256 != digest || journal.Version != 1 || !safeTaskID.MatchString(journal.WindowID) || journal.TaskID != task.ID || journal.PackageSHA256 != packageDigest || journal.ConfigurationSHA256 != configurationDigest || strings.TrimSpace(journal.Operator) == "" || journal.StartedAt.IsZero() || task.Kind != "upload" || task.Manifest == nil || task.Manifest.Scope != productCatalogBackupScope || task.Journal != nil || task.WorkCopyExpired {
@@ -94,7 +94,7 @@ func (manager *Manager) validateProductCatalogStoppedHandoffPreparationJournal(t
 	}
 	switch journal.Phase {
 	case "waiting_for_stop", "preparing":
-	case "ready", "cancelling", "cancelled":
+	case "ready", "canceling", "cancelled":
 		previewDigest, previewErr := customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
 		if previewErr != nil || task.ProductCatalogPreviewBinding == nil || journal.PreviewBindingSHA256 != previewDigest || task.ProductViewStoppedDrain == nil || task.ProductViewStoppedDrain.Phase != "candidate_rebuilt" || journal.DrainProgressSHA256 != task.ProductViewStoppedDrain.SHA256 || journal.PreparedAt.IsZero() || journal.FenceSHA256 == "" {
 			return errors.New("stopped product handoff readiness binding changed; revalidate before proceeding")
@@ -194,7 +194,7 @@ func (manager *Manager) StartProductCatalogContinuouslyStoppedHandoffPreparation
 		if task.State != "failed" && task.State != "interrupted" && task.State != "product_module_stopped_handoff_prepared" {
 			return nil, errors.New("stopped handoff preparation is already active")
 		}
-		if task.ProductCatalogStoppedHandoffPreparation.Phase == "cancelling" {
+		if task.ProductCatalogStoppedHandoffPreparation.Phase == "canceling" {
 			return nil, errors.New("finish verified handoff cancellation instead of preparing again")
 		}
 	} else {
@@ -273,7 +273,7 @@ func (manager *Manager) verifyStoppedProductHandoffRedisEmptyAndDatabaseClients(
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(client.Close)
 	if task.ProductViewStoppedDrain == nil || maintenancegate.FingerprintExternalProjectionConfiguration(ownership) != task.ProductViewStoppedDrain.OwnershipSHA256 {
 		return errors.New("product view Redis ownership changed before handoff verification")
 	}
@@ -288,7 +288,7 @@ func (manager *Manager) verifyStoppedProductHandoffRedisEmptyAndDatabaseClients(
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	return assertNoUnfencedDatabaseSessions(ctx, control, manager.Configuration.DatabaseName)
 }
 
@@ -305,7 +305,7 @@ func (manager *Manager) StartVerifiedCancellationOfProductCatalogStoppedHandoffP
 		return nil, err
 	}
 	journal := task.ProductCatalogStoppedHandoffPreparation
-	if journal.Phase != "ready" && journal.Phase != "cancelling" {
+	if journal.Phase != "ready" && journal.Phase != "canceling" {
 		return nil, errors.New("finish or retry the drain and candidate preparation before cancellation")
 	}
 	if task.State != "product_module_stopped_handoff_prepared" && task.State != "failed" && task.State != "interrupted" {
@@ -319,7 +319,7 @@ func (manager *Manager) StartVerifiedCancellationOfProductCatalogStoppedHandoffP
 		}
 		// The durable intent precedes fence removal. Only this exact interrupted
 		// cancellation may finish when removal already happened before restart.
-		if journal.Phase != "cancelling" || fenced {
+		if journal.Phase != "canceling" || fenced {
 			if err := manager.acquireOrRetainProductCatalogStoppedHandoffLease(ctx, task); err != nil {
 				return err
 			}
@@ -332,7 +332,7 @@ func (manager *Manager) StartVerifiedCancellationOfProductCatalogStoppedHandoffP
 			if err := manager.verifyProductCatalogStoppedHandoffFenceAndRuntimeBoundary(task); err != nil {
 				return err
 			}
-			journal.Phase, journal.CancellationVerifiedAt = "cancelling", time.Now().UTC()
+			journal.Phase, journal.CancellationVerifiedAt = "canceling", time.Now().UTC()
 			if err := manager.saveProductCatalogStoppedHandoffPreparationJournal(task); err != nil {
 				return err
 			}

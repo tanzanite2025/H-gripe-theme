@@ -7,8 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func syntheticExternalProjectionBoundaryForRecoveryReleaseTests() maintenancegate.ExternalProjectionBoundary {

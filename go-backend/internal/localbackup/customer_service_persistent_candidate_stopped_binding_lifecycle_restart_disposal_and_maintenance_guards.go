@@ -11,8 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 const customerServicePersistentCandidateLifecycleFilename = "customer-service-persistent-candidate-lifecycle-v1.json"
@@ -83,11 +84,11 @@ func (manager *Manager) loadCustomerServicePersistentCandidateLifecycle(id strin
 	if !info.Mode().IsRegular() || info.Size() > 4<<20 {
 		return nil, errors.New("candidate lifecycle must be a bounded regular file")
 	}
-	file, err := os.Open(filename)
+	file, err := os.Open(filename) // #nosec G304 -- The path is a fixed record in the validated task workspace; size, type and bound identity are checked.
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 	data, err := io.ReadAll(io.LimitReader(file, (4<<20)+1))
 	if err != nil || len(data) > 4<<20 {
 		return nil, errors.New("candidate lifecycle exceeds its size limit")
@@ -210,12 +211,12 @@ func (manager *Manager) prepareCustomerServicePersistentCandidateUnderStoppedApp
 	if err != nil {
 		return nil, err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	control, err := manager.Configuration.connectDatabase(ctx, "postgres")
 	if err != nil {
 		return nil, err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	for _, databaseName := range []string{manager.Configuration.DatabaseName, task.StageDatabase} {
 		if err := assertNoUnfencedDatabaseSessions(ctx, control, databaseName); err != nil {
 			return nil, err
@@ -283,10 +284,7 @@ func (manager *Manager) prepareCustomerServicePersistentCandidateUnderStoppedApp
 		}
 		validation.State = "validated_not_switchable"
 		record.Validation = validation
-		if err := manager.verifyCustomerServiceCandidateBoundCleanupDispositionAudit(record); err != nil {
-			return err
-		}
-		return nil
+		return manager.verifyCustomerServiceCandidateBoundCleanupDispositionAudit(record)
 	})
 	if err != nil {
 		return nil, err
@@ -372,7 +370,7 @@ func (cfg Configuration) discardCustomerServiceRecordedCandidateConstructionWork
 		if err != nil {
 			return err
 		}
-		defer control.Close()
+		defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 		if err := cleanupCustomerServiceDisposableCandidateDatabaseByOID(ctx, control, workspace.Identity); err != nil {
 			return err
 		}
@@ -467,7 +465,7 @@ func (manager *Manager) discardInterruptedCustomerServiceDisposableRehearsals(ct
 			cleanupErrors = errors.Join(cleanupErrors, errors.New("candidate rehearsal identity requires inspection"))
 			continue
 		}
-		data, err := os.ReadFile(filename)
+		data, err := os.ReadFile(filename) // #nosec G304 -- The path is a fixed record in the validated task workspace; size, type and bound identity are checked.
 		var identity customerServiceDisposableCandidateDatabaseIdentity
 		if err != nil || decodeStrictJSON(data, &identity) != nil || identity.Version != 1 || !strings.HasPrefix(identity.DatabaseName, "local_backup_candidate_") || !safeDatabaseName.MatchString(identity.DatabaseName) || identity.DatabaseName == manager.Configuration.DatabaseName {
 			cleanupErrors = errors.Join(cleanupErrors, errors.New("candidate rehearsal identity is invalid"))

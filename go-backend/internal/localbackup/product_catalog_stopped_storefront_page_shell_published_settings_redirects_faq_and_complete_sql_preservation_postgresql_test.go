@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	faqdomain "commerce-platform/internal/domain/faq"
-	urlmanagementdomain "commerce-platform/internal/domain/urlmanagement"
 	"github.com/golang-migrate/migrate/v4"
 	migrationpostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/lib/pq"
@@ -18,11 +16,14 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	faqdomain "commerce-platform/internal/domain/faq"
+	urlmanagementdomain "commerce-platform/internal/domain/urlmanagement"
 )
 
 func seedStoppedStorefrontPublishedPageShellSettingsRedirectRulesAndProductFAQ(t *testing.T, database *sql.DB) {
 	t.Helper()
-	_, err := database.Exec(`
+	_, err := database.ExecContext(context.Background(), `
 INSERT INTO settings(key,value,type,locale,"group",is_public) VALUES
 ('home_meta_title','Recovered SQL default SEO','string','en','seo',true),
 ('home_meta_description','private-page-shell-marker-must-not-leak','string','en','seo',false),
@@ -143,7 +144,7 @@ func TestPostgreSQLStoppedStorefrontPageShellDependenciesUsePublishedDatabaseVal
 	require.Equal(t, beforeFingerprint, afterFingerprint)
 	require.Equal(t, beforeMigration, afterMigration)
 	// A configured but hidden product FAQ must keep its genuine 404 semantics.
-	_, err = database.Exec(`UPDATE faq_pages SET status='hidden' WHERE page_id='recovery-product-page'`)
+	_, err = database.ExecContext(context.Background(), `UPDATE faq_pages SET status='hidden' WHERE page_id='recovery-product-page'`)
 	require.NoError(t, err)
 	transaction, err := database.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 	require.NoError(t, err)

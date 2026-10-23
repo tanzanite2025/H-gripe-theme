@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
 )
 
 func TestProductCanonicalDescriptionsPersistSearchTranslateAndProtectSummaryOnlyMedia(t *testing.T) {

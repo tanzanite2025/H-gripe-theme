@@ -20,7 +20,7 @@ func inspectModuleRecoveryDatabaseWriteSideEffectDefinitions(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(rows.Close)
 	definitions := map[string][]moduleRecoveryDatabaseWriteSideEffectDefinition{}
 	for rows.Next() {
 		var table string

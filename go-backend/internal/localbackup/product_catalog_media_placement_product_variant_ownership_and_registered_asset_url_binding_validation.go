@@ -8,8 +8,9 @@ import (
 	"fmt"
 	"strings"
 
-	"commerce-platform/internal/domain/product"
 	"github.com/lib/pq"
+
+	"commerce-platform/internal/domain/product"
 )
 
 const productCatalogMediaPlacementGuardVersion = 1

@@ -58,7 +58,7 @@ func TestPostgreSQLCustomerServiceIndependentPairedSwitchForceKilledExecutorRoll
 			require.NoError(t, writeDurableJSON(configurationFilename, customerServicePairedSwitchForceKilledExecutorConfiguration{fixture.Configuration, task.ID, request, checkpoint, readyFilename}))
 			executable, err := os.Executable()
 			require.NoError(t, err)
-			command := exec.Command(executable, "-test.run=^TestPostgreSQLCustomerServiceIndependentPairedSwitchForceKilledExecutorRollsBackBeforeDisposalWithoutReleasingFence$", "-test.timeout=3m")
+			command := exec.CommandContext(context.Background(), executable, "-test.run=^TestPostgreSQLCustomerServiceIndependentPairedSwitchForceKilledExecutorRollsBackBeforeDisposalWithoutReleasingFence$", "-test.timeout=3m")
 			command.Env = append(os.Environ(), "LOCAL_BACKUP_CUSTOMER_SERVICE_PAIRED_SWITCH_FORCE_KILL_CONFIGURATION="+configurationFilename)
 			var output bytes.Buffer
 			command.Stdout, command.Stderr = &output, &output

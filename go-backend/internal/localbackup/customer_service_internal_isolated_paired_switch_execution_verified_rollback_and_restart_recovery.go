@@ -10,9 +10,10 @@ import (
 	"reflect"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/gofrs/flock"
 	"github.com/lib/pq"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func (manager *Manager) acquireCustomerServicePairedSwitchExistingMaintenanceLease(ctx context.Context, task *Task) (*flock.Flock, error) {
@@ -32,7 +33,7 @@ func (manager *Manager) acquireCustomerServicePairedSwitchExistingMaintenanceLea
 	}
 	data, err = readCustomerServicePairedRecoveryBoundedRegularFile(filepath.Join(manager.Configuration.MaintenanceDirectory, maintenancegate.FenceFilename), 8192)
 	if err != nil || json.Unmarshal(data, &owner) != nil || owner.TaskID != task.ID {
-		lease.Close()
+		_ = lease.Close()
 		return nil, errors.New("independent paired maintenance fence changed while acquiring the lease")
 	}
 	return lease, nil
@@ -62,7 +63,7 @@ func (manager *Manager) loadCustomerServicePairedSwitchSealedCandidateAndInvento
 		if journal.AttemptID != record.AttemptID || journal.CandidateLifecycleSHA256 != record.SHA256 || journal.InventorySHA256 != inventory.SHA256 || journal.SelectionSHA256 != inventory.SelectionSHA256 || journal.PlanSHA256 != record.Request.PlanSHA256 || journal.CandidateDatabaseOID != record.Identity.DatabaseOID || journal.BaselineDatabaseFingerprint != record.Binding.TargetDatabaseFingerprint || journal.CandidateDatabaseFingerprint != record.Validation.CandidateFingerprint || journal.ConfigurationSHA256 != configurationDigest || journal.OriginalTaskSHA256 != taskDigest {
 			return nil, nil, errors.New("independent paired switch candidate, task or configuration binding changed")
 		}
-		if _, err := reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory); err != nil {
+		if err := reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -120,12 +121,12 @@ func (manager *Manager) verifyCustomerServicePairedSwitchBoundDatabaseContents(c
 	if err != nil {
 		return err
 	}
-	defer database.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(database.Close)
 	transaction, err := database.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 	if err != nil {
 		return err
 	}
-	defer transaction.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(transaction.Rollback)
 	observation, err := inspectModuleRecoveryDatabaseObservation(ctx, transaction)
 	if err != nil {
 		return err
@@ -225,7 +226,7 @@ func (manager *Manager) prepareCustomerServiceIndependentPairedSwitchRehearsalJo
 	if err != nil {
 		return nil, err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	if err := manager.verifyCustomerServicePairedSwitchLatestSavedPlanUnderMaintenance(ctx, task, record); err != nil {
 		return nil, err
 	}
@@ -257,7 +258,7 @@ func (manager *Manager) prepareCustomerServiceIndependentPairedSwitchRehearsalJo
 	if err != nil {
 		return nil, err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	if err := control.QueryRowContext(ctx, `SELECT oid::bigint,pg_get_userbyid(datdba) FROM pg_database WHERE datname=$1`, journal.TargetDatabase).Scan(&journal.OriginalDatabaseOID, &journal.OriginalDatabaseOwner); err != nil {
 		return nil, err
 	}
@@ -270,7 +271,7 @@ func (manager *Manager) prepareCustomerServiceIndependentPairedSwitchRehearsalJo
 	if err := manager.verifyCustomerServicePairedSwitchBoundDatabaseContents(ctx, control, journal.CandidateDatabase, journal.CandidateDatabaseOID, customerServiceDisposableCandidateOwner, journal.CandidateDatabaseFingerprint, record.Binding); err != nil {
 		return nil, err
 	}
-	if _, err := reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory); err != nil {
+	if err := reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal, inventory); err != nil {
 		return nil, err
 	}
 	layout, err := manager.inspectCustomerServicePairedSwitchCompletePhysicalMediaLayout(ctx, record)
@@ -332,7 +333,7 @@ func (manager *Manager) executeCustomerServiceIndependentPairedSwitchRehearsal(c
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	if err := manager.verifyCustomerServicePairedSwitchLatestSavedPlanUnderMaintenance(ctx, task, record); err != nil {
 		return err
 	}
@@ -350,7 +351,7 @@ func (manager *Manager) executeCustomerServiceIndependentPairedSwitchRehearsal(c
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	originalName, candidateName, err := manager.inspectCustomerServicePairedSwitchDatabaseTopology(ctx, control, journal)
 	if err != nil {
 		return err
@@ -459,7 +460,7 @@ func (manager *Manager) rollbackCustomerServiceIndependentPairedSwitchWhileOpera
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	layout, err := manager.inspectCustomerServicePairedSwitchCompletePhysicalMediaLayout(ctx, record)
 	if err != nil {
 		return err
@@ -471,7 +472,7 @@ func (manager *Manager) rollbackCustomerServiceIndependentPairedSwitchWhileOpera
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	originalName, candidateName, err := manager.inspectCustomerServicePairedSwitchDatabaseTopology(ctx, control, journal)
 	if err != nil {
 		return err
@@ -589,12 +590,12 @@ func (manager *Manager) verifyCustomerServicePairedRollbackBeforeCandidateDispos
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	control, err := manager.Configuration.connectDatabase(ctx, "postgres")
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var targetOID, previousOID, candidateOID int64
 	for _, position := range []struct {
 		name string

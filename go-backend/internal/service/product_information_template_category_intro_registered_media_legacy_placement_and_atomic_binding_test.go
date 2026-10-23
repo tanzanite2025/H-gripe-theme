@@ -7,14 +7,15 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 type templateAndCategoryIntroMediaBindingTestEnvironment struct {

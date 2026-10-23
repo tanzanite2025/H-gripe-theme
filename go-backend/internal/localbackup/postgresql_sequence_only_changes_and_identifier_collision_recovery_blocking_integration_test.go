@@ -6,9 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestPostgreSQLSequenceOnlyChangesBlockStalePreviewAndBrokenSequencesBlockRecovery(t *testing.T) {

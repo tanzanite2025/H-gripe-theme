@@ -4,8 +4,9 @@ import (
 	"context"
 	"sort"
 
-	"commerce-platform/internal/domain/setting"
 	"gorm.io/gorm"
+
+	"commerce-platform/internal/domain/setting"
 )
 
 func (r *SettingRepository) ListAllLocalesForSettingsConfigurationBackup(ctx context.Context, limit int) ([]setting.Setting, error) {

@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 // This is an operator-requested isolated switch, independent of internal
@@ -117,9 +118,9 @@ func (manager *Manager) validateProductCatalogStoppedSwitchJournalBinding(task *
 	if err != nil || digest != journal.SHA256 || journal.Version != 1 || journal.TaskID != task.ID || !safeTaskID.MatchString(journal.WindowID) || journal.WindowID != preparation.WindowID || strings.TrimSpace(journal.Operator) == "" || journal.StartedAt.IsZero() {
 		return errors.New("stopped product switch journal identity or digest changed")
 	}
-	copy := *preparation
-	copy.SHA256 = ""
-	preparationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(copy)
+	snapshotCopy := *preparation
+	snapshotCopy.SHA256 = ""
+	preparationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
 	if err != nil || preparationDigest != preparation.SHA256 || preparation.SHA256 != journal.PreparationSHA256 || preparation.Version != 1 || preparation.TaskID != task.ID || preparation.Phase != "ready" || preparation.PreparedAt.IsZero() || preparation.FenceSHA256 == "" {
 		return errors.New("stopped product switch lost its exact ready preparation and maintenance window")
 	}
@@ -233,7 +234,7 @@ func (manager *Manager) switchProductCatalogWithinContinuouslyHeldStoppedWindow(
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var unsafeApplicationRole bool
 	if err := control.QueryRowContext(ctx, `SELECT rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls OR pg_has_role(oid,'local_backup_isolated_owner','MEMBER') FROM pg_roles WHERE rolname=$1`, cfg.ApplicationDatabaseRole).Scan(&unsafeApplicationRole); err != nil {
 		return err
@@ -299,7 +300,7 @@ func (manager *Manager) switchProductCatalogWithinContinuouslyHeldStoppedWindow(
 			return err
 		}
 	}
-	if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` RENAME TO `+pq.QuoteIdentifier(rollbackName)); err != nil {
+	if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(cfg.DatabaseName)+` RENAME TO `+pq.QuoteIdentifier(rollbackName)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		return err
 	}
 	if checkpoint != nil {
@@ -326,7 +327,7 @@ func (manager *Manager) switchProductCatalogWithinContinuouslyHeldStoppedWindow(
 			return err
 		}
 	}
-	if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(task.StageDatabase)+` RENAME TO `+pq.QuoteIdentifier(cfg.DatabaseName)); err != nil {
+	if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(task.StageDatabase)+` RENAME TO `+pq.QuoteIdentifier(cfg.DatabaseName)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		return err
 	}
 	if checkpoint != nil {
@@ -382,7 +383,7 @@ func (manager *Manager) inspectStoppedProductCatalogPostSwitchWithHeldLease(ctx 
 	if err != nil {
 		return nil, err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var connectedDatabasesAllowed int
 	if err := control.QueryRowContext(ctx, `SELECT count(*) FROM pg_database WHERE oid=ANY($1) AND datallowconn`, pq.Array([]int64{task.Journal.OldDatabaseOID, task.Journal.NewDatabaseOID})).Scan(&connectedDatabasesAllowed); err != nil || connectedDatabasesAllowed != 0 {
 		return nil, errors.New("post-switch product databases must both remain sealed")
@@ -482,7 +483,7 @@ func (manager *Manager) rollbackStoppedProductCatalogSwitchWithVerifiedOriginalR
 	if err != nil {
 		return err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	// Journal persistence can precede candidate ACL isolation. Reapply only
 	// during the initial switch phase and only to the exact isolated OID/owner.
 	if journal.Phase == "switching" {
@@ -507,7 +508,7 @@ func (manager *Manager) rollbackStoppedProductCatalogSwitchWithVerifiedOriginalR
 		}
 	}
 	if candidate == cfg.DatabaseName {
-		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(candidate)+` RENAME TO `+pq.QuoteIdentifier(task.StageDatabase)); err != nil {
+		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(candidate)+` RENAME TO `+pq.QuoteIdentifier(task.StageDatabase)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 			return err
 		}
 	}
@@ -534,7 +535,7 @@ func (manager *Manager) rollbackStoppedProductCatalogSwitchWithVerifiedOriginalR
 		}
 	}
 	if original == task.Journal.RollbackDatabase {
-		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(original)+` RENAME TO `+pq.QuoteIdentifier(cfg.DatabaseName)); err != nil {
+		if _, err := control.ExecContext(ctx, `ALTER DATABASE `+pq.QuoteIdentifier(original)+` RENAME TO `+pq.QuoteIdentifier(cfg.DatabaseName)); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 			return err
 		}
 	}

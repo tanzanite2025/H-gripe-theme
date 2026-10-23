@@ -149,7 +149,7 @@ func (cfg Configuration) constructCustomerServiceSelectedFullRowsInRecordedTarge
 	}
 	baselineSequenceGaps := &Manifest{}
 	err = findOwnedUniqueSequenceCollisionOrExhaustionGaps(ctx, baselineDatabase, baselineSequenceGaps)
-	baselineDatabase.Close()
+	_ = baselineDatabase.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (cfg Configuration) constructCustomerServiceSelectedFullRowsInRecordedTarge
 	if err != nil {
 		return nil, err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	if err := ensureCustomerServiceDisposableCandidateOwnerAndApplicationIsolation(ctx, control, cfg.ApplicationDatabaseRole); err != nil {
 		return nil, err
 	}
@@ -242,12 +242,12 @@ func (cfg Configuration) constructCustomerServiceSelectedFullRowsInRecordedTarge
 	if err != nil {
 		return nil, err
 	}
-	defer candidate.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(candidate.Close)
 	transaction, err := candidate.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 	if err != nil {
 		return nil, err
 	}
-	defer transaction.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(transaction.Rollback)
 	observation, err := inspectModuleRecoveryDatabaseObservation(ctx, transaction)
 	if err != nil {
 		return nil, err
@@ -293,12 +293,12 @@ func (cfg Configuration) constructCustomerServiceSelectedFullRowsInRecordedTarge
 		}
 		readTransaction, err := database.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 		if err != nil {
-			database.Close()
+			_ = database.Close()
 			return nil, err
 		}
 		actual, err := inspectModuleRecoveryDatabaseObservation(ctx, readTransaction)
-		readTransaction.Rollback()
-		database.Close()
+		_ = readTransaction.Rollback()
+		_ = database.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -346,12 +346,12 @@ func (cfg Configuration) dumpCustomerServiceTargetSnapshotWithAnExplicitByteLimi
 	parsed, _ := url.Parse(connectionURL)
 	password, _ := parsed.User.Password()
 	parsed.User = url.User(parsed.User.Username())
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600) // #nosec G304 -- The snapshot file is exclusively created inside the manager-owned private workspace.
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	command := exec.CommandContext(ctx, "pg_dump", "--dbname", parsed.String(), "--format=custom", "--no-owner", "--no-privileges", "--no-tablespaces", "--snapshot="+snapshot)
+	defer func(closeResource func() error) { _ = closeResource() }(file.Close)
+	command := exec.CommandContext(ctx, "pg_dump", "--dbname", parsed.String(), "--format=custom", "--no-owner", "--no-privileges", "--no-tablespaces", "--snapshot="+snapshot) // #nosec G204 -- The executable is fixed pg_dump, with separate argv for the validated database URL and exported snapshot; no shell is used.
 	command.Env = append(os.Environ(), "PGPASSWORD="+password, "PGOPTIONS=-c statement_timeout=900000 -c lock_timeout=10000")
 	command.Stdout = &customerServiceCandidateSnapshotDumpByteLimitWriter{File: file, RemainingBytes: maximumBytes}
 	command.Stderr = nil

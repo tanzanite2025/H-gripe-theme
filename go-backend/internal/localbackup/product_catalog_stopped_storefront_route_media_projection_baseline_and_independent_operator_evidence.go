@@ -160,7 +160,7 @@ func (manager *Manager) verifyStoppedProductProjectionDetailCacheStillAbsent(ctx
 	if err != nil {
 		return err
 	}
-	defer client.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(client.Close)
 	if err := manager.verifyStoppedProductDetailCacheRedisBoundary(ctx, task, client, ownership); err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (manager *Manager) readBoundStoppedProductStorefrontRoutes(ctx context.Cont
 		if err != nil {
 			return err
 		}
-		defer rows.Close()
+		defer func(closeResource func() error) { _ = closeResource() }(rows.Close)
 		for rows.Next() {
 			var route ProductCatalogStoppedStorefrontRouteExpectation
 			if err := rows.Scan(&route.ProductID, &route.Slug, &route.Locale, &route.Status, &route.SoftDeleted); err != nil {
@@ -237,9 +237,9 @@ func (manager *Manager) SaveStoppedProductProjectionIndependentOperatorEvidence(
 			return nil, errors.New("product projection record changed; refresh before saving")
 		}
 	} else {
-		copy := *previous
-		copy.SHA256 = ""
-		digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(copy)
+		snapshotCopy := *previous
+		snapshotCopy.SHA256 = ""
+		digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
 		if err != nil || digest != previous.SHA256 || request.ExpectedRecordSHA256 != previous.SHA256 || previous.Version != 1 || previous.Scope != productCatalogBackupScope || previous.TaskID != task.ID || previous.WindowID != task.Journal.ProductCatalogStoppedSwitch.WindowID {
 			return nil, errors.New("product projection record identity, digest or expected revision changed")
 		}

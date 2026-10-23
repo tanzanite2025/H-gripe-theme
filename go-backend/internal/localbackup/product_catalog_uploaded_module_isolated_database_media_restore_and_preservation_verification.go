@@ -26,7 +26,7 @@ func readAndValidateProductCatalogModuleSnapshot(extracted string, manifest Mani
 	if info.Size() > productCatalogMaximumJSONBytes {
 		return snapshot, errors.New("product snapshot exceeds JSON capacity")
 	}
-	data, err := os.ReadFile(filepath.Join(extracted, productCatalogRowsFilename))
+	data, err := os.ReadFile(filepath.Join(extracted, productCatalogRowsFilename)) // #nosec G304 -- The fixed snapshot filename is inside the authenticated, bounded package extraction workspace.
 	if err != nil {
 		return snapshot, err
 	}
@@ -71,13 +71,13 @@ func captureProductCatalogPreservedRowsFingerprint(ctx context.Context, tx *sql.
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return nil, err
 		}
 		names = append(names, name)
 	}
 	err = rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func captureProductCatalogPreservedRowsFingerprint(ctx context.Context, tx *sql.
 			predicate = "NOT (r.id::text=ANY($1))"
 			arguments = append(arguments, pq.Array(ids))
 		}
-		rows, err := tx.QueryContext(ctx, `SELECT to_jsonb(r)::text FROM public.`+pq.QuoteIdentifier(name)+` r WHERE `+predicate+` ORDER BY to_jsonb(r)::text`, arguments...)
+		rows, err := tx.QueryContext(ctx, `SELECT to_jsonb(r)::text FROM public.`+pq.QuoteIdentifier(name)+` r WHERE `+predicate+` ORDER BY to_jsonb(r)::text`, arguments...) // #nosec G202 -- Predicates are internal literals and all table/column identifiers are quoted; restored data uses bound parameters.
 		if err != nil {
 			return nil, err
 		}
@@ -105,13 +105,13 @@ func captureProductCatalogPreservedRowsFingerprint(ctx context.Context, tx *sql.
 		for rows.Next() {
 			var raw string
 			if err := rows.Scan(&raw); err != nil {
-				rows.Close()
+				_ = rows.Close()
 				return nil, err
 			}
-			fmt.Fprintf(digest, "%d:%s\n", len(raw), raw)
+			_, _ = fmt.Fprintf(digest, "%d:%s\n", len(raw), raw)
 		}
 		err = rows.Err()
-		rows.Close()
+		_ = rows.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +125,7 @@ func (cfg Configuration) applyProductCatalogRowsOnlyToIsolatedDatabase(ctx conte
 	if err != nil {
 		return 0, 0, nil, err
 	}
-	defer tx.Rollback()
+	defer func(closeResource func() error) { _ = closeResource() }(tx.Rollback)
 	if _, err := tx.ExecContext(ctx, `SET LOCAL timezone='UTC'`); err != nil {
 		return 0, 0, nil, err
 	}
@@ -219,7 +219,7 @@ func (cfg Configuration) applyProductCatalogRowsOnlyToIsolatedDatabase(ctx conte
 					return 0, 0, nil, errors.New("shared media identity content differs; product restore blocked")
 				}
 			}
-			statement := `INSERT INTO public.` + pq.QuoteIdentifier(name) + ` (` + strings.Join(quotedColumns, ",") + `) SELECT ` + strings.Join(quotedColumns, ",") + ` FROM jsonb_populate_record(NULL::public.` + pq.QuoteIdentifier(name) + `,$1::jsonb) ON CONFLICT (id) DO UPDATE SET ` + strings.Join(assignments, ",")
+			statement := `INSERT INTO public.` + pq.QuoteIdentifier(name) + ` (` + strings.Join(quotedColumns, ",") + `) SELECT ` + strings.Join(quotedColumns, ",") + ` FROM jsonb_populate_record(NULL::public.` + pq.QuoteIdentifier(name) + `,$1::jsonb) ON CONFLICT (id) DO UPDATE SET ` + strings.Join(assignments, ",") // #nosec G202 -- Predicates are internal literals and all table/column identifiers are quoted; restored data uses bound parameters.
 			if _, err := tx.ExecContext(ctx, statement, string(row)); err != nil {
 				return 0, 0, nil, fmt.Errorf("isolated product row restore failed in %s; transaction rolled back", name)
 			}
@@ -298,21 +298,21 @@ func validateProductCatalogAffectedForeignKeys(ctx context.Context, tx *sql.Tx, 
 		var table, name, parent, definition string
 		var validated bool
 		if err := rows.Scan(&table, &name, &parent, &definition, &validated); err != nil {
-			rows.Close()
+			_ = rows.Close()
 			return err
 		}
 		_, childSelected := snapshot.Tables[table]
 		_, parentSelected := snapshot.Tables[parent]
 		if childSelected || parentSelected {
 			if !validated {
-				rows.Close()
+				_ = rows.Close()
 				return errors.New("unvalidated product dependency constraint")
 			}
 			constraints = append(constraints, constraint{table, name, definition})
 		}
 	}
 	err = rows.Err()
-	rows.Close()
+	_ = rows.Close()
 	if err != nil {
 		return err
 	}
@@ -352,7 +352,7 @@ func (manager *Manager) restoreProductCatalogIntoIsolatedTargetClone(ctx context
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	defer func() { resultErr = errors.Join(resultErr, manager.releaseMaintenance(task)) }()
 	return manager.restoreProductCatalogIntoIsolatedTargetCloneWithHeldMaintenanceLease(ctx, task, extracted, snapshot)
 }
@@ -374,41 +374,41 @@ func (manager *Manager) restoreProductCatalogIntoIsolatedTargetCloneWithHeldMain
 	}
 	// Target data stays in the private server workspace and never enters the
 	// downloadable product package. It is needed to prove preservation.
-	defer os.Remove(filepath.Join(candidate, "database.dump"))
+	defer func(cleanupPath string) { _ = os.Remove(cleanupPath) }(filepath.Join(candidate, "database.dump"))
 	current, err := cfg.connectDatabase(ctx, cfg.DatabaseName)
 	if err != nil {
 		return err
 	}
 	contractTx, err := current.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 	if err != nil {
-		current.Close()
+		_ = current.Close()
 		return err
 	}
 	if err := requireRegisteredStorefrontTablesForProductCatalogModule(ctx, contractTx); err != nil {
-		contractTx.Rollback()
-		current.Close()
+		_ = contractTx.Rollback()
+		_ = current.Close()
 		return err
 	}
 	if err := validateProductCatalogStandardTriggersAndRejectUnregisteredRewriteRules(ctx, contractTx); err != nil {
-		contractTx.Rollback()
-		current.Close()
+		_ = contractTx.Rollback()
+		_ = current.Close()
 		return err
 	}
 	if _, err := inspectProductCatalogRequiredSystemCategoriesAndCarbonRimBindings(ctx, contractTx); err != nil {
-		contractTx.Rollback()
-		current.Close()
+		_ = contractTx.Rollback()
+		_ = current.Close()
 		return err
 	}
 	for name, table := range snapshot.Tables {
 		constraints, err := captureProductCatalogConstraintFingerprint(ctx, contractTx, name)
 		if err != nil || constraints != table.ConstraintsSHA256 {
-			contractTx.Rollback()
-			current.Close()
+			_ = contractTx.Rollback()
+			_ = current.Close()
 			return fmt.Errorf("product constraint contract differs in current target: %s", name)
 		}
 	}
 	err = contractTx.Commit()
-	current.Close()
+	_ = current.Close()
 	if err != nil {
 		return err
 	}
@@ -458,7 +458,7 @@ func (manager *Manager) restoreProductCatalogIntoIsolatedTargetCloneWithHeldMain
 	if err != nil {
 		return err
 	}
-	defer stage.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(stage.Close)
 	restored, preserved, inventoryPreservation, err := cfg.applyProductCatalogRowsOnlyToIsolatedDatabase(ctx, stage, snapshot)
 	if err != nil {
 		return err
@@ -496,7 +496,7 @@ func (manager *Manager) restoreProductCatalogIntoIsolatedTargetCloneWithHeldMain
 	if err != nil {
 		return err
 	}
-	defer live.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(live.Close)
 	_, fingerprint, _, err := captureDatabaseInventory(ctx, live)
 	if err != nil {
 		return err

@@ -86,7 +86,7 @@ func (cfg Configuration) validateCompanyStaticSourceReleaseVersion() error {
 	if err != nil || !info.Mode().IsRegular() || info.Size() > 4096 {
 		return errors.New("running storefront company static release marker is missing; initialize the matching release volume before export")
 	}
-	version, err := os.ReadFile(filename)
+	version, err := os.ReadFile(filename) // #nosec G304 -- The fixed release marker is under the registered static root or authenticated extraction workspace.
 	if err != nil || strings.TrimSpace(string(version)) != cfg.ApplicationVersion {
 		return errors.New("company static files belong to a different storefront release; export is blocked")
 	}
@@ -132,7 +132,7 @@ func fingerprintCompanyStaticManifestFiles(files []FileIdentity) string {
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Path < entries[j].Path })
 	hash := sha256.New()
 	for _, entry := range entries {
-		fmt.Fprintf(hash, "%q:%d:%s\n", entry.Path, entry.Size, entry.SHA256)
+		_, _ = fmt.Fprintf(hash, "%q:%d:%s\n", entry.Path, entry.Size, entry.SHA256)
 	}
 	return hex.EncodeToString(hash.Sum(nil))
 }
@@ -187,7 +187,7 @@ func validateExtractedWholeApplicationCompanyStaticReleaseMarker(manifest Manife
 	if !wholeApplicationPackageIncludesCompanyStatic(&manifest) {
 		return nil
 	}
-	version, err := os.ReadFile(filepath.Join(extracted, filepath.FromSlash(companyStaticPackagePrefix+companyStaticReleaseVersionFilename)))
+	version, err := os.ReadFile(filepath.Join(extracted, filepath.FromSlash(companyStaticPackagePrefix+companyStaticReleaseVersionFilename))) // #nosec G304 -- The fixed release marker is under the registered static root or authenticated extraction workspace.
 	if err != nil || strings.TrimSpace(string(version)) != manifest.StorefrontCompanyStaticReleaseVersion {
 		return errors.New("whole-storefront company static release marker does not match the authenticated package")
 	}

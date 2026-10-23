@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestProductCatalogMalformedReleaseIntentCannotBecomeCompletedOrAcquireAnotherMaintenanceWindow(t *testing.T) {

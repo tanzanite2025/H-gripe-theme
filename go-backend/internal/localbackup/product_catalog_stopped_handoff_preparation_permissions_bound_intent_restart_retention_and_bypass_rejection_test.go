@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/pkg/maintenancegate"
 	"commerce-platform/internal/service"
-	"github.com/stretchr/testify/require"
 )
 
 func TestProductCatalogStoppedHandoffPreparationAndCancellationRequireRestorePermissionAndStrictRequests(t *testing.T) {
@@ -35,7 +36,7 @@ func TestProductCatalogStoppedHandoffPreparationAndCancellationRequireRestorePer
 			t.Run(route+"/"+scenario.permission+"/"+scenario.body, func(t *testing.T) {
 				token, err := IssueMaintenanceSession(key, cfg.SiteID, cfg.Environment, "synthetic", []string{scenario.permission})
 				require.NoError(t, err)
-				request := httptest.NewRequest(http.MethodPost, "/api/tasks/"+strings.Repeat("a", 32)+"/"+route, strings.NewReader(scenario.body))
+				request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/tasks/"+strings.Repeat("a", 32)+"/"+route, strings.NewReader(scenario.body))
 				request.Header.Set("Authorization", "Bearer "+token)
 				response := httptest.NewRecorder()
 				manager.HTTPHandler().ServeHTTP(response, request)
@@ -63,7 +64,7 @@ func TestProductCatalogStoppedHandoffCancellationFinishesDurableReleaseIntentAft
 	require.NoError(t, err)
 	previewDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
 	require.NoError(t, err)
-	task.ProductCatalogStoppedHandoffPreparation = &ProductCatalogStoppedHandoffPreparationJournal{Version: 1, WindowID: newTaskID(), TaskID: task.ID, PackageSHA256: packageDigest, ConfigurationSHA256: configurationDigest, Operator: task.Actor, Phase: "cancelling", StartedAt: time.Now().Add(-time.Hour), PreparedAt: time.Now().Add(-time.Minute), CancellationVerifiedAt: time.Now(), FenceSHA256: "synthetic-removed-fence", PreviewBindingSHA256: previewDigest, DrainProgressSHA256: task.ProductViewStoppedDrain.SHA256}
+	task.ProductCatalogStoppedHandoffPreparation = &ProductCatalogStoppedHandoffPreparationJournal{Version: 1, WindowID: newTaskID(), TaskID: task.ID, PackageSHA256: packageDigest, ConfigurationSHA256: configurationDigest, Operator: task.Actor, Phase: "canceling", StartedAt: time.Now().Add(-time.Hour), PreparedAt: time.Now().Add(-time.Minute), CancellationVerifiedAt: time.Now(), FenceSHA256: "synthetic-removed-fence", PreviewBindingSHA256: previewDigest, DrainProgressSHA256: task.ProductViewStoppedDrain.SHA256}
 	require.NoError(t, manager.saveProductCatalogStoppedHandoffPreparationJournal(task))
 	require.NoError(t, manager.Close())
 	manager, err = NewManager(cfg)

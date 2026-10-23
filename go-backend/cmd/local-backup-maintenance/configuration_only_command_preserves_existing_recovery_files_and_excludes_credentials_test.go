@@ -22,6 +22,7 @@ import (
 // Run the real main function in a subprocess so a regression that starts the
 // executor, exits fatally or listens for HTTP cannot hide behind a helper test.
 func TestIndependentBackupConfigurationOnlyCommandSubprocess(t *testing.T) {
+	t.Helper()
 	if os.Getenv("LOCAL_BACKUP_CONFIGURATION_ONLY_TEST_SUBPROCESS") != "1" {
 		return
 	}
@@ -34,7 +35,7 @@ func TestIndependentBackupConfigurationOnlyCommandSubprocess(t *testing.T) {
 func TestIndependentBackupConfigurationOnlyCommandDoesNotConnectRecoverLockOrExposeCredentials(t *testing.T) {
 	for _, scenario := range []string{"valid_with_interrupted_and_malformed_tasks", "identical_credentials", "nested_media_directory", "unknown_configuration_field"} {
 		t.Run(scenario, func(t *testing.T) {
-			listener, err := net.Listen("tcp", "127.0.0.1:0")
+			listener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -77,7 +78,8 @@ func TestIndependentBackupConfigurationOnlyCommandDoesNotConnectRecoverLockOrExp
 			if err != nil {
 				t.Fatal(err)
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			// Full-suite compilation and Windows process scanning can delay subprocess startup.
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 			defer cancel()
 			command := exec.CommandContext(ctx, executable, "-test.run=^TestIndependentBackupConfigurationOnlyCommandSubprocess$")
 			command.Env = append(os.Environ(), "LOCAL_BACKUP_CONFIGURATION_ONLY_TEST_SUBPROCESS=1", "LOCAL_BACKUP_CONFIGURATION_ONLY_TEST_FILE="+configurationPath, "LOCAL_BACKUP_CONFIGURATION_ONLY_TEST_OCCUPIED_ADDRESS="+listener.Addr().String())

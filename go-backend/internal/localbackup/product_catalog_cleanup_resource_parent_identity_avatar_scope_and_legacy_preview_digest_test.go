@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"commerce-platform/internal/domain/outbox"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/domain/outbox"
 )
 
 func TestProductCatalogCleanupReceiptsDistinguishDerivativeResourceFromRequiredAssetWithSameNumericID(t *testing.T) {

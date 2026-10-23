@@ -59,7 +59,7 @@ func (boundary ExternalProjectionBoundary) Validate() error {
 		}
 	case "redis_stream":
 		if !externalProjectionSHA256.MatchString(boundary.RealtimeStreamSHA256) || !externalProjectionSHA256.MatchString(boundary.RealtimeDedupeNamespaceSHA256) {
-			return errors.New("Redis realtime requires both stream and dedupe namespace identities")
+			return errors.New("redis realtime requires both stream and dedupe namespace identities")
 		}
 	default:
 		return errors.New("customer-service realtime configuration is unknown")

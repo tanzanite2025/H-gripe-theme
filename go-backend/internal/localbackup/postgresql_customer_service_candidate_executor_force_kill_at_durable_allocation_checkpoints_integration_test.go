@@ -11,9 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 type customerServiceCandidateForceKilledExecutorTestConfiguration struct {
@@ -89,7 +90,7 @@ func TestPostgreSQLCustomerServiceCandidateExecutorForceKillRetainsDurableAlloca
 			require.NoError(t, writeDurableJSON(configurationFilename, customerServiceCandidateForceKilledExecutorTestConfiguration{Configuration: fixture.Configuration, TaskID: task.ID, AllocationCheckpoint: checkpoint, ReadyFilename: readyFilename}))
 			executable, err := os.Executable()
 			require.NoError(t, err)
-			command := exec.Command(executable, "-test.run=^TestPostgreSQLCustomerServiceCandidateExecutorForceKillRetainsDurableAllocationIdentityAndFence$", "-test.timeout=1m")
+			command := exec.CommandContext(context.Background(), executable, "-test.run=^TestPostgreSQLCustomerServiceCandidateExecutorForceKillRetainsDurableAllocationIdentityAndFence$", "-test.timeout=1m")
 			command.Env = append(os.Environ(), "LOCAL_BACKUP_CANDIDATE_FORCE_KILL_TEST_CONFIGURATION="+configurationFilename)
 			var output bytes.Buffer
 			command.Stdout, command.Stderr = &output, &output
@@ -126,7 +127,7 @@ func TestPostgreSQLCustomerServiceCandidateExecutorForceKillRetainsDurableAlloca
 			record, err := restarted.loadCustomerServicePersistentCandidateLifecycle(task.ID)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				_, _ = fixture.Control.Exec(`DROP DATABASE IF EXISTS ` + pq.QuoteIdentifier(record.Identity.DatabaseName) + ` WITH (FORCE)`)
+				_, _ = fixture.Control.ExecContext(context.Background(), `DROP DATABASE IF EXISTS `+pq.QuoteIdentifier(record.Identity.DatabaseName)+` WITH (FORCE)`)
 			})
 			if strings.HasPrefix(checkpoint, "media_") {
 				directory, err := customerServiceCandidateMediaVolumeDirectory(record, record.MediaUnion.Volumes[0])
@@ -144,13 +145,13 @@ func TestPostgreSQLCustomerServiceCandidateExecutorForceKillRetainsDurableAlloca
 			} else if checkpoint == "allocated_not_switchable" {
 				require.Equal(t, "discarded_not_switchable", record.State)
 				var count int
-				require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE oid=$1`, record.Identity.DatabaseOID).Scan(&count))
+				require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE oid=$1`, record.Identity.DatabaseOID).Scan(&count))
 				require.Zero(t, count)
 			} else {
 				require.Equal(t, "inspection_required", record.State)
 				require.Zero(t, record.Identity.DatabaseOID)
 				var count int
-				require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&count))
+				require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname=$1`, record.Identity.DatabaseName).Scan(&count))
 				require.Equal(t, 1, count)
 				require.Error(t, restarted.ReleaseUnmodifiedMaintenance(task.ID))
 			}

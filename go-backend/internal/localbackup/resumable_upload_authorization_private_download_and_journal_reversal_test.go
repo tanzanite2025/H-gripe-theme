@@ -12,8 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func createIndependentRecoveryTestConfiguration(t *testing.T) Configuration {
@@ -79,7 +80,7 @@ func TestMaintenanceHTTPScopesDoNotDependOnTheBusinessDatabaseAndDownloadsSuppor
 		method, path, token string
 		status              int
 	}{{"GET", "/api/status", "", 401}, {"GET", "/api/tasks", viewer, 200}, {"POST", "/api/backups", viewer, 403}, {"POST", "/api/uploads", viewer, 403}, {"POST", "/api/tasks/invalid/apply", viewer, 403}} {
-		request := httptest.NewRequest(scenario.method, scenario.path, strings.NewReader(`{}`))
+		request := httptest.NewRequestWithContext(context.Background(), scenario.method, scenario.path, strings.NewReader(`{}`))
 		if scenario.token != "" {
 			request.Header.Set("Authorization", "Bearer "+scenario.token)
 		}
@@ -96,14 +97,14 @@ func TestMaintenanceHTTPScopesDoNotDependOnTheBusinessDatabaseAndDownloadsSuppor
 	require.NoError(t, os.WriteFile(filename, []byte("0123456789ab"), 0600))
 	downloadToken, err := cfg.issueDownloadSession("operator", task.ID)
 	require.NoError(t, err)
-	request := httptest.NewRequest(http.MethodGet, "/downloads/"+task.ID, nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/downloads/"+task.ID, nil)
 	request.AddCookie(&http.Cookie{Name: "local_backup_download", Value: downloadToken})
 	request.Header.Set("Range", "bytes=3-6")
 	response := httptest.NewRecorder()
 	manager.HTTPHandler().ServeHTTP(response, request)
 	require.Equal(t, 206, response.Code)
 	require.Equal(t, "3456", response.Body.String())
-	request = httptest.NewRequest(http.MethodPost, "/api/backups", strings.NewReader(`{}`))
+	request = httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/backups", strings.NewReader(`{}`))
 	request.AddCookie(&http.Cookie{Name: "local_backup_download", Value: downloadToken})
 	response = httptest.NewRecorder()
 	manager.HTTPHandler().ServeHTTP(response, request)

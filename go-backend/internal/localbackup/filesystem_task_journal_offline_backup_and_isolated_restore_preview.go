@@ -15,8 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/gofrs/flock"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 type Task struct {
@@ -74,20 +75,20 @@ func NewManager(cfg Configuration) (*Manager, error) {
 	gateLease := flock.New(filepath.Join(cfg.MaintenanceDirectory, "independent-maintenance-executor.lock"))
 	gateLocked, gateErr := gateLease.TryLock()
 	if gateErr != nil || !gateLocked {
-		lease.Close()
-		gateLease.Close()
+		_ = lease.Close()
+		_ = gateLease.Close()
 		return nil, errors.New("another backup executor owns the application maintenance gate")
 	}
 	manager.gateProcessLease = gateLease
 	tasks, err := manager.ListTasks()
 	if err != nil {
-		manager.Close()
+		_ = manager.Close()
 		return nil, err
 	}
 	for _, task := range tasks {
 		if taskHasProductCatalogContinuouslyStoppedSwitchJournal(task) {
 			if err := manager.retainStoppedProductCatalogSwitchForExplicitRollbackAfterRestart(task); err != nil {
-				manager.Close()
+				_ = manager.Close()
 				return nil, err
 			}
 			continue
@@ -96,7 +97,7 @@ func NewManager(cfg Configuration) (*Manager, error) {
 			task.State, task.Phase = "interrupted", "product_stopped_handoff_requires_explicit_revalidation"
 			task.Error = "stopped product handoff preparation retains isolation; explicitly revalidate or cancel, never reuse readiness after restart"
 			if err := manager.saveTask(task); err != nil {
-				manager.Close()
+				_ = manager.Close()
 				return nil, err
 			}
 			continue
@@ -106,14 +107,14 @@ func NewManager(cfg Configuration) (*Manager, error) {
 			task.ProductCatalogRecovery = nil
 			task.Error = "stopped product view drain is unresolved; retain maintenance and explicitly retry after inspecting ownership and writers"
 			if err := manager.saveTask(task); err != nil {
-				manager.Close()
+				_ = manager.Close()
 				return nil, err
 			}
 		}
 		if task.State == "resuming" || task.State == "releasing_rollback" {
 			fenced, err := maintenancegate.IsApplicationFenced(cfg.MaintenanceDirectory)
 			if err != nil {
-				manager.Close()
+				_ = manager.Close()
 				return nil, err
 			}
 			if !fenced {
@@ -121,7 +122,7 @@ func NewManager(cfg Configuration) (*Manager, error) {
 					if err := manager.validateProductCatalogPairedRehearsalBinding(task); err != nil || !task.Journal.ProductCatalog.RollbackVerified {
 						task.State, task.Phase, task.Error = "interrupted", "product_paired_rehearsal_retained_for_inspection", "product release intent has no valid verified rollback; inspection required"
 						if err := manager.saveTask(task); err != nil {
-							manager.Close()
+							_ = manager.Close()
 							return nil, err
 						}
 						continue
@@ -139,7 +140,7 @@ func NewManager(cfg Configuration) (*Manager, error) {
 				task.State = "interrupted"
 			}
 			if err := manager.saveTask(task); err != nil {
-				manager.Close()
+				_ = manager.Close()
 				return nil, err
 			}
 		}
@@ -147,7 +148,7 @@ func NewManager(cfg Configuration) (*Manager, error) {
 			task.State = "interrupted"
 			task.Error = "executor stopped; inspect persisted phase and recovery journal before continuing"
 			if err := manager.saveTask(task); err != nil {
-				manager.Close()
+				_ = manager.Close()
 				return nil, err
 			}
 		}
@@ -187,7 +188,7 @@ func (manager *Manager) GetTask(id string) (*Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	data, err := os.ReadFile(filepath.Join(directory, "task.json"))
+	data, err := os.ReadFile(filepath.Join(directory, "task.json")) // #nosec G304 -- The path is a fixed record under the configured private maintenance root or validated task directory.
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +320,7 @@ func (manager *Manager) acquireMaintenance(ctx context.Context, task *Task) (*fl
 		return nil, err
 	}
 	filename := filepath.Join(manager.Configuration.MaintenanceDirectory, maintenancegate.FenceFilename)
-	if data, err := os.ReadFile(filename); err == nil {
+	if data, err := os.ReadFile(filename); err == nil { // #nosec G304 -- The path is a fixed record under the configured private maintenance root or validated task directory.
 		var owner struct {
 			TaskID string `json:"task_id"`
 		}
@@ -359,7 +360,7 @@ func (manager *Manager) releaseMaintenanceWithVerifiedProductHandoffCancellation
 		return errors.New("stopped product switch requires its dedicated verified paired rollback before original service release")
 	}
 	if taskHasUnresolvedProductCatalogStoppedHandoffPreparation(task) {
-		if !cancellationVerified || task.ProductCatalogStoppedHandoffPreparation.Phase != "cancelling" {
+		if !cancellationVerified || task.ProductCatalogStoppedHandoffPreparation.Phase != "canceling" {
 			return errors.New("stopped product handoff preparation requires its verified cancellation; ordinary release is forbidden")
 		}
 		if err := manager.validateProductCatalogStoppedHandoffPreparationJournal(task); err != nil {
@@ -384,7 +385,7 @@ func (manager *Manager) releaseMaintenanceWithVerifiedProductHandoffCancellation
 		return err
 	}
 	filename := filepath.Join(manager.Configuration.MaintenanceDirectory, maintenancegate.FenceFilename)
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) // #nosec G304 -- The path is a fixed record under the configured private maintenance root or validated task directory.
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
@@ -409,7 +410,7 @@ func (manager *Manager) generateBackup(ctx context.Context, task *Task) (resultE
 	if err != nil {
 		return err
 	}
-	defer lease.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(lease.Close)
 	// No live data is changed by generation. Successful or failed capture can
 	// release maintenance; restore and switch failures deliberately cannot.
 	defer func() { resultErr = errors.Join(resultErr, manager.releaseMaintenance(task)) }()
@@ -418,7 +419,7 @@ func (manager *Manager) generateBackup(ctx context.Context, task *Task) (resultE
 	if err := os.Mkdir(snapshot, 0700); err != nil {
 		return err
 	}
-	defer os.RemoveAll(snapshot)
+	defer func(cleanupPath string) { _ = os.RemoveAll(cleanupPath) }(snapshot)
 	manifest := Manifest{FormatVersion: PackageVersion, PackageID: task.ID, SiteID: cfg.SiteID, Environment: cfg.Environment, ApplicationVersion: cfg.ApplicationVersion, CapturedAt: time.Now().UTC(), Scope: "whole_application", Files: []FileIdentity{}, Gaps: []string{}}
 	task.Phase = "capturing_consistent_database_snapshot"
 	if err := manager.saveTask(task); err != nil {
@@ -455,7 +456,7 @@ func (manager *Manager) generateBackup(ctx context.Context, task *Task) (resultE
 			err = errors.New("database changed despite the maintenance fence; backup rejected")
 		}
 	}
-	db.Close()
+	_ = db.Close()
 	if err != nil {
 		return err
 	}
@@ -601,7 +602,7 @@ func (manager *Manager) verifyAndPreview(ctx context.Context, task *Task) error 
 		return err
 	}
 	_, task.StageFingerprint, _, err = captureDatabaseInventory(ctx, staged)
-	staged.Close()
+	_ = staged.Close()
 	if err != nil {
 		return err
 	}
@@ -619,7 +620,7 @@ func (cfg Configuration) targetFingerprint(ctx context.Context) (string, map[str
 	if err != nil {
 		return "", nil, err
 	}
-	defer control.Close()
+	defer func(closeResource func() error) { _ = closeResource() }(control.Close)
 	var exists bool
 	if err := control.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname=$1)`, cfg.DatabaseName).Scan(&exists); err != nil {
 		return "", nil, err
@@ -632,7 +633,7 @@ func (cfg Configuration) targetFingerprint(ctx context.Context) (string, map[str
 			return "", nil, err
 		}
 		tables, fingerprint, _, err = captureDatabaseInventory(ctx, db)
-		db.Close()
+		_ = db.Close()
 		if err != nil {
 			return "", nil, err
 		}

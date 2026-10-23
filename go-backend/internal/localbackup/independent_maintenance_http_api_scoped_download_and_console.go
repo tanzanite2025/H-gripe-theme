@@ -122,12 +122,12 @@ func (manager *Manager) HTTPHandler() http.Handler {
 				writeMaintenanceError(response, err)
 				return
 			}
-			file, err := os.Open(filename)
+			file, err := os.Open(filename) // #nosec G304,G703 -- taskPackagePath validates the task ID and returns only its fixed private package path.
 			if err != nil {
 				writeMaintenanceError(response, err)
 				return
 			}
-			defer file.Close()
+			defer func(closeResource func() error) { _ = closeResource() }(file.Close)
 			info, err := file.Stat()
 			if err != nil {
 				writeMaintenanceError(response, err)
@@ -453,7 +453,7 @@ func (manager *Manager) HTTPHandler() http.Handler {
 				if !strings.HasPrefix(request.URL.Path, ConsolePrefix) {
 					cookiePath = "/downloads/" + id
 				}
-				http.SetCookie(response, &http.Cookie{Name: "local_backup_download", Value: value, Path: cookiePath, HttpOnly: true, Secure: secure, SameSite: http.SameSiteStrictMode, MaxAge: 900})
+				http.SetCookie(response, &http.Cookie{Name: "local_backup_download", Value: value, Path: cookiePath, HttpOnly: true, Secure: secure, SameSite: http.SameSiteStrictMode, MaxAge: 900}) // #nosec G124 -- Secure follows the TLS/proxy scheme; HTTP is supported for the private SSH loopback console, with HttpOnly and SameSiteStrict.
 				writeMaintenanceJSON(response, http.StatusOK, map[string]string{"download_path": cookiePath})
 				return
 			}
@@ -509,7 +509,7 @@ func readMaintenanceJSON(response http.ResponseWriter, request *http.Request, va
 func writeMaintenanceJSON(response http.ResponseWriter, status int, value any) {
 	response.Header().Set("Content-Type", "application/json; charset=utf-8")
 	response.WriteHeader(status)
-	json.NewEncoder(response).Encode(value)
+	_ = json.NewEncoder(response).Encode(value)
 }
 func writeMaintenanceError(response http.ResponseWriter, err error) {
 	writeMaintenanceJSON(response, http.StatusConflict, map[string]string{"error": err.Error()})

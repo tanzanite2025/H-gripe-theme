@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"commerce-platform/internal/domain/media"
 	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/pkg/storage"
 	"commerce-platform/internal/repository"
-	"github.com/stretchr/testify/require"
 )
 
 func TestProductInformationTemplateAndCategoryIntroReferencesRetainFilesIncludingDisabledAndDeletedContent(t *testing.T) {

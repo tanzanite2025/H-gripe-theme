@@ -8,9 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"commerce-platform/internal/pkg/maintenancegate"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+
+	"commerce-platform/internal/pkg/maintenancegate"
 )
 
 func TestPostgreSQLCustomerServiceRetainedAvatarAndAutoReplyUnknownColumnsCannotBeWaivedByCurrentContentOrEmptyValues(t *testing.T) {
@@ -32,10 +33,10 @@ func TestPostgreSQLCustomerServiceRetainedAvatarAndAutoReplyUnknownColumnsCannot
 				if index == 0 && !scenario.source || index == 1 && !scenario.target {
 					continue
 				}
-				_, err := database.Exec(`ALTER TABLE ` + pq.QuoteIdentifier(scenario.table) + ` ADD COLUMN ` + scenario.definition)
+				_, err := database.ExecContext(context.Background(), `ALTER TABLE `+pq.QuoteIdentifier(scenario.table)+` ADD COLUMN `+scenario.definition)
 				require.NoError(t, err)
 			}
-			_, err := fixture.Target.Exec(`INSERT INTO ticket_auto_replies(id,message_type,metadata,attachments,is_active) VALUES(1,'text','','[]',false); UPDATE ticket_messages SET content='private chosen current message' WHERE id=1;`)
+			_, err := fixture.Target.ExecContext(context.Background(), `INSERT INTO ticket_auto_replies(id,message_type,metadata,attachments,is_active) VALUES(1,'text','','[]',false); UPDATE ticket_messages SET content='private chosen current message' WHERE id=1;`)
 			require.NoError(t, err)
 			before := []string{}
 			for _, database := range []*sql.DB{fixture.Source, fixture.Target} {
@@ -86,7 +87,7 @@ func TestPostgreSQLCustomerServiceRetainedOwnerUnknownColumnsRejectPersistentCan
 			ctx := context.Background()
 			require.NoError(t, maintenancegate.RegisterApplicationBoundary(cfg.MaintenanceDirectory, cfg.DatabaseName, cfg.ApplicationVersion, cfg.StorageRoots, cfg.RecoverySecrets))
 			for _, database := range []*sql.DB{fixture.Source, fixture.Target} {
-				_, err := database.Exec(`ALTER TABLE ` + pq.QuoteIdentifier(table) + ` ADD COLUMN custom_reference jsonb`)
+				_, err := database.ExecContext(context.Background(), `ALTER TABLE `+pq.QuoteIdentifier(table)+` ADD COLUMN custom_reference jsonb`)
 				require.NoError(t, err)
 			}
 			manager, task, request := registerVerifiedUploadAndSavedSelectionsForCustomerServicePersistentCandidateTest(t, fixture)
@@ -99,7 +100,7 @@ func TestPostgreSQLCustomerServiceRetainedOwnerUnknownColumnsRejectPersistentCan
 			require.Zero(t, record.Identity.DatabaseOID)
 			require.Nil(t, record.MediaUnion)
 			var candidates int
-			require.NoError(t, fixture.Control.QueryRow(`SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
+			require.NoError(t, fixture.Control.QueryRowContext(context.Background(), `SELECT count(*) FROM pg_database WHERE datname LIKE 'local_backup_candidate_%'`).Scan(&candidates))
 			require.Zero(t, candidates)
 			after, err := cfg.mediaFingerprint(ctx)
 			require.NoError(t, err)
@@ -126,17 +127,17 @@ func verifyCustomerServiceRetainedAvatarCleanupAgainstActualMigrationColumns(t *
 		t.Run("complete_migration_retained_avatar_"+scenario.name, func(t *testing.T) {
 			ctx := context.Background()
 			aggregateType, aggregateID := "customer_service_agent_profile", ""
-			require.NoError(t, database.QueryRow(`SELECT id::text FROM customer_service_agent_profiles WHERE agent_id='synthetic-retained-avatar-owner'`).Scan(&aggregateID))
+			require.NoError(t, database.QueryRowContext(context.Background(), `SELECT id::text FROM customer_service_agent_profiles WHERE agent_id='synthetic-retained-avatar-owner'`).Scan(&aggregateID))
 			if scenario.eventType == "storage.object_cleanup_requested" {
 				aggregateType, aggregateID = "order", "55"
 			}
 			if scenario.eventType == "customer_service.retention_cleanup_requested" {
 				aggregateType, aggregateID = "customer_service_conversation", "999"
 			}
-			_, err := database.Exec(`UPDATE outbox_events SET event_type=$1,aggregate_type=$2,aggregate_id=$3,payload=$4::jsonb,status=$5 WHERE event_key='synthetic-full-schema-avatar-cleanup'`, scenario.eventType, aggregateType, aggregateID, scenario.payload, scenario.status)
+			_, err := database.ExecContext(context.Background(), `UPDATE outbox_events SET event_type=$1,aggregate_type=$2,aggregate_id=$3,payload=$4::jsonb,status=$5 WHERE event_key='synthetic-full-schema-avatar-cleanup'`, scenario.eventType, aggregateType, aggregateID, scenario.payload, scenario.status)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				_, err := database.Exec(`UPDATE outbox_events SET event_type='customer_service.avatar_cleanup',aggregate_type='customer_service_agent_profile',aggregate_id=(SELECT id::text FROM customer_service_agent_profiles WHERE agent_id='synthetic-retained-avatar-owner'),payload='{"url":"/uploads/customer-service/avatars/private-retained-profile.png"}',status='ignored' WHERE event_key='synthetic-full-schema-avatar-cleanup'`)
+				_, err := database.ExecContext(context.Background(), `UPDATE outbox_events SET event_type='customer_service.avatar_cleanup',aggregate_type='customer_service_agent_profile',aggregate_id=(SELECT id::text FROM customer_service_agent_profiles WHERE agent_id='synthetic-retained-avatar-owner'),payload='{"url":"/uploads/customer-service/avatars/private-retained-profile.png"}',status='ignored' WHERE event_key='synthetic-full-schema-avatar-cleanup'`)
 				require.NoError(t, err)
 			})
 			transaction, err := database.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
