@@ -29,7 +29,6 @@
             <h3
               :id="`footer-menu-section-title-${section.id}`"
               class="footer-menus__title"
-              :class="{ 'footer-menus__title--linked': section.titleLinkTo }"
               @click="toggleSection(section.id)"
             >
               <NuxtLink
@@ -43,9 +42,8 @@
               <span v-else class="footer-menus__title-text">
                 {{ $t(section.titleKey, section.fallback || section.id) }}
               </span>
-              <!-- Mobile Toggle Icon -->
               <button
-                v-if="section.titleLinkTo && section.links.length"
+                v-if="section.links.length"
                 type="button"
                 class="footer-menus__toggle-icon footer-menus__toggle-button"
                 :aria-labelledby="`footer-menu-section-title-${section.id}`"
@@ -57,11 +55,6 @@
                   <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </button>
-              <span v-else-if="!section.titleLinkTo" class="footer-menus__toggle-icon">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
             </h3>
 
             <!-- Route groups, nested pages, and runtime SHOP links. -->
@@ -90,32 +83,61 @@
       </button>
     </div>
 
-    <section
-      v-if="guidesSection"
-      class="footer-menus__guides-row"
-      :class="{ 'is-open': isOpen(guidesSection.id) }"
+    <div
+      v-if="secondRowSections.length"
+      class="footer-menus__second-row"
+      :class="{ 'footer-menus__second-row--single-section': secondRowSections.length === 1 }"
     >
-      <h3 class="footer-menus__title" @click="toggleSection(guidesSection.id)">
-        <span class="footer-menus__title-text">
-          {{ $t(guidesSection.titleKey, guidesSection.fallback || guidesSection.id) }}
-        </span>
-        <!-- Mobile Toggle Icon -->
-        <span class="footer-menus__toggle-icon">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
-      </h3>
+      <section
+        v-for="section in secondRowSections"
+        :key="section.id"
+        class="footer-menus__column"
+        :class="{ 'is-open': isOpen(section.id) }"
+      >
+        <h3
+          :id="`footer-menu-section-title-${section.id}`"
+          class="footer-menus__title"
+          @click="toggleSection(section.id)"
+        >
+          <NuxtLink
+            v-if="section.titleLinkTo"
+            class="footer-menus__title-link"
+            :to="localePath(section.titleLinkTo)"
+            @click.stop
+          >
+            {{ $t(section.titleKey, section.fallback || section.id) }}
+          </NuxtLink>
+          <span v-else class="footer-menus__title-text">
+            {{ $t(section.titleKey, section.fallback || section.id) }}
+          </span>
+          <button
+            v-if="section.links.length"
+            type="button"
+            class="footer-menus__toggle-icon footer-menus__toggle-button"
+            :aria-labelledby="`footer-menu-section-title-${section.id}`"
+            :aria-controls="`footer-menu-section-links-${section.id}`"
+            :aria-expanded="isOpen(section.id)"
+            @click.stop="toggleSection(section.id)"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </h3>
 
-      <!-- Keep the complete documentation hierarchy together in its own row. -->
-      <ul class="footer-menus__list footer-menus__list--guides mobile-accordion-content">
-        <FooterMenuNavigationItem
-          v-for="(item, itemIndex) in guidesSection.links"
-          :key="getFooterMenuNavigationItemKey(item, itemIndex)"
-          :item="item"
-        />
-      </ul>
-    </section>
+        <ul
+          :id="`footer-menu-section-links-${section.id}`"
+          class="footer-menus__list mobile-accordion-content"
+          :class="{ 'footer-menus__list--guides': section.id === 'guides' }"
+        >
+          <FooterMenuNavigationItem
+            v-for="(item, itemIndex) in section.links"
+            :key="getFooterMenuNavigationItemKey(item, itemIndex)"
+            :item="item"
+          />
+        </ul>
+      </section>
+    </div>
   </nav>
 </template>
 
@@ -179,11 +201,11 @@ watch([footerNavigationTranslationMessageNamespaces, locale], () => {
 })
 
 const compactSections = computed<FooterSection[]>(() => (
-  sections.value.filter(section => section.id !== 'guides')
+  sections.value.filter(section => section.id !== 'guides' && section.id !== 'technology')
 ))
 
-const guidesSection = computed<FooterSection | undefined>(() => (
-  sections.value.find(section => section.id === 'guides')
+const secondRowSections = computed<FooterSection[]>(() => (
+  sections.value.filter(section => section.id === 'technology' || section.id === 'guides')
 ))
 
 const openSections = ref<Record<string, boolean>>({})
@@ -297,12 +319,20 @@ const getFooterMenuNavigationItemKey = (
   text-align: left;
 }
 
-.footer-menus__guides-row {
+.footer-menus__second-row {
+  display: grid;
+  grid-template-columns: minmax(11rem, 1fr) minmax(0, 5fr);
+  align-items: start;
+  gap: 1.5rem;
   width: 100%;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--tz-border-subtle);
   text-align: left;
+}
+
+.footer-menus__second-row--single-section {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .footer-menus__scroll-button {
@@ -372,6 +402,7 @@ const getFooterMenuNavigationItemKey = (
 }
 
 .footer-menus__toggle-button {
+  flex: 0 0 2.75rem;
   align-items: center;
   justify-content: center;
   min-width: 2.75rem;
@@ -389,8 +420,11 @@ const getFooterMenuNavigationItemKey = (
   transition: transform 0.3s ease;
 }
 
-.footer-menus__column.is-open .footer-menus__toggle-icon,
-.footer-menus__guides-row.is-open .footer-menus__toggle-icon {
+.footer-menus__toggle-icon svg {
+  display: block;
+}
+
+.footer-menus__column.is-open .footer-menus__toggle-icon {
   transform: rotate(180deg);
 }
 
@@ -443,15 +477,14 @@ const getFooterMenuNavigationItemKey = (
   }
 
   .footer-menus__column:last-child {
-    border-bottom: none;
     padding-right: 0;
   }
 
-  .footer-menus__guides-row {
+  .footer-menus__second-row {
+    display: block;
     margin-top: 0;
     padding-top: 0;
     border-top: none;
-    border-bottom: 1px solid rgba(20, 32, 43, 0.12);
   }
 
   .footer-menus__scroll-button {
@@ -459,22 +492,18 @@ const getFooterMenuNavigationItemKey = (
   }
 
   .footer-menus__title {
+    box-sizing: border-box;
+    min-height: 3.25rem;
     margin: 0;
-    padding: 1rem 0; /* Clickable area */
+    padding: 0.25rem 0;
     font-size: 0.85rem;
+    line-height: 1.5;
     background: none;
     -webkit-text-fill-color: unset; /* Reset text fill to allow color change */
     color: var(--tz-text-primary);
     display: flex;
     justify-content: space-between;
-  }
-
-  .footer-menus__toggle-icon {
-    display: block; /* Show Icon */
-  }
-
-  .footer-menus__title--linked {
-    padding: 0.25rem 0;
+    gap: 0.5rem;
   }
 
   .footer-menus__title-link {
@@ -495,13 +524,11 @@ const getFooterMenuNavigationItemKey = (
     animation: slideDown 0.3s ease-out;
   }
 
-  .footer-menus__column.is-open .mobile-accordion-content,
-  .footer-menus__guides-row.is-open .mobile-accordion-content {
+  .footer-menus__column.is-open .mobile-accordion-content {
     display: block;
   }
 
-  .footer-menus__column.is-open .footer-menus__list.mobile-accordion-content,
-  .footer-menus__guides-row.is-open .footer-menus__list.mobile-accordion-content {
+  .footer-menus__column.is-open .footer-menus__list.mobile-accordion-content {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;

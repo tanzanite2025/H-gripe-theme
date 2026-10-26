@@ -94,9 +94,14 @@
             <router-view />
           </div>
         </main>
+
+        <AdminBottomUtilityDockToolActions
+          v-if="!route.meta.standaloneTool"
+          :navigation-items="permittedNavigationItems"
+          :can-view-customer-service="canViewCustomerService"
+        />
       </section>
     </div>
-    <CustomerServiceFloatingInbox v-if="canViewCustomerService" />
   </TooltipProvider>
 
   <AlertDialog v-model:open="logoutDialogOpen">
@@ -118,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, watch, watchEffect } from 'vue'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Menu,
@@ -126,6 +131,7 @@ import {
   PanelLeftOpen,
 } from '@lucide/vue'
 import AdminSidebar from '@/components/admin/AdminSidebar.vue'
+import AdminBottomUtilityDockToolActions from '@/components/admin/AdminBottomUtilityDockToolActions.vue'
 import AdminLanguageSwitcher from '@/components/admin/AdminLanguageSwitcher.vue'
 import AdminTabBar from '@/components/admin/AdminTabBar.vue'
 import {
@@ -150,9 +156,6 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const { t } = useAdminI18n()
-const CustomerServiceFloatingInbox = defineAsyncComponent(
-  () => import('@/components/admin/customer-service/CustomerServiceFloatingInbox.vue'),
-)
 
 const isCollapse = ref(false)
 const mobileSidebarOpen = ref(false)
@@ -164,8 +167,8 @@ const canViewCustomerService = computed(() => (
 ))
 const { brandInitial, brandName, panelLabel, loadAdminBranding, setAdminDocumentTitle } = useAdminBranding()
 
-const translatedNavigationItems = computed(() => translateAdminNavigation(adminNavigationItems, t))
-const visibleNavigationItems = computed(() => filterNavigationItems(translatedNavigationItems.value, (permission) => authStore.hasPermission(permission)))
+const permittedNavigationItems = computed(() => filterNavigationItems(adminNavigationItems, (permission) => authStore.hasPermission(permission)))
+const visibleNavigationItems = computed(() => translateAdminNavigation(permittedNavigationItems.value, t))
 const activeNavigationEntry = computed(() => findActiveNavigationEntry(visibleNavigationItems.value, route.path))
 const activeTabItems = computed(() => {
   const entry = activeNavigationEntry.value

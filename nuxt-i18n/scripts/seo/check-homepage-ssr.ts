@@ -90,6 +90,16 @@ if (!/\bclass=["'][^"']*\bhome-faq\b[^"']*["']/i.test(html) || !html.includes('F
 }
 
 const linkTags = [...html.matchAll(/<link\b[^>]*>/gi)].map((match) => match[0])
+const speculativeBuiltAssetLinks = linkTags.filter((tag) => (
+  /\brel\s*=\s*["']prefetch["']/i.test(tag)
+  && /\bhref\s*=\s*["'][^"']*\/_nuxt\/[^"']+\.(?:js|css)(?:\?[^"']*)?["']/i.test(tag)
+))
+if (speculativeBuiltAssetLinks.length > 0) {
+  throw new Error(
+    `Homepage SSR advertises ${speculativeBuiltAssetLinks.length} speculative JS/CSS downloads before user intent.`,
+  )
+}
+
 const preloadPaths = new Set(
   linkTags
     .filter((tag) => /\brel\s*=\s*["'](?:modulepreload|prefetch)["']/i.test(tag))
@@ -166,5 +176,5 @@ if (eagerlyReferencedDeferredAssets.length > 0) {
 
 console.log(
   `Homepage SSR checks passed: ${deferredWrappers.length} populated wrappers, `
-  + `${deferredAssetPaths.length} deferred assets excluded from modulepreload/prefetch.`,
+  + `${deferredAssetPaths.length} deferred assets excluded from modulepreload/prefetch, no speculative JS/CSS prefetch.`,
 )

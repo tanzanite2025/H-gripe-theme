@@ -75,13 +75,13 @@ func (manager *Manager) HTTPHandler() http.Handler {
 		if strings.HasSuffix(path, "/product-catalog-stopped-read-only-public-image-http-query") {
 			permission = PermissionRestore
 		}
-		if strings.HasPrefix(path, "/downloads/") || strings.HasSuffix(path, "/download-ticket") || path == "/api/backups" || path == "/api/product-catalog-backups" {
+		if strings.HasPrefix(path, "/downloads/") || strings.HasSuffix(path, "/download-ticket") || path == "/api/backups" || path == "/api/product-catalog-backups" || path == "/api/module-backup-preview" || path == "/api/module-backups" {
 			permission = PermissionExport
 		}
 		if strings.HasPrefix(path, "/api/uploads") || strings.HasSuffix(path, "/verify") {
 			permission = PermissionUpload
 		}
-		if strings.HasSuffix(path, "/apply") || strings.HasSuffix(path, "/rollback") || strings.HasSuffix(path, "/complete") || strings.HasSuffix(path, "/release") {
+		if strings.HasSuffix(path, "/apply") || strings.HasSuffix(path, "/rollback") || strings.HasSuffix(path, "/complete") || strings.HasSuffix(path, "/release") || strings.HasSuffix(path, "/selected-module-isolated-restore-preview") || strings.HasSuffix(path, "/selected-customer-service-restore-choice") || strings.HasSuffix(path, "/selected-customer-service-candidate-rehearsal") {
 			permission = PermissionRestore
 		}
 		if strings.HasSuffix(path, "/reconciliation-report") || strings.HasSuffix(path, "/reconciliation-connections") || strings.HasSuffix(path, "/module-dependency-report") || strings.HasSuffix(path, "/customer-service-conflict-review") || strings.HasSuffix(path, "/customer-service-effective-selection-inspection") || strings.HasSuffix(path, "/product-catalog-handoff-inspection") || strings.HasSuffix(path, "/product-view-stopped-drain-and-rebuild") {
@@ -138,6 +138,9 @@ func (manager *Manager) HTTPHandler() http.Handler {
 			if task, err := manager.GetTask(id); err == nil && task.Manifest != nil && task.Manifest.Scope == productCatalogBackupScope {
 				backupFilename = "product-catalog-with-images-backup-" + id + ".age"
 			}
+			if task, err := manager.GetTask(id); err == nil && task.Manifest != nil && task.Manifest.Scope == selectedBusinessModulesBackupScope {
+				backupFilename = "storefront-modules-" + strings.Join(task.Manifest.SelectedModules, "-") + "-" + id + ".age"
+			}
 			response.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": backupFilename}))
 			http.ServeContent(response, request, info.Name(), info.ModTime(), file)
 			return
@@ -150,6 +153,7 @@ func (manager *Manager) HTTPHandler() http.Handler {
 			}
 			writeMaintenanceJSON(response, http.StatusOK, map[string]any{"site_id": manager.Configuration.SiteID, "environment": manager.Configuration.Environment, "application_version": manager.Configuration.ApplicationVersion, "database_name": manager.Configuration.DatabaseName, "storage_roots": manager.Configuration.StorageRoots, "package_version": PackageVersion, "chunk_bytes": ChunkBytes, "max_package_bytes": manager.Configuration.MaxPackageBytes, "work_copy_lifetime_hours": manager.Configuration.WorkCopyLifetimeHours, "application_fenced": len(fence) > 0, "permissions": session.Permissions,
 				"product_view_stopped_drain_configured":  manager.Configuration.ProductViewRecoveryRedis != nil && len(manager.Configuration.ProductViewRecoveryWriterInventory) > 0,
+				"business_module_backup_options":         availableBusinessModuleBackupOptions(),
 				"product_view_recovery_writer_inventory": manager.Configuration.ProductViewRecoveryWriterInventory})
 			return
 		}
@@ -184,6 +188,27 @@ func (manager *Manager) HTTPHandler() http.Handler {
 				return
 			}
 			task, err := manager.CreateProductCatalogBackup(session.Subject, body.Confirmation)
+			writeMaintenanceTask(response, task, err)
+			return
+		}
+		if (path == "/api/module-backups" || path == "/api/module-backup-preview") && request.Method == http.MethodPost {
+			var body struct {
+				Modules      []string `json:"modules"`
+				Confirmation string   `json:"confirmation"`
+			}
+			if !readMaintenanceJSON(response, request, &body) {
+				return
+			}
+			if path == "/api/module-backup-preview" {
+				preview, err := manager.PreviewSelectedBusinessModuleBackup(request.Context(), body.Modules)
+				if err != nil {
+					writeMaintenanceError(response, err)
+					return
+				}
+				writeMaintenanceJSON(response, http.StatusOK, map[string]any{"preview": preview})
+				return
+			}
+			task, err := manager.CreateSelectedBusinessModuleBackup(session.Subject, body.Confirmation, body.Modules)
 			writeMaintenanceTask(response, task, err)
 			return
 		}
@@ -435,6 +460,41 @@ func (manager *Manager) HTTPHandler() http.Handler {
 			}
 			if action == "verify" {
 				task, err := manager.VerifyUploadedPackage(id)
+				writeMaintenanceTask(response, task, err)
+				return
+			}
+			if action == "selected-module-isolated-restore-preview" {
+				var body struct {
+					Confirmation string `json:"confirmation"`
+				}
+				if !readMaintenanceJSON(response, request, &body) {
+					return
+				}
+				task, err := manager.StartSelectedBusinessModuleIsolatedRestorePreview(id, body.Confirmation)
+				writeMaintenanceTask(response, task, err)
+				return
+			}
+			if action == "selected-customer-service-restore-choice" {
+				var body struct {
+					PreviewSHA256 string `json:"preview_sha256"`
+					Policy        string `json:"policy"`
+				}
+				if !readMaintenanceJSON(response, request, &body) {
+					return
+				}
+				task, err := manager.SaveSelectedCustomerServiceModuleRestoreChoice(request.Context(), id, session.Subject, body.PreviewSHA256, body.Policy)
+				writeMaintenanceTask(response, task, err)
+				return
+			}
+			if action == "selected-customer-service-candidate-rehearsal" {
+				var body struct {
+					ChoiceSHA256 string `json:"choice_sha256"`
+					Confirmation string `json:"confirmation"`
+				}
+				if !readMaintenanceJSON(response, request, &body) {
+					return
+				}
+				task, err := manager.StartSelectedCustomerServiceModuleCandidateRehearsal(id, body.ChoiceSHA256, body.Confirmation)
 				writeMaintenanceTask(response, task, err)
 				return
 			}

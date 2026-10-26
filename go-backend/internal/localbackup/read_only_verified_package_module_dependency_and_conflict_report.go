@@ -250,12 +250,23 @@ func (manager *Manager) inspectVerifiedPackageModuleDependenciesWithCustomerServ
 }
 
 func inspectModuleRecoveryDatabaseObservation(ctx context.Context, transaction *sql.Tx) (*moduleRecoveryDatabaseObservation, error) {
-	observation := &moduleRecoveryDatabaseObservation{Columns: map[string]map[string]bool{}, Shapes: map[string]string{}, PrimaryKeys: map[string][]string{}}
-	var err error
-	observation.Tables, observation.Fingerprint, observation.Migration, err = captureDatabaseTransactionInventory(ctx, transaction)
+	tables, fingerprint, migration, err := captureDatabaseTransactionInventory(ctx, transaction)
 	if err != nil {
 		return nil, err
 	}
+	observation, err := inspectModuleRecoveryDatabaseSchemaWithoutRowFingerprints(ctx, transaction)
+	if err != nil {
+		return nil, err
+	}
+	observation.Tables, observation.Fingerprint, observation.Migration = tables, fingerprint, migration
+	return observation, nil
+}
+
+// Reference capture needs catalog definitions, not a second content scan of
+// every unrelated table. This observation has no row counts or data fingerprint
+// and must never replace the full observation used to bind a recovery candidate.
+func inspectModuleRecoveryDatabaseSchemaWithoutRowFingerprints(ctx context.Context, transaction *sql.Tx) (*moduleRecoveryDatabaseObservation, error) {
+	observation := &moduleRecoveryDatabaseObservation{Columns: map[string]map[string]bool{}, Shapes: map[string]string{}, PrimaryKeys: map[string][]string{}}
 	rows, err := transaction.QueryContext(ctx, `SELECT relation.relname,attribute.attname,jsonb_build_array(attribute.attnum,format_type(attribute.atttypid,attribute.atttypmod),attribute.attnotnull,attribute.attidentity,attribute.attgenerated,pg_get_expr(default_value.adbin,default_value.adrelid))::text FROM pg_class relation JOIN pg_attribute attribute ON attribute.attrelid=relation.oid LEFT JOIN pg_attrdef default_value ON default_value.adrelid=relation.oid AND default_value.adnum=attribute.attnum WHERE relation.relnamespace='public'::regnamespace AND relation.relkind IN ('r','p') AND attribute.attnum>0 AND NOT attribute.attisdropped ORDER BY relation.relname,attribute.attnum`)
 	if err != nil {
 		return nil, err

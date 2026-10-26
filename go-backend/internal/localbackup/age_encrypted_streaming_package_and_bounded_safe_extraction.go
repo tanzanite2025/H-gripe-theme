@@ -139,7 +139,7 @@ func extractAndVerifyEncryptedPackageWithAllowedScopes(source, destination, pass
 	if err := validateWholeApplicationCompanyStaticManifestReleaseBinding(manifest); err != nil {
 		return manifest, err
 	}
-	if !safeTaskID.MatchString(manifest.PackageID) || (manifest.Scope != "whole_application" && (!allowProductModule || manifest.Scope != productCatalogBackupScope)) || len(manifest.Files) > maxFiles {
+	if !safeTaskID.MatchString(manifest.PackageID) || (manifest.Scope != "whole_application" && (!allowProductModule || (manifest.Scope != productCatalogBackupScope && manifest.Scope != selectedBusinessModulesBackupScope))) || len(manifest.Files) > maxFiles {
 		return manifest, errors.New("unsupported package format or scope")
 	}
 	entries := make(map[string]FileIdentity, len(manifest.Files))
@@ -165,6 +165,17 @@ func extractAndVerifyEncryptedPackageWithAllowedScopes(source, destination, pass
 	}
 	if _, ok := entries[productCatalogRowsFilename]; manifest.Scope == productCatalogBackupScope && !ok {
 		return manifest, errors.New("product catalog data missing")
+	}
+	if _, ok := entries[selectedBusinessModulesRowsFilename]; manifest.Scope == selectedBusinessModulesBackupScope && !ok {
+		return manifest, errors.New("selected business module data missing")
+	}
+	if manifest.Scope == selectedBusinessModulesBackupScope {
+		modules, err := normalizeSelectedBusinessBackupModules(manifest.SelectedModules)
+		if err != nil || strings.Join(modules, ",") != strings.Join(manifest.SelectedModules, ",") {
+			return manifest, errors.New("invalid selected module scope")
+		}
+	} else if len(manifest.SelectedModules) != 0 {
+		return manifest, errors.New("module selection is not valid for a whole or legacy product package")
 	}
 	for _, check := range capacityChecks {
 		if err := check(total); err != nil {

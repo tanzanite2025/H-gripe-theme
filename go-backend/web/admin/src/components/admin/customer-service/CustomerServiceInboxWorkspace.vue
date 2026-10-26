@@ -182,7 +182,7 @@
       <div class="space-y-4 py-2">
         <label class="flex items-center justify-between gap-4 rounded-xl border p-3">
           <span class="flex min-w-0 items-center gap-2 text-sm font-bold"><Volume2 class="size-4 text-primary" />提示音</span>
-          <Switch :checked="soundEnabled" aria-label="启用客服消息提示音" @update:checked="setSoundEnabled" />
+          <Switch :model-value="soundEnabled" aria-label="启用客服消息提示音" @update:model-value="setSoundEnabled" />
         </label>
         <div class="rounded-xl border p-3">
           <div class="mb-2 flex items-center justify-between gap-3 text-sm">
@@ -206,7 +206,7 @@
         </div>
         <label class="flex items-center justify-between gap-4 rounded-xl border p-3">
           <span class="flex min-w-0 items-center gap-2 text-sm font-bold"><Monitor class="size-4 text-primary" />桌面通知</span>
-          <Switch :checked="desktopEnabled" aria-label="启用客服桌面通知" @update:checked="setDesktopEnabled" />
+          <Switch :model-value="desktopEnabled" aria-label="启用客服桌面通知" @update:model-value="setDesktopEnabled" />
         </label>
         <div class="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-3 py-2 text-xs">
           <span class="text-muted-foreground">浏览器授权：{{ notificationPermissionLabel }}</span>
@@ -218,12 +218,12 @@
             <span class="flex items-center gap-2 text-sm font-bold"><MessageSquare class="size-4 text-primary" />聚焦会话时静默桌面通知</span>
             <span class="mt-1 block text-[11px] leading-5 text-muted-foreground">当前会话已在前台打开时，仅保留站内未读和提示音。</span>
           </span>
-          <Switch :checked="suppressDesktopWhenFocused" aria-label="聚焦会话时静默桌面通知" @update:checked="setSuppressDesktopWhenFocused" />
+          <Switch :model-value="suppressDesktopWhenFocused" aria-label="聚焦会话时静默桌面通知" @update:model-value="setSuppressDesktopWhenFocused" />
         </label>
         <div class="rounded-xl border p-3">
           <label class="flex items-center justify-between gap-4">
             <span class="text-sm font-bold">夜间免打扰</span>
-            <Switch :checked="quietHoursEnabled" aria-label="启用夜间免打扰" @update:checked="setQuietHoursEnabled" />
+            <Switch :model-value="quietHoursEnabled" aria-label="启用夜间免打扰" @update:model-value="setQuietHoursEnabled" />
           </label>
           <div class="mt-3 grid grid-cols-2 gap-3">
             <label class="text-xs text-muted-foreground">开始<input class="mt-1 w-full rounded-md border bg-background px-2 py-1 text-sm text-foreground" type="time" :value="quietHoursStart" :disabled="!quietHoursEnabled" @change="setQuietHoursStart(($event.target as HTMLInputElement).value)" /></label>
@@ -251,7 +251,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
-import { useCustomerServiceNotificationSettings } from '@/composables/customerService/useCustomerServiceRealtime'
+import { useCustomerServiceNotificationSettings } from '@/composables/customerService/useCustomerServiceNotificationSettingsAndQuietHours'
 import type {
   AssignableAgent,
   CustomerContext,

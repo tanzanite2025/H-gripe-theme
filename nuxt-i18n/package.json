@@ -3,6 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build:analyze": "cross-env BUNDLE_ANALYZE=true npm run build",
     "build": "npm run clean && npm run postinstall && npm run check:apple-pay-domain-verification && npm run check:font-preflight && npm run check:route-manifest && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt build && npm run check:sharp-runtime && npm run generate:critical-css && npm run check:critical-css && tsx scripts/storefront/check-production-artifacts.ts",
     "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" NODE_ENV=development NUXT_HTML_CACHE_ENABLED=false tsx scripts/dev-fixed-port.ts",
     "generate": "npm run clean && npm run postinstall && npm run check:route-manifest && cross-env NODE_OPTIONS=\"--max-old-space-size=8192 --disable-warning=DEP0155\" nuxt generate && tsx scripts/storefront/check-production-artifacts.ts",
@@ -107,6 +108,7 @@
     "cross-env": "^10.1.0",
     "fontkitten": "^1.0.3",
     "postcss": "^8.5.6",
+    "rollup-plugin-visualizer": "^7.1.1",
     "tailwindcss": "^3.4.18",
     "tsx": "^4.23.11",
     "typescript": "^6.0.3",

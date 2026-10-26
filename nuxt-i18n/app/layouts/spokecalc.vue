@@ -9,16 +9,13 @@
     </main>
 
     <!-- Reuse the same deferred chrome as the storefront layouts. -->
-    <LazyAppFooter :hydrate-on-visible="footerHydrationOptions" />
+    <StorefrontFooterWithLocaleSafeDeferredHydration />
     <GradientDockMenuDeferred />
   </div>
 </template>
 
 <script setup lang="ts">
 import GradientDockMenuDeferred from '~/components/GradientDockMenuDeferred.vue'
-import { STOREFRONT_FOOTER_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
-
-const footerHydrationOptions = STOREFRONT_FOOTER_HYDRATION_OPTIONS
 </script>
 
 <style scoped>

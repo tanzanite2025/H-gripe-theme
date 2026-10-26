@@ -1,4 +1,7 @@
 'use strict';
+let selectedBusinessBackupPreview = null;
+let selectedBusinessBackupRevision = 0;
+let businessBackupRequestInProgress = false;
 const consolePrefix = location.pathname.includes('/local-backup-maintenance') ? '/local-backup-maintenance' : '';
 let maintenanceCredential = '';
 let targetStatus = null;
@@ -23,6 +26,13 @@ const productCatalogPhaseNames = {capturing_product_catalog_and_images:'正在�
 const stateNames = {queued:'等待执行',running:'执行中',ready_to_download:'已生成，可下载',generated_with_gaps:'已生成，但缺口阻止恢复',uploading:'上传中',uploaded:'上传完成，尚未验证',verified:'隔离恢复验证通过',awaiting_reconciliation:'已切换，等待对账',resuming:'对账已记录，正在恢复服务',releasing_rollback:'回退已核对，正在解除隔离',completed:'已记录对账并解除隔离',rolled_back:'已成对回退',failed:'失败',interrupted:'执行中断，请检查阶段',expired:'服务器工作副本已过期'};
 function showMessage(message, failed = false) { const output = getMaintenanceConsoleElement('message'); output.textContent = message; output.className = failed ? 'error' : ''; }
 stateNames.product_module_isolated_verified = '商品与图片隔离恢复通过';
+stateNames.module_package_integrity_verified = '模块内容完整性校验通过，尚未恢复';
+stateNames.module_isolated_restore_verified = '模块隔离恢复验证通过，未覆盖当前商城';
+stateNames.module_restore_conflicts_found = '模块恢复存在冲突，请查看结果';
+stateNames.module_chat_candidate_rehearsal_verified = '所选聊天策略副本验证通过，未覆盖当前商城';
+Object.assign(productCatalogPhaseNames,{preparing_selected_chat_choice_candidate_rehearsal:'准备所选聊天策略副本验证',selected_chat_choice_full_rows_and_retained_target_verified:'完整聊天记录及其他数据保留核对通过'});
+Object.assign(productCatalogPhaseNames,{preparing_selected_module_isolated_restore:'准备模块隔离恢复',checking_selected_module_target_dependencies:'检查模块依赖与内容冲突',selected_module_disposable_restore_and_target_preservation_verified:'隔离恢复及当前商城数据保留验证通过',selected_module_dependency_or_content_conflicts_require_resolution:'依赖、记录或文件存在冲突，恢复已阻断'});
+Object.assign(productCatalogPhaseNames,{capturing_selected_business_modules:'正在读取所选业务模块和实际附件',selected_business_modules_encrypted:'所选业务模块及实际文件已加密保存',selected_module_contents_verified_restore_unavailable:'模块内容已校验，正式覆盖导入尚未开放'});
 stateNames.product_module_stopped_handoff_prepared = '商品交接准备完成，商城持续停写';
 stateNames.product_module_switched_still_isolated = '商品已隔离切换，商城继续停写';
 Object.assign(productCatalogPhaseNames,{invalidating_stopped_product_detail_cache_and_read_leases:'正在核验并处理商品详情缓存与读取锁',product_detail_cache_and_read_leases_verified_absent_still_isolated:'商品详情缓存与读取锁已核验为空，继续停写'});
@@ -40,10 +50,91 @@ async function maintenanceRequest(path, options = {}) {
 }
 function postMaintenanceRequest(path, body = {}) { return maintenanceRequest(path, {method:'POST',body:JSON.stringify(body)}); }
 function hasPermission(permission) { return targetStatus?.permissions.includes(`ops:backup:${permission}`); }
+function selectedBusinessBackupModuleIDs() {
+  return Array.from(document.querySelectorAll('#business-backup-module-options input:checked'),input=>input.value).sort();
+}
+function isBusinessBackupModuleModeSelected() {
+  return document.querySelector('input[name="backup-export-mode"]:checked')?.value==='modules';
+}
+function describeSelectedBusinessBackupModules(modules) {
+  const labels=new Map((targetStatus?.business_module_backup_options||[]).map(option=>[option.id,option.label]));
+  return modules.map(module=>labels.get(module)||module).join('、');
+}
+function invalidateSelectedBusinessBackupPreview() {
+  selectedBusinessBackupRevision++;
+  selectedBusinessBackupPreview=null;
+  getMaintenanceConsoleElement('business-backup-range-preview').hidden=true;
+  updateBusinessBackupSelectionControls();
+}
+function renderBusinessBackupModuleChoices() {
+  const container=getMaintenanceConsoleElement('business-backup-module-options');
+  const options=targetStatus?.business_module_backup_options||[];
+  const signature=JSON.stringify(options);
+  if(container.dataset.signature===signature)return;
+  const previous=new Set(selectedBusinessBackupModuleIDs());
+  container.replaceChildren();container.dataset.signature=signature;
+  for(const option of options){
+    const label=document.createElement('label');label.className='backup-module-option';
+    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=option.id;checkbox.checked=previous.has(option.id);checkbox.addEventListener('change',invalidateSelectedBusinessBackupPreview);
+    const title=document.createElement('strong');title.textContent=option.label;
+    const description=document.createElement('span');description.textContent=option.description;
+    const text=document.createElement('span');text.append(title,description);label.append(checkbox,text);container.append(label);
+  }
+  invalidateSelectedBusinessBackupPreview();
+}
+function updateBusinessBackupSelectionControls() {
+  const moduleMode=isBusinessBackupModuleModeSelected();
+  const modules=selectedBusinessBackupModuleIDs();
+  const allowed=Boolean(hasPermission('export')&&!targetStatus.application_fenced&&!businessBackupRequestInProgress);
+  getMaintenanceConsoleElement('business-backup-module-picker').hidden=!moduleMode;
+  getMaintenanceConsoleElement('business-backup-selection-summary').textContent=modules.length?`已选择 ${modules.length} 个模块：${describeSelectedBusinessBackupModules(modules)}`:'请勾选要保存的模块。';
+  getMaintenanceConsoleElement('preview-selected-business-modules').disabled=!allowed||!modules.length;
+  getMaintenanceConsoleElement('generate').textContent=moduleMode?'生成所选模块备份':'生成整站备份';
+  getMaintenanceConsoleElement('generate').disabled=!allowed||(moduleMode&&(!modules.length||!selectedBusinessBackupPreview));
+  for(const input of document.querySelectorAll('#business-backup-selection input'))input.disabled=!allowed;
+  for(const id of ['select-all-business-backup-modules','clear-business-backup-modules'])getMaintenanceConsoleElement(id).disabled=!allowed;
+}
+async function previewCurrentSelectedBusinessBackupModules() {
+  if(!hasPermission('export')||businessBackupRequestInProgress||targetStatus.application_fenced)return;
+  const modules=selectedBusinessBackupModuleIDs();
+  if(!modules.length)return;
+  const revision=++selectedBusinessBackupRevision;
+  const connectionRevision=maintenanceConnectionRevision;
+  selectedBusinessBackupPreview=null;getMaintenanceConsoleElement('business-backup-range-preview').hidden=true;businessBackupRequestInProgress=true;updateBusinessBackupSelectionControls();
+  try {
+    const {preview}=await postMaintenanceRequest('/api/module-backup-preview',{modules});
+    if(connectionRevision!==maintenanceConnectionRevision||revision!==selectedBusinessBackupRevision)return;
+    if(JSON.stringify(preview?.modules)!==JSON.stringify(modules)||preview.online_overwrite_available!==false)throw new Error('范围预览与当前选择不符，请重新预览。');
+    selectedBusinessBackupPreview=preview;
+    getMaintenanceConsoleElement('business-backup-range-description').textContent=`本次保存：${describeSelectedBusinessBackupModules(modules)}。`;
+    const notes=getMaintenanceConsoleElement('business-backup-range-notes');notes.replaceChildren();
+    for(const text of [...preview.included_dependencies,...preview.recovery_limitations]){const item=document.createElement('li');item.textContent=text;notes.append(item);}
+    const rows=getMaintenanceConsoleElement('business-backup-range-tables');rows.replaceChildren();
+    for(const [table,count] of Object.entries(preview.tables).sort(([left],[right])=>left.localeCompare(right))){const row=document.createElement('tr');for(const value of [table,count]){const cell=document.createElement('td');cell.textContent=String(value);row.append(cell);}rows.append(row);}
+    getMaintenanceConsoleElement('business-backup-range-preview').hidden=false;
+  } finally {businessBackupRequestInProgress=false;updateBusinessBackupSelectionControls();}
+}
+async function generateBackupForCurrentBusinessModuleSelection() {
+  if(!hasPermission('export')||businessBackupRequestInProgress||targetStatus.application_fenced)return;
+  const moduleMode=isBusinessBackupModuleModeSelected();
+  const modules=selectedBusinessBackupModuleIDs();
+  if(moduleMode&&(!selectedBusinessBackupPreview||JSON.stringify(selectedBusinessBackupPreview.modules)!==JSON.stringify(modules)))throw new Error('请先预览所选模块范围。');
+  const phrase=moduleMode?`BACKUP MODULES ${targetStatus.site_id}/${targetStatus.environment}/${modules.join(',')}`:`BACKUP ${targetStatus.site_id}/${targetStatus.environment}`;
+  const confirmation=prompt(`${moduleMode?`本次导出：${describeSelectedBusinessBackupModules(modules)}。`:'本次导出全部商城数据。'}生成期间商城将暂时停止服务。请确认维护窗口，并输入：${phrase}`);
+  if(confirmation===null)return;
+  businessBackupRequestInProgress=true;updateBusinessBackupSelectionControls();
+  try {
+    await postMaintenanceRequest(moduleMode?'/api/module-backups':'/api/backups',moduleMode?{modules,confirmation}:{confirmation});
+    showMessage(moduleMode?'已启动所选模块备份，生成后从记录下载到电脑。':'已启动整站备份，生成后从记录下载到电脑。');
+    invalidateSelectedBusinessBackupPreview();
+    await refreshMaintenanceTasks();
+  } finally {businessBackupRequestInProgress=false;updateBusinessBackupSelectionControls();}
+}
 async function connectMaintenanceConsole(credential) {
   const connectionRevision=++maintenanceConnectionRevision;
   clearProductCatalogHandoffInspectionForChangedSessionOrCandidate();
   maintenanceCredential = credential;
+  invalidateSelectedBusinessBackupPreview();
   await refreshMaintenanceTasks();
   if(connectionRevision!==maintenanceConnectionRevision)return;
   getMaintenanceConsoleElement('credential').value = '';
@@ -78,15 +169,21 @@ async function refreshMaintenanceTasks() {
   getMaintenanceConsoleElement('target-title').textContent = `目标商城：${status.site_id} / ${status.environment}`;
   getMaintenanceConsoleElement('target-description').textContent = `数据库 ${status.database_name} · 应用版本 ${status.application_version} · 包版本 ${status.package_version} · 服务器工作副本保留 ${status.work_copy_lifetime_hours} 小时 · 单包上限 ${formatBackupByteSize(status.max_package_bytes)}`;
   getMaintenanceConsoleElement('maintenance-status').textContent = status.application_fenced ? '商城维护隔离中：业务进程、任务和回调处理保持停止。' : '商城未处于备份维护隔离。';
-  getMaintenanceConsoleElement('generate').disabled = !hasPermission('export') || status.application_fenced;
-  getMaintenanceConsoleElement('generate-product-catalog').disabled = !hasPermission('export') || status.application_fenced;
+  renderBusinessBackupModuleChoices();
+  updateBusinessBackupSelectionControls();
   getMaintenanceConsoleElement('upload-button').disabled = !hasPermission('upload') || uploading;
   renderBackupTasks(result.tasks);
+  const selectedModulePanel=getMaintenanceConsoleElement('selected-module-restore-preview');
+  if(!getMaintenanceConsoleElement('preview-panel').hidden&&selectedModulePanel.dataset.taskId){
+    const current=result.tasks.find(task=>task.id===selectedModulePanel.dataset.taskId);
+    if(current)renderSelectedBusinessModuleIsolatedRestorePreview(current);
+    else {selectedModulePanel.replaceChildren();selectedModulePanel.hidden=true;}
+  }
   if (pendingVerificationTaskID) {
     const task=result.tasks.find(task=>task.id===pendingVerificationTaskID);
-    if (task && ['verified','product_module_isolated_verified','failed','interrupted'].includes(task.state)) {
+    if (task && ['verified','product_module_isolated_verified','module_package_integrity_verified','module_isolated_restore_verified','module_restore_conflicts_found','module_chat_candidate_rehearsal_verified','failed','interrupted'].includes(task.state)) {
       pendingVerificationTaskID='';
-      showMessage(task.state==='product_module_isolated_verified'?'商品与实际图片的隔离恢复验证通过，其他业务数据保留。':task.state==='verified'?'整站包隔离恢复验证通过，请查看覆盖预览。':`恢复验证未通过：${task.error||'请检查任务记录。'}`,['failed','interrupted'].includes(task.state));
+      showMessage(task.state==='module_chat_candidate_rehearsal_verified'?'所选聊天策略已在副本写入完整记录并验证，副本已删除，当前商城未覆盖。':task.state==='module_isolated_restore_verified'?'所选模块的隔离恢复验证通过，当前商城数据未改变。请查看结果；正式覆盖导入尚未开放。':task.state==='module_restore_conflicts_found'?'发现模块恢复冲突，请查看验证结果。当前商城数据未改变。':task.state==='module_package_integrity_verified'?'所选模块记录及实际文件完整性校验通过；可继续验证模块恢复，正式覆盖导入未开放。':task.state==='product_module_isolated_verified'?'商品与实际图片的隔离恢复验证通过，其他业务数据保留。':task.state==='verified'?'整站包隔离恢复验证通过，请查看覆盖预览。':`恢复验证未通过：${task.error||'请检查任务记录。'}`,['failed','interrupted','module_restore_conflicts_found'].includes(task.state));
     }
   }
 }
@@ -105,7 +202,9 @@ function renderBackupTasks(tasks) {
     const stoppedHandoff=task.product_catalog_stopped_handoff_preparation;
     const stoppedSwitch=task.recovery_journal?.product_catalog_stopped_switch;
     const unresolvedStoppedHandoff=Boolean(stoppedHandoff&&stoppedHandoff.phase!=='cancelled'&&stoppedSwitch?.phase!=='original_released');
-    title.textContent = `${task.kind === 'product_catalog_backup' ? '商品与图片备份' : task.kind === 'backup' ? '整站商城备份' : '上传恢复'} · ${new Date(task.created_at).toLocaleString()}`;article.append(title);
+    title.textContent = `${task.kind === 'selected_business_modules_backup' ? '所选业务模块备份' : task.kind === 'product_catalog_backup' ? '商品与图片备份' : task.kind === 'backup' ? '整站商城备份' : '上传恢复'} · ${new Date(task.created_at).toLocaleString()}`;article.append(title);
+    const selectedModules=task.manifest?.selected_modules||task.selected_backup_modules;
+    if(selectedModules?.length){const paragraph=document.createElement('p');paragraph.textContent=`包含模块：${describeSelectedBusinessBackupModules(selectedModules)}。正式分模块覆盖导入尚未开放。`;article.append(paragraph);}
     if (task.product_catalog_recovery && !unresolvedStoppedDrain && !unresolvedStoppedHandoff) {
       const result=task.product_catalog_recovery;
       const paragraph=document.createElement('p');
@@ -127,6 +226,7 @@ function renderBackupTasks(tasks) {
     if (task.ciphertext_sha256) {const checksum=document.createElement('p');checksum.textContent=`包校验 SHA-256：${task.ciphertext_sha256}`;article.append(checksum);}
     if (hasPermission('export') && ['ready_to_download','generated_with_gaps'].includes(task.state)) taskActionButton(article,'下载到电脑',async()=>{const ticket=await postMaintenanceRequest(`/api/tasks/${task.id}/download-ticket`);const link=document.createElement('a');link.href=ticket.download_path;link.download='';document.body.append(link);link.click();link.remove();showMessage('已发起浏览器下载，请检查电脑中的保存结果。');});
     if (task.manifest && !unresolvedStoppedDrain && !unresolvedStoppedHandoff) taskActionButton(article,'查看范围与覆盖预览',()=>showOverwritePreview(task));
+    if (hasPermission('restore') && !targetStatus.application_fenced && task.kind==='upload' && task.manifest?.scope==='selected_business_modules' && !task.work_copy_expired && !task.recovery_journal && new Date(task.expires_at).getTime()>Date.now() && (['module_package_integrity_verified','module_isolated_restore_verified','module_restore_conflicts_found','module_chat_candidate_rehearsal_verified'].includes(task.state)||(['failed','interrupted'].includes(task.state)&&task.selected_module_restore_preview))) taskActionButton(article,'验证模块恢复（暂停商城）',()=>startSelectedBusinessModuleIsolatedRestorePreview(task));
     if (isProductCatalogCandidateEligibleForHandoffInspection(task, targetStatus)) taskActionButton(article,'检查商品恢复准备',()=>inspectProductCatalogCandidateHandoff(task.id));
     if (stoppedDrain) { const description=document.createElement('p');description.textContent=unresolvedStoppedDrain?'浏览增量处理尚未完成，旧商品预览失效；维护隔离会保留，请检查失败原因后重试。':`浏览增量已幂等保存并重建预览，共执行 ${stoppedDrain.flush_calls} 次落库检查；这份记录不批准在线覆盖。`;article.append(description); }
     if (hasPermission('restore') && !unresolvedStoppedHandoff && task.manifest?.scope==='product_catalog_with_images' && !task.work_copy_expired && !task.recovery_journal && (isProductCatalogCandidateEligibleForHandoffInspection(task,targetStatus)||(unresolvedStoppedDrain&&['failed','interrupted'].includes(task.state)))) {
@@ -147,7 +247,7 @@ function renderBackupTasks(tasks) {
     if(isStoppedProductProjectionInspectionAvailable(task,targetStatus))taskActionButton(article,'核对商品页面、媒体与边缘缓存',()=>inspectStoppedProductStorefrontProjectionBaseline(task.id));
     if(task.product_catalog_stopped_projection_evidence){const note=document.createElement('p');note.textContent='已保留本次商品的人工投影核对凭证；外部结果由操作员核验，凭证记录不批准恢复营业。';article.append(note);}
     if (hasPermission('restore') && stoppedSwitch && !['completed','rolled_back','running','queued'].includes(task.state)) taskActionButton(article,'成对回退商品并恢复原商城',()=>startProductCatalogIsolatedSwitchOrVerifiedPairedRollback(task.id,true),'danger');
-    if (hasPermission('upload') && task.kind==='upload' && task.uploaded_bytes===task.size && ['uploaded','failed','interrupted'].includes(task.state) && !task.recovery_journal && !unresolvedStoppedDrain && !unresolvedStoppedHandoff) taskActionButton(article,'验证并演练隔离恢复',async()=>{await postMaintenanceRequest(`/api/tasks/${task.id}/verify`);pendingVerificationTaskID=task.id;showMessage('正在校验并恢复到隔离数据库，在线业务数据保持不变。');});
+    if (hasPermission('upload') && task.kind==='upload' && task.uploaded_bytes===task.size && ['uploaded','failed','interrupted'].includes(task.state) && !task.recovery_journal && !unresolvedStoppedDrain && !unresolvedStoppedHandoff) taskActionButton(article,'校验包并检查可用恢复方式',async()=>{await postMaintenanceRequest(`/api/tasks/${task.id}/verify`);pendingVerificationTaskID=task.id;showMessage('正在校验包。整站及单独商品包会演练隔离恢复，模块组合包检查记录与实际文件完整性。');});
     if (hasPermission('restore') && task.kind==='upload' && task.state==='verified' && !task.work_copy_expired) {
       for (const [module, label] of [['orders','订单'],['customer_service','客服']]) taskActionButton(article,`检查${label}单独恢复依赖`,()=>inspectModuleRecoveryDependencies(task.id,module));
     }
@@ -163,16 +263,107 @@ function renderBackupTasks(tasks) {
 }
 function showOverwritePreview(task) {
   const manifest=task.manifest;getMaintenanceConsoleElement('preview-panel').hidden=false;
-  if (manifest.scope==='product_catalog_with_images') {
+  renderSelectedBusinessModuleIsolatedRestorePreview(task);
+  if (manifest.scope==='selected_business_modules') {
+    getMaintenanceConsoleElement('preview-description').textContent=`业务模块包：${describeSelectedBusinessBackupModules(manifest.selected_modules)} · 恢复点 ${manifest.captured_at} · ${manifest.site_id}/${manifest.environment}。先校验包，再单独执行隔离恢复验证；依赖或内容冲突会阻断。正式覆盖导入尚未开放。`;
+  } else if (manifest.scope==='product_catalog_with_images') {
     getMaintenanceConsoleElement('preview-description').textContent=`商品与图片独立包 · 恢复点 ${manifest.captured_at} · ${manifest.site_id}/${manifest.environment}。上传后先在当前商城的隔离副本恢复商品；保留未选择的业务记录、目标新增商品及已有 SKU 的当前库存。新增 SKU 使用备份库存，结果会单独列出。SKU 或库存归属冲突会阻断。在线商品覆盖尚未开放。`;
   } else {
   getMaintenanceConsoleElement('preview-description').textContent=`恢复点 ${manifest.captured_at} · 包 ${manifest.package_id} · ${manifest.site_id}/${manifest.environment} · 迁移版本 ${manifest.migration_version}。目标数据库 ${targetStatus.database_name}；备份时数据库占用 ${formatBackupByteSize(manifest.database_size_bytes)}。附件目标：${Object.entries(targetStatus.storage_roots).map(([name,path])=>`${name} → ${path}`).join('；')}。覆盖将替换恢复点之后的数据。`;
   }
   const rows=getMaintenanceConsoleElement('preview-tables');rows.replaceChildren();
-  const previewTableNames=manifest.scope==='product_catalog_with_images'?Object.keys(manifest.tables):Array.from(new Set([...Object.keys(task.preview_target_tables||{}),...Object.keys(manifest.tables)]));
+  const previewTableNames=manifest.scope!=='whole_application'?Object.keys(manifest.tables):Array.from(new Set([...Object.keys(task.preview_target_tables||{}),...Object.keys(manifest.tables)]));
   for(const name of previewTableNames.sort()){const row=document.createElement('tr');for(const value of [name,task.preview_target_tables?.[name]??'未预检',manifest.tables[name]??'不包含']){const cell=document.createElement('td');cell.textContent=String(value);row.append(cell);}rows.append(row);}
   getMaintenanceConsoleElement('preview-files').textContent=`媒体文件 ${manifest.media_file_count} 个 · ${formatBackupByteSize(manifest.media_file_bytes)} · 整包的加密与文件清单均须通过校验。`;
   getMaintenanceConsoleElement('preview-gaps').textContent=manifest.gaps.length?`恢复被阻断：${manifest.gaps.join('；')}`:'包内未报告附件引用缺口。隔离演练结果以任务状态为准。';getMaintenanceConsoleElement('preview-panel').scrollIntoView({behavior:'smooth'});
+}
+async function startSelectedBusinessModuleIsolatedRestorePreview(task) {
+  const phrase=`VERIFY MODULE RESTORE ${targetStatus.site_id}/${targetStatus.environment}/${task.id}`;
+  const confirmation=prompt(`将暂停商城服务，在一次性副本验证 ${describeSelectedBusinessBackupModules(task.manifest.selected_modules)} 的恢复，完成后恢复当前商城服务。当前商城数据不会被覆盖。请输入：${phrase}`);
+  if(confirmation===null)return;
+  await postMaintenanceRequest(`/api/tasks/${task.id}/selected-module-isolated-restore-preview`,{confirmation});
+  pendingVerificationTaskID=task.id;
+  getMaintenanceConsoleElement('preview-panel').hidden=true;
+  showMessage('正在验证模块隔离恢复。结束后请查看范围与验证结果。');
+}
+function renderSelectedBusinessModuleIsolatedRestorePreview(task) {
+  const panel=getMaintenanceConsoleElement('selected-module-restore-preview');
+  const report=task.selected_module_restore_preview;
+  panel.dataset.taskId=task.id;
+  panel.replaceChildren();panel.hidden=!report;
+  if(!report)return;
+  const coverage=report.customer_service_overwrite_preview;
+  const summary=document.createElement('p');
+  const passed=['module_isolated_restore_verified','module_chat_candidate_rehearsal_verified'].includes(task.state)&&report.isolated_restore_verified&&report.target_unchanged&&report.disposable_stage_removed;
+  const contentConflicts=report.tables.reduce((count,item)=>count+item.conflicting_rows,0);
+  const selectedCandidate=task.selected_customer_service_candidate_rehearsal;
+  const chosenCandidateVerified=task.state==='module_chat_candidate_rehearsal_verified'&&selectedCandidate?.isolated_restore_verified&&selectedCandidate.target_unchanged&&selectedCandidate.disposable_stage_removed&&selectedCandidate.saved_choice_sha256===task.selected_customer_service_restore_choice?.sha256&&selectedCandidate.online_overwrite_available===false;
+  summary.textContent=chosenCandidateVerified?`原始模块预览发现 ${contentConflicts} 条内容冲突；已按保存的策略完成副本验证，详细结果见下方。当前商城未覆盖。`:passed?`隔离恢复通过：恢复 ${report.restored_rows} 条缺失记录，验证 ${report.verified_files} 个文件，核对 ${report.preserved_tables} 张表的已有记录保留；演练库已删除，当前商城未覆盖。`:`验证未通过或存在冲突：内容冲突 ${contentConflicts} 条，依赖冲突 ${report.dependency_conflicts} 项，文件冲突 ${report.file_conflicts} 项${coverage?.package_rows?`，采用备份记录时聊天规则阻断 ${coverage.package_rows.blocking_issues} 项`:''}。完整结果以本次任务状态为准。`;
+  if(!passed&&!chosenCandidateVerified)summary.className='error';panel.append(summary);
+  const table=document.createElement('table');
+  const head=document.createElement('tr');
+  for(const value of ['数据表','相同记录','保留当前运行状态','缺失记录','内容冲突','受保护缺失记录','限制']){const cell=document.createElement('th');cell.textContent=value;head.append(cell);}table.append(head);
+  for(const item of report.tables){const row=document.createElement('tr');for(const value of [item.table,item.identical_rows,item.preserved_current_runtime_rows||0,item.missing_rows,item.conflicting_rows,item.protected_new_rows,item.unsupported_reason||'']){const cell=document.createElement('td');cell.textContent=String(value);row.append(cell);}table.append(row);}
+  const scroll=document.createElement('div');scroll.className='scroll';scroll.append(table);panel.append(scroll);
+  const dependencyReasons={visitor_browsing_context_absent_at_backup_and_target:'备份与当前均无访客浏览档案；会话身份仍按会话自身哈希与签名密钥核对',dependency_absent_at_backup_and_target:'备份与当前均缺少必需依赖',target_dependency_missing:'当前缺少备份时存在的依赖',package_dependency_missing:'备份缺少当前存在的依赖，需核对身份',dependency_content_changed:'依赖内容已变化',unexpected_target_reference:'当前发现未登记在包内的引用',expected_reference_not_reproduced:'包内依赖未能按当前引用结构重现'};
+  for(const issue of report.dependency_issues||[]){const paragraph=document.createElement('p');paragraph.textContent=`${issue.severity==='blocking'?'依赖阻断':'依赖提示'}：${issue.table}（${issue.referenced_columns.join('、')}）${issue.references} 项；${dependencyReasons[issue.reason]||issue.reason}。`;if(issue.severity==='blocking')paragraph.className='error';panel.append(paragraph);}
+  if(coverage){
+    const explanation=document.createElement('p');
+    explanation.textContent=coverage.prerequisites_satisfied?'聊天覆盖策略预览：分别核对会话版本、阅读位置、附件归属及上传人、保留事件状态。两种策略均保留当前新增会话和消息；可保存通过的策略并验证完整记录，正式覆盖尚未开放。':'聊天覆盖策略尚未检查：请先处理共享依赖、文件、受保护执行事实或写入契约冲突。';
+    panel.append(explanation);
+    for(const strategy of [coverage.package_rows,coverage.preserve_current_rows]){
+      if(!strategy)continue;
+      const label=strategy.policy==='use_package_conversation_rows'?'采用备份中的聊天记录':'保留当前存在冲突的聊天记录';
+      const paragraph=document.createElement('p');
+      paragraph.textContent=`${label}：${strategy.domain_checks_satisfied?'聊天规则检查通过':strategy.complete?'存在阻断':'检查未完成'}；采用包内 ${strategy.package_rows_selected} 条，保留冲突 ${strategy.conflicting_rows_preserved} 条，保留当前新增 ${strategy.target_only_rows_preserved} 条；核对事件 ${strategy.preserved_events_checked} 条、所需文件 ${strategy.required_files_checked} 个。正式覆盖未开放。`;
+      if(!strategy.domain_checks_satisfied)paragraph.className='error';panel.append(paragraph);
+      if(isSelectedCustomerServiceModuleStrategySaveAvailable(task,strategy.policy))taskActionButton(panel,`保存策略：${label}`,()=>saveSelectedCustomerServiceModuleRestoreChoice(task.id,report.sha256,strategy.policy));
+      for(const issue of strategy.issues||[]){const detail=document.createElement('p');detail.textContent=issue.message;detail.className='error';panel.append(detail);}
+      if(strategy.issues_truncated){const detail=document.createElement('p');detail.textContent=`问题样例达到上限，共有 ${strategy.blocking_issues} 项阻断；不能将未显示的问题视为通过。`;panel.append(detail);}
+    }
+  }
+  const choice=task.selected_customer_service_restore_choice;
+  if(choice){
+    const paragraph=document.createElement('p');
+    paragraph.textContent=`已保存策略：${choice.policy==='use_package_conversation_rows'?'采用备份中的聊天记录':'保留当前存在冲突的聊天记录'}。已绑定本次包、数据库、附件及配置摘要；任何变化都需重新预览。保存选择未覆盖商城。`;
+    panel.append(paragraph);
+    if(isSelectedCustomerServiceModuleStrategySaveAvailable(task,choice.policy)&&choice.preview_sha256===report.sha256&&choice.sha256&&choice.execution_available===false)taskActionButton(panel,'验证所选聊天策略（暂停商城）',()=>startSelectedCustomerServiceModuleCandidateRehearsal(task.id,choice.sha256),'danger');
+  }
+  const candidate=task.selected_customer_service_candidate_rehearsal;
+  if(candidate){
+    const paragraph=document.createElement('p');
+    const verified=task.state==='module_chat_candidate_rehearsal_verified'&&candidate.isolated_restore_verified&&candidate.target_unchanged&&candidate.disposable_stage_removed&&candidate.online_overwrite_available===false&&candidate.saved_choice_sha256===choice?.sha256;
+    paragraph.textContent=verified?`所选策略副本验证通过：补入 ${candidate.restored_rows} 条、替换 ${candidate.replaced_rows} 条完整聊天记录，核对 ${candidate.preserved_tables} 张表的保留数据。副本已删除，当前商城未覆盖；正式导入尚未开放。`:'所选策略副本验证未完成；不能沿用旧结果进行覆盖，请检查任务记录并重新预览。';
+    if(!verified)paragraph.className='error';panel.append(paragraph);
+  }
+  for(const text of report.limitations){const paragraph=document.createElement('p');paragraph.textContent=text;panel.append(paragraph);}
+}
+function isSelectedCustomerServiceModuleStrategySaveAvailable(task,policy) {
+  const report=task?.selected_module_restore_preview,coverage=report?.customer_service_overwrite_preview;
+  const strategy=policy==='use_package_conversation_rows'?coverage?.package_rows:policy==='preserve_current_conflicting_conversation_rows'?coverage?.preserve_current_rows:null;
+  return hasPermission('restore')&&!targetStatus.application_fenced&&task?.kind==='upload'&&task.manifest?.scope==='selected_business_modules'&&JSON.stringify(task.manifest.selected_modules)===JSON.stringify(['customer_service'])&&!task.work_copy_expired&&!task.recovery_journal&&!task.stage_database&&!task.selected_module_disposable_stage&&new Date(task.expires_at).getTime()>Date.now()&&['module_isolated_restore_verified','module_restore_conflicts_found','module_chat_candidate_rehearsal_verified'].includes(task.state)&&report?.sha256&&report.binding&&report.target_unchanged&&report.disposable_stage_removed&&report.online_overwrite_available===false&&coverage?.prerequisites_satisfied&&strategy?.complete&&strategy.domain_checks_satisfied&&strategy.blocking_issues===0&&report.dependency_conflicts===0&&report.file_conflicts===0&&report.tables.every(table=>!table.unsupported_reason&&!table.protected_new_rows&&(['tickets','ticket_messages','customer_service_inbox_states','ticket_message_media_attachments'].includes(table.table)||(!table.missing_rows&&!table.conflicting_rows)));
+}
+async function saveSelectedCustomerServiceModuleRestoreChoice(taskID,previewSHA256,policy) {
+  const task=displayedMaintenanceTasks.find(item=>item.id===taskID);
+  if(!isSelectedCustomerServiceModuleStrategySaveAvailable(task,policy)||task.selected_module_restore_preview.sha256!==previewSHA256)throw new Error('聊天预览、任务或权限已变化，请重新预览。');
+  const revision=maintenanceConnectionRevision;
+  await postMaintenanceRequest(`/api/tasks/${taskID}/selected-customer-service-restore-choice`,{preview_sha256:previewSHA256,policy});
+  if(revision!==maintenanceConnectionRevision)return;
+  showMessage('聊天恢复策略已保存，尚未覆盖商城。可以继续在独立副本验证完整记录。');
+}
+async function startSelectedCustomerServiceModuleCandidateRehearsal(taskID,choiceSHA256) {
+  const task=displayedMaintenanceTasks.find(item=>item.id===taskID),choice=task?.selected_customer_service_restore_choice;
+  if(!choice||!isSelectedCustomerServiceModuleStrategySaveAvailable(task,choice.policy)||choice.sha256!==choiceSHA256||choice.preview_sha256!==task.selected_module_restore_preview.sha256)throw new Error('已保存策略、预览或权限已变化，请重新预览。');
+  const phrase=`VERIFY CHAT CHOICE ${targetStatus.site_id}/${targetStatus.environment}/${taskID}/${choiceSHA256}`;
+  const confirmation=prompt(`将暂停商城服务，重新核对所选策略绑定的包和当前数据，再在一次性副本写入完整聊天记录。完成后删除副本并恢复当前商城。正式覆盖尚未开放。\n请输入：${phrase}`);
+  if(confirmation===null)return;
+  const current=displayedMaintenanceTasks.find(item=>item.id===taskID);
+  if(current!==task||!isSelectedCustomerServiceModuleStrategySaveAvailable(current,choice.policy))throw new Error('当前任务已变化，请刷新后重试。');
+  const revision=maintenanceConnectionRevision;
+  await postMaintenanceRequest(`/api/tasks/${taskID}/selected-customer-service-candidate-rehearsal`,{choice_sha256:choiceSHA256,confirmation});
+  if(revision!==maintenanceConnectionRevision)return;
+  pendingVerificationTaskID=taskID;getMaintenanceConsoleElement('preview-panel').hidden=true;
+  showMessage('正在验证所选聊天策略；完成后查看副本验证结果。');
 }
 async function startStoppedProductViewDrainAndFreshCandidateRebuild(taskID) {
   const task=displayedMaintenanceTasks.find(task=>task.id===taskID);
@@ -697,18 +888,20 @@ async function uploadLocalBackupFile() {
     if(!task){const result=await postMaintenanceRequest('/api/uploads',{size:file.size});task=result.task;localStorage.setItem(storageKey,task.id);}
     let offset=task.uploaded_bytes;
     while(offset<file.size){const chunk=await file.slice(offset,Math.min(offset+targetStatus.chunk_bytes,file.size)).arrayBuffer();const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',chunk)),byte=>byte.toString(16).padStart(2,'0')).join('');const result=await maintenanceRequest(`/api/uploads/${task.id}/chunks`,{method:'PUT',headers:{'Upload-Offset':String(offset),'X-Chunk-SHA256':digest,'Content-Type':'application/octet-stream'},body:chunk});offset=result.task.uploaded_bytes;getMaintenanceConsoleElement('upload-progress').value=offset/file.size*100;getMaintenanceConsoleElement('upload-status').textContent=`已上传 ${formatBackupByteSize(offset)} / ${formatBackupByteSize(file.size)}；任务 ${task.id}`;}
-    await postMaintenanceRequest(`/api/uploads/${task.id}/commit`);localStorage.removeItem(storageKey);showMessage('本地包已上传。请执行“验证并演练隔离恢复”，查看结果后再决定是否覆盖。');
+    await postMaintenanceRequest(`/api/uploads/${task.id}/commit`);localStorage.removeItem(storageKey);showMessage('本地包已上传。请执行“校验包并检查可用恢复方式”，查看范围与校验结果。');
   }finally{uploading=false;getMaintenanceConsoleElement('upload-button').disabled=false;await refreshMaintenanceTasks();}
 }
 getMaintenanceConsoleElement('login-form').addEventListener('submit',async(event)=>{event.preventDefault();try{await connectMaintenanceConsole(getMaintenanceConsoleElement('credential').value);showMessage('已连接独立维护入口。');}catch(error){maintenanceCredential='';showMessage(error.message,true);}});
-getMaintenanceConsoleElement('disconnect').addEventListener('click',()=>{maintenanceCredential='';maintenanceConnectionRevision++;displayedMaintenanceTasks=[];targetStatus=null;clearProductCatalogHandoffInspectionForChangedSessionOrCandidate();clearInterval(refreshTimer);getMaintenanceConsoleElement('connected-panel').hidden=true;getMaintenanceConsoleElement('login-panel').hidden=false;showMessage('维护会话已断开，正在执行的服务器任务和维护隔离仍会保留。');});
+getMaintenanceConsoleElement('disconnect').addEventListener('click',()=>{maintenanceCredential='';maintenanceConnectionRevision++;displayedMaintenanceTasks=[];targetStatus=null;invalidateSelectedBusinessBackupPreview();clearProductCatalogHandoffInspectionForChangedSessionOrCandidate();clearInterval(refreshTimer);getMaintenanceConsoleElement('connected-panel').hidden=true;getMaintenanceConsoleElement('login-panel').hidden=false;showMessage('维护会话已断开，正在执行的服务器任务和维护隔离仍会保留。');});
 getMaintenanceConsoleElement('refresh').addEventListener('click',()=>refreshMaintenanceTasks().catch((error)=>showMessage(error.message,true)));
 getMaintenanceConsoleElement('customer-service-conflict-review-form').addEventListener('submit',event=>{event.preventDefault();saveDisplayedCustomerServiceConflictDecisions().catch(error=>showMessage(error.message,true));});
 getMaintenanceConsoleElement('customer-service-effective-selection-inspect').addEventListener('click',()=>inspectDisplayedCustomerServiceEffectiveSelectionDependencies().catch(error=>showMessage(error.message,true)));
 for(const [id,direction] of [['previous',-1],['next',1]])getMaintenanceConsoleElement(`customer-service-conflict-review-${id}`).addEventListener('click',()=>{const context=customerServiceConflictReviewContext;if(context&&!context.saving){context.page+=direction;renderCustomerServiceConflictDecisionPage();}});
 getMaintenanceConsoleElement('customer-service-conflict-review-reinspect').addEventListener('click',()=>{const context=customerServiceConflictReviewContext;if(context&&!context.saving)inspectModuleRecoveryDependencies(context.plan.binding.task_id,'customer_service').catch(error=>showMessage(error.message,true));});
-getMaintenanceConsoleElement('generate').addEventListener('click',async()=>{const phrase=`BACKUP ${targetStatus.site_id}/${targetStatus.environment}`;const confirmation=prompt(`生成期间商城将暂时停止服务。请确认维护窗口，并输入：${phrase}`);if(confirmation===null)return;try{await postMaintenanceRequest('/api/backups',{confirmation});showMessage('已启动整体备份生成；请保持独立维护页面打开查看进度。');await refreshMaintenanceTasks();}catch(error){showMessage(error.message,true);}});
-getMaintenanceConsoleElement('generate-product-catalog').addEventListener('click',async()=>{const phrase=`BACKUP PRODUCTS ${targetStatus.site_id}/${targetStatus.environment}`;const confirmation=prompt(`导出商品详情、SKU、规格、分类、成本和图片实际文件。生成期间商城暂时停止服务，完成后恢复。请输入：${phrase}`);if(confirmation===null)return;try{await postMaintenanceRequest('/api/product-catalog-backups',{confirmation});showMessage('已启动商品与图片独立备份。');await refreshMaintenanceTasks();}catch(error){showMessage(error.message,true);}});
+getMaintenanceConsoleElement('generate').addEventListener('click',()=>generateBackupForCurrentBusinessModuleSelection().catch(error=>showMessage(error.message,true)));
+for(const input of document.querySelectorAll('input[name="backup-export-mode"]'))input.addEventListener('change',invalidateSelectedBusinessBackupPreview);
+for(const [id,checked] of [['select-all-business-backup-modules',true],['clear-business-backup-modules',false]])getMaintenanceConsoleElement(id).addEventListener('click',()=>{for(const input of document.querySelectorAll('#business-backup-module-options input'))input.checked=checked;invalidateSelectedBusinessBackupPreview();});
+getMaintenanceConsoleElement('preview-selected-business-modules').addEventListener('click',()=>previewCurrentSelectedBusinessBackupModules().catch(error=>showMessage(error.message,true)));
 getMaintenanceConsoleElement('upload-form').addEventListener('submit',(event)=>{event.preventDefault();uploadLocalBackupFile().catch((error)=>showMessage(error.message,true));});
 function renderExternalProjectionReconciliationEvidenceRequirements(contract,containerID='external-projection-reconciliation-evidence',headingText='搜索、缓存、实时消息与附件投影核对') {
   const container = getMaintenanceConsoleElement(containerID);

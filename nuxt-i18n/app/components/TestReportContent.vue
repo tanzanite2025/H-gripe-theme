@@ -122,7 +122,7 @@ const { t } = useI18n()
 
 const { activeTab, setActiveTab } = usePageSubNavigationTab({
   tabs,
-  basePath: '/support/test-report',
+  basePath: '/technology/test-report',
   defaultValue: 'rim-test-report',
   syncWithUrl: () => Boolean(props.syncWithUrl),
 })

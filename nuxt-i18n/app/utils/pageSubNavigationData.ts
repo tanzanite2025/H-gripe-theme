@@ -296,7 +296,7 @@ export const virtualPageSubNavigationEntries = [
   { path: '/guides/wheelset-buyers', tabs: wheelsetBuyerTabs },
   { path: '/company/about', tabs: companyAboutTabs },
   { path: '/support/warranty', tabs: warrantyTabs },
-  { path: '/support/test-report', tabs: testReportTabs },
+  { path: '/technology/test-report', tabs: testReportTabs },
   { path: '/resources/membershipandpoints', tabs: membershipAndPointsTabs },
   { path: '/resources/picture-warehouse', tabs: pictureWarehouseTabs },
 ] as const satisfies readonly PageSubNavigationEntry[]

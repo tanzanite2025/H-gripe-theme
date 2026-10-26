@@ -13,7 +13,7 @@
       </section>
     </main>
 
-    <LazyAppFooter :hydrate-on-visible="footerHydrationOptions" />
+    <StorefrontFooterWithLocaleSafeDeferredHydration />
     <GradientDockMenuDeferred />
     <BehaviorAttributionBootstrapDeferred />
   </div>
@@ -25,7 +25,6 @@ import { computed } from 'vue'
 import BehaviorAttributionBootstrapDeferred from '~/components/BehaviorAttributionBootstrapDeferred.vue'
 import GradientDockMenuDeferred from '~/components/GradientDockMenuDeferred.vue'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
-import { STOREFRONT_FOOTER_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
 
 const { canonicalUrl, alternateLinks, xDefaultLink } = useStorefrontSeoLinks()
 const route = useRoute()
@@ -36,7 +35,6 @@ const resolvedCanonicalUrl = computed(() => {
   }
   return `${canonicalUrl.value}?variant=${encodeURIComponent(variant)}`
 })
-const footerHydrationOptions = STOREFRONT_FOOTER_HYDRATION_OPTIONS
 
 useHead(() => ({
   link: [

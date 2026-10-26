@@ -3,6 +3,8 @@
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",
     "paths": {
+      "~~": ["."],
+      "~~/*": ["./*"],
       "~": ["./app"],
       "~/*": ["./app/*"],
       "@": ["./app"],
@@ -20,6 +22,7 @@
     "skipLibCheck": true
   },
   "include": [
+    "config/storefront/public-client-entry-javascript-dependency-boundary-plugin.ts",
     "scripts/*.ts",
     "scripts/**/*.d.ts",
     "scripts/i18n/**/*.ts",

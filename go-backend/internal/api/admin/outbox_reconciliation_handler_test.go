@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"commerce-platform/internal/domain/audit"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/repository"
 	"commerce-platform/internal/service"
@@ -147,6 +148,6 @@ func newOutboxReconciliationTestDB(t *testing.T) *gorm.DB {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&outbox.Event{}))
+	require.NoError(t, db.AutoMigrate(&outbox.Event{}, &audit.AuditLog{}))
 	return db
 }

@@ -34,6 +34,10 @@ Default local address:
 npm run build
 ```
 
+Generate a production bundle report with `npm run build:analyze`. It preserves production mode and font checks, and writes `output/bundle-analysis/admin-client-treemap.html` outside `dist/`. Using `--mode analyze` would change environment-file loading, including `.env.production`.
+
+The installed admin toolchain currently uses Vite 8 / Rolldown, while the Nuxt storefront builder uses Vite 7 / Rollup. Check the actual builder resolution before sharing tree-shaking options or plugins. See the [storefront loading and production bundler architecture](../../../nuxt-i18n/config/storefront/storefront-loading-hydration-and-production-bundler-architecture.md) for version-specific behavior and upgrade checks.
+
 ## Project Map
 
 ```text
@@ -52,7 +56,7 @@ web/admin/
 |   `-- views/        # route entry pages and page-level orchestration
 |-- public/
 |-- index.html
-|-- vite.config.js
+|-- vite.config.ts
 `-- package.json
 ```
 
@@ -79,5 +83,7 @@ web/admin/
 
 ## Related Docs
 
+- Admin global search boundaries and extension guide: [admin-global-search-module-boundaries-and-extension-guide.md](admin-global-search-module-boundaries-and-extension-guide.md)
 - Backend guide: `../../README.md`
-- Root project guide: `../../../README.md`
+- Root project guide: [README.md](../../../README.md)
+- Frontend bundle measurements and optimization history: [bundle analysis report](../../../frontend-bundle-tree-shaking-analysis-and-safe-optimization-guide.md)

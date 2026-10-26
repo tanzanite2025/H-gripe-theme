@@ -27,6 +27,7 @@
     <HomeDeferredSection
       min-height="32rem"
       module-id="components/home/HomePurchasePath.vue"
+      section-anchor-id="home-buying-path"
       :loader="loadHomePurchasePath"
       :root-margin="sectionMountRootMargin"
     />
@@ -34,6 +35,7 @@
     <HomeDeferredSection
       min-height="54rem"
       module-id="components/home/HomeFeaturedProducts.vue"
+      section-anchor-id="featured-products"
       :loader="loadHomeFeaturedProducts"
       :root-margin="sectionMountRootMargin"
     />

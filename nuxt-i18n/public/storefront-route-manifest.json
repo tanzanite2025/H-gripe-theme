@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-14",
+  "version": "2026-10-24",
   "routes": [
     {
       "key": "tools",
@@ -368,7 +368,7 @@
     },
     {
       "key": "support-test-report",
-      "path": "/support/test-report",
+      "path": "/technology/test-report",
       "label": "Test Report",
       "description": "Product test reports",
       "is_searchable": true,

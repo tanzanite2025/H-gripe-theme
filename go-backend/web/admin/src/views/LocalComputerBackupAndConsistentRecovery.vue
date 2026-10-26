@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="业务数据备份与恢复" description="下载整站或商品与图片备份，上传本地包校验，并查看隔离恢复结果。">
+    <AdminPageHeader title="业务数据备份与恢复" description="选择整站或业务模块备份到电脑，上传本地包校验，并查看支持的恢复方式。">
       <template #actions>
         <a :href="consolePath" target="_blank" rel="noopener" class="rounded-md border px-3 py-2 text-sm">打开独立恢复入口</a>
         <button type="button" class="rounded-md border px-3 py-2 text-sm" :disabled="connecting" @click="connectIndependentMaintenanceConsole">重新连接</button>

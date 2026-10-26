@@ -1,14 +1,10 @@
 package service
 
 import (
-	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/ticket"
 	"commerce-platform/internal/repository"
-	"encoding/json"
-	"gorm.io/datatypes"
+
 	"gorm.io/gorm"
-	"strconv"
-	"time"
 )
 
 const customerServiceTicketCategory = "customer_service"
@@ -64,15 +60,7 @@ func (s *TicketService) createTicket(t *ticket.Ticket) error {
 			CustomerServiceRealtimeAudienceBoth,
 			CustomerServiceConversationCreatedPayload{Status: t.Status, AssignedTo: t.AssignedTo},
 		)
-		payload, err := json.Marshal(event.Payload)
-		if err != nil {
-			return err
-		}
-		return s.customerServiceRealtimeOutbox.WithTx(tx).CreateEvent(&outbox.Event{
-			EventKey: event.EventID, EventType: outbox.EventTypeCustomerServiceRealtime,
-			AggregateType: outbox.AggregateTypeCustomerServiceConversation,
-			AggregateID:   strconv.FormatUint(uint64(t.ID), 10), Payload: datatypes.JSON(payload), AvailableAt: time.Now().UTC(),
-		})
+		return enqueueCustomerServiceRealtimeOutboxEvent(s.customerServiceRealtimeOutbox.WithTx(tx), t, event)
 	})
 }
 

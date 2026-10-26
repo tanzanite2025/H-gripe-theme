@@ -101,6 +101,12 @@ const footerRouteSections: readonly FooterRouteSectionDefinition[] = [
     includeRoot: true,
   },
   {
+    id: 'technology',
+    path: '/technology',
+    titleKey: 'footer.menus.technology',
+    titleFallback: 'Technology',
+  },
+  {
     id: 'resources',
     path: '/resources',
     titleKey: 'footer.menus.resources',

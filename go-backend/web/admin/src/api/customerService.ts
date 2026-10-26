@@ -65,9 +65,9 @@ export const customerServiceApi = {
     return requireApiObject(readField(await axios.get(path, { params }), path, 'analytics'), path, 'field "analytics"')
   },
 
-  async listConversations(params: Record<string, any> = {}, suppressGlobalErrorToast = false) {
+  async listConversations(params: Record<string, any> = {}, suppressGlobalErrorToast = false, signal?: AbortSignal) {
     const path = '/api/admin/customer-service/conversations'
-    const response = await axios.get(path, { params, suppressGlobalErrorToast })
+    const response = await axios.get(path, { params, suppressGlobalErrorToast, signal })
     const body = requireApiObject(response.data, path, 'response body')
     const payload = requireApiObject(unwrapApiPayload(response, path), path)
     requireApiArrayField(payload, 'conversations', path)

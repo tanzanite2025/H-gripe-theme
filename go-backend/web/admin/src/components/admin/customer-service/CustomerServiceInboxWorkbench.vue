@@ -90,10 +90,8 @@ import CustomerServiceInboxWorkspace from '@/components/admin/customer-service/C
 import { Button } from '@/components/ui/button'
 import customerServiceApi from '@/api/customerService'
 import { useCustomerServiceInbox } from '@/composables/customerService/useCustomerServiceInbox'
-import {
-  useCustomerServiceNotificationSettings,
-  useCustomerServiceRealtime,
-} from '@/composables/customerService/useCustomerServiceRealtime'
+import { useCustomerServiceRealtime } from '@/composables/customerService/useCustomerServiceRealtime'
+import { useCustomerServiceNotificationSettings } from '@/composables/customerService/useCustomerServiceNotificationSettingsAndQuietHours'
 import { useCustomerServiceTyping } from '@/composables/customerService/useCustomerServiceTyping'
 import { useAuthStore } from '@/stores/auth'
 import { statusDisplayValue } from '@/lib/customerServicePresentation'

@@ -562,10 +562,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
 import { toast } from 'vue-sonner'
 import { Database, ExternalLink, LoaderCircle, Pencil, Plus, RefreshCw, Save, ShieldCheck, Trash2 } from '@lucide/vue'
-import { allCountries } from 'country-region-data'
+import type { CountryData } from 'country-region-data'
 import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import { Button } from '@/components/ui/button'
 import { useRouteTab } from '@/composables/useRouteTab'
@@ -712,16 +712,31 @@ const unresolvedShippingTemplateRegions = ref<string[]>([])
 const shippingTemplateScopeError = ref('')
 const taxRateCoverageError = ref('')
 const editingTaxRateRule = ref<TaxRateRuleDraft | null>(null)
+// Only the coverage and rule tabs need the full global region catalog.
+const taxRateCountryRegionCatalog = shallowRef<CountryData[]>([])
+let taxRateCountryRegionCatalogRequest: Promise<void> | undefined
+const loadTaxRateCountryRegionCatalog = (): Promise<void> => {
+  taxRateCountryRegionCatalogRequest ??= import('country-region-data')
+    .then(({ allCountries }) => {
+      taxRateCountryRegionCatalog.value = allCountries
+    })
+    .catch((error: unknown) => {
+      taxRateCountryRegionCatalogRequest = undefined
+      throw error
+    })
+  return taxRateCountryRegionCatalogRequest
+}
+
 const taxRateRuleCountryOptions = computed<TaxRateRuleCountryOption[]>(() => {
   const enabledScopes = shippingTemplateScopes.value.filter(scope => scope.enabled)
   const countryCodes = new Set(enabledScopes.flatMap(scope => scope.countries))
   if (enabledScopes.some(scope => scope.global)) {
-    for (const [, countryCode] of allCountries) countryCodes.add(countryCode)
+    for (const [, countryCode] of taxRateCountryRegionCatalog.value) countryCodes.add(countryCode)
   }
   return Array.from(countryCodes)
     .map(code => ({
       code,
-      name: allCountries.find(([, countryCode]) => countryCode === code)?.[0] || code,
+      name: taxRateCountryRegionCatalog.value.find(([, countryCode]) => countryCode === code)?.[0] || code,
     }))
     .sort((left, right) => left.name.localeCompare(right.name) || left.code.localeCompare(right.code))
 })
@@ -730,7 +745,7 @@ const selectedTaxRateRuleRegionOptions = computed<TaxRateRuleRegionOption[]>(() 
   const selectedCountryCode = editingTaxRateRule.value?.country
   if (!selectedCountryCode) return []
 
-  const selectedCountry = allCountries.find(([, countryCode]) => countryCode === selectedCountryCode)
+  const selectedCountry = taxRateCountryRegionCatalog.value.find(([, countryCode]) => countryCode === selectedCountryCode)
   return (selectedCountry?.[2] || [])
     .filter(([, regionCode]) => String(regionCode || '').trim() !== '')
     .map(([name, code]) => ({ code: String(code || '').trim().toUpperCase(), name }))
@@ -1062,7 +1077,10 @@ const loadCurrentTaxRateSourceSnapshot = async (): Promise<void> => {
 const loadTaxRateRules = async (): Promise<void> => {
   loadingTaxRateRules.value = true
   try {
-    const response = await axios.get('/api/admin/settings/tax-rates/rules')
+    const [, response] = await Promise.all([
+      loadTaxRateCountryRegionCatalog(),
+      axios.get('/api/admin/settings/tax-rates/rules'),
+    ])
     const payload = response.data?.data || response.data || {}
     const rules = payload.rules || payload.data
     taxRateRules.value = Array.isArray(rules) ? rules : []
@@ -1082,6 +1100,7 @@ const loadTaxRateCoverage = async (): Promise<void> => {
       fetchTaxRateShippingTemplateScopes(),
       axios.get('/api/admin/settings/tax-rates/rules'),
       axios.get('/api/admin/settings/tax-rates/snapshot'),
+      loadTaxRateCountryRegionCatalog(),
     ])
     const rulePayload = extractTaxRateAdminResponsePayload(ruleResponse)
     const ruleRecords = rulePayload.rules || rulePayload.data
@@ -1106,6 +1125,10 @@ const loadTaxRateCoverage = async (): Promise<void> => {
 }
 
 const startCreatingTaxRateRule = (): void => {
+  if (!taxRateCountryRegionCatalog.value.length) {
+    toast.error('国家和州 / 省目录尚未加载，请刷新结算规则后重试')
+    return
+  }
   if (taxRateRuleCountryOptions.value.length === 0) {
     toast.error('请先在启用运费模板中配置明确的国家范围')
     return
@@ -1123,6 +1146,10 @@ const startCreatingTaxRateRule = (): void => {
 }
 
 const startEditingTaxRateRule = (rule: TaxRateRuleView): void => {
+  if (!taxRateCountryRegionCatalog.value.length) {
+    toast.error('国家和州 / 省目录尚未加载，请刷新结算规则后重试')
+    return
+  }
   editingTaxRateRule.value = {
     id: rule.id,
     name: rule.name,

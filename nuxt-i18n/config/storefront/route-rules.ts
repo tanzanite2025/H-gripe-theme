@@ -4,6 +4,7 @@ import {
   type StorefrontHtmlCachePolicy,
 } from './html-cache-policies.js'
 import { htmlRouteCacheStorageBase } from './html-cache-runtime.js'
+import { testReportTabs } from '../../app/utils/pageSubNavigationData.js'
 
 type StorefrontRouteRule = {
   proxy?: string
@@ -64,6 +65,8 @@ const immutableAssetRoutePatterns = [
 // Retired pages have no aliases or redirects and must stay out of sitemap,
 // including when API route catalogs still carry their previous paths.
 export const storefrontRetiredPagePaths: readonly string[] = [
+  '/support/test-report',
+  ...testReportTabs.map(tab => `/support/test-report/${tab.id}`),
   '/guides/tireguides/schwalbe-tire-selector',
   '/guides/spokeguides/brand-wheelset-spoke-specs',
   '/guides/spokeguides/spoke-length-calculator',

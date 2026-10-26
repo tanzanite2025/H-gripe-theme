@@ -1,5 +1,5 @@
 <template>
-  <div class="support-test-report">
+  <div class="technology-test-reports">
     <h1 class="support-page__title support-page__title--sr-only">{{ t('supportTestReport.title') }}</h1>
     
     <TestReportContent :sync-with-url="true" />
@@ -23,7 +23,9 @@ watch(locale, (nextLocale) => {
 })
 
 definePageMeta({
-  layout: 'support',
+  layout: 'products',
+  // Keep editable FAQ content attached while its public route moves to Technology.
+  faqPageId: 'support-test-report',
   footerLabelKey: 'support.nav.testReport',
   footerLabelFallback: 'Test Report',
 })
@@ -54,7 +56,7 @@ useHead(() => ({
   border: 0;
 }
 
-.support-test-report {
+.technology-test-reports {
   margin-top: 0;
 }
 

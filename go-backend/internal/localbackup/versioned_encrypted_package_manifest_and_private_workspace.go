@@ -72,6 +72,7 @@ type Manifest struct {
 	DatabaseSizeBytes                     int64            `json:"database_size_bytes"`
 	CapturedAt                            time.Time        `json:"captured_at"`
 	Scope                                 string           `json:"scope"`
+	SelectedModules                       []string         `json:"selected_modules,omitempty"`
 	Tables                                map[string]int64 `json:"tables"`
 	Files                                 []FileIdentity   `json:"files"`
 	MediaFileCount                        int              `json:"media_file_count"`

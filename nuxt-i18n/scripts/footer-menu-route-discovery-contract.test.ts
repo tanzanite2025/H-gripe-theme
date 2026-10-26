@@ -33,6 +33,11 @@ const sections = createFooterMenusFromRoutes([
   createNormalizedFooterTestRoute('/shop/:slug', 'shop-slug'),
   createNormalizedFooterTestRoute('/shop/:category(.*)*', 'shop-category'),
   createNormalizedFooterTestRoute('/guides', 'guides'),
+  createNormalizedFooterTestRoute('/technology/test-report', 'technology-test-report', {
+    footerLabelKey: 'support.nav.testReport',
+    footerLabelFallback: 'Test Report',
+  }),
+  createNormalizedFooterTestRoute('/support/faqs', 'support-faqs'),
   createNormalizedFooterTestRoute('/tools', 'tools', {
     footerLabelKey: 'toolsNavigation.label',
     footerLabelFallback: 'Tools',
@@ -96,6 +101,11 @@ assert.ok(shopSection, 'SHOP column should remain visible when its category rout
 assert.deepEqual(shopSection.links.map(link => link.to), ['/shop'])
 
 const guidesSection = sections.find(section => section.id === 'guides')
+const technologySection = sections.find(section => section.id === 'technology')
+assert.ok(technologySection, 'TECHNOLOGY must discover the migrated test report')
+assert.deepEqual(technologySection.links.map(link => link.to), ['/technology/test-report'])
+assert.ok(!sections.find(section => section.id === 'support')?.links.some(link => link.to?.includes('test-report')),
+  'SUPPORT must not retain ownership of the migrated test report')
 const toolsSection = sections.find(section => section.id === 'tools')
 assert.ok(toolsSection, 'TOOLS must discover the hub and migrated selector')
 assert.equal(toolsSection.titleLinkTo, '/tools', 'TOOLS title must link to the hub')

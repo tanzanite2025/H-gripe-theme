@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url))
 const adminPort = Number(process.env.VITE_PORT || '9300')
@@ -40,7 +41,19 @@ const adminFontAuthorityPlugin = (): Plugin => ({
 })
 
 export default defineConfig({
-  plugins: [vue(), tailwindcss(), adminFontAuthorityPlugin()],
+  plugins: [
+    vue(),
+    tailwindcss(),
+    adminFontAuthorityPlugin(),
+    (process.env.BUNDLE_ANALYZE === 'true' || process.env.npm_lifecycle_event === 'build:analyze') && visualizer({
+      filename: resolve(projectRoot, 'output/bundle-analysis/admin-client-treemap.html'),
+      title: 'Admin client bundle',
+      projectRoot,
+      gzipSize: true,
+      brotliSize: true,
+      open: false,
+    }),
+  ],
   resolve: {
     alias: {
       '@': resolve(projectRoot, 'src')

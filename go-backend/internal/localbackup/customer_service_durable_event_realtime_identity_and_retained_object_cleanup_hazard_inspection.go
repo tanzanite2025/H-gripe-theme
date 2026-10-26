@@ -167,6 +167,9 @@ func (cfg Configuration) inspectCustomerServiceDurableEventPayloadReferences(ctx
 }
 
 func inspectCustomerServiceRealtimeEventIdentity(ctx context.Context, graph *moduleRecoveryRowDependencyGraph, event *moduleRecoveryDependencyRow) error {
+	if handled, err := inspectAuditedIgnoredLegacyCustomerServiceCreationNotificationPreservation(ctx, graph, event); handled || err != nil {
+		return err
+	}
 	ticketID := moduleRecoveryDurableEventPayloadPositiveID(event, "_payload_ticket_id")
 	if ticketID == "" || event.referenceColumnText("aggregate_type") != outbox.AggregateTypeCustomerServiceConversation || event.referenceColumnText("aggregate_id") != ticketID {
 		recordModuleRecoveryDurableEventIssue(graph, event, "realtime_event_conversation_identity_conflict", "blocking", "实时事件的载荷与聚合会话身份不一致。", false)

@@ -166,6 +166,7 @@ type MegaMenuColumn = {
 }
 
 const separatedColumnSectionIds = new Set<PrimaryMegaNavSection['id']>([
+  'technology',
   'resources',
   'support',
   'company',

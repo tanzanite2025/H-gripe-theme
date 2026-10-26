@@ -184,6 +184,10 @@ func (cfg Configuration) captureSnapshotAndDump(ctx context.Context, directory s
 }
 
 func (cfg Configuration) restoreIsolatedDatabase(ctx context.Context, directory, name string, manifest Manifest) error {
+	return cfg.restoreIsolatedDatabaseWithCreatedIdentityBinding(ctx, directory, name, manifest, nil)
+}
+
+func (cfg Configuration) restoreIsolatedDatabaseWithCreatedIdentityBinding(ctx context.Context, directory, name string, manifest Manifest, bindCreatedDatabaseIdentity func(int64) error) error {
 	if err := cfg.checkPostgreSQLRestoreCapacity(manifest.DatabaseSizeBytes); err != nil {
 		return err
 	}
@@ -207,6 +211,20 @@ func (cfg Configuration) restoreIsolatedDatabase(ctx context.Context, directory,
 	}
 	if _, err = control.ExecContext(ctx, `CREATE DATABASE `+pq.QuoteIdentifier(name)+` WITH TEMPLATE template0 OWNER local_backup_isolated_owner`); err != nil { // #nosec G701 -- Dynamic database, role, table and column identifiers use pq.QuoteIdentifier; data values remain bound parameters.
 		return err
+	}
+	// Bind only after this CREATE succeeds, before pg_restore or module writes.
+	// A failed CREATE must never authorize cleanup of a same-named database.
+	if bindCreatedDatabaseIdentity != nil {
+		var oid int64
+		if err := readDatabaseOID(ctx, control, name, &oid); err != nil {
+			return err
+		}
+		if oid <= 0 {
+			return errors.New("created isolated database identity is unavailable")
+		}
+		if err := bindCreatedDatabaseIdentity(oid); err != nil {
+			return err
+		}
 	}
 	if err := cfg.runPostgreSQLTool(ctx, "pg_restore", name, "--exit-on-error", "--single-transaction", "--no-owner", "--no-privileges", "--no-tablespaces", "--role=local_backup_isolated_owner", filepath.Join(directory, "database.dump")); err != nil {
 		return err

@@ -59,5 +59,7 @@ export interface PageFaqProps {
   maxItems?: number
   /** Whether to show "View All" link */
   showViewAllLink?: boolean
+  /** The automatic route slot owns JSON-LD while the FAQ UI waits for hydration. */
+  renderFaqStructuredData?: boolean
 }
 

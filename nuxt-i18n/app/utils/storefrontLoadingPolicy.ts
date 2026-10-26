@@ -24,6 +24,8 @@ export const STOREFRONT_LOADING_TIERS = {
   ],
   intentOnly: [
     'SidePanel',
+    'AccountSidebarPanel',
+    'AccountAddressesTab',
     'CartDrawer',
     'CheckoutModal',
     'ShopSearchSheet',

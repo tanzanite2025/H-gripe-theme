@@ -237,20 +237,6 @@ func (s *OutboxService) GetEvent(id uint) (*outbox.Event, error) {
 	return s.repo.FindEventByID(id)
 }
 
-func (s *OutboxService) RetryFailedEvent(id uint, note string, retriedAt time.Time) error {
-	if s == nil || s.repo == nil {
-		return repository.ErrOutboxEventNotFound
-	}
-	return s.repo.RetryFailedEvent(id, note, retriedAt)
-}
-
-func (s *OutboxService) IgnoreFailedEvent(id uint, note string, ignoredAt time.Time) error {
-	if s == nil || s.repo == nil {
-		return repository.ErrOutboxEventNotFound
-	}
-	return s.repo.IgnoreFailedEvent(id, note, ignoredAt)
-}
-
 // ResumeUnknownEvent is an explicit reconciliation decision. It is not called
 // by the normal worker because an unknown external result must be verified
 // before the side effect is attempted again.

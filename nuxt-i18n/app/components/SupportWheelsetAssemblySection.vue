@@ -136,7 +136,7 @@
           </p>
           <div class="mt-4">
             <NuxtLink
-              :to="localePath('/support/test-report/tension')"
+              :to="localePath('/technology/test-report/tension')"
               class="premium-button"
             >
               {{ t('testReportAssembly.notes.tensionLink') }}

@@ -40,7 +40,7 @@ class="tz-pill-button-standard-size inline-flex items-center justify-center roun
           {{ t('supportPayment.hero.links.shipping') }}
         </NuxtLink>
         <NuxtLink
-          :to="localePath('/support/test-report')"
+          :to="localePath('/technology/test-report')"
           target="_blank"
           rel="noopener"
           class="tz-pill-button-standard-size inline-flex items-center justify-center rounded-full tz-surface-muted px-4 text-sm font-semibold tz-text-secondary shadow-[0_8px_20px_rgba(20,32,43,0.1)] transition-colors hover:tz-surface-subtle hover:tz-text-primary"

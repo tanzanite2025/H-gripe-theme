@@ -395,7 +395,7 @@ const goToWarranty = async () => {
 }
 
 const goToTechnicalTension = async () => {
-  await router.push(localePath('/support/test-report/tension'))
+  await router.push(localePath('/technology/test-report/tension'))
 }
 
 const goToSampleAssembly = () => {

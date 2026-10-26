@@ -36,6 +36,11 @@ type Task struct {
 	DownloadRequests                             int                                                    `json:"download_requests"`
 	WorkCopyExpired                              bool                                                   `json:"work_copy_expired"`
 	Manifest                                     *Manifest                                              `json:"manifest,omitempty"`
+	SelectedBackupModules                        []string                                               `json:"selected_backup_modules,omitempty"`
+	SelectedModuleRestorePreview                 *SelectedBusinessModuleIsolatedRestorePreview          `json:"selected_module_restore_preview,omitempty"`
+	SelectedCustomerServiceRestoreChoice         *SelectedCustomerServiceModuleSavedRestoreChoice       `json:"selected_customer_service_restore_choice,omitempty"`
+	SelectedCustomerServiceCandidateRehearsal    *SelectedBusinessModuleIsolatedRestorePreview          `json:"selected_customer_service_candidate_rehearsal,omitempty"`
+	SelectedModuleDisposableStage                *SelectedBusinessModuleDisposableStageIdentity         `json:"selected_module_disposable_stage,omitempty"`
 	PreviewTargetFingerprint                     string                                                 `json:"preview_target_fingerprint,omitempty"`
 	PreviewTargetTables                          map[string]int64                                       `json:"preview_target_tables,omitempty"`
 	StageDatabase                                string                                                 `json:"stage_database,omitempty"`
@@ -86,6 +91,21 @@ func NewManager(cfg Configuration) (*Manager, error) {
 		return nil, err
 	}
 	for _, task := range tasks {
+		if task.SelectedModuleDisposableStage != nil {
+			cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			cleanupErr := manager.cleanupSelectedBusinessModuleDisposableStageByPersistedIdentity(cleanupCtx, task)
+			cancel()
+			if cleanupErr == nil {
+				cleanupErr = manager.cleanupSelectedBusinessModuleDisposableWorkspaceDirectories(task)
+			}
+			if cleanupErr != nil {
+				task.State, task.Phase, task.Error = "interrupted", "selected_module_disposable_cleanup_requires_inspection", cleanupErr.Error()
+				if err := manager.saveTask(task); err != nil {
+					_ = manager.Close()
+					return nil, err
+				}
+			}
+		}
 		if taskHasProductCatalogContinuouslyStoppedSwitchJournal(task) {
 			if err := manager.retainStoppedProductCatalogSwitchForExplicitRollbackAfterRestart(task); err != nil {
 				_ = manager.Close()
@@ -539,6 +559,12 @@ func (manager *Manager) VerifyUploadedPackage(id string) (*Task, error) {
 
 func (manager *Manager) verifyAndPreview(ctx context.Context, task *Task) error {
 	cfg := manager.Configuration
+	if err := manager.cleanupSelectedBusinessModuleDisposableStageByPersistedIdentity(ctx, task); err != nil {
+		return err
+	}
+	task.SelectedModuleRestorePreview = nil
+	task.SelectedCustomerServiceRestoreChoice = nil
+	task.SelectedCustomerServiceCandidateRehearsal = nil
 	if err := cfg.checkWorkspaceCapacity(64 << 20); err != nil {
 		return err
 	}
@@ -570,6 +596,9 @@ func (manager *Manager) verifyAndPreview(ctx context.Context, task *Task) error 
 	}
 	if manifest.Scope == productCatalogBackupScope {
 		return manager.restoreProductCatalogIntoIsolatedTargetClone(ctx, task, extracted)
+	}
+	if manifest.Scope == selectedBusinessModulesBackupScope {
+		return manager.validateUploadedSelectedBusinessModulePackage(task, extracted)
 	}
 	if err := cfg.validateWholeApplicationCompanyStaticPackage(manifest, extracted); err != nil {
 		return err

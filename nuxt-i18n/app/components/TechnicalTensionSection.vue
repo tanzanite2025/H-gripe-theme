@@ -18,7 +18,7 @@
           class="tension-image rounded-xl max-w-lg w-full"
         />
         <NuxtLink
-          :to="localePath('/support/test-report/wheelset-assembly')"
+          :to="localePath('/technology/test-report/wheelset-assembly')"
           class="premium-button tension-link"
         >
           {{ t('testReportTension.assemblyLink') }}

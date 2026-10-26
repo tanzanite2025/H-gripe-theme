@@ -4,7 +4,7 @@
       <slot />
     </main>
 
-    <LazyAppFooter :hydrate-on-visible="footerHydrationOptions" />
+    <StorefrontFooterWithLocaleSafeDeferredHydration />
     <GradientDockMenuDeferred />
     <BehaviorAttributionBootstrapDeferred />
   </div>
@@ -26,13 +26,11 @@ import { useSeoSettings } from '~/composables/useSeoSettings'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { normalizeSocialLinkItems, type SocialLinkViewModel } from '~/utils/socialLinks'
-import { STOREFRONT_FOOTER_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
 
 const config = useRuntimeConfig()
 const requestUrl = useRequestURL()
 const auth = useAuth()
 const authUser = computed<Record<string, unknown> | null>(() => (auth.user.value as Record<string, unknown> | null) ?? null)
-const footerHydrationOptions = STOREFRONT_FOOTER_HYDRATION_OPTIONS
 
 const { siteSettings: resolvedSettings } = useSiteSettings()
 

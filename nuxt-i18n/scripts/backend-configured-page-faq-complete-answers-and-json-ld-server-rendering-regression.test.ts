@@ -41,9 +41,14 @@ for (const locale of ['en', 'zh_cn']) {
     '/tools/dynamic-tire-pressure-calculator',
     '/tools/tire-rim-width-compatibility-engine',
     '/tools/schwalbe-tire-selector',
+    '/technology/test-report',
+    '/technology/test-report/tension',
   ]) {
-    const backendFaqUrl = new URL('/api/v1/content/faq-pages/by-route', faqBackendOrigin)
-    backendFaqUrl.searchParams.set('route_path', routePath)
+    const usesStableTestReportFaqIdentity = routePath.startsWith('/technology/test-report')
+    const backendFaqUrl = new URL(usesStableTestReportFaqIdentity
+      ? '/api/v1/content/faq-pages/support-test-report'
+      : '/api/v1/content/faq-pages/by-route', faqBackendOrigin)
+    if (!usesStableTestReportFaqIdentity) backendFaqUrl.searchParams.set('route_path', routePath)
     backendFaqUrl.searchParams.set('locale', locale)
     const localizedRoutePath = `${locale === 'en' ? '' : `/${locale}`}${routePath}`
     const [backendResponse, storefrontResponse] = await Promise.all([

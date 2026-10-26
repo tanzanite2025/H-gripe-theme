@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"commerce-platform/internal/api/middleware"
+	"commerce-platform/internal/domain/audit"
 	"commerce-platform/internal/domain/auth"
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/domain/user"
@@ -130,7 +131,7 @@ func createRollbackOnlyPostgreSQLDashboardBusinessFollowUpDatabase(t *testing.T)
 	require.NoError(t, transaction.Exec("CREATE SCHEMA "+schemaName).Error)
 	// No public fallback: every test mutation must resolve inside this schema.
 	require.NoError(t, transaction.Exec("SET LOCAL search_path TO "+schemaName).Error)
-	require.NoError(t, transaction.AutoMigrate(&outbox.Event{}, &user.User{}))
+	require.NoError(t, transaction.AutoMigrate(&outbox.Event{}, &user.User{}, &audit.AuditLog{}))
 	for _, statement := range []string{
 		`CREATE TABLE orders (id BIGINT PRIMARY KEY, order_number TEXT, deleted_at TIMESTAMPTZ)`,
 		`CREATE TABLE tickets (id BIGINT PRIMARY KEY, ticket_number TEXT, assigned_to BIGINT, deleted_at TIMESTAMPTZ)`,
@@ -248,8 +249,31 @@ func TestDashboardOutboxPostgreSQLAuthenticatedHTTPFailureRetryDispatchAndRecove
 	retryPath := fmt.Sprintf("/api/admin/ops/outbox/failures/%d/retry", event.ID)
 	require.Equal(t, http.StatusForbidden, requestAuthenticatedBusinessFollowUp(http.MethodPost, retryPath, auth.RoleSupport, true).Code)
 	require.Equal(t, http.StatusForbidden, requestAuthenticatedBusinessFollowUp(http.MethodPost, retryPath, auth.RoleAdmin, false).Code)
+	var successfulDispositionAudits int64
+	require.NoError(t, db.Model(&audit.AuditLog{}).Where("resource = ? AND resource_id = ? AND status = ?", "outbox_event", event.ID, "success").Count(&successfulDispositionAudits).Error)
+	require.Zero(t, successfulDispositionAudits)
 	receiverRecovered.Store(true)
-	require.Equal(t, http.StatusOK, requestAuthenticatedBusinessFollowUp(http.MethodPost, retryPath, auth.RoleAdmin, true).Code)
+	retryResponse := requestAuthenticatedBusinessFollowUp(http.MethodPost, retryPath, auth.RoleAdmin, true)
+	require.Equal(t, http.StatusOK, retryResponse.Code)
+	var retryResult struct {
+		Data outbox.FailureDispositionResult `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(retryResponse.Body.Bytes(), &retryResult))
+	require.Equal(t, event.ID, retryResult.Data.EventID)
+	require.NotZero(t, retryResult.Data.AuditID)
+	var retryAudit audit.AuditLog
+	require.NoError(t, db.First(&retryAudit, retryResult.Data.AuditID).Error)
+	require.EqualValues(t, 1, retryAudit.UserID, "The signed administrator identity must own the disposition")
+	require.Equal(t, event.ID, retryAudit.ResourceID)
+	require.Equal(t, "success", retryAudit.Status)
+	var receipt outbox.FailureDispositionAuditReceipt
+	require.NoError(t, json.Unmarshal([]byte(retryAudit.NewValue), &receipt))
+	require.Equal(t, outbox.FailureDispositionAuditContract, receipt.Contract)
+	require.Equal(t, "retry", receipt.Operation)
+	require.Equal(t, outbox.EventStatusPending, receipt.Event.Status)
+	require.Equal(t, "postgresql_complete_row_jsonb_sha256_v1", receipt.Event.RowFingerprintFormat)
+	require.NoError(t, db.Model(&audit.AuditLog{}).Where("resource = ? AND resource_id = ? AND status = ?", "outbox_event", event.ID, "success").Count(&successfulDispositionAudits).Error)
+	require.EqualValues(t, 1, successfulDispositionAudits)
 	require.Zero(t, *readAuthenticatedBusinessFollowUpSnapshot(auth.RoleSupport).ActionCenter.OutboxFailures.TotalCount)
 	requeuedEvent, err := repo.FindEventByID(event.ID)
 	require.NoError(t, err)

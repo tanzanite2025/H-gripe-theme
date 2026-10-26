@@ -20,6 +20,7 @@
     "whyThisName": "为什么叫这个名字"
   },
   "menus": {
+    "technology": "技术",
     "products": "Products",
     "support": "Support",
     "company": "Company",

@@ -60,6 +60,10 @@ type ProductCatalogIsolatedRecoveryResult struct {
 }
 
 func isAllowedBackupFileForScope(scope, filename string) bool {
+	if scope == selectedBusinessModulesBackupScope {
+		return filename == selectedBusinessModulesRowsFilename ||
+			(strings.HasPrefix(filename, "media/") && safePackagePath(filename)) || isAllowedCompanyStaticPackagePath(filename)
+	}
 	if scope == "whole_application" {
 		return safePackagePath(filename) || isAllowedCompanyStaticPackagePath(filename)
 	}

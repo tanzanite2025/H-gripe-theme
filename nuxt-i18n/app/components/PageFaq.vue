@@ -144,6 +144,7 @@ const props = withDefaults(defineProps<PageFaqProps>(), {
   headingTag: 'h3',
   theme: 'light',
   showViewAllLink: false,
+  renderFaqStructuredData: true,
 })
 
 const { t, locale } = useI18n()
@@ -161,12 +162,12 @@ const {
   hasMoreItems,
 } = await usePageFaq(props)
 
-const pageFaqJsonLd = computed(() => createFaqPageJsonLd({
+const pageFaqJsonLd = computed(() => props.renderFaqStructuredData ? createFaqPageJsonLd({
   canonicalUrl: canonicalUrl.value,
   pageId: props.pageId,
   inLanguage: getStorefrontLocaleLanguageTag(locale.value),
   visibleQuestionsAndAnswers: displayItems.value,
-}))
+}) : null)
 
 useHead(() => ({
   script: pageFaqJsonLd.value ? [createSeoJsonLdScript(pageFaqJsonLd.value)] : [],

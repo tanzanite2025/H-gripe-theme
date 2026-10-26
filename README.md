@@ -263,7 +263,8 @@ If a frontend build fails immediately after checkout, run `npm install` in that 
 - 4PX service catalog and gateway integration specification: `docs/design/4px/4px-logistics-hub-integration-architecture.md`
 - Customer service workbench deep interaction bugs and remediation spec: `docs/design/customer-service-workbench-deep-bugs-and-interaction-spec.md`
 - Admin dashboard command center and operational intelligence architecture: `docs/design/admin-dashboard-command-center-architecture.md`
-- Nuxt storefront architecture and data link risk audit report: `docs/audit/nuxt-frontend-architecture-and-data-link-risk-report.md`
+- Nuxt storefront loading, hydration, SSR resource hints and production bundler architecture: [storefront loading architecture](nuxt-i18n/config/storefront/storefront-loading-hydration-and-production-bundler-architecture.md)
+- Frontend bundle measurements and optimization history: [bundle analysis report](frontend-bundle-tree-shaking-analysis-and-safe-optimization-guide.md)
 - Historical reports: `docs/archive/`
 
 Historical reports are context only. Prefer the current code, this README, and area-specific README files when documents conflict.

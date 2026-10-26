@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isCustomerServiceWithinQuietHours } from './useCustomerServiceRealtime'
+import { isCustomerServiceWithinQuietHours } from './useCustomerServiceNotificationSettingsAndQuietHours'
 
 describe('customer-service quiet hours', () => {
   it('handles a normal daytime interval', () => {

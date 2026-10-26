@@ -60,7 +60,8 @@
       </nav>
 
       <div class="account-sidebar__content">
-        <AccountPointsTab
+        <LazyAccountPointsTab
+          v-if="openedAccountTabIds.has('points')"
           v-show="activeTab === 'points'"
           :level-name="String(levelName || '—')"
           :points="pointsNumber"
@@ -71,29 +72,34 @@
           @close="closeSidebar"
         />
 
-        <AccountOrdersTab
+        <LazyAccountOrdersTab
+          v-if="openedAccountTabIds.has('orders')"
           v-show="activeTab === 'orders'"
           :active="activeTab === 'orders'"
           @close="closeSidebar"
         />
 
-        <AccountWishlistTab
+        <LazyAccountWishlistTab
+          v-if="openedAccountTabIds.has('wishlist')"
           v-show="activeTab === 'wishlist'"
           :active="activeTab === 'wishlist'"
           @close="closeSidebar"
         />
 
-        <AccountCartTab
+        <LazyAccountCartTab
+          v-if="openedAccountTabIds.has('cart')"
           v-show="activeTab === 'cart'"
           @close="closeSidebar"
         />
 
-        <AccountAddressesTab
+        <LazyAccountAddressesTab
+          v-if="openedAccountTabIds.has('addresses')"
           v-show="activeTab === 'addresses'"
           @close="closeSidebar"
         />
 
-        <AccountReferralTab
+        <LazyAccountReferralTab
+          v-if="openedAccountTabIds.has('referral')"
           v-show="activeTab === 'referral'"
           :active="activeTab === 'referral'"
         />
@@ -114,13 +120,7 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useI18n } from '#imports'
-import AccountAddressesTab from '~/components/account/AccountAddressesTab.vue'
-import AccountCartTab from '~/components/account/AccountCartTab.vue'
 import AccountLoginPrompt from '~/components/account/AccountLoginPrompt.vue'
-import AccountPointsTab from '~/components/account/AccountPointsTab.vue'
-import AccountOrdersTab from '~/components/account/AccountOrdersTab.vue'
-import AccountReferralTab from '~/components/account/AccountReferralTab.vue'
-import AccountWishlistTab from '~/components/account/AccountWishlistTab.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useCart } from '~/composables/useCart'
 import { useMembership } from '~/composables/useMembership'
@@ -147,6 +147,11 @@ const sidePanel = inject<{ closeLeft?: () => void }>('sidePanel', {})
 const showAuthModal = ref(false)
 const authMode = ref<'login' | 'register'>('login')
 const activeTab = ref<AccountTabId>('points')
+const openedAccountTabIds = ref(new Set<AccountTabId>(['points']))
+
+watch(activeTab, (activeAccountTabId) => {
+  openedAccountTabIds.value.add(activeAccountTabId)
+})
 
 const tabs: Array<{ id: AccountTabId; icon: string; labelKey: string; label: string }> = [
   { id: 'points', icon: 'lucide:gem', labelKey: 'accountSidebar.tabs.points', label: 'Points' },

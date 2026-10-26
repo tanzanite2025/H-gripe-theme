@@ -174,6 +174,12 @@ func (manager *Manager) ExpireWorkCopies(ctx context.Context) error {
 		if err := manager.requireCustomerServicePersistentCandidateDiscarded(task.ID); err != nil {
 			return err
 		}
+		if err := manager.cleanupSelectedBusinessModuleDisposableStageByPersistedIdentity(ctx, task); err != nil {
+			return err
+		}
+		if err := manager.cleanupSelectedBusinessModuleDisposableWorkspaceDirectories(task); err != nil {
+			return err
+		}
 		if task.StageDatabase != "" && task.State != "completed" {
 			if taskHasProductCatalogContinuouslyStoppedSwitchJournal(task) {
 				if err := manager.cleanupVerifiedRolledBackStoppedProductSwitchMediaVolumes(ctx, task); err != nil {

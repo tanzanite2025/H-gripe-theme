@@ -13,7 +13,7 @@
     
     <SidePanel>
       <template #left>
-        <AccountSidebarPanel />
+        <LazyAccountSidebarPanel />
       </template>
     </SidePanel>
 
@@ -29,7 +29,6 @@ import { computed, onMounted, ref } from 'vue'
 import { useHead, useI18n, useRequestURL, useRuntimeConfig } from '#imports'
 import SiteHeader from '~/components/SiteHeader.vue'
 import SidePanel from '~/components/SidePanel.vue'
-import AccountSidebarPanel from '~/components/account/AccountSidebarPanel.vue'
 import { useAuth } from '~/composables/useAuth'
 import { useProductCategories } from '~/composables/useProductCategories'
 import { useSiteSettings } from '~/composables/usePublicSettings'

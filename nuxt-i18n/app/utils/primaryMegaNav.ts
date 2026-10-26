@@ -1,4 +1,4 @@
-export type PrimaryMegaNavId = 'products' | 'resources' | 'support' | 'company' | 'tools' | 'guides'
+export type PrimaryMegaNavId = 'products' | 'technology' | 'resources' | 'support' | 'company' | 'tools' | 'guides'
 
 export type PrimaryMegaNavCardSize = 'feature' | 'wide' | 'standard' | 'compact'
 
@@ -37,8 +37,8 @@ export interface PrimaryMegaNavSection {
   /**
    * Canonical path prefixes that make a route belong to this top-level section.
    * Keep explicit route families in their own section: /resources stays in
-   * Resources, /guides stays in Guides, /support stays in Support, and
-   * /company stays in Company.
+   * Resources, /technology stays in Technology, /guides stays in Guides,
+   * /support stays in Support, and /company stays in Company.
    */
   routePrefixes: string[]
   cards: PrimaryMegaNavCard[]
@@ -106,6 +106,24 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         description: 'Browse complete wheel products and product listings.',
         to: '/shop',
         icon: 'lucide:shopping-bag',
+        size: 'feature',
+        accent: 'emerald',
+      },
+    ],
+  },
+  {
+    id: 'technology',
+    labelKey: 'footer.menus.technology',
+    labelFallback: 'Technology',
+    routePrefixes: ['/technology'],
+    cards: [
+      {
+        id: 'test-report',
+        labelKey: 'support.nav.testReport',
+        labelFallback: 'Test Report',
+        description: 'Rim and wheelset testing, spoke tension, and assembly references.',
+        to: '/technology/test-report',
+        icon: 'lucide:file-check-2',
         size: 'feature',
         accent: 'emerald',
       },
@@ -215,16 +233,6 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
         to: '/support/warranty-check',
         icon: 'lucide:badge-check',
         size: 'standard',
-        accent: 'emerald',
-      },
-      {
-        id: 'test-report',
-        labelKey: 'support.nav.testReport',
-        labelFallback: 'Test Report',
-        description: 'Test reports and references.',
-        to: '/support/test-report',
-        icon: 'lucide:file-check-2',
-        size: 'compact',
         accent: 'emerald',
       },
     ],

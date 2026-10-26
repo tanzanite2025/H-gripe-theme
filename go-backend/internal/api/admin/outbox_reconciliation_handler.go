@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"commerce-platform/internal/domain/outbox"
 	"commerce-platform/internal/pkg/response"
@@ -164,21 +165,21 @@ func (h *OutboxReconciliationHandler) GetFailure(c *gin.Context) {
 }
 
 func (h *OutboxReconciliationHandler) RetryFailure(c *gin.Context) {
-	h.mutateFailure(c, "retry", func(id uint, note string, now time.Time) error {
-		return h.outboxService.RetryFailedEvent(id, note, now)
-	})
+	h.mutateFailedEventWithRequiredTransactionalAudit(c, "retry")
 }
 
 func (h *OutboxReconciliationHandler) IgnoreFailure(c *gin.Context) {
-	h.mutateFailure(c, "ignore", func(id uint, note string, now time.Time) error {
-		return h.outboxService.IgnoreFailedEvent(id, note, now)
-	})
+	h.mutateFailedEventWithRequiredTransactionalAudit(c, "ignore")
 }
 
-func (h *OutboxReconciliationHandler) mutateFailure(c *gin.Context, operation string, mutate func(uint, string, time.Time) error) {
+func (h *OutboxReconciliationHandler) mutateFailedEventWithRequiredTransactionalAudit(c *gin.Context, operation string) {
 	startedAt := adminAuditStartedAt()
 	if h == nil || h.outboxService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "outbox service is unavailable"})
+		return
+	}
+	if c.GetUint("user_id") == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "an authenticated operator is required"})
 		return
 	}
 	id, ok := parseOutboxEventID(c)
@@ -186,32 +187,33 @@ func (h *OutboxReconciliationHandler) mutateFailure(c *gin.Context, operation st
 		return
 	}
 	var req outboxReconciliationRequest
-	if err := c.ShouldBindJSON(&req); err != nil || len(strings.TrimSpace(req.Note)) < 3 {
+	if err := c.ShouldBindJSON(&req); err != nil || utf8.RuneCountInString(strings.TrimSpace(req.Note)) < 3 || utf8.RuneCountInString(strings.TrimSpace(req.Note)) > 2000 {
 		recordAdminAudit(h.auditRecorder, c, adminAuditEvent{StartedAt: startedAt, Action: adminAuditActionReconcile, Resource: "outbox_event", ResourceID: id, Status: adminAuditStatusFailed, ErrorMessage: "a reconciliation note is required"})
-		c.JSON(http.StatusBadRequest, gin.H{"error": "a reconciliation note is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "a reconciliation note of 3 to 2000 characters is required"})
 		return
 	}
 	note := strings.TrimSpace(req.Note)
 	now := time.Now().UTC()
-	if err := mutate(id, note, now); err != nil {
-		recordAdminAudit(h.auditRecorder, c, adminAuditEvent{StartedAt: startedAt, Action: adminAuditActionReconcile, Resource: "outbox_event", ResourceID: id, Status: adminAuditStatusFailed, ErrorMessage: err.Error(), NewValue: map[string]string{"operation": operation, "note": note}})
+	actorAudit := newAdminAuditLog(c, adminAuditEvent{StartedAt: startedAt})
+	result, err := h.outboxService.ReconcileFailedEventWithTransactionalAudit(c.Request.Context(), id, operation, note, now, actorAudit)
+	if err != nil {
+		_ = recordAdminAudit(h.auditRecorder, c, adminAuditEvent{StartedAt: startedAt, Action: adminAuditActionReconcile, Resource: "outbox_event", ResourceID: id, Status: adminAuditStatusFailed, ErrorMessage: "outbox disposition did not commit", NewValue: map[string]string{"operation": operation, "note": note}})
 		if errors.Is(err, repository.ErrOutboxEventNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "outbox event not found"})
 			return
 		}
 		if errors.Is(err, repository.ErrOutboxInvalidTransition) {
-			c.JSON(http.StatusConflict, gin.H{"error": "outbox event is no longer an actionable failure"})
+			c.JSON(http.StatusConflict, gin.H{"error": "outbox event state changed or requires execution reconciliation"})
+			return
+		}
+		if errors.Is(err, repository.ErrOutboxDispositionAuditWrite) {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "outbox disposition was rolled back because its audit record could not be saved"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update outbox event"})
 		return
 	}
-	recordAdminAudit(h.auditRecorder, c, adminAuditEvent{StartedAt: startedAt, Action: adminAuditActionReconcile, Resource: "outbox_event", ResourceID: id, Status: adminAuditStatusSuccess, NewValue: map[string]string{"operation": operation, "note": note}})
-	status := outbox.EventStatusPending
-	if operation == "ignore" {
-		status = outbox.EventStatusIgnored
-	}
-	response.Success(c, gin.H{"id": id, "status": status, "updated_at": now})
+	response.Success(c, result)
 }
 
 func isFailedOutboxStatus(status string) bool {

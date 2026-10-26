@@ -1,13 +1,15 @@
-# Storefront route policy and SSR HTML cache
+# Storefront loading, route policy and SSR HTML cache
 
 这个目录是用户端 Nuxt storefront 的路由策略中心，包含页面级 SSR HTML 缓存策略、API 代理规则、静态资源缓存头、i18n 本地化路由规则和 URL Management 重定向规则。
+
+加载与构建的长期约束见 [Nuxt 用户端加载、延迟激活与生产构建架构](storefront-loading-hydration-and-production-bundler-architecture.md)：包括 Nuxt/Vite/Rollup/Rolldown 分层、实际 builder 版本、SSR 与 CSR 差异、异步 loader 提前下载、FAQ 结构化数据归属及框架升级复验。本文维护缓存策略，历史体积见[构建分析报告](../../../frontend-bundle-tree-shaking-analysis-and-safe-optimization-guide.md)。
 
 长期约束：不要把新的页面缓存规则继续堆回 `nuxt.config.ts`。所有用户端公开页面的缓存策略，必须先在这里声明，再由 `route-rules.ts` 转成 Nuxt/Nitro `routeRules`。
 
 ## 商品路由和缓存说明
 
 正式商品 permalink 是扁平的 `/products/:slug`，分类路径是层级化的
-`/shop/...`，详见 `../../../docs/seo/ECOMMERCE_URL_ARCHITECTURE.md`。
+`/shop/...`，详见 [电商 URL 架构](../../../docs/design/seo/ECOMMERCE_URL_ARCHITECTURE.md)。
 
 `/shop/:slug` 只匹配单级分类；匹配不到分类时返回 404，不查询商品，也不
 自动 301 到 `/products/:slug`。站点尚未运营，不生成商品旧 alias。未来如
@@ -35,6 +37,10 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。指南页、政策页等�
   - 把 `html-cache-policies.ts` 中的策略转换为 Nuxt/Nitro `routeRules`。
   - 统一处理 i18n 语言前缀路由。
   - 统一处理 `/api/**` 代理、静态资源长缓存、URL Management 重定向。
+
+- `public-client-entry-javascript-dependency-boundary-plugin.ts`
+  - 在生产构建的 `writeBundle` 检查全局浏览器入口的最终静态依赖。
+  - 阻止账户、结账及指定重依赖重新进入所有访客的必需下载链路；不替代路由、资源提示与浏览器请求验证。
 
 - `../../server/plugins/html-cache-storage.server.ts`
   - 运行时读取 `NUXT_HTML_CACHE_*` 和兼容的 `REDIS_*` 环境变量。
@@ -90,21 +96,22 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。指南页、政策页等�
 
 说明：`/shop/**` 是分类层级，不得套用 `/products/**` 的商品详情缓存契约。
 
-### 语言首页
+### 首页和语言首页
 
-- 路由：语言前缀首页，例如 `/fr`、`/zh_cn`
-- fresh TTL：300 秒
-- stale TTL：3600 秒
+- 路由：`/` 以及语言前缀首页，例如 `/fr`、`/zh_cn`
+- HTML：`no-store`，不进入 Nitro HTML cache
 
-说明：根路径 `/` 不缓存，因为它可能根据 i18n cookie 进行语言跳转，缓存后会污染不同用户的语言入口。
+说明：根路径可能根据 i18n cookie 跳转；首页 HTML 还包含本次构建的资源哈希。缓存旧首页会在发布后继续引用已移除的 `/_nuxt/` 文件。此前语言首页的 300/3600 秒策略已移除，不能按旧文档恢复。hashed 资源仍可长期缓存，其他公开内容页也仍可缓存；发布时需清理旧 HTML cache 或保留其引用的旧资源，保证版本一致。
 
 ### 内容页
 
-- 路由：`/blog/**`、`/guides/**`、`/picture-warehouse`、`/faq`
+- 路由：`/resources/blog/**`、`/guides/**`、`/resources/picture-warehouse/**`、`/tools`，以及对应语言前缀
 - fresh TTL：3600 秒
 - stale TTL：86400 秒
 
 说明：内容页变化频率低于商品库存/价格，适合更长缓存。
+
+`/faq` 虽保留在策略声明中，但最终 routeRules 将它 301 到 `/support/faqs`，不是独立的缓存内容页。路由重命名后应以 `route-rules.ts` 的最终规则为准。
 
 ### 稳定政策和公司页面
 
@@ -116,15 +123,27 @@ Nuxt SSR 页面在高流量时会消耗 Node.js CPU。指南页、政策页等�
 
 ## 当前明确 no-store 的页面
 
-- `/`
+- `/` 以及所有语言首页
+- `/products/**`
 - `/shop`
-- `/membershipandpoints`
+- `/resources/membershipandpoints/**`
+- `/resources/workbench`
+- `/tools/schwalbe-tire-selector`
+- `/tools/brand-wheelset-spoke-specs`
 - `/tools/spoke-length-calculator`
 - `/tools/dynamic-tire-pressure-calculator`
+- `/tools/freehub-cassette-fitment-engine`
+- `/tools/tire-rim-width-compatibility-engine`
+- `/tools/tire-size-marking-converter`
+- `/tools/valve-length-fitment-calculator`
+- `/tools/spoke-stress-relief-mechanics`
 - `/tools/spoke-lacing-topology-simulator`
-- `/support/test-report`
+- `/technology/test-report` 和 `/technology/test-report/**`
 - `/support/warranty-check`
 - `/api/**`
+- `/_internal/**`
+
+页面规则同时应用于相应语言前缀。上表由 `storefrontNoStorePagePaths` 和 `route-rules.ts` 管理；退役路由还会显式设置 `cache: false`，防止继承父级内容缓存。
 
 说明：
 
@@ -202,12 +221,12 @@ STOREFRONT_HTML_CACHE_PURGE_DEBOUNCE_MS=500
 | 页面范围 | SSR HTML 中的数据源 | 当前失效责任 |
 | --- | --- | --- |
 | `/products/**` | Go 商品详情、商品媒体、SKU 等公开数据 | 不缓存 HTML；购物车和结账 API 实时校验价格、配置和库存 |
-| `/blog/**` | Go 文章列表和文章详情，失败时回退本地 mock | 文章写操作触发 HTML purge |
+| `/resources/blog/**` | Go 文章列表和文章详情 | 文章写操作触发 HTML purge |
 | `/support/faqs` 和各页面 `PageFaq` | Go FAQ；路由和页面壳由 storefront route manifest 同步 | FAQ 写操作、排序操作和 FAQ 路由同步触发 HTML purge |
 | `/guides/**` | 静态指南内容 + `PageFaq`；商品搜索抽屉是用户点击后才请求 API | FAQ 写操作触发 HTML purge；点击后搜索结果不进 HTML cache |
 | `/company/**` | 静态公司内容 + `PageFaq` | FAQ 写操作触发 HTML purge；公司静态文案变更需要重新构建部署 |
-| `/picture-warehouse` | SSR 只输出页面壳；图片库列表、评论和上传在客户端挂载或交互后请求 API | showcase 数据不进 SSR HTML cache；无需触发 HTML purge |
-| `/faq` | Nuxt legacy alias 指向 FAQ 汇总页 | 路由 manifest 变更或 FAQ 写操作触发相应 purge |
+| `/resources/picture-warehouse/**` | SSR 只输出页面壳；图片库列表、评论和上传在客户端挂载或交互后请求 API | showcase 数据不进 SSR HTML cache；无需触发 HTML purge |
+| `/faq` | routeRules 301 到 FAQ 汇总页 | 目标页面 FAQ 写操作触发 HTML purge |
 
 FAQ 问答始终来自 Go 后台。前端用 `useStorefrontFaqAsyncDataWithLastSuccessfulResponse`
 保留最多 40 个成功响应，按语言及页面键隔离，在当前 Nuxt 应用内复用 5 分钟；
@@ -242,6 +261,8 @@ FAQ 的加载、失败占位及桌面／手机互斥布局有首屏内联 CSS，
 - 修改 `server/routes/_internal/html-cache/purge.post.ts` 的 purge 逻辑。
 - 修改 Go 后端 `storefront_html_cache_invalidator.go` 或任何自动触发 HTML cache purge 的位置。
 
+涉及延迟加载、SSR 资源提示、FAQ head、页脚语言切换或构建引擎时，同时更新[加载架构](storefront-loading-hydration-and-production-bundler-architecture.md)，并执行其中相应的生产验证。
+
 如果代码改了但文档没改，默认视为未完成。
 
 ## 验证建议
@@ -260,6 +281,7 @@ npm run smoke:html-cache
 - `check:html-cache` 是否通过。
 - Nitro 产物中是否包含目标 `routeRules`。
 - `/shop`、`/api/**`、`/_internal/**` 仍然是 `no-store`。
+- `/`、`/fr`、`/zh_cn` 等所有语言首页的最终规则均不含 Nitro HTML cache，实际响应带有 `no-store`；现有脚本不覆盖每个语言首页，应额外核对。
 - `/products/**` 和各语言前缀商品详情页必须保持 `no-store`。
 - `/shop/**` 只作为分类路由处理，不得被误判为商品详情缓存。
 - purge 端点产物仍然按 `/cache/html` 列 key、删 key，并返回 `purgedKeys`。

@@ -183,7 +183,7 @@
 			<div v-else class="flex flex-col gap-0">
 				<div class="site-header-mobile-surface -mx-4 -mt-2 flex flex-col px-4 pt-2 pb-0">
 
-				<!-- 第一行：左侧 Shop 图标、居中 Logo、右侧工具图标区 -->
+				<!-- 第一行：左侧 Shop、Tools、Guides 图标，居中 Logo，右侧搜索与语言。 -->
 				<div ref="mobileTopbarRef" class="site-header-mobile-topbar grid grid-cols-3 items-center px-1">
 					<div class="site-header-mobile-shop-slot flex items-center justify-start">
 						<button
@@ -214,6 +214,21 @@
 							@keydown.down.prevent="openMegaNav(mobileToolsSection.id)"
 						>
 							<Icon name="lucide:wrench" class="h-5 w-5" aria-hidden="true" />
+						</button>
+						<button
+							v-if="mobileGuidesSection"
+							type="button"
+							class="site-header-mobile-guides-trigger"
+							:class="{ 'site-header-mobile-guides-trigger--active': currentMegaNavId === mobileGuidesSection.id }"
+							:aria-controls="megaPanelId"
+							:aria-expanded="activeMegaNavId === mobileGuidesSection.id"
+							aria-haspopup="dialog"
+							:aria-label="mobileGuidesLabel"
+							:title="mobileGuidesLabel"
+							@click.prevent.stop="toggleMegaNav(mobileGuidesSection.id)"
+							@keydown.down.prevent="openMegaNav(mobileGuidesSection.id)"
+						>
+							<Icon name="lucide:book-open" class="h-5 w-5" aria-hidden="true" />
 						</button>
 					</div>
 
@@ -572,8 +587,9 @@ const megaPanelId = 'header-primary-mega-menu'
 const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
 const mobileShopSection = primaryMegaNavSections.find((section) => section.id === 'products') || null
 const mobileToolsSection = primaryMegaNavSections.find((section) => section.id === 'tools') || null
+const mobileGuidesSection = primaryMegaNavSections.find((section) => section.id === 'guides') || null
 const mobileSecondaryNavSections = primaryMegaNavSections.filter((section) => (
-  section.id !== 'products' && section.id !== 'tools'
+  section.id !== 'products' && section.id !== 'tools' && section.id !== 'guides'
 ))
 const activeBreadcrumbSubNavId = ref<string | null>(null)
 const breadcrumbSubNavMobileTop = ref('8.5rem')
@@ -615,6 +631,12 @@ const mobileToolsLabel = computed(() => (
   mobileToolsSection
     ? t(mobileToolsSection.labelKey, mobileToolsSection.labelFallback) as string
     : 'Tools'
+))
+
+const mobileGuidesLabel = computed(() => (
+  mobileGuidesSection
+    ? t(mobileGuidesSection.labelKey, mobileGuidesSection.labelFallback) as string
+    : 'Guides'
 ))
 
 const openMegaNav = (id: PrimaryMegaNavId) => {
@@ -810,12 +832,14 @@ const getLocaleCodes = () => {
     .filter(Boolean)
 }
 
-const getAllLocaleCodes = () => {
+const allLocaleCodesForHeaderNavigation = computed(() => {
   return Array.from(new Set([
     ...localeManifest.map(entry => entry.code),
     ...getLocaleCodes(),
   ]))
-}
+})
+
+const getAllLocaleCodes = () => allLocaleCodesForHeaderNavigation.value
 
 const getPageNavigationMessageNamespacesForEntry = (
   entry: PageSubNavigationEntry | null,
@@ -859,20 +883,7 @@ const loadPageNavigationMessages = async (namespaces: string[]) => {
 
 const loadCurrentPageNavigationMessages = async () => {
   const entry = getPageSubNavigationForPath(route.path || '/', getAllLocaleCodes())
-  const currentSection = findPrimaryMegaNavSectionByPath(
-    route.path || '/',
-    primaryMegaNavSections,
-    getAllLocaleCodes(),
-  )
-  const namespaces = new Set(getPageNavigationMessageNamespacesForEntry(entry))
-
-  if (currentSection) {
-    for (const namespace of getPageNavigationMessageNamespacesForSection(currentSection.id)) {
-      namespaces.add(namespace)
-    }
-  }
-
-  await loadPageNavigationMessages([...namespaces])
+  await loadPageNavigationMessages(getPageNavigationMessageNamespacesForEntry(entry))
 }
 
 await loadCurrentPageNavigationMessages()
@@ -1001,6 +1012,7 @@ const breadcrumbLabelDefinitions: Record<string, BreadcrumbLabelDefinition> = {
   '/tools/spoke-length-calculator': { labelKey: 'toolsNavigation.spokeLengthCalculatorLabel', fallback: 'Spoke length calculator' },
   '/tools/dynamic-tire-pressure-calculator': { labelKey: 'toolsNavigation.dynamicTirePressureCalculatorLabel', fallback: 'Dynamic tire pressure calculator' },
   '/support': { labelKey: 'footer.menus.support', fallback: 'Support' },
+  '/technology': { labelKey: 'footer.menus.technology', fallback: 'Technology' },
 }
 
 const excludedBreadcrumbRootSegments = new Set(['checkout', 'faq'])
@@ -1016,10 +1028,12 @@ const technicalBreadcrumbRootSegments = new Set([
   '_nuxt',
 ])
 
-const localeCodeSet = () => new Set(getAllLocaleCodes().map(code => String(code).toLowerCase()))
+const normalizedLocaleCodesForBreadcrumbNavigation = computed(() => (
+  new Set(getAllLocaleCodes().map(code => String(code).toLowerCase()))
+))
 
 const isBreadcrumbLocaleSegment = (segment: string) => {
-  return localeCodeSet().has(segment.toLowerCase())
+  return normalizedLocaleCodesForBreadcrumbNavigation.value.has(segment.toLowerCase())
 }
 
 const normalizeBreadcrumbPath = (path: string) => {
@@ -1120,7 +1134,10 @@ const getBreadcrumbMetaLabel = (meta: Record<string, unknown> | undefined) => {
   return ''
 }
 
-const getBreadcrumbRouteCandidates = (includeDynamic = false): BreadcrumbRouteCandidate[] => {
+const allBreadcrumbRouteCandidatesForCurrentNavigation = computed<BreadcrumbRouteCandidate[]>(() => {
+  // Reuse the normalized catalog throughout a breadcrumb render. Refresh on
+  // navigation so routes added before a transition are included as well.
+  route.path
   const candidates: BreadcrumbRouteCandidate[] = []
   const seen = new Set<string>()
   const routeRecords = router.getRoutes()
@@ -1135,8 +1152,7 @@ const getBreadcrumbRouteCandidates = (includeDynamic = false): BreadcrumbRouteCa
       isLocaleBreadcrumbRoute(rawPath) ||
       !routeRecord.name ||
       routeRecord.redirect ||
-      isBreadcrumbExcludedPath(path) ||
-      (!includeDynamic && dynamic)
+      isBreadcrumbExcludedPath(path)
     ) {
       return
     }
@@ -1178,7 +1194,17 @@ const getBreadcrumbRouteCandidates = (includeDynamic = false): BreadcrumbRouteCa
   })
 
   return candidates
-}
+})
+
+const staticBreadcrumbRouteCandidatesForCurrentNavigation = computed(() => (
+  allBreadcrumbRouteCandidatesForCurrentNavigation.value.filter(candidate => candidate.dynamicSegmentCount === 0)
+))
+
+const getBreadcrumbRouteCandidates = (includeDynamic = false): BreadcrumbRouteCandidate[] => (
+  includeDynamic
+    ? allBreadcrumbRouteCandidatesForCurrentNavigation.value
+    : staticBreadcrumbRouteCandidatesForCurrentNavigation.value
+)
 
 const staticBreadcrumbRouteCandidates = () => getBreadcrumbRouteCandidates(false)
 
@@ -1615,6 +1641,8 @@ const toggleBreadcrumbSubNav = (id: string, event?: MouseEvent) => {
   }
   activeBreadcrumbSubNavId.value = nextId
   if (nextId) {
+    const section = findPrimaryMegaNavSectionByPath(route.path || '/', primaryMegaNavSections, getAllLocaleCodes())
+    if (section) void loadPageNavigationMessages(getPageNavigationMessageNamespacesForSection(section.id))
     isOpen.value = false
     overlayBackStack.open('breadcrumb-subnav', closeBreadcrumbSubNavState)
   }
@@ -2187,7 +2215,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	}
 
 	.desktop-header-grid {
-		--site-header-desktop-side-column-width: clamp(13.75rem, 18vw, 17.5rem);
+		--site-header-desktop-side-column-width: clamp(10rem, 14vw, 17.5rem);
 		display: grid !important;
 		/* Equal side columns keep the navigation centered on the whole header. */
 		grid-template-columns:
@@ -2210,6 +2238,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		min-width: 0;
 		flex: 0 1 auto;
 		padding-inline: clamp(0.5rem, 0.6vw, 0.75rem);
+		font-size: clamp(0.875rem, 1.15vw, 1.125rem);
 	}
 
 	.desktop-header-grid .site-header-menu-laser__text {
@@ -2539,7 +2568,7 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 	align-items: center;
 	justify-content: flex-end;
 	margin-left: 0;
-	gap: 0.75rem !important;
+	gap: clamp(0.875rem, 4.5vw, 1.25rem) !important;
 	box-sizing: border-box;
 	padding-inline-end: max(0.25rem, env(safe-area-inset-right));
 }
@@ -2695,11 +2724,12 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 
 .site-header-mobile-shop-slot {
 	min-width: 0;
-	gap: 0.125rem;
+	gap: clamp(0.25rem, 2vw, 0.5rem);
 }
 
 .site-header-mobile-shop-trigger,
-.site-header-mobile-tools-trigger {
+.site-header-mobile-tools-trigger,
+.site-header-mobile-guides-trigger {
 	display: inline-flex;
 	width: var(--site-header-action-height, 2.25rem);
 	height: var(--site-header-action-height, 2.25rem);
@@ -2722,20 +2752,25 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 .site-header-mobile-shop-trigger[aria-expanded='true'],
 .site-header-mobile-tools-trigger:hover,
 .site-header-mobile-tools-trigger:focus-visible,
-.site-header-mobile-tools-trigger[aria-expanded='true'] {
+.site-header-mobile-tools-trigger[aria-expanded='true'],
+.site-header-mobile-guides-trigger:hover,
+.site-header-mobile-guides-trigger:focus-visible,
+.site-header-mobile-guides-trigger[aria-expanded='true'] {
 	background: rgba(5, 150, 105, 0.1);
 	color: #059669;
 	transform: translateY(-1px);
 }
 
 .site-header-mobile-shop-trigger:focus-visible,
-.site-header-mobile-tools-trigger:focus-visible {
+.site-header-mobile-tools-trigger:focus-visible,
+.site-header-mobile-guides-trigger:focus-visible {
 	outline: 1px solid rgb(16 185 129 / 0.55);
 	outline-offset: 0.12rem;
 }
 
 .site-header-mobile-shop-trigger--active,
-.site-header-mobile-tools-trigger--active {
+.site-header-mobile-tools-trigger--active,
+.site-header-mobile-guides-trigger--active {
 	color: #059669;
 }
 
@@ -3199,7 +3234,9 @@ const currentLocaleFlagSrc = computed(() => flagSrc(currentLocale.value))
 		min-width: 0;
 		min-height: 0;
 		align-items: stretch;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
+		grid-template-columns: none;
+		grid-auto-columns: minmax(0, 1fr);
+		grid-auto-flow: column;
 		overflow: hidden;
 	}
 

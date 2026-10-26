@@ -1,7 +1,9 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { defineNuxtConfig } from 'nuxt/config'
+import { fileURLToPath } from 'node:url'
 import locales from './app/i18n/locales.manifest'
 import { buildStorefrontRouteRules } from './config/storefront/route-rules'
+import { createPublicClientEntryJavascriptDependencyBoundaryPlugin } from './config/storefront/public-client-entry-javascript-dependency-boundary-plugin'
 import { virtualPageSubNavigationEntries } from './app/utils/pageSubNavigationData'
 import { innerTubeGuideUnpublishedLocaleSitemapExcludes } from './app/utils/seo/innerTubeGuidePublishedLocaleIndexingPolicy'
 
@@ -165,12 +167,16 @@ const getManualChunkName = (id: string) => {
     return 'vendor-icons'
   }
 
-  if (
-    moduleId.includes('/@vueuse/') ||
-    moduleId.includes('/focus-trap/') ||
-    moduleId.includes('/zod/')
-  ) {
-    return 'vendor-utils'
+  if (moduleId.includes('/@vueuse/core/') || moduleId.includes('/@vueuse/shared/')) {
+    return 'vendor-vueuse'
+  }
+
+  if (moduleId.includes('/focus-trap/')) {
+    return 'vendor-focus-trap'
+  }
+
+  if (moduleId.includes('/zod/')) {
+    return 'vendor-validation'
   }
 
   return undefined
@@ -244,6 +250,22 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   // 使用 app 作为源码目录，启用 app/pages 与 app/components
   srcDir: 'app',
+
+  experimental: {
+    defaults: {
+      nuxtLink: {
+        prefetchOn: { visibility: false, interaction: true },
+      },
+    },
+  },
+
+  build: {
+    analyze: isTruthyEnv(env.BUNDLE_ANALYZE) && {
+      enabled: true,
+      filename: fileURLToPath(new URL('./output/bundle-analysis/storefront-{name}-treemap.html', import.meta.url)),
+      open: false,
+    },
+  },
 
   features: {
     // Keep Nuxt SSR style inlining scoped to Vue SFC chunks. The storefront
@@ -329,6 +351,12 @@ export default defineNuxtConfig({
       addTabbedPageRoutes(pages)
     },
     'build:manifest'(manifest) {
+      // SSR otherwise advertises dynamic imports from the global entry,
+      // including other routes, languages and unopened account features.
+      // NuxtLink still prefetches on pointer/focus intent in the browser.
+      for (const entry of Object.values(manifest)) {
+        entry.prefetch = false
+      }
       for (const moduleId of deferredHomeModuleIds) {
         const entry = manifest[moduleId]
         if (!entry) continue
@@ -383,6 +411,9 @@ export default defineNuxtConfig({
   },
 
   vite: {
+    plugins: [createPublicClientEntryJavascriptDependencyBoundaryPlugin(
+      fileURLToPath(new URL('./output/bundle-analysis/storefront-global-entry-dependency-summary.json', import.meta.url)),
+    )],
     server: {
       allowedHosts: ['host.docker.internal'],
     },

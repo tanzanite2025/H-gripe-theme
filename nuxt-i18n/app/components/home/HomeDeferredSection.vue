@@ -1,14 +1,17 @@
 <template>
   <div
     ref="root"
+    :id="!preserveServerRenderedSectionBeforeHydration && !hasMountedSectionContent ? sectionAnchorId : undefined"
     class="home-deferred-section"
     :style="placeholderStyle"
     @focusin="mountSection"
     @pointerenter="mountSection"
   >
     <component
+      v-if="preserveServerRenderedSectionBeforeHydration || shouldMount"
       :is="deferredComponent"
       v-bind="$attrs"
+      @vue:mounted="markDeferredSectionContentAsMounted"
     />
   </div>
 </template>
@@ -34,6 +37,8 @@ type DeferredSectionLoader = () => Promise<{ default: Component }>
 const props = withDefaults(defineProps<{
   loader: DeferredSectionLoader
   moduleId: string
+  /** Keep in-page destinations available before client navigation mounts the section. */
+  sectionAnchorId?: string
   rootMargin?: string
   minHeight?: string
 }>(), {
@@ -43,8 +48,15 @@ const props = withDefaults(defineProps<{
 
 const root = ref<HTMLElement | null>(null)
 const shouldMount = ref(false)
+const hasMountedSectionContent = ref(false)
+const nuxtApp = useNuxtApp()
+const preserveServerRenderedSectionBeforeHydration = import.meta.server || nuxtApp.isHydrating
+const deferredSectionContentComponent = defineAsyncComponent(props.loader)
 const deferredComponent = defineAsyncComponent({
-  loader: props.loader,
+  // Vue resolves this wrapper before running its hydration strategy. Resolve
+  // only a local component here; fetch the section through the inner async
+  // component once the strategy activates, as Nuxt's lazy wrappers do.
+  loader: () => Promise.resolve(deferredSectionContentComponent),
   hydrate: (hydrate) => {
     if (shouldMount.value) {
       hydrate()
@@ -65,7 +77,6 @@ const deferredComponent = defineAsyncComponent({
 let observer: IntersectionObserver | null = null
 
 if (import.meta.server) {
-  const nuxtApp = useNuxtApp()
   nuxtApp.hook('app:rendered', ({ ssrContext }) => {
     if (!ssrContext) return
     ssrContext.modules?.delete(props.moduleId)
@@ -75,10 +86,14 @@ if (import.meta.server) {
 }
 
 const placeholderStyle = computed(() => {
-  if (shouldMount.value) return undefined
+  if (hasMountedSectionContent.value) return undefined
   if (!props.minHeight || props.minHeight === '0px') return undefined
   return { minHeight: props.minHeight }
 })
+
+const markDeferredSectionContentAsMounted = () => {
+  hasMountedSectionContent.value = true
+}
 
 const cleanupObserver = () => {
   observer?.disconnect()

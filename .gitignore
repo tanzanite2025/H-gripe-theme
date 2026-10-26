@@ -80,3 +80,7 @@ release-evidence/
 /fix_excel.ps1
 /inspect_excel.ps1
 /repair.ps1
+
+# Local HTML report references and temporary report previews
+/modular_report/
+/report_temp.html

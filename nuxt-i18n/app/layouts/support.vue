@@ -12,7 +12,7 @@
       </section>
     </main>
 
-    <LazyAppFooter :hydrate-on-visible="footerHydrationOptions" />
+    <StorefrontFooterWithLocaleSafeDeferredHydration />
     <GradientDockMenuDeferred />
     <BehaviorAttributionBootstrapDeferred />
   </div>
@@ -27,13 +27,11 @@ import PageFaqSlot from '~/components/PageFaqSlot.vue'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useSiteTitle } from '~/composables/useSiteTitle'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
-import { STOREFRONT_FOOTER_HYDRATION_OPTIONS } from '~/utils/storefrontLoadingPolicy'
 
 const config = useRuntimeConfig()
 const requestUrl = useRequestURL()
 const { siteSettings } = useSiteSettings()
 const { siteTitle } = useSiteTitle()
-const footerHydrationOptions = STOREFRONT_FOOTER_HYDRATION_OPTIONS
 
 const siteUrl = computed(() => {
   const configured = String((config.public as { siteUrl?: string }).siteUrl || '').trim()
