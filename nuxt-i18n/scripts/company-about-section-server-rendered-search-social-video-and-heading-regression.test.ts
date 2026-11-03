@@ -63,7 +63,8 @@ for (const locale of ['en', 'zh_cn', 'fr']) {
     assert.equal(headings.length, 1, `${routePath}: one page heading`)
     assert.equal(readCompanyAboutServerRenderedText(headings[0]!).trim(), messages.title)
     assert.doesNotMatch(readCompanyAboutServerRenderedAttribute(headings[0]!, 'class'), /sr-only/)
-    const titles = elements.filter(element => element.tagName === 'title')
+    const titles = elements.filter(element => element.tagName === 'title'
+      && element.namespaceURI === 'http://www.w3.org/1999/xhtml')
     assert.equal(titles.length, 1)
     const title = readCompanyAboutServerRenderedText(titles[0]!)
     assert.ok(title.startsWith(messages.seo.title))

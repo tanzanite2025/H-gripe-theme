@@ -46,6 +46,9 @@ for (const locale of ['en', 'zh_cn', 'fr']) {
   const guideMessages: WheelsetGuidePageMessages = JSON.parse(await readFile(
     new URL(`../app/i18n/page-messages/guidesWheelsetBuyers/${pageContentLocale}.json`, import.meta.url), 'utf8',
   ))
+  const guideNavigationMessages: { tabs?: Record<string, { label?: string }> } = JSON.parse(await readFile(
+    new URL(`../app/i18n/page-messages/guidesWheelsetBuyers/${locale}.json`, import.meta.url), 'utf8',
+  ))
   const overviewMessages: { title: string } = JSON.parse(await readFile(
     new URL(`../app/i18n/page-messages/guidesWheelsetBuyersOverview/${pageContentLocale}.json`, import.meta.url), 'utf8',
   ))
@@ -75,7 +78,8 @@ for (const locale of ['en', 'zh_cn', 'fr']) {
     },
     ...wheelsetBuyerTabs.map(tab => {
       const tabMessageKey = tab.labelKey.split('.').at(-2)!
-      const heading = tab.id === 'overview' ? overviewMessages.title : guideMessages.tabs[tabMessageKey]!.label
+      const heading = tab.id === 'overview' ? overviewMessages.title
+        : guideNavigationMessages.tabs?.[tabMessageKey]?.label || guideMessages.tabs[tabMessageKey]!.label
       return {
         path: `/guides/wheelset-buyers/${tab.id}`, heading,
         title: `${heading} | ${guideMessages.title}`,
@@ -93,7 +97,8 @@ for (const locale of ['en', 'zh_cn', 'fr']) {
     assert.equal(headings.length, 1, `${routePath}: one H1 in initial HTML without JavaScript`)
     assert.equal(readServerRenderedShopAndWheelsetGuideText(headings[0]!).trim(), routeCase.heading, routePath)
     assert.doesNotMatch(readServerRenderedShopAndWheelsetGuideAttribute(headings[0]!, 'class'), /sr-only|\bhidden\b/)
-    const titles = elements.filter(element => element.tagName === 'title')
+    const titles = elements.filter(element => element.tagName === 'title'
+      && element.namespaceURI === 'http://www.w3.org/1999/xhtml')
     assert.equal(titles.length, 1, `${routePath}: one title`)
     const title = readServerRenderedShopAndWheelsetGuideText(titles[0]!).trim()
     assert.ok(title.length > 0)

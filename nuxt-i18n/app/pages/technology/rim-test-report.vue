@@ -19,7 +19,6 @@ import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
   layout: 'products',
-  faqPageId: 'support-test-report',
   footerLabelKey: 'supportTestReport.tabs.rim.label',
   footerLabelFallback: 'Rim Test Report',
 })

@@ -17,7 +17,6 @@ import { usePageMessages } from '~/composables/usePageMessages'
 
 definePageMeta({
   layout: 'products',
-  faqPageId: 'support-test-report',
   footerLabelKey: 'supportTestReport.tabs.assembly.label',
   footerLabelFallback: 'Wheel Building & Quality Checks',
 })

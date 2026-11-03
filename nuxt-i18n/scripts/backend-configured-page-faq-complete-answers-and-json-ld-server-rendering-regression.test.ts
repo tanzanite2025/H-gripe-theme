@@ -45,11 +45,8 @@ for (const locale of ['en', 'zh_cn']) {
     '/technology/wheelset-test-report',
     '/technology/wheel-building-quality-checks',
   ]) {
-    const usesStableTestReportFaqIdentity = routePath.startsWith('/technology/')
-    const backendFaqUrl = new URL(usesStableTestReportFaqIdentity
-      ? '/api/v1/content/faq-pages/support-test-report'
-      : '/api/v1/content/faq-pages/by-route', faqBackendOrigin)
-    if (!usesStableTestReportFaqIdentity) backendFaqUrl.searchParams.set('route_path', routePath)
+    const backendFaqUrl = new URL('/api/v1/content/faq-pages/by-route', faqBackendOrigin)
+    backendFaqUrl.searchParams.set('route_path', routePath)
     backendFaqUrl.searchParams.set('locale', locale)
     const localizedRoutePath = `${locale === 'en' ? '' : `/${locale}`}${routePath}`
     const [backendResponse, storefrontResponse] = await Promise.all([
@@ -58,9 +55,22 @@ for (const locale of ['en', 'zh_cn']) {
     assert.equal(backendResponse.status, 200, localizedRoutePath)
     assert.equal(storefrontResponse.status, 200, localizedRoutePath)
     const backendPage: BackendConfiguredFaqPage = (await backendResponse.json()).page
-    assert.ok(backendPage.items.length > 0, 'Publish backend FAQ content before running this regression')
     const elements = collectBackendConfiguredFaqRenderedElements(parse(await storefrontResponse.text()))
     const faqSections = elements.filter(element => readBackendConfiguredFaqRenderedAttribute(element, 'class').split(/\s+/).includes('page-faq'))
+    if (routePath.startsWith('/technology/') && backendPage.items.length === 0) {
+      assert.equal(faqSections.length, 0, `${localizedRoutePath}: an unpublished FAQ renders no empty module`)
+      const structuredData = elements.filter(element => element.tagName === 'script'
+        && readBackendConfiguredFaqRenderedAttribute(element, 'type') === 'application/ld+json')
+        .flatMap(element => {
+          const data = JSON.parse(readBackendConfiguredFaqRenderedText(element))
+          return data['@graph'] || [data]
+        })
+      assert.equal(structuredData.filter(data => data['@type'] === 'FAQPage').length, 0,
+        `${localizedRoutePath}: an unpublished FAQ renders no FAQPage schema`)
+      console.log(`PASS ${localizedRoutePath}: route-owned FAQ has no published answers and renders no module or schema`)
+      continue
+    }
+    assert.ok(backendPage.items.length > 0, 'Publish backend FAQ content before running this regression')
     assert.equal(faqSections.length, 1, `${localizedRoutePath}: one backend-configured FAQ module`)
     if (routePath === '/company/about/hole-patterns') {
       const feedbackSections = elements.filter(element => readBackendConfiguredFaqRenderedAttribute(element, 'class').split(/\s+/).includes('share-your-feedback-card'))

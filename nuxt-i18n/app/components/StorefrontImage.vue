@@ -1,6 +1,7 @@
 <template>
   <NuxtImg
     v-if="props.optimize && canOptimize && !optimizationFailed"
+    ref="optimizedImageComponent"
     class="tz-storefront-image"
     :src="transformSource"
     :alt="alt"
@@ -14,6 +15,7 @@
     :fetchpriority="fetchpriority"
     :decoding="decoding"
     v-bind="$attrs"
+    :onerror="undefined"
     @error="handleOptimizationError"
   />
   <img
@@ -32,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useHead, useImage, useRuntimeConfig } from '#imports'
 import {
   createStorefrontMediaContext,
@@ -94,6 +96,7 @@ const mediaContext = computed(() => createStorefrontMediaContext(
 ))
 const normalizedSource = computed(() => normalizeStorefrontMediaUrl(props.src, mediaContext.value))
 const optimizationFailed = ref(false)
+const optimizedImageComponent = ref<{ imgEl?: HTMLImageElement } | null>(null)
 const resolvedImageSpec = computed(() => STOREFRONT_IMAGE_SPECS[props.preset])
 
 const parseUrl = (value: string, base?: string) => {
@@ -282,6 +285,16 @@ const handleOptimizationError = (event: unknown) => {
 const handleFallbackError = (event: unknown) => {
   emit('error', event)
 }
+
+onMounted(() => {
+  // NuxtImg's SSR onerror attribute violates script-src-attr 'none'. The
+  // undefined binding removes it; detect failures before hydration here,
+  // while NuxtImg's mounted listener handles subsequent image failures.
+  const imageElement = optimizedImageComponent.value?.imgEl
+  if (imageElement?.complete && imageElement.currentSrc && imageElement.naturalWidth === 0) {
+    handleOptimizationError(new Event('error'))
+  }
+})
 
 watch(transformSource, () => {
   optimizationFailed.value = false

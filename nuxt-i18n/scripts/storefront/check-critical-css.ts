@@ -59,6 +59,9 @@ const hasEntryCssLoader = (html: string): boolean => (
 )
 
 const assertServerRenderedHeaderLayoutAndContentSecurityPolicy = (html: string, contentSecurityPolicy: string): string => {
+  if (/<img\b[^>]*\son[a-z]+\s*=/i.test(html)) {
+    throw new Error('Server-rendered images must not contain inline event handlers blocked by production CSP')
+  }
   const headerLayoutCss = html.match(/<style\b[^>]*\bdata-storefront-header-critical-layout(?:=(['"])[^'"]*\1)?[^>]*>([\s\S]*?)<\/style>/i)?.[2]
   if (!headerLayoutCss) {
     throw new Error('Header layout must be available in the server HTML before external CSS or hydration')
