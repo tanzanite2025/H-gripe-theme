@@ -1,0 +1,12 @@
+{
+  "attachment": "Bilaga",
+  "closePreview": "Stäng förhandsvisning",
+  "download": "Ladda ner",
+  "downloadFailed": "Det gick inte att ladda ner bilagan. Uppdatera sidan och försök igen.",
+  "downloadToView": "Ladda ner filen för att visa den.",
+  "image": "Bild",
+  "loading": "Laddar…",
+  "readFailed": "Det gick inte att öppna bilagan. Uppdatera sidan och försök igen.",
+  "shipmentImage": "Leveransbild",
+  "video": "Video"
+}

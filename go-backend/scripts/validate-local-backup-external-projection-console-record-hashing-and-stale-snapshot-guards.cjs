@@ -1,9 +1,8 @@
 'use strict';
+const { loadMaintenanceConsoleScriptsInDocumentOrder } = require('./load-maintenance-console-classic-scripts-in-html-document-order.cjs');
 
 const assert = require('node:assert/strict');
 const { createHash, webcrypto } = require('node:crypto');
-const { readFileSync } = require('node:fs');
-const { join } = require('node:path');
 const { test } = require('node:test');
 const vm = require('node:vm');
 
@@ -31,14 +30,14 @@ function createIsolatedMaintenanceConsoleHarness() {
   const networkRequests = [];
   const browserWindow = { addEventListener() {} }; browserWindow.parent = browserWindow;
   const context = vm.createContext({
-    document: { getElementById: findElement, createElement: tag => new SyntheticMaintenanceConsoleElement(tag), createTextNode: text => text },
+    document: { getElementById: findElement, createElement: tag => new SyntheticMaintenanceConsoleElement(tag), createTextNode: text => text, querySelectorAll: () => [], querySelector: () => null },
     location: { pathname: '/local-backup-maintenance/', origin: 'https://synthetic.example.test' },
     window: browserWindow, crypto: webcrypto, Headers, Uint8Array, TextDecoder, atob, console,
     clearInterval() {},
     fetch: async (...args) => { networkRequests.push(args); throw new Error('synthetic external network deliberately unavailable'); },
     prompt: () => { throw new Error('stale or incomplete evidence must never reach confirmation'); },
   });
-  vm.runInContext(readFileSync(join(__dirname, '../internal/localbackup/maintenance_console/maintenance-console.js'), 'utf8'), context);
+  loadMaintenanceConsoleScriptsInDocumentOrder(context);
   const contract = {
     contract_sha256: 'a'.repeat(64), blockers: [],
     requirements: ['customer_service_search','redis_cache','customer_service_realtime','media_delivery_and_browser'].map(projection => ({ projection, action: `synthetic-required-${projection}`, description: '独立人工核验要求' })),

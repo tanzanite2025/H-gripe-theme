@@ -50,9 +50,9 @@ func TestProductCatalogOldPreviewJSONWithoutCleanupProtectionRetainsItsOriginalR
 	require.NoError(t, err)
 	var decoded productCatalogRecoveryPreviewBinding
 	require.NoError(t, json.Unmarshal(encoded, &decoded))
-	expected, err := customerServiceRecoveryPlanCanonicalJSONSHA256(legacy)
+	expected, err := businessModuleRecoveryCanonicalJSONSHA256(legacy)
 	require.NoError(t, err)
-	actual, err := customerServiceRecoveryPlanCanonicalJSONSHA256(decoded)
+	actual, err := businessModuleRecoveryCanonicalJSONSHA256(decoded)
 	require.NoError(t, err)
 	require.Equal(t, expected, actual, "an interrupted older journal must remain eligible for rollback")
 }
@@ -82,9 +82,9 @@ func TestProductCatalogPreviewWithOriginalCleanupProtectionPreservesLegacyRollba
 	var decoded productCatalogRecoveryPreviewBinding
 	require.NoError(t, json.Unmarshal(encoded, &decoded))
 	require.Zero(t, decoded.RequiredImageCleanupProtection.StandardWriteGuardVersion)
-	expected, err := customerServiceRecoveryPlanCanonicalJSONSHA256(legacy)
+	expected, err := businessModuleRecoveryCanonicalJSONSHA256(legacy)
 	require.NoError(t, err)
-	actual, err := customerServiceRecoveryPlanCanonicalJSONSHA256(decoded)
+	actual, err := businessModuleRecoveryCanonicalJSONSHA256(decoded)
 	require.NoError(t, err)
 	require.Equal(t, expected, actual, "new validation must not strand an interrupted journal from the preceding version")
 }

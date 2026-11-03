@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "Руководство по покупке"
+    },
+    "safetyInstructions": {
+      "label": "Инструкции по безопасности"
+    },
+    "sampleAssembly": {
+      "label": "Сборка колёс и индивидуальные заказы"
+    },
+    "appearanceLogo": {
+      "label": "Внешний вид и логотипы"
+    }
+  }
+}

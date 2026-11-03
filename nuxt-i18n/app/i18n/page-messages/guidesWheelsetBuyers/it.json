@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "Guida all’acquisto"
+    },
+    "safetyInstructions": {
+      "label": "Istruzioni di sicurezza"
+    },
+    "sampleAssembly": {
+      "label": "Assemblaggio di ruote e montaggi su misura"
+    },
+    "appearanceLogo": {
+      "label": "Finiture e loghi"
+    }
+  }
+}

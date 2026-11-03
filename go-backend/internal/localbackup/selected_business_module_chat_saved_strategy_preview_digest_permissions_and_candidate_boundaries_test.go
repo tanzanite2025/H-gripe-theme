@@ -19,9 +19,9 @@ func createSelectedBusinessModuleChatPreviewForSavedStrategyBoundaryTest(t *test
 	task.Manifest = &Manifest{Scope: selectedBusinessModulesBackupScope, PackageID: newTaskID(), SelectedModules: []string{"customer_service"}}
 	strategy := &SelectedCustomerServiceModuleOverwriteStrategyInspection{Policy: "use_package_conversation_rows", Complete: true, DomainChecksSatisfied: true}
 	task.SelectedModuleRestorePreview = &SelectedBusinessModuleIsolatedRestorePreview{Modules: []string{"customer_service"}, TargetUnchanged: true, DisposableStageRemoved: true,
-		Binding:                         &SelectedCustomerServiceModuleSnapshotBinding{Version: 1, TaskID: task.ID, PackageID: task.Manifest.PackageID, WorkCopyExpiresAt: task.ExpiresAt},
+		Binding:                         &BusinessModuleRestoreSnapshotBinding{Version: 1, TaskID: task.ID, PackageID: task.Manifest.PackageID, WorkCopyExpiresAt: task.ExpiresAt},
 		CustomerServiceOverwritePreview: &SelectedCustomerServiceModuleBoundedOverwritePreview{PrerequisitesSatisfied: true, PackageRows: strategy}}
-	task.SelectedModuleRestorePreview.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(task.SelectedModuleRestorePreview)
+	task.SelectedModuleRestorePreview.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(task.SelectedModuleRestorePreview)
 	require.NoError(t, err)
 	return task
 }
@@ -115,7 +115,7 @@ func TestSelectedBusinessModuleChatSavedStrategyCannotBypassDomainOrSharedWriteB
 	}
 	task := createSelectedBusinessModuleChatPreviewForSavedStrategyBoundaryTest(t, manager)
 	choice := &SelectedCustomerServiceModuleSavedRestoreChoice{Version: 1, State: "recorded_not_executable", TaskID: task.ID, Operator: "synthetic", Policy: "use_package_conversation_rows", PreviewSHA256: task.SelectedModuleRestorePreview.SHA256, Binding: *task.SelectedModuleRestorePreview.Binding}
-	choice.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(choice)
+	choice.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(choice)
 	require.NoError(t, err)
 	task.SelectedCustomerServiceRestoreChoice = choice
 	require.NoError(t, manager.saveTask(task))

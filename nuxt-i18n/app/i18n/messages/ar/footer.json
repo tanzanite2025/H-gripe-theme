@@ -1,47 +1,77 @@
 {
   "menus": {
-    "technology": "التكنولوجيا",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "technology": "التقنية",
+    "products": "المنتجات",
+    "support": "الدعم",
+    "company": "الشركة",
+    "resources": "الموارد",
+    "siteOverview": "حول الموقع",
+    "policies": "السياسات"
   },
   "links": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "shop": "المتجر",
+    "aboutTools": "حول الأدوات",
+    "tireSizeCharts": "دليل الإطارات",
+    "blog": "المدونة",
+    "technicalDocs": "الوثائق التقنية",
+    "wheelsetBuyersGuide": "دليل العجلات",
+    "about": "من نحن",
+    "aboutUs": "من نحن",
+    "contact": "اتصل بنا",
+    "contactUs": "اتصل بنا",
+    "ourStory": "قصتنا",
+    "globalPartners": "شركاؤنا حول العالم",
+    "oemOdm": "التصنيع حسب الطلب OEM وODM",
+    "certificates": "الشهادات",
+    "membershipPoints": "العضوية والنقاط",
+    "pictureWarehouse": "مكتبة الصور",
+    "meThisWebsite": "أنا وهذا الموقع",
+    "whyThisName": "لماذا هذا الاسم",
+    "workbenchFeed": "أخبار الورشة"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
-    "line4": "Hong Kong.",
-    "hkLabel": "Hongkong:",
-    "xmLabel": "Xiamen:"
+    "line1": "علامة تجارية تابعة لشركة Top Sports Co., Limited.",
+    "line2": "الوحدة 1602، الطابق 16، Lucky Centre،",
+    "line3": "165–171 Wan Chai Road، Wan Chai",
+    "line4": "هونغ كونغ.",
+    "hkLabel": "هونغ كونغ:",
+    "xmLabel": "شيامن:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "الأسئلة الشائعة",
+    "payment": "الدفع",
+    "afterSales": "خدمة ما بعد البيع",
+    "warranty": "الضمان",
+    "productFeedback": "آراء حول المنتجات",
+    "spokecalculator": "حاسبة أسلاك العجلات"
+  },
+  "subscription": {
+    "label": "اشترك لتصلك أخبار المنتجات ومقالات المدونة",
+    "placeholder": "أدخل بريدك الإلكتروني",
+    "emailLabel": "البريد الإلكتروني",
+    "button": "اشترك",
+    "loading": "جارٍ الاشتراك…",
+    "success": "تم الاشتراك بنجاح. يرجى تأكيده عبر بريدك الإلكتروني.",
+    "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح.",
+    "failed": "تعذر الاشتراك. يرجى المحاولة لاحقًا.",
+    "verificationUnavailable": "التحقق غير متاح. يرجى المحاولة لاحقًا.",
+    "verificationFailed": "فشل التحقق. يرجى المحاولة مرة أخرى.",
+    "verificationExpired": "انتهت صلاحية التحقق. يرجى المحاولة مرة أخرى."
+  },
+  "accessibility": {
+    "navigation": "التنقل في تذييل الصفحة",
+    "scrollLeft": "تمرير تنقل التذييل إلى اليسار",
+    "scrollRight": "تمرير تنقل التذييل إلى اليمين",
+    "paymentMethods": "طرق الدفع المقبولة",
+    "sslSecure": "اتصال SSL آمن",
+    "cardPayment": "الدفع بالبطاقة"
+  },
+  "categories": {
+    "wheelset": "أطقم العجلات",
+    "wheelComponents": "مكونات العجلات",
+    "tire": "الإطارات",
+    "spokeRepairKits": "أطقم إصلاح أسلاك العجلات",
+    "carbonRim": "جنوط الكربون"
+  },
+  "securityNotice": "تستخدم جميع الصفحات HTTPS مع تشفير SSL. تُعالج المدفوعات بأمان، ولا تُخزَّن بيانات البطاقات."
 }

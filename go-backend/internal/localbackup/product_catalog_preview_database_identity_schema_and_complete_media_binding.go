@@ -55,19 +55,19 @@ func (cfg Configuration) captureProductCatalogRecoveryDatabaseBinding(ctx contex
 		return nil, errors.New("product recovery migration changed")
 	}
 	result.Fingerprint = observation.Fingerprint
-	result.ColumnConstraintSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(observation.Shapes)
+	result.ColumnConstraintSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(observation.Shapes)
 	if err != nil {
 		return nil, err
 	}
-	result.IndexSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(observation.Indexes)
+	result.IndexSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(observation.Indexes)
 	if err != nil {
 		return nil, err
 	}
-	result.WriteSideEffectsSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(observation.WriteSideEffects)
+	result.WriteSideEffectsSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(observation.WriteSideEffects)
 	if err != nil {
 		return nil, err
 	}
-	result.SchemaSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(struct {
+	result.SchemaSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(struct {
 		Shapes           any
 		Indexes          any
 		WriteSideEffects any
@@ -87,7 +87,7 @@ func (manager *Manager) productCatalogCandidateMediaConfiguration(task *Task) Co
 
 func (manager *Manager) captureProductCatalogRecoveryPreviewBaseline(ctx context.Context) (*productCatalogRecoveryPreviewBinding, error) {
 	cfg := manager.Configuration
-	configurationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(cfg)
+	configurationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(cfg)
 	if err != nil {
 		return nil, err
 	}

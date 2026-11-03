@@ -8,12 +8,12 @@
   "loadMore": "Carregar mais",
   "items": "itens",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "shop": "Loja",
+    "aboutTools": "Sobre as ferramentas",
+    "tireSizeCharts": "Guia de pneus",
+    "blog": "Blogue",
+    "technicalDocs": "Documentação técnica",
+    "wheelsetBuyersGuide": "Guia de rodas",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

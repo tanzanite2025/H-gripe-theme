@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Holgura entre neumático y cuadro"
+    },
+    "schwalbeCircumference": {
+      "label": "Circunferencia de neumáticos Schwalbe"
+    },
+    "tubeless": {
+      "label": "Neumáticos sin cámara y montaje"
+    }
+  }
+}

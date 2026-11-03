@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "Sık sorulan sorular",
+    "payment": "Ödeme",
+    "shipping": "Kargo",
+    "afterSales": "Satış sonrası hizmet",
+    "warranty": "Garanti",
+    "warrantyCheck": "Garanti sorgulama",
+    "productFeedback": "Ürün geri bildirimi",
+    "spokeCalculator": "Jant teli hesaplayıcı",
+    "testReport": "Test raporları"
   }
 }

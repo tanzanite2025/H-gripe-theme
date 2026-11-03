@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Kelegaan antara tayar dengan rangka"
+    },
+    "schwalbeCircumference": {
+      "label": "Lilitan tayar Schwalbe"
+    },
+    "tubeless": {
+      "label": "Tayar tanpa tiub dan pemasangan"
+    }
+  }
+}

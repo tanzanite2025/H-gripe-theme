@@ -23,7 +23,7 @@ func readAndValidateProductCatalogModuleSnapshot(extracted string, manifest Mani
 	if err != nil {
 		return snapshot, err
 	}
-	if info.Size() > productCatalogMaximumJSONBytes {
+	if info.Size() > businessModuleSnapshotMaximumJSONBytes {
 		return snapshot, errors.New("product snapshot exceeds JSON capacity")
 	}
 	data, err := os.ReadFile(filepath.Join(extracted, productCatalogRowsFilename)) // #nosec G304 -- The fixed snapshot filename is inside the authenticated, bounded package extraction workspace.
@@ -33,7 +33,7 @@ func readAndValidateProductCatalogModuleSnapshot(extracted string, manifest Mani
 	if err := decodeStrictJSON(data, &snapshot); err != nil {
 		return snapshot, err
 	}
-	if snapshot.ContractVersion != 1 || manifest.DatabaseFingerprint != productCatalogBytesSHA256(data) {
+	if snapshot.ContractVersion != 1 || manifest.DatabaseFingerprint != businessModuleRecoveryBytesSHA256(data) {
 		return snapshot, errors.New("product snapshot contract or content fingerprint mismatch")
 	}
 	allowed := productCatalogAllowedTableNames()
@@ -46,12 +46,12 @@ func readAndValidateProductCatalogModuleSnapshot(extracted string, manifest Mani
 			return snapshot, errors.New("product table inventory mismatch")
 		}
 		total += len(table.Rows)
-		if total > productCatalogMaximumRows {
+		if total > businessModuleSnapshotMaximumRows {
 			return snapshot, errors.New("product row capacity exceeded")
 		}
 		ids := map[string]bool{}
 		for _, row := range table.Rows {
-			id, err := productCatalogRowString(row, "id")
+			id, err := readBusinessModuleSnapshotRowColumnText(row, "id")
 			numericID, parseErr := strconv.ParseInt(id, 10, 64)
 			if err != nil || parseErr != nil || numericID <= 0 || strconv.FormatInt(numericID, 10) != id || ids[id] {
 				return snapshot, errors.New("invalid or duplicate product row identity")
@@ -88,7 +88,7 @@ func captureProductCatalogPreservedRowsFingerprint(ctx context.Context, tx *sql.
 		if table, selected := snapshot.Tables[name]; selected {
 			ids := []string{}
 			for _, row := range table.Rows {
-				id, err := productCatalogRowString(row, "id")
+				id, err := readBusinessModuleSnapshotRowColumnText(row, "id")
 				if err != nil {
 					return nil, err
 				}
@@ -179,7 +179,7 @@ func (cfg Configuration) applyProductCatalogRowsOnlyToIsolatedDatabase(ctx conte
 	restoredRows := 0
 	for _, name := range names {
 		table := snapshot.Tables[name]
-		schema, columns, err := inspectProductCatalogTableSchema(ctx, tx, name)
+		schema, columns, err := inspectBusinessModuleCompleteTableSchema(ctx, tx, name)
 		if err != nil {
 			return 0, 0, nil, err
 		}
@@ -209,7 +209,7 @@ func (cfg Configuration) applyProductCatalogRowsOnlyToIsolatedDatabase(ctx conte
 				}
 			}
 			if name == "media_assets" || name == "media_asset_derivatives" {
-				id, _ := productCatalogRowString(row, "id")
+				id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
 				var same bool
 				err := tx.QueryRowContext(ctx, `SELECT to_jsonb(r)=$1::jsonb FROM public.`+pq.QuoteIdentifier(name)+` r WHERE id::text=$2`, string(row), id).Scan(&same)
 				if err != nil && err != sql.ErrNoRows {
@@ -400,7 +400,7 @@ func (manager *Manager) restoreProductCatalogIntoIsolatedTargetCloneWithHeldMain
 		return err
 	}
 	for name, table := range snapshot.Tables {
-		constraints, err := captureProductCatalogConstraintFingerprint(ctx, contractTx, name)
+		constraints, err := captureBusinessModuleTableConstraintFingerprint(ctx, contractTx, name)
 		if err != nil || constraints != table.ConstraintsSHA256 {
 			_ = contractTx.Rollback()
 			_ = current.Close()

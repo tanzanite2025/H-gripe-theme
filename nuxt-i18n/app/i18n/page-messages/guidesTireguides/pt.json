@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Folga entre pneu e quadro"
+    },
+    "schwalbeCircumference": {
+      "label": "Circunferência de pneus Schwalbe"
+    },
+    "tubeless": {
+      "label": "Pneus sem câmara e montagem"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "attachment": "Pièce jointe",
+  "closePreview": "Fermer l’aperçu",
+  "download": "Télécharger",
+  "downloadFailed": "Impossible de télécharger cette pièce jointe. Actualisez la page et réessayez.",
+  "downloadToView": "Téléchargez ce fichier pour le consulter.",
+  "image": "Image",
+  "loading": "Chargement…",
+  "readFailed": "Impossible d’ouvrir cette pièce jointe. Actualisez la page et réessayez.",
+  "shipmentImage": "Photo de l’expédition",
+  "video": "Vidéo"
+}

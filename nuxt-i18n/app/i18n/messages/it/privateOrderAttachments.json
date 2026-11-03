@@ -1,0 +1,12 @@
+{
+  "attachment": "Allegato",
+  "closePreview": "Chiudi anteprima",
+  "download": "Scarica",
+  "downloadFailed": "Impossibile scaricare questo allegato. Aggiorna la pagina e riprova.",
+  "downloadToView": "Scarica questo file per visualizzarlo.",
+  "image": "Immagine",
+  "loading": "Caricamento…",
+  "readFailed": "Impossibile aprire questo allegato. Aggiorna la pagina e riprova.",
+  "shipmentImage": "Foto della spedizione",
+  "video": "Video"
+}

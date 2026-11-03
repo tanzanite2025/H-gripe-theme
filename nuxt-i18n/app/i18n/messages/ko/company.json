@@ -1,14 +1,14 @@
 {
   "nav": {
-    "about": "About Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "contact": "Contact Us",
-    "aboutWebsite": "Me & This Website"
+    "about": "회사 소개",
+    "ourStory": "우리의 이야기",
+    "globalPartners": "글로벌 파트너",
+    "oemOdm": "OEM 및 ODM 제작",
+    "certificates": "인증서",
+    "membershipPoints": "회원 및 포인트",
+    "pictureWarehouse": "사진 자료실",
+    "contact": "문의하기",
+    "aboutWebsite": "나와 이 웹사이트"
   },
   "index": {
     "title": "Company",

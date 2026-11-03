@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Frigång mellan däck och ram"
+    },
+    "schwalbeCircumference": {
+      "label": "Omkrets för Schwalbe-däck"
+    },
+    "tubeless": {
+      "label": "Slanglösa däck och montering"
+    }
+  }
+}

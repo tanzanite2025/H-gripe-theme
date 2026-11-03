@@ -269,7 +269,7 @@
   },
   "breadcrumbs": {
     "home": "Home",
-    "guides": "Guides",
+    "guides": "Panduan",
     "blog": "Blog",
     "pageSections": "Page sections"
   },
@@ -782,15 +782,15 @@
   },
   "company": {
     "nav": {
-      "about": "About Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us",
-      "aboutWebsite": "Me & This Website"
+      "about": "Tentang kami",
+      "ourStory": "Kisah kami",
+      "globalPartners": "Mitra global",
+      "oemOdm": "Manufaktur OEM dan ODM",
+      "certificates": "Sertifikat",
+      "membershipPoints": "Keanggotaan dan poin",
+      "pictureWarehouse": "Galeri foto",
+      "contact": "Hubungi kami",
+      "aboutWebsite": "Saya dan situs ini"
     },
     "index": {
       "title": "Company",
@@ -1105,49 +1105,79 @@
   "footer": {
     "menus": {
       "technology": "Teknologi",
-      "products": "Products",
-      "support": "Support",
-      "company": "Company",
-      "resources": "RESOURCES",
-      "siteOverview": "Site Overview",
-      "policies": "Policies"
+      "products": "Produk",
+      "support": "Bantuan",
+      "company": "Perusahaan",
+      "resources": "Sumber informasi",
+      "siteOverview": "Tentang situs",
+      "policies": "Kebijakan"
     },
     "links": {
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
+      "shop": "Toko",
+      "aboutTools": "Tentang alat",
+      "tireSizeCharts": "Panduan ban",
       "blog": "Blog",
-      "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide",
-      "about": "About",
-      "aboutUs": "About Us",
-      "contact": "Contact",
-      "contactUs": "Contact Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "meThisWebsite": "Me & This Website",
-      "whyThisName": "Why This Name"
+      "technicalDocs": "Dokumentasi teknis",
+      "wheelsetBuyersGuide": "Panduan set roda",
+      "about": "Tentang kami",
+      "aboutUs": "Tentang kami",
+      "contact": "Hubungi kami",
+      "contactUs": "Hubungi kami",
+      "ourStory": "Kisah kami",
+      "globalPartners": "Mitra global",
+      "oemOdm": "Manufaktur OEM dan ODM",
+      "certificates": "Sertifikat",
+      "membershipPoints": "Keanggotaan dan poin",
+      "pictureWarehouse": "Galeri foto",
+      "meThisWebsite": "Saya dan situs ini",
+      "whyThisName": "Mengapa nama ini",
+      "workbenchFeed": "Kabar bengkel"
     },
     "brand": {
-      "line1": "A brand of Top Sports Co., Limited.",
-      "line2": "Flat 1602, 16/F, Lucky Centre,",
-      "line3": "No.165-171 Wan Chai Road, Wan Chai",
+      "line1": "Merek milik Top Sports Co., Limited.",
+      "line2": "Unit 1602, lantai 16, Lucky Centre,",
+      "line3": "165–171 Wan Chai Road, Wan Chai",
       "line4": "Hong Kong.",
-      "hkLabel": "Hongkong:",
+      "hkLabel": "Hong Kong:",
       "xmLabel": "Xiamen:"
     },
     "support": {
-      "allFaqs": "All FAQ'S",
-      "payment": "Payment",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "productFeedback": "Product Feedback",
-      "spokecalculator": "Spokecalculator"
-    }
+      "allFaqs": "Pertanyaan umum",
+      "payment": "Pembayaran",
+      "afterSales": "Layanan purnajual",
+      "warranty": "Garansi",
+      "productFeedback": "Masukan produk",
+      "spokecalculator": "Kalkulator jari-jari"
+    },
+    "subscription": {
+      "label": "Berlangganan kabar produk baru dan pembaruan blog",
+      "placeholder": "Masukkan alamat email",
+      "emailLabel": "Alamat email",
+      "button": "Berlangganan",
+      "loading": "Memproses langganan…",
+      "success": "Berhasil berlangganan. Silakan konfirmasi melalui email Anda.",
+      "invalidEmail": "Masukkan alamat email yang valid.",
+      "failed": "Gagal berlangganan. Silakan coba lagi nanti.",
+      "verificationUnavailable": "Verifikasi tidak tersedia. Silakan coba lagi nanti.",
+      "verificationFailed": "Verifikasi gagal. Silakan coba lagi.",
+      "verificationExpired": "Verifikasi kedaluwarsa. Silakan coba lagi."
+    },
+    "accessibility": {
+      "navigation": "Navigasi bagian bawah halaman",
+      "scrollLeft": "Gulir navigasi bawah ke kiri",
+      "scrollRight": "Gulir navigasi bawah ke kanan",
+      "paymentMethods": "Metode pembayaran yang diterima",
+      "sslSecure": "Koneksi SSL aman",
+      "cardPayment": "Pembayaran kartu"
+    },
+    "categories": {
+      "wheelset": "Set roda",
+      "wheelComponents": "Komponen roda",
+      "tire": "Ban",
+      "spokeRepairKits": "Kit perbaikan jari-jari",
+      "carbonRim": "Pelek karbon"
+    },
+    "securityNotice": "Semua halaman menggunakan HTTPS dengan enkripsi SSL. Pembayaran diproses dengan aman; data kartu tidak disimpan."
   },
   "header": {
     "searchHint": {
@@ -1611,14 +1641,26 @@
     "contact": "Kontak"
   },
   "policyTabs": {
-    "cookie": "Cookie",
-    "privacy": "Privacy",
-    "refundCancellation": "Kebijakan Pengembalian Dana & Pembatalan",
-    "terms": "Terms"
+    "cookie": "Kebijakan kuki",
+    "privacy": "Kebijakan privasi",
+    "refundCancellation": "Kebijakan pengembalian dana dan pembatalan",
+    "terms": "Ketentuan layanan"
   },
   "privacy": {
     "button": "Pernyataan privasi",
     "title": "Pernyataan privasi"
+  },
+  "privateOrderAttachments": {
+    "attachment": "Lampiran",
+    "closePreview": "Tutup pratinjau",
+    "download": "Unduh",
+    "downloadFailed": "Lampiran ini tidak dapat diunduh. Muat ulang halaman dan coba lagi.",
+    "downloadToView": "Unduh berkas ini untuk melihatnya.",
+    "image": "Gambar",
+    "loading": "Memuat…",
+    "readFailed": "Lampiran ini tidak dapat dibuka. Muat ulang halaman dan coba lagi.",
+    "shipmentImage": "Gambar pengiriman",
+    "video": "Video"
   },
   "productCategoryNavigationCards": {
     "heading": "Product categories",
@@ -1669,12 +1711,12 @@
     "loadMore": "Muat Lebih Banyak",
     "items": "item",
     "nav": {
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
+      "shop": "Toko",
+      "aboutTools": "Tentang alat",
+      "tireSizeCharts": "Panduan ban",
       "blog": "Blog",
-      "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide",
+      "technicalDocs": "Dokumentasi teknis",
+      "wheelsetBuyersGuide": "Panduan set roda",
       "spokeGuides": "Spoke Guides"
     },
     "navShort": {
@@ -1936,15 +1978,15 @@
   },
   "support": {
     "nav": {
-      "faqs": "All FAQs",
-      "payment": "Payment",
-      "shipping": "Shipping",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "warrantyCheck": "Warranty Check",
-      "productFeedback": "Product Feedback",
-      "spokeCalculator": "Spoke Calculator",
-      "testReport": "Test report"
+      "faqs": "Pertanyaan umum",
+      "payment": "Pembayaran",
+      "shipping": "Pengiriman",
+      "afterSales": "Layanan purnajual",
+      "warranty": "Garansi",
+      "warrantyCheck": "Periksa garansi",
+      "productFeedback": "Masukan produk",
+      "spokeCalculator": "Kalkulator jari-jari",
+      "testReport": "Laporan pengujian"
     }
   },
   "toolsNavigation": {
@@ -1952,25 +1994,25 @@
     "eyebrow": "Pemilihan komponen sepeda",
     "description": "Cari, saring, dan bandingkan spesifikasi komponen. Setiap alat menyertakan penjelasan untuk memahami hasilnya.",
     "openTool": "Buka alat",
-    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorLabel": "Pemilih ban Schwalbe",
     "schwalbeTireSelectorDescription": "Cari dan saring katalog ban Schwalbe menurut model dan ukuran, dengan penjelasan konstruksi dan spesifikasi.",
-    "brandWheelsetSpokeSpecsLabel": "Spesifikasi jari-jari dan nipel wheelset",
+    "brandWheelsetSpokeSpecsLabel": "Spesifikasi jari-jari dan nipel set roda",
     "brandWheelsetSpokeSpecsDescription": "Filter menurut merek atau cari model wheelset untuk melihat panjang jari-jari, pola anyaman, dan spesifikasi nipel beserta catatan kit perbaikan.",
     "spokeLengthCalculatorLabel": "Kalkulator panjang jari-jari",
     "spokeLengthCalculatorDescription": "Hitung panjang jari-jari roda depan dan belakang melalui panduan lengkap pelek, hub, pola anyaman, koreksi, dan nipple, beserta petunjuk pengukuran dan penjelasan hasil.",
-    "spokeLacingTopologySimulatorLabel": "Simulator pola susunan jari-jari",
+    "spokeLacingTopologySimulatorLabel": "Simulator pola anyaman jari-jari",
     "spokeLacingTopologySimulatorDescription": "Pratinjau posisi lubang jari-jari, pola susunan, tata letak G3 dan 2:1, serta geometri kedua flensa, lengkap dengan penjelasan dan batas pratinjau.",
     "dynamicTirePressureCalculatorLabel": "Kalkulator tekanan ban dinamis",
     "dynamicTirePressureCalculatorDescription": "Pelajari bagaimana beban, tekanan, kecepatan, dan kemiringan mengubah perkiraan area kontak ban dan gaya menikung.",
-    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsLabel": "Mekanika pelepasan tegangan jari-jari baja tahan karat",
     "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
-    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorLabel": "Kalkulator panjang pentil ban dalam",
     "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
-    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineLabel": "Asisten kompatibilitas bodi freehub dan kaset",
     "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
-    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineLabel": "Kalkulator kompatibilitas lebar ban dan pelek",
     "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
-    "tireSizeMarkingConverterLabel": "Tire size marking converter",
+    "tireSizeMarkingConverterLabel": "Konverter ukuran ban",
     "tireSizeMarkingConverterDescription": "Convert ETRTO, inch, and French tire markings with the complete size reference, explanations, and fitment limits."
   },
   "user": {

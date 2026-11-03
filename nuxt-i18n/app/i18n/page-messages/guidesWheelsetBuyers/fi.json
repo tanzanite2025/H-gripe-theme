@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "Osto-opas"
+    },
+    "safetyInstructions": {
+      "label": "Turvallisuusohjeet"
+    },
+    "sampleAssembly": {
+      "label": "Kiekkojen kasaus ja mittatilaustyöt"
+    },
+    "appearanceLogo": {
+      "label": "Ulkoasu ja logot"
+    }
+  }
+}

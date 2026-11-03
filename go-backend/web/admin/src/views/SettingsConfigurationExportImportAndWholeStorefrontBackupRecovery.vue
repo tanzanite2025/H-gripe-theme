@@ -41,7 +41,7 @@
             <h2 class="text-base font-semibold">从电脑导入配置</h2>
             <p class="text-sm leading-6 text-muted-foreground">选择此前导出的 JSON 文件。先查看新增、更新和不变的项目，确认后再保存；文件中没有的配置保持当前值。</p>
           </div>
-          <input ref="configurationFileInput" type="file" accept=".json,application/json" aria-label="选择配置 JSON 文件" class="block w-full max-w-full rounded-lg border p-3 text-sm" :disabled="inspectingConfiguration || importingConfiguration || !overview" @change="selectAndPreviewSettingsConfigurationFile" />
+          <input ref="configurationFileInput" type="file" accept=".json,application/json" aria-label="选择配置 JSON 文件" class="block w-full max-w-full rounded-lg border p-3 text-sm file:mr-3 file:rounded-full file:border file:border-dashed file:border-border/80 file:bg-background file:px-3 file:py-1.5 file:text-xs file:font-black file:text-foreground hover:file:bg-muted" :disabled="inspectingConfiguration || importingConfiguration || !overview" @change="selectAndPreviewSettingsConfigurationFile" />
           <p class="text-xs text-muted-foreground">文件最大 8 MiB；仅导入本站支持的配置项。引用的图片必须已在当前商城存在。</p>
           <p v-if="selectedConfigurationFilename" class="break-all text-sm text-muted-foreground">已选择：{{ selectedConfigurationFilename }}</p>
           <p v-if="inspectingConfiguration" role="status" class="text-sm">正在校验文件并读取当前配置…</p>
@@ -84,13 +84,7 @@
       <TabsContent value="whole-storefront" class="space-y-4">
         <p v-if="loadingOverview" role="status" class="text-sm text-muted-foreground">正在读取业务备份状态…</p>
         <section v-else-if="!authStore.hasPermission('ops:backup:view')" class="rounded-xl border p-5 text-sm">当前账号没有业务备份查看权限，可以使用普通配置迁移功能。</section>
-        <section v-else-if="overview && !overview.whole_storefront_maintenance_configured" class="space-y-3 rounded-xl border bg-card p-5 sm:p-6">
-          <h2 class="text-base font-semibold">业务备份服务尚未启用</h2>
-          <p class="text-sm leading-6 text-muted-foreground">整站包保存订单、客户、客服历史、业务配置和附件；商品与实际图片可以独立导出并回传隔离验证。部署独立服务后，这里会显示对应操作和备份记录。</p>
-          <p class="text-sm leading-6 text-muted-foreground">需要先完成独立备份服务、恢复凭据和维护窗口的部署。配置导出与导入可以独立使用。</p>
-          <p class="text-sm leading-6 text-muted-foreground">Hostinger 周备份仍由提供商单独管理，不会混入电脑上的应用备份。</p>
-        </section>
-        <LocalComputerBackupAndConsistentRecovery v-else-if="overview?.whole_storefront_maintenance_configured" />
+        <LocalComputerBackupAndConsistentRecovery v-else :maintenance-configured="overview?.whole_storefront_maintenance_configured" />
       </TabsContent>
     </Tabs>
   </div>

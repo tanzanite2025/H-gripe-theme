@@ -1,5 +1,8 @@
 <template>
-  <li class="footer-menu-navigation-item">
+  <li
+    class="footer-menu-navigation-item"
+    :class="{ 'footer-menu-navigation-item--has-children': item.children?.length }"
+  >
     <NuxtLink
       v-if="item.to && !item.external"
       class="footer-menu-navigation-item__link"
@@ -85,6 +88,11 @@ const getFooterMenuNavigationItemKey = (
   font-weight: 700;
 }
 
+.footer-menu-navigation-item--has-children > .footer-menu-navigation-item__link {
+  color: var(--tz-text-primary);
+  font-weight: 650;
+}
+
 .footer-menu-navigation-item__link:hover,
 .footer-menu-navigation-item__link:focus-visible {
   color: var(--tz-text-primary);
@@ -97,8 +105,9 @@ const getFooterMenuNavigationItemKey = (
   flex-direction: column;
   gap: 0.55rem;
   margin: 0.55rem 0 0;
-  padding: 0 0 0 0.85rem;
-  border-left: 1px solid var(--tz-border-subtle);
+  padding: 0;
+  padding-inline-start: 0.85rem;
+  border-inline-start: 1px solid var(--tz-border-subtle);
   list-style: none;
 }
 
@@ -115,7 +124,7 @@ const getFooterMenuNavigationItemKey = (
   .footer-menu-navigation-item__children {
     gap: 0.25rem;
     margin-top: 0.3rem;
-    padding-left: 0.75rem;
+    padding-inline-start: 0.75rem;
   }
 
 }

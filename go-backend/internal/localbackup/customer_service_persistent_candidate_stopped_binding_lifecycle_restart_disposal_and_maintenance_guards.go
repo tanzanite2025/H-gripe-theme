@@ -20,6 +20,9 @@ const customerServicePersistentCandidateLifecycleFilename = "customer-service-pe
 
 // This is an internal preparation/disposal ledger, never a switch journal.
 // StageDatabase, StageFingerprint and the whole-storefront preview stay intact.
+// It is not the current selected customer-service module transaction path.
+// No HTTP preparation/acceptance route exists, but restart, release and TTL still
+// consume this ledger. See the sibling lifecycle navigation before retiring it.
 type customerServicePersistentCandidateLifecycle struct {
 	Version                       int                                                  `json:"version"`
 	State                         string                                               `json:"state"`
@@ -46,7 +49,7 @@ func (manager *Manager) saveCustomerServicePersistentCandidateLifecycle(record *
 	}
 	record.UpdatedAt = time.Now().UTC()
 	record.SHA256 = ""
-	record.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(record)
+	record.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(record)
 	if err != nil {
 		return err
 	}
@@ -99,7 +102,7 @@ func (manager *Manager) loadCustomerServicePersistentCandidateLifecycle(id strin
 	}
 	copyOfRecord := record
 	copyOfRecord.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(&copyOfRecord)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(&copyOfRecord)
 	planDigest, planErr := hex.DecodeString(record.Request.PlanSHA256)
 	if err != nil || digest != record.SHA256 || record.Version != 1 || record.ExecutionAvailable || record.TaskID != id || !safeTaskID.MatchString(record.AttemptID) || planErr != nil || len(planDigest) != 32 || record.Identity.Version != 1 || record.Identity.DatabaseName != "local_backup_candidate_"+record.AttemptID[:16] || record.Identity.DatabaseName == manager.Configuration.DatabaseName || record.Identity.PlanSHA256 != record.Request.PlanSHA256 {
 		return nil, errors.New("candidate lifecycle digest, task or database identity changed; inspection is required")

@@ -223,7 +223,7 @@ func TestPostgreSQLCustomerServiceDisposableCandidateRejectsUnsafeSelectionsBind
 		{name: "stale_target_binding", expectedError: "snapshot binding", mutate: func(f *customerServiceDisposableCandidateTestFixture, p *CustomerServiceConversationRecoveryPlan, r *CustomerServiceRecoveryConflictReview, q *CustomerServiceEffectiveSelectionInspectionRequest) {
 			p.Binding.TargetDatabaseFingerprint = strings.Repeat("a", 64)
 			p.SHA256 = ""
-			p.SHA256, _ = customerServiceRecoveryPlanCanonicalJSONSHA256(p)
+			p.SHA256, _ = businessModuleRecoveryCanonicalJSONSHA256(p)
 			q.PlanSHA256 = p.SHA256
 		}},
 		{name: "workspace_capacity_before_database_allocation", expectedError: "workspace capacity", mutate: func(f *customerServiceDisposableCandidateTestFixture, p *CustomerServiceConversationRecoveryPlan, r *CustomerServiceRecoveryConflictReview, q *CustomerServiceEffectiveSelectionInspectionRequest) {

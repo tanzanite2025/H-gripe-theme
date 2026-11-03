@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "購入ガイド"
+    },
+    "safetyInstructions": {
+      "label": "安全上の注意"
+    },
+    "sampleAssembly": {
+      "label": "ホイール組み立てとカスタム製作"
+    },
+    "appearanceLogo": {
+      "label": "外観とロゴ"
+    }
+  }
+}

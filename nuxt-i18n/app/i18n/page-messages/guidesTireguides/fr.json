@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Dégagement entre pneu et cadre"
+    },
+    "schwalbeCircumference": {
+      "label": "Circonférence des pneus Schwalbe"
+    },
+    "tubeless": {
+      "label": "Pneus tubeless et montage"
+    }
+  }
+}

@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "คำถามที่พบบ่อย",
+    "payment": "การชำระเงิน",
+    "shipping": "การจัดส่ง",
+    "afterSales": "บริการหลังการขาย",
+    "warranty": "การรับประกัน",
+    "warrantyCheck": "ตรวจสอบการรับประกัน",
+    "productFeedback": "ความคิดเห็นเกี่ยวกับสินค้า",
+    "spokeCalculator": "เครื่องคำนวณซี่ลวด",
+    "testReport": "รายงานการทดสอบ"
   }
 }

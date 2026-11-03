@@ -171,7 +171,7 @@ END $$`)
 	t.Logf("full schema conversation inventory: %d selected rows, %d verified media files", conversationRows.SourceSelectedRows, conversationRows.Files.PackageVerifiedFiles)
 	selectionPlan := conversationRows.ConversationRecoveryPlan
 	selectionPlan.Binding = CustomerServiceRecoveryPlanSnapshotBinding{TaskID: newTaskID(), SiteID: cfg.SiteID, Environment: cfg.Environment, PackageID: newTaskID(), WorkCopyExpiresAt: time.Now().UTC().Add(time.Hour)}
-	selectionPlan.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(selectionPlan)
+	selectionPlan.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(selectionPlan)
 	require.NoError(t, err)
 	effectiveSelection, err := cfg.inspectCustomerServiceEffectiveSelectedRows(ctx, conversationSourceGraph, conversationTargetGraph, selectionPlan, nil, CustomerServiceEffectiveSelectionInspectionRequest{PlanSHA256: selectionPlan.SHA256}, &manifest, extracted)
 	require.NoError(t, err)

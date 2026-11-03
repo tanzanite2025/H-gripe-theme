@@ -18,7 +18,7 @@ func TestProductCatalogTemplateAndCategoryRichTextUseExactAttributesAndExcludePl
 			if source.table == "product_information_templates" {
 				row = copyProductCatalogRowWithJSONFieldsChanged(t, row, `{"description":null,"meta_title":null,"meta_description":null}`)
 			}
-			snapshot := productCatalogModuleSnapshot{Tables: map[string]productCatalogTableSnapshot{
+			snapshot := productCatalogModuleSnapshot{Tables: map[string]businessModuleCompleteTableSnapshot{
 				source.table:   {Rows: []json.RawMessage{row}},
 				"media_assets": {Rows: []json.RawMessage{json.RawMessage(`{"id":1,"storage_key":"photo.png","media_type":"image"}`), json.RawMessage(`{"id":2,"storage_key":"video.mp4","media_type":"video"}`), json.RawMessage(`{"id":3,"storage_key":"manual","media_type":"document"}`)}},
 			}}

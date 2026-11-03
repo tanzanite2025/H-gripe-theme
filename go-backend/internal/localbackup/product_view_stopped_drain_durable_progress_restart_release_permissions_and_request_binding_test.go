@@ -25,7 +25,7 @@ func TestProductViewStoppedDrainUnfinishedProgressSurvivesRestartAndCannotReleas
 	require.NoError(t, err)
 	task.State, task.ExpiresAt = "running", time.Now().Add(-time.Hour)
 	task.Manifest = &Manifest{Scope: productCatalogBackupScope, PackageID: newTaskID()}
-	configurationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(cfg)
+	configurationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(cfg)
 	require.NoError(t, err)
 	task.ProductViewStoppedDrain = &ProductViewStoppedDrainAndCandidateRebuildProgress{Version: 1, TaskID: task.ID, PackageID: task.Manifest.PackageID, ConfigurationSHA256: configurationDigest, Operator: task.Actor, TargetDatabaseOID: 42, Phase: "draining"}
 	require.NoError(t, manager.saveProductViewStoppedDrainProgress(task))

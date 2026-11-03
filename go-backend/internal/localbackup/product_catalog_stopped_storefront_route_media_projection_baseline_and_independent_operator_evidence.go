@@ -144,7 +144,7 @@ func (manager *Manager) inspectStoppedProductStorefrontProjectionBaselineWithHel
 	if err != nil || len(encoded) > 4<<20 {
 		return nil, errors.New("product storefront projection exceeds its supported 4 MiB report bound")
 	}
-	report.ContractSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(report)
+	report.ContractSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(report)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (manager *Manager) SaveStoppedProductProjectionIndependentOperatorEvidence(
 	} else {
 		snapshotCopy := *previous
 		snapshotCopy.SHA256 = ""
-		digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
+		digest, err := businessModuleRecoveryCanonicalJSONSHA256(snapshotCopy)
 		if err != nil || digest != previous.SHA256 || request.ExpectedRecordSHA256 != previous.SHA256 || previous.Version != 1 || previous.Scope != productCatalogBackupScope || previous.TaskID != task.ID || previous.WindowID != task.Journal.ProductCatalogStoppedSwitch.WindowID {
 			return nil, errors.New("product projection record identity, digest or expected revision changed")
 		}
@@ -252,7 +252,7 @@ func (manager *Manager) SaveStoppedProductProjectionIndependentOperatorEvidence(
 		return nil, err
 	}
 	record := &ProductCatalogStoppedProjectionOperatorEvidenceRecord{Version: 1, Scope: productCatalogBackupScope, TaskID: task.ID, WindowID: report.WindowID, ContractSHA256: report.ContractSHA256, DetailCacheProgressSHA256: report.DetailCacheProgressSHA256, Operator: actor, RecordedAt: time.Now().UTC(), Verification: "operator_attestation_only_external_results_not_automatically_verified", Attestations: append([]ExternalProjectionReconciliationAttestation{}, request.Attestations...)}
-	record.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(record)
+	record.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(record)
 	if err != nil {
 		return nil, err
 	}

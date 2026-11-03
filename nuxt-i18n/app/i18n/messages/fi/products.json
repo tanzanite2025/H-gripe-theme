@@ -8,12 +8,12 @@
   "loadMore": "Lataa lisää",
   "items": "kpl",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "shop": "Kauppa",
+    "aboutTools": "Tietoa työkaluista",
+    "tireSizeCharts": "Rengasopas",
+    "blog": "Blogi",
+    "technicalDocs": "Tekninen dokumentaatio",
+    "wheelsetBuyersGuide": "Kiekko-opas",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

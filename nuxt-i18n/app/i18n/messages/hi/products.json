@@ -8,12 +8,12 @@
   "loadMore": "और लोड करें",
   "items": "वस्तुएं",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "shop": "दुकान",
+    "aboutTools": "उपकरणों के बारे में",
+    "tireSizeCharts": "टायर मार्गदर्शिका",
+    "blog": "ब्लॉग",
+    "technicalDocs": "तकनीकी दस्तावेज़",
+    "wheelsetBuyersGuide": "व्हीलसेट मार्गदर्शिका",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

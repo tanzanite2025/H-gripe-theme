@@ -114,9 +114,9 @@ func TestCustomerServiceCandidateColumnContractOptionalReportFieldPreservesLegac
 	encoded, err := json.Marshal(report)
 	require.NoError(t, err)
 	require.JSONEq(t, string(legacy), string(encoded))
-	legacyDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(legacy)
+	legacyDigest, err := businessModuleRecoveryCanonicalJSONSHA256(legacy)
 	require.NoError(t, err)
-	currentDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(report)
+	currentDigest, err := businessModuleRecoveryCanonicalJSONSHA256(report)
 	require.NoError(t, err)
 	require.Equal(t, legacyDigest, currentDigest)
 }

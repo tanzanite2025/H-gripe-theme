@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "टायर और फ्रेम के बीच की जगह"
+    },
+    "schwalbeCircumference": {
+      "label": "Schwalbe टायर की परिधि"
+    },
+    "tubeless": {
+      "label": "ट्यूबलेस टायर और स्थापना"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Frigang mellem dæk og stel"
+    },
+    "schwalbeCircumference": {
+      "label": "Omkreds af Schwalbe-dæk"
+    },
+    "tubeless": {
+      "label": "Slangeløse dæk og montering"
+    }
+  }
+}

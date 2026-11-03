@@ -269,7 +269,7 @@
   },
   "breadcrumbs": {
     "home": "Home",
-    "guides": "Guides",
+    "guides": "Guide",
     "blog": "Blog",
     "pageSections": "Page sections"
   },
@@ -782,15 +782,15 @@
   },
   "company": {
     "nav": {
-      "about": "About Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us",
-      "aboutWebsite": "Me & This Website"
+      "about": "Chi siamo",
+      "ourStory": "La nostra storia",
+      "globalPartners": "Partner internazionali",
+      "oemOdm": "Produzione OEM e ODM",
+      "certificates": "Certificati",
+      "membershipPoints": "Iscrizione e punti",
+      "pictureWarehouse": "Galleria fotografica",
+      "contact": "Contattaci",
+      "aboutWebsite": "Io e questo sito"
     },
     "index": {
       "title": "Company",
@@ -1104,50 +1104,80 @@
   },
   "footer": {
     "links": {
-      "technicalDocs": "Tecnico",
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
+      "technicalDocs": "Documentazione tecnica",
+      "shop": "Negozio",
+      "aboutTools": "Informazioni sugli strumenti",
+      "tireSizeCharts": "Guida agli pneumatici",
       "blog": "Blog",
-      "wheelsetBuyersGuide": "Wheelset Guide",
-      "about": "About",
-      "aboutUs": "About Us",
-      "contact": "Contact",
-      "contactUs": "Contact Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "meThisWebsite": "Me & This Website",
-      "whyThisName": "Why This Name"
+      "wheelsetBuyersGuide": "Guida alle ruote",
+      "about": "Chi siamo",
+      "aboutUs": "Chi siamo",
+      "contact": "Contattaci",
+      "contactUs": "Contattaci",
+      "ourStory": "La nostra storia",
+      "globalPartners": "Partner internazionali",
+      "oemOdm": "Produzione OEM e ODM",
+      "certificates": "Certificati",
+      "membershipPoints": "Iscrizione e punti",
+      "pictureWarehouse": "Galleria fotografica",
+      "meThisWebsite": "Io e questo sito",
+      "whyThisName": "Perché questo nome",
+      "workbenchFeed": "Novità dall’officina"
     },
     "menus": {
       "technology": "Tecnologia",
-      "products": "Products",
-      "support": "Support",
-      "company": "Company",
-      "resources": "RESOURCES",
-      "siteOverview": "Site Overview",
-      "policies": "Policies"
+      "products": "Prodotti",
+      "support": "Assistenza",
+      "company": "Azienda",
+      "resources": "Risorse",
+      "siteOverview": "Informazioni sul sito",
+      "policies": "Politiche"
     },
     "brand": {
-      "line1": "A brand of Top Sports Co., Limited.",
-      "line2": "Flat 1602, 16/F, Lucky Centre,",
-      "line3": "No.165-171 Wan Chai Road, Wan Chai",
+      "line1": "Un marchio di Top Sports Co., Limited.",
+      "line2": "Unità 1602, 16° piano, Lucky Centre,",
+      "line3": "165–171 Wan Chai Road, Wan Chai",
       "line4": "Hong Kong.",
-      "hkLabel": "Hongkong:",
+      "hkLabel": "Hong Kong:",
       "xmLabel": "Xiamen:"
     },
     "support": {
-      "allFaqs": "All FAQ'S",
-      "payment": "Payment",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "productFeedback": "Product Feedback",
-      "spokecalculator": "Spokecalculator"
-    }
+      "allFaqs": "Domande frequenti",
+      "payment": "Pagamento",
+      "afterSales": "Assistenza post-vendita",
+      "warranty": "Garanzia",
+      "productFeedback": "Opinioni sui prodotti",
+      "spokecalculator": "Calcolatore dei raggi"
+    },
+    "subscription": {
+      "label": "Iscriviti per ricevere novità sui prodotti e sul blog",
+      "placeholder": "Inserisci la tua e-mail",
+      "emailLabel": "Indirizzo e-mail",
+      "button": "Iscriviti",
+      "loading": "Iscrizione in corso…",
+      "success": "Iscrizione riuscita. Controlla la tua e-mail per confermare.",
+      "invalidEmail": "Inserisci un indirizzo e-mail valido.",
+      "failed": "Iscrizione non riuscita. Riprova più tardi.",
+      "verificationUnavailable": "Verifica non disponibile. Riprova più tardi.",
+      "verificationFailed": "Verifica non riuscita. Riprova.",
+      "verificationExpired": "La verifica è scaduta. Riprova."
+    },
+    "accessibility": {
+      "navigation": "Navigazione a piè di pagina",
+      "scrollLeft": "Scorri la navigazione a sinistra",
+      "scrollRight": "Scorri la navigazione a destra",
+      "paymentMethods": "Metodi di pagamento accettati",
+      "sslSecure": "Connessione SSL sicura",
+      "cardPayment": "Pagamento con carta"
+    },
+    "categories": {
+      "wheelset": "Coppie di ruote",
+      "wheelComponents": "Componenti delle ruote",
+      "tire": "Pneumatici",
+      "spokeRepairKits": "Kit di riparazione dei raggi",
+      "carbonRim": "Cerchi in carbonio"
+    },
+    "securityNotice": "Tutte le pagine utilizzano HTTPS con crittografia SSL. I pagamenti vengono elaborati in sicurezza; nessun dato della carta viene memorizzato."
   },
   "header": {
     "searchHint": {
@@ -1611,14 +1641,26 @@
     "contact": "Contact"
   },
   "policyTabs": {
-    "cookie": "Cookie",
-    "privacy": "Privacy",
-    "refundCancellation": "Politica di rimborso e cancellazione",
-    "terms": "Terms"
+    "cookie": "Informativa sui cookie",
+    "privacy": "Informativa sulla privacy",
+    "refundCancellation": "Rimborsi e cancellazioni",
+    "terms": "Condizioni di servizio"
   },
   "privacy": {
     "button": "Informativa sulla privacy",
     "title": "Informativa sulla privacy"
+  },
+  "privateOrderAttachments": {
+    "attachment": "Allegato",
+    "closePreview": "Chiudi anteprima",
+    "download": "Scarica",
+    "downloadFailed": "Impossibile scaricare questo allegato. Aggiorna la pagina e riprova.",
+    "downloadToView": "Scarica questo file per visualizzarlo.",
+    "image": "Immagine",
+    "loading": "Caricamento…",
+    "readFailed": "Impossibile aprire questo allegato. Aggiorna la pagina e riprova.",
+    "shipmentImage": "Foto della spedizione",
+    "video": "Video"
   },
   "productCategoryNavigationCards": {
     "heading": "Product categories",
@@ -1669,12 +1711,12 @@
     "loadMore": "Carica altro",
     "items": "articoli",
     "nav": {
-      "technicalDocs": "Tecnico",
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
+      "technicalDocs": "Documentazione tecnica",
+      "shop": "Negozio",
+      "aboutTools": "Informazioni sugli strumenti",
+      "tireSizeCharts": "Guida agli pneumatici",
       "blog": "Blog",
-      "wheelsetBuyersGuide": "Wheelset Guide",
+      "wheelsetBuyersGuide": "Guida alle ruote",
       "spokeGuides": "Spoke Guides"
     },
     "navShort": {
@@ -1936,15 +1978,15 @@
   },
   "support": {
     "nav": {
-      "faqs": "All FAQs",
-      "payment": "Payment",
-      "shipping": "Shipping",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "warrantyCheck": "Warranty Check",
-      "productFeedback": "Product Feedback",
-      "spokeCalculator": "Spoke Calculator",
-      "testReport": "Test report"
+      "faqs": "Domande frequenti",
+      "payment": "Pagamento",
+      "shipping": "Spedizione",
+      "afterSales": "Assistenza post-vendita",
+      "warranty": "Garanzia",
+      "warrantyCheck": "Verifica della garanzia",
+      "productFeedback": "Opinioni sui prodotti",
+      "spokeCalculator": "Calcolatore dei raggi",
+      "testReport": "Rapporti di prova"
     }
   },
   "toolsNavigation": {
@@ -1952,25 +1994,25 @@
     "eyebrow": "Scelta dei componenti per biciclette",
     "description": "Cerca, filtra e confronta le specifiche dei componenti. Ogni strumento include spiegazioni per interpretare i risultati.",
     "openTool": "Apri strumento",
-    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorLabel": "Selettore di pneumatici Schwalbe",
     "schwalbeTireSelectorDescription": "Cerca e filtra il catalogo pneumatici Schwalbe per modello e misura, con spiegazioni su costruzione e specifiche.",
     "brandWheelsetSpokeSpecsLabel": "Specifiche di raggi e nippli delle ruote",
     "brandWheelsetSpokeSpecsDescription": "Filtra per marca o cerca un modello di ruota per consultare lunghezze dei raggi, incroci e specifiche dei nippli, con note sui kit di riparazione.",
     "spokeLengthCalculatorLabel": "Calcolatore della lunghezza dei raggi",
     "spokeLengthCalculatorDescription": "Calcola la lunghezza dei raggi anteriori e posteriori con la procedura completa per cerchio, mozzo, incroci, correzioni e nippli, con indicazioni sulle misure e sui risultati.",
-    "spokeLacingTopologySimulatorLabel": "Simulatore di schemi di raggiatura",
+    "spokeLacingTopologySimulatorLabel": "Simulatore degli schemi di raggiatura",
     "spokeLacingTopologySimulatorDescription": "Visualizza posizioni dei fori, schemi di raggiatura, configurazioni G3 e 2:1 e geometria di entrambe le flange, con spiegazioni e limiti dell’anteprima.",
     "dynamicTirePressureCalculatorLabel": "Calcolatore dinamico della pressione degli pneumatici",
     "dynamicTirePressureCalculatorDescription": "Scopri come carico, pressione, velocità e inclinazione modificano l’area di contatto e la forza in curva stimate.",
-    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsLabel": "Meccanica di distensione dei raggi in acciaio inox",
     "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
-    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorLabel": "Calcolatore della lunghezza della valvola della camera d’aria",
     "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
-    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineLabel": "Assistente di compatibilità tra corpetto ruota libera e cassetta",
     "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
-    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineLabel": "Calcolatore di compatibilità della larghezza di pneumatici e cerchi",
     "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
-    "tireSizeMarkingConverterLabel": "Tire size marking converter",
+    "tireSizeMarkingConverterLabel": "Convertitore delle misure degli pneumatici",
     "tireSizeMarkingConverterDescription": "Convert ETRTO, inch, and French tire markings with the complete size reference, explanations, and fitment limits."
   },
   "user": {

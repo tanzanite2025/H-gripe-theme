@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Renkaan ja rungon välys"
+    },
+    "schwalbeCircumference": {
+      "label": "Schwalbe-renkaiden ympärysmitta"
+    },
+    "tubeless": {
+      "label": "Sisärenkaattomat renkaat ja asennus"
+    }
+  }
+}

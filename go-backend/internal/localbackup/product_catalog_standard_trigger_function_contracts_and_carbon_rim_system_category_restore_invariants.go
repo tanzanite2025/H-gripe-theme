@@ -159,11 +159,11 @@ func lockProductCatalogWriteTablesAndValidateStandardBusinessContractsBeforeMerg
 		return identities, err
 	}
 	for _, row := range snapshot.Tables["products"].Rows {
-		id, err := productCatalogRowString(row, "id")
+		id, err := readBusinessModuleSnapshotRowColumnText(row, "id")
 		if err != nil {
 			return identities, err
 		}
-		incomingType, err := productCatalogRowString(row, "product_type")
+		incomingType, err := readBusinessModuleSnapshotRowColumnText(row, "product_type")
 		if err != nil {
 			return identities, err
 		}

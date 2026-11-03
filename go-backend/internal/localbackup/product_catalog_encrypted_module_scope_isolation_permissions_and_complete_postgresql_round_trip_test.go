@@ -55,7 +55,7 @@ func TestProductCatalogPackagesCannotContainWholeDatabaseSecretsOrPrivateMedia(t
 	require.NoError(t, manager.saveTask(task))
 	_, err = manager.ApplyVerifiedRecovery(task.ID, "RESTORE "+cfg.SiteID+"/"+cfg.Environment+"/"+task.Manifest.PackageID)
 	require.Error(t, err)
-	_, err = cfg.collectProductCatalogMediaReferences(productCatalogModuleSnapshot{Tables: map[string]productCatalogTableSnapshot{"products": {Rows: []json.RawMessage{json.RawMessage(`{"description":"<img src='data:image/png;base64,AAAA'>","short_desc":""}`)}}}})
+	_, err = cfg.collectProductCatalogMediaReferences(productCatalogModuleSnapshot{Tables: map[string]businessModuleCompleteTableSnapshot{"products": {Rows: []json.RawMessage{json.RawMessage(`{"description":"<img src='data:image/png;base64,AAAA'>","short_desc":""}`)}}}})
 	require.NoError(t, err)
 	_, _, err = cfg.resolveProductCatalogImageSource("https://unregistered.invalid/photo.webp")
 	require.Error(t, err)
@@ -64,17 +64,17 @@ func TestProductCatalogPackagesCannotContainWholeDatabaseSecretsOrPrivateMedia(t
 func TestProductCatalogPackagesRejectNoncanonicalPrimaryKeysThatCouldBypassSharedMediaIdentityLookup(t *testing.T) {
 	for _, rawID := range []string{`"01"`, `0`, `-1`, `9223372036854775808`, `1e2`} {
 		t.Run(rawID, func(t *testing.T) {
-			snapshot := productCatalogModuleSnapshot{ContractVersion: 1, Tables: map[string]productCatalogTableSnapshot{}}
+			snapshot := productCatalogModuleSnapshot{ContractVersion: 1, Tables: map[string]businessModuleCompleteTableSnapshot{}}
 			manifest := Manifest{Tables: map[string]int64{}}
 			for name := range productCatalogAllowedTableNames() {
-				snapshot.Tables[name] = productCatalogTableSnapshot{Rows: []json.RawMessage{}}
+				snapshot.Tables[name] = businessModuleCompleteTableSnapshot{Rows: []json.RawMessage{}}
 				manifest.Tables[name] = 0
 			}
-			snapshot.Tables["media_assets"] = productCatalogTableSnapshot{Rows: []json.RawMessage{json.RawMessage(`{"id":` + rawID + `}`)}}
+			snapshot.Tables["media_assets"] = businessModuleCompleteTableSnapshot{Rows: []json.RawMessage{json.RawMessage(`{"id":` + rawID + `}`)}}
 			manifest.Tables["media_assets"] = 1
 			contents, err := json.Marshal(snapshot)
 			require.NoError(t, err)
-			manifest.DatabaseFingerprint = productCatalogBytesSHA256(contents)
+			manifest.DatabaseFingerprint = businessModuleRecoveryBytesSHA256(contents)
 			directory := t.TempDir()
 			require.NoError(t, os.WriteFile(filepath.Join(directory, productCatalogRowsFilename), contents, 0600))
 			_, err = readAndValidateProductCatalogModuleSnapshot(directory, manifest)

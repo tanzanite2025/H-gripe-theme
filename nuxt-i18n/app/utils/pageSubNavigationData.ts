@@ -173,39 +173,6 @@ export const warrantyTabs = [
 
 export type WarrantyTabId = (typeof warrantyTabs)[number]['id']
 
-export const testReportTabs = [
-  {
-    id: 'rim-test-report',
-    labelKey: 'supportTestReport.tabs.rim.label',
-    fallback: 'Rim Test Report',
-    descriptionKey: 'supportTestReport.tabs.rim.description',
-    description: 'Rim testing documents and compliance references.',
-  },
-  {
-    id: 'wheelset-test-report',
-    labelKey: 'supportTestReport.tabs.wheelset.label',
-    fallback: 'Wheelset Test Report',
-    descriptionKey: 'supportTestReport.tabs.wheelset.description',
-    description: 'Wheelset testing reports and validation data.',
-  },
-  {
-    id: 'tension',
-    labelKey: 'supportTestReport.tabs.tension.label',
-    fallback: 'Tension',
-    descriptionKey: 'supportTestReport.tabs.tension.description',
-    description: 'Spoke tension targets, ranges, and build checks.',
-  },
-  {
-    id: 'wheelset-assembly',
-    labelKey: 'supportTestReport.tabs.assembly.label',
-    fallback: 'Wheelset Assembly',
-    descriptionKey: 'supportTestReport.tabs.assembly.description',
-    description: 'Assembly records, process notes, and final checks.',
-  },
-] as const satisfies readonly PageSubNavigationTab[]
-
-export type TestReportTabId = (typeof testReportTabs)[number]['id']
-
 export const membershipAndPointsTabs = [
   {
     id: 'myinfo',
@@ -296,7 +263,6 @@ export const virtualPageSubNavigationEntries = [
   { path: '/guides/wheelset-buyers', tabs: wheelsetBuyerTabs },
   { path: '/company/about', tabs: companyAboutTabs },
   { path: '/support/warranty', tabs: warrantyTabs },
-  { path: '/technology/test-report', tabs: testReportTabs },
   { path: '/resources/membershipandpoints', tabs: membershipAndPointsTabs },
   { path: '/resources/picture-warehouse', tabs: pictureWarehouseTabs },
 ] as const satisfies readonly PageSubNavigationEntry[]

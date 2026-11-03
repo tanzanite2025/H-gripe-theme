@@ -1,9 +1,9 @@
 {
   "nav": {
     "faqs": "常见问题",
-    "payment": "支付",
-    "shipping": "物流",
-    "afterSales": "售后",
+    "payment": "支付方式",
+    "shipping": "物流配送",
+    "afterSales": "售后服务",
     "warranty": "保修政策",
     "warrantyCheck": "保修查询",
     "productFeedback": "产品反馈",

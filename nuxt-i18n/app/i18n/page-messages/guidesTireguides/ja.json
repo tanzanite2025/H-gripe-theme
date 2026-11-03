@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "タイヤとフレームのクリアランス"
+    },
+    "schwalbeCircumference": {
+      "label": "Schwalbe タイヤの外周長"
+    },
+    "tubeless": {
+      "label": "チューブレスタイヤと取り付け"
+    }
+  }
+}

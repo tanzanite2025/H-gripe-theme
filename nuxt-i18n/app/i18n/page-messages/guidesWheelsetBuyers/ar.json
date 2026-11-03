@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "دليل الشراء"
+    },
+    "safetyInstructions": {
+      "label": "تعليمات السلامة"
+    },
+    "sampleAssembly": {
+      "label": "تجميع العجلات والتجميع حسب الطلب"
+    },
+    "appearanceLogo": {
+      "label": "المظهر والشعارات"
+    }
+  }
+}

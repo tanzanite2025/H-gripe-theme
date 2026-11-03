@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "खरीद मार्गदर्शिका"
+    },
+    "safetyInstructions": {
+      "label": "सुरक्षा निर्देश"
+    },
+    "sampleAssembly": {
+      "label": "पहियों की असेंबली और कस्टम निर्माण"
+    },
+    "appearanceLogo": {
+      "label": "रंगरूप और लोगो"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 <template>
   <div class="support-rim-test-report rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-3 md:p-6">
-    <h3 class="support-section__title text-center">{{ t('testReportRim.title') }}</h3>
+    <component :is="headingTag" class="support-section__title text-center">{{ t('testReportRim.title') }}</component>
 
     <p class="support-section__body mt-4 text-center">
       {{ t('testReportRim.intro') }}
@@ -16,9 +16,9 @@
       class="rim-test-card mt-4"
       :class="{ 'mt-6': test.id === 'strength' }"
     >
-      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
+      <component :is="headingTag === 'h1' ? 'h2' : 'h4'" class="sizecharts-section__subheading text-emerald-700 font-semibold">
         {{ t(rimMessage(test.id, 'title')) }}
-      </h4>
+      </component>
       <p class="support-section__body">
         <strong>{{ t('testReportRim.labels.purpose') }}</strong>
         {{ t(rimMessage(test.id, 'purpose')) }}
@@ -73,9 +73,9 @@
     </div>
 
     <div class="support-rim-test-report__disclaimer mt-6 rounded-lg px-4 py-3 text-sm leading-relaxed">
-      <h4 class="support-rim-test-report__disclaimer-label mb-3 font-semibold">
+      <component :is="headingTag === 'h1' ? 'h2' : 'h4'" class="support-rim-test-report__disclaimer-label mb-3 font-semibold">
         {{ t('testReportRim.disclaimer.title') }}
-      </h4>
+      </component>
       <p class="mb-2">{{ t('testReportRim.disclaimer.body.0') }}</p>
       <p>{{ t('testReportRim.disclaimer.body.1') }}</p>
     </div>
@@ -87,7 +87,8 @@ import { computed, watch } from 'vue'
 import { useI18n } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 
-const { openSpokeHoleVideo } = defineProps<{
+const { openSpokeHoleVideo, headingTag = 'h3' } = defineProps<{
+  headingTag?: 'h1' | 'h2' | 'h3'
   openSpokeHoleVideo: () => void | Promise<void>
 }>()
 

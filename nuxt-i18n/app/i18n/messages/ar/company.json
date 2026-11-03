@@ -1,14 +1,14 @@
 {
   "nav": {
-    "about": "About Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "contact": "Contact Us",
-    "aboutWebsite": "Me & This Website"
+    "about": "من نحن",
+    "ourStory": "قصتنا",
+    "globalPartners": "شركاؤنا حول العالم",
+    "oemOdm": "التصنيع حسب الطلب OEM وODM",
+    "certificates": "الشهادات",
+    "membershipPoints": "العضوية والنقاط",
+    "pictureWarehouse": "مكتبة الصور",
+    "contact": "اتصل بنا",
+    "aboutWebsite": "أنا وهذا الموقع"
   },
   "index": {
     "title": "Company",

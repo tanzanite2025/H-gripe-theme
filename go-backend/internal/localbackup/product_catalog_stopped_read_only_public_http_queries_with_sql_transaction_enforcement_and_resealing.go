@@ -121,7 +121,7 @@ func (manager *Manager) ExecuteStoppedProductReadOnlyPublicHTTPQuery(ctx context
 	return &StoppedProductReadOnlyPublicHTTPResult{
 		Version: 1, Scope: productCatalogBackupScope, TaskID: task.ID, WindowID: before.WindowID, ContractSHA256: before.ContractSHA256,
 		DatabaseOID: before.DatabaseOID, DetailCacheProgressSHA256: before.DetailCacheProgressSHA256, Request: request,
-		HTTPStatus: status, Response: body, ResponseSHA256: productCatalogBytesSHA256(body), SQLReadOnly: true, ApplicationRemainsStopped: true,
+		HTTPStatus: status, Response: body, ResponseSHA256: businessModuleRecoveryBytesSHA256(body), SQLReadOnly: true, ApplicationRemainsStopped: true,
 		Verification:    "in_process_public_product_http_handler_enforced_sql_read_only_no_network",
 		RemainingChecks: []string{"all_product_routes_and_search_pages", "storefront_context_currency_shipping_reviews_and_breadcrumb_composition", "public_image_http_bytes_and_private_attachment_authorization", "actual_nuxt_html_route_index_sitemap_proxy_edge_and_browser", "final_business_ownership_acceptance_and_release"}, CapturedAt: time.Now().UTC(),
 	}, nil

@@ -18,10 +18,10 @@ func createSyntheticStoppedProductSwitchWithVerifiedOriginalReleaseIntent(t *tes
 	directory, err := manager.taskDirectory(task.ID)
 	require.NoError(t, err)
 	require.NoError(t, os.MkdirAll(directory, 0700))
-	configurationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
+	configurationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(manager.Configuration)
 	require.NoError(t, err)
 	task.ProductCatalogPreviewBinding.ConfigurationSHA256 = configurationDigest
-	previewDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
+	previewDigest, err := businessModuleRecoveryCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
 	require.NoError(t, err)
 	task.ProductViewStoppedDrain = &ProductViewStoppedDrainAndCandidateRebuildProgress{Version: 1, TaskID: task.ID, PackageID: task.Manifest.PackageID, ConfigurationSHA256: configurationDigest, Operator: "synthetic", TargetDatabaseOID: 1, Phase: "candidate_rebuilt", RebuiltPreviewSHA256: previewDigest, After: &service.ProductViewCountRecoveryBoundaryInspection{RedisBuffersEmpty: true}}
 	require.NoError(t, manager.saveProductViewStoppedDrainProgress(task))

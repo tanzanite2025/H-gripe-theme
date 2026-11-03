@@ -8,12 +8,12 @@
   "loadMore": "もっと読み込む",
   "items": "件",
   "nav": {
-    "technicalDocs": "技術",
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "technicalDocs": "技術資料",
+    "shop": "ショップ",
+    "aboutTools": "ツールについて",
+    "tireSizeCharts": "タイヤガイド",
+    "blog": "ブログ",
+    "wheelsetBuyersGuide": "ホイールガイド",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

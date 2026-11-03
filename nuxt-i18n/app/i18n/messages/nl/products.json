@@ -8,12 +8,12 @@
   "loadMore": "Meer laden",
   "items": "items",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
+    "shop": "Winkel",
+    "aboutTools": "Over de hulpmiddelen",
+    "tireSizeCharts": "Bandengids",
     "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "technicalDocs": "Technische documentatie",
+    "wheelsetBuyersGuide": "Wielengids",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

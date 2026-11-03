@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "구매 안내"
+    },
+    "safetyInstructions": {
+      "label": "안전 지침"
+    },
+    "sampleAssembly": {
+      "label": "휠 조립 및 맞춤 제작"
+    },
+    "appearanceLogo": {
+      "label": "외관 및 로고"
+    }
+  }
+}

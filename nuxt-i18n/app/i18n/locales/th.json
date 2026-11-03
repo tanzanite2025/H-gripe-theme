@@ -269,7 +269,7 @@
   },
   "breadcrumbs": {
     "home": "Home",
-    "guides": "Guides",
+    "guides": "คู่มือ",
     "blog": "Blog",
     "pageSections": "Page sections"
   },
@@ -782,15 +782,15 @@
   },
   "company": {
     "nav": {
-      "about": "About Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us",
-      "aboutWebsite": "Me & This Website"
+      "about": "เกี่ยวกับเรา",
+      "ourStory": "เรื่องราวของเรา",
+      "globalPartners": "พันธมิตรทั่วโลก",
+      "oemOdm": "การผลิตแบบ OEM และ ODM",
+      "certificates": "ใบรับรอง",
+      "membershipPoints": "สมาชิกและคะแนน",
+      "pictureWarehouse": "คลังภาพ",
+      "contact": "ติดต่อเรา",
+      "aboutWebsite": "ฉันกับเว็บไซต์นี้"
     },
     "index": {
       "title": "Company",
@@ -1105,49 +1105,79 @@
   "footer": {
     "menus": {
       "technology": "เทคโนโลยี",
-      "products": "Products",
-      "support": "Support",
-      "company": "Company",
-      "resources": "RESOURCES",
-      "siteOverview": "Site Overview",
-      "policies": "Policies"
+      "products": "สินค้า",
+      "support": "ฝ่ายช่วยเหลือ",
+      "company": "บริษัท",
+      "resources": "แหล่งข้อมูล",
+      "siteOverview": "เกี่ยวกับเว็บไซต์",
+      "policies": "นโยบาย"
     },
     "links": {
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
-      "blog": "Blog",
-      "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide",
-      "about": "About",
-      "aboutUs": "About Us",
-      "contact": "Contact",
-      "contactUs": "Contact Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "meThisWebsite": "Me & This Website",
-      "whyThisName": "Why This Name"
+      "shop": "ร้านค้า",
+      "aboutTools": "เกี่ยวกับเครื่องมือ",
+      "tireSizeCharts": "คู่มือยาง",
+      "blog": "บล็อก",
+      "technicalDocs": "เอกสารทางเทคนิค",
+      "wheelsetBuyersGuide": "คู่มือชุดล้อ",
+      "about": "เกี่ยวกับเรา",
+      "aboutUs": "เกี่ยวกับเรา",
+      "contact": "ติดต่อเรา",
+      "contactUs": "ติดต่อเรา",
+      "ourStory": "เรื่องราวของเรา",
+      "globalPartners": "พันธมิตรทั่วโลก",
+      "oemOdm": "การผลิตแบบ OEM และ ODM",
+      "certificates": "ใบรับรอง",
+      "membershipPoints": "สมาชิกและคะแนน",
+      "pictureWarehouse": "คลังภาพ",
+      "meThisWebsite": "ฉันกับเว็บไซต์นี้",
+      "whyThisName": "ที่มาของชื่อ",
+      "workbenchFeed": "ข่าวสารจากเวิร์กช็อป"
     },
     "brand": {
-      "line1": "A brand of Top Sports Co., Limited.",
-      "line2": "Flat 1602, 16/F, Lucky Centre,",
-      "line3": "No.165-171 Wan Chai Road, Wan Chai",
-      "line4": "Hong Kong.",
-      "hkLabel": "Hongkong:",
-      "xmLabel": "Xiamen:"
+      "line1": "แบรนด์ของ Top Sports Co., Limited.",
+      "line2": "ห้อง 1602 ชั้น 16 อาคาร Lucky Centre",
+      "line3": "165–171 Wan Chai Road, Wan Chai",
+      "line4": "ฮ่องกง",
+      "hkLabel": "ฮ่องกง:",
+      "xmLabel": "เซี่ยเหมิน:"
     },
     "support": {
-      "allFaqs": "All FAQ'S",
-      "payment": "Payment",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "productFeedback": "Product Feedback",
-      "spokecalculator": "Spokecalculator"
-    }
+      "allFaqs": "คำถามที่พบบ่อย",
+      "payment": "การชำระเงิน",
+      "afterSales": "บริการหลังการขาย",
+      "warranty": "การรับประกัน",
+      "productFeedback": "ความคิดเห็นเกี่ยวกับสินค้า",
+      "spokecalculator": "เครื่องคำนวณซี่ลวด"
+    },
+    "subscription": {
+      "label": "สมัครรับข่าวสินค้าใหม่และบทความบล็อก",
+      "placeholder": "กรอกอีเมลของคุณ",
+      "emailLabel": "ที่อยู่อีเมล",
+      "button": "สมัครรับข่าว",
+      "loading": "กำลังสมัคร…",
+      "success": "สมัครสำเร็จ โปรดยืนยันผ่านอีเมลของคุณ",
+      "invalidEmail": "โปรดกรอกที่อยู่อีเมลที่ถูกต้อง",
+      "failed": "สมัครไม่สำเร็จ โปรดลองอีกครั้งภายหลัง",
+      "verificationUnavailable": "ไม่สามารถยืนยันได้ในขณะนี้ โปรดลองอีกครั้งภายหลัง",
+      "verificationFailed": "ยืนยันไม่สำเร็จ โปรดลองอีกครั้ง",
+      "verificationExpired": "การยืนยันหมดอายุแล้ว โปรดลองอีกครั้ง"
+    },
+    "accessibility": {
+      "navigation": "เมนูส่วนท้ายเว็บไซต์",
+      "scrollLeft": "เลื่อนเมนูส่วนท้ายไปทางซ้าย",
+      "scrollRight": "เลื่อนเมนูส่วนท้ายไปทางขวา",
+      "paymentMethods": "วิธีชำระเงินที่รองรับ",
+      "sslSecure": "การเชื่อมต่อ SSL ที่ปลอดภัย",
+      "cardPayment": "ชำระเงินด้วยบัตร"
+    },
+    "categories": {
+      "wheelset": "ชุดล้อ",
+      "wheelComponents": "ชิ้นส่วนล้อ",
+      "tire": "ยาง",
+      "spokeRepairKits": "ชุดซ่อมซี่ลวด",
+      "carbonRim": "ขอบล้อคาร์บอน"
+    },
+    "securityNotice": "ทุกหน้าใช้ HTTPS พร้อมการเข้ารหัส SSL การชำระเงินได้รับการประมวลผลอย่างปลอดภัย และไม่มีการจัดเก็บข้อมูลบัตร"
   },
   "header": {
     "searchHint": {
@@ -1611,14 +1641,26 @@
     "contact": "Contact"
   },
   "policyTabs": {
-    "cookie": "Cookie",
-    "privacy": "Privacy",
+    "cookie": "นโยบายคุกกี้",
+    "privacy": "นโยบายความเป็นส่วนตัว",
     "refundCancellation": "นโยบายการคืนเงินและการยกเลิก",
-    "terms": "Terms"
+    "terms": "เงื่อนไขการใช้บริการ"
   },
   "privacy": {
     "button": "คำแถลงความเป็นส่วนตัว",
     "title": "คำแถลงความเป็นส่วนตัว"
+  },
+  "privateOrderAttachments": {
+    "attachment": "ไฟล์แนบ",
+    "closePreview": "ปิดตัวอย่าง",
+    "download": "ดาวน์โหลด",
+    "downloadFailed": "ไม่สามารถดาวน์โหลดไฟล์แนบนี้ได้ โปรดรีเฟรชหน้าแล้วลองอีกครั้ง",
+    "downloadToView": "ดาวน์โหลดไฟล์นี้เพื่อดูเนื้อหา",
+    "image": "รูปภาพ",
+    "loading": "กำลังโหลด…",
+    "readFailed": "ไม่สามารถเปิดไฟล์แนบนี้ได้ โปรดรีเฟรชหน้าแล้วลองอีกครั้ง",
+    "shipmentImage": "รูปภาพการจัดส่ง",
+    "video": "วิดีโอ"
   },
   "productCategoryNavigationCards": {
     "heading": "Product categories",
@@ -1669,12 +1711,12 @@
     "loadMore": "โหลดเพิ่มเติม",
     "items": "รายการ",
     "nav": {
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
-      "blog": "Blog",
-      "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide",
+      "shop": "ร้านค้า",
+      "aboutTools": "เกี่ยวกับเครื่องมือ",
+      "tireSizeCharts": "คู่มือยาง",
+      "blog": "บล็อก",
+      "technicalDocs": "เอกสารทางเทคนิค",
+      "wheelsetBuyersGuide": "คู่มือชุดล้อ",
       "spokeGuides": "Spoke Guides"
     },
     "navShort": {
@@ -1936,15 +1978,15 @@
   },
   "support": {
     "nav": {
-      "faqs": "All FAQs",
-      "payment": "Payment",
-      "shipping": "Shipping",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "warrantyCheck": "Warranty Check",
-      "productFeedback": "Product Feedback",
-      "spokeCalculator": "Spoke Calculator",
-      "testReport": "Test report"
+      "faqs": "คำถามที่พบบ่อย",
+      "payment": "การชำระเงิน",
+      "shipping": "การจัดส่ง",
+      "afterSales": "บริการหลังการขาย",
+      "warranty": "การรับประกัน",
+      "warrantyCheck": "ตรวจสอบการรับประกัน",
+      "productFeedback": "ความคิดเห็นเกี่ยวกับสินค้า",
+      "spokeCalculator": "เครื่องคำนวณซี่ลวด",
+      "testReport": "รายงานการทดสอบ"
     }
   },
   "toolsNavigation": {
@@ -1952,25 +1994,25 @@
     "eyebrow": "การเลือกชิ้นส่วนจักรยาน",
     "description": "ค้นหา กรอง และเปรียบเทียบข้อมูลจำเพาะของชิ้นส่วน แต่ละเครื่องมือมีคำอธิบายเพื่อช่วยให้เข้าใจผลลัพธ์",
     "openTool": "เปิดเครื่องมือ",
-    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorLabel": "เครื่องมือเลือกยาง Schwalbe",
     "schwalbeTireSelectorDescription": "ค้นหาและกรองแคตตาล็อกยาง Schwalbe ตามรุ่นและขนาด พร้อมคำอธิบายโครงสร้างและข้อมูลจำเพาะ",
     "brandWheelsetSpokeSpecsLabel": "ข้อมูลจำเพาะซี่ลวดและหัวซี่ลวดของชุดล้อ",
     "brandWheelsetSpokeSpecsDescription": "กรองตามแบรนด์หรือค้นหารุ่นชุดล้อเพื่อดูความยาวซี่ลวด รูปแบบการขึ้นซี่ลวด และข้อมูลจำเพาะหัวซี่ลวด พร้อมคำอธิบายชุดซ่อม",
     "spokeLengthCalculatorLabel": "เครื่องคำนวณความยาวซี่ลวด",
     "spokeLengthCalculatorDescription": "คำนวณความยาวซี่ลวดล้อหน้าและล้อหลังด้วยขั้นตอนครบถ้วนสำหรับขอบล้อ ดุม รูปแบบการขึ้นซี่ การชดเชย และหัวซี่ พร้อมคำแนะนำการวัดและคำอธิบายผลลัพธ์",
-    "spokeLacingTopologySimulatorLabel": "เครื่องจำลองรูปแบบการขึ้นซี่ล้อ",
+    "spokeLacingTopologySimulatorLabel": "เครื่องจำลองรูปแบบการขึ้นซี่ลวด",
     "spokeLacingTopologySimulatorDescription": "ดูตัวอย่างตำแหน่งรูซี่ล้อ รูปแบบการขึ้นซี่ การจัดวาง G3 และ 2:1 และรูปทรงของหน้าแปลนทั้งสอง พร้อมคำอธิบายและข้อจำกัดของภาพตัวอย่าง",
-    "dynamicTirePressureCalculatorLabel": "เครื่องคำนวณแรงดันลมยางแบบไดนามิก",
+    "dynamicTirePressureCalculatorLabel": "เครื่องคำนวณแรงดันยางแบบไดนามิก",
     "dynamicTirePressureCalculatorDescription": "ดูว่าภาระ แรงดัน ความเร็ว และมุมเอียงเปลี่ยนพื้นที่สัมผัสยางและแรงขณะเข้าโค้งที่ประเมินไว้อย่างไร",
-    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsLabel": "กลศาสตร์การคลายความเค้นของซี่ลวดสเตนเลส",
     "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
-    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorLabel": "เครื่องคำนวณความยาววาล์วยางใน",
     "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
-    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineLabel": "ตัวช่วยตรวจสอบความเข้ากันได้ของโม่และเฟืองหลัง",
     "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
-    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineLabel": "เครื่องคำนวณความเข้ากันได้ของความกว้างยางและขอบล้อ",
     "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
-    "tireSizeMarkingConverterLabel": "Tire size marking converter",
+    "tireSizeMarkingConverterLabel": "เครื่องมือแปลงขนาดยาง",
     "tireSizeMarkingConverterDescription": "Convert ETRTO, inch, and French tire markings with the complete size reference, explanations, and fitment limits."
   },
   "user": {

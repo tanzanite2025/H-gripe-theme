@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "Satın alma rehberi"
+    },
+    "safetyInstructions": {
+      "label": "Güvenlik talimatları"
+    },
+    "sampleAssembly": {
+      "label": "Tekerlek örümü ve özel üretim"
+    },
+    "appearanceLogo": {
+      "label": "Görünüm ve logolar"
+    }
+  }
+}

@@ -1,47 +1,77 @@
 {
   "links": {
-    "technicalDocs": "Técnico",
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
+    "technicalDocs": "Documentación técnica",
+    "shop": "Tienda",
+    "aboutTools": "Acerca de las herramientas",
+    "tireSizeCharts": "Guía de neumáticos",
     "blog": "Blog",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "wheelsetBuyersGuide": "Guía de ruedas",
+    "about": "Quiénes somos",
+    "aboutUs": "Quiénes somos",
+    "contact": "Contacto",
+    "contactUs": "Contacto",
+    "ourStory": "Nuestra historia",
+    "globalPartners": "Socios internacionales",
+    "oemOdm": "Fabricación OEM y ODM",
+    "certificates": "Certificados",
+    "membershipPoints": "Membresía y puntos",
+    "pictureWarehouse": "Galería de imágenes",
+    "meThisWebsite": "Yo y este sitio web",
+    "whyThisName": "Por qué este nombre",
+    "workbenchFeed": "Novedades del taller"
   },
   "menus": {
     "technology": "Tecnología",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "products": "Productos",
+    "support": "Ayuda",
+    "company": "Empresa",
+    "resources": "Recursos",
+    "siteOverview": "Acerca del sitio",
+    "policies": "Políticas"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
+    "line1": "Una marca de Top Sports Co., Limited.",
+    "line2": "Unidad 1602, planta 16, Lucky Centre,",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
     "line4": "Hong Kong.",
-    "hkLabel": "Hongkong:",
+    "hkLabel": "Hong Kong:",
     "xmLabel": "Xiamen:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "Preguntas frecuentes",
+    "payment": "Pago",
+    "afterSales": "Servicio posventa",
+    "warranty": "Garantía",
+    "productFeedback": "Opiniones sobre productos",
+    "spokecalculator": "Calculadora de radios"
+  },
+  "subscription": {
+    "label": "Recibe novedades de productos y del blog",
+    "placeholder": "Introduce tu correo electrónico",
+    "emailLabel": "Correo electrónico",
+    "button": "Suscribirse",
+    "loading": "Suscribiendo…",
+    "success": "Suscripción realizada. Revisa tu correo electrónico para confirmarla.",
+    "invalidEmail": "Introduce una dirección de correo electrónico válida.",
+    "failed": "No se pudo completar la suscripción. Inténtalo más tarde.",
+    "verificationUnavailable": "La verificación no está disponible. Inténtalo más tarde.",
+    "verificationFailed": "La verificación ha fallado. Inténtalo de nuevo.",
+    "verificationExpired": "La verificación ha caducado. Inténtalo de nuevo."
+  },
+  "accessibility": {
+    "navigation": "Navegación del pie de página",
+    "scrollLeft": "Desplazar el pie de página a la izquierda",
+    "scrollRight": "Desplazar el pie de página a la derecha",
+    "paymentMethods": "Métodos de pago aceptados",
+    "sslSecure": "Conexión SSL segura",
+    "cardPayment": "Pago con tarjeta"
+  },
+  "categories": {
+    "wheelset": "Juegos de ruedas",
+    "wheelComponents": "Componentes de ruedas",
+    "tire": "Neumáticos",
+    "spokeRepairKits": "Kits de reparación de radios",
+    "carbonRim": "Llantas de carbono"
+  },
+  "securityNotice": "Todas las páginas utilizan HTTPS con cifrado SSL. Los pagos se procesan de forma segura; no se almacenan datos de tarjetas."
 }

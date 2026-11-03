@@ -33,9 +33,17 @@ const sections = createFooterMenusFromRoutes([
   createNormalizedFooterTestRoute('/shop/:slug', 'shop-slug'),
   createNormalizedFooterTestRoute('/shop/:category(.*)*', 'shop-category'),
   createNormalizedFooterTestRoute('/guides', 'guides'),
-  createNormalizedFooterTestRoute('/technology/test-report', 'technology-test-report', {
-    footerLabelKey: 'support.nav.testReport',
-    footerLabelFallback: 'Test Report',
+  createNormalizedFooterTestRoute('/technology/rim-test-report', 'technology-rim-test-report', {
+    footerLabelKey: 'supportTestReport.tabs.rim.label',
+    footerLabelFallback: 'Rim Test Report',
+  }),
+  createNormalizedFooterTestRoute('/technology/wheelset-test-report', 'technology-wheelset-test-report', {
+    footerLabelKey: 'supportTestReport.tabs.wheelset.label',
+    footerLabelFallback: 'Wheelset Test Report',
+  }),
+  createNormalizedFooterTestRoute('/technology/wheel-building-quality-checks', 'technology-wheel-building-quality-checks', {
+    footerLabelKey: 'supportTestReport.tabs.assembly.label',
+    footerLabelFallback: 'Wheel Building & Quality Checks',
   }),
   createNormalizedFooterTestRoute('/support/faqs', 'support-faqs'),
   createNormalizedFooterTestRoute('/tools', 'tools', {
@@ -102,8 +110,13 @@ assert.deepEqual(shopSection.links.map(link => link.to), ['/shop'])
 
 const guidesSection = sections.find(section => section.id === 'guides')
 const technologySection = sections.find(section => section.id === 'technology')
-assert.ok(technologySection, 'TECHNOLOGY must discover the migrated test report')
-assert.deepEqual(technologySection.links.map(link => link.to), ['/technology/test-report'])
+assert.ok(technologySection, 'TECHNOLOGY must discover all three independent technical pages')
+assert.deepEqual(technologySection.links.map(link => link.to), [
+  '/technology/rim-test-report',
+  '/technology/wheelset-test-report',
+  '/technology/wheel-building-quality-checks',
+])
+assert.ok(technologySection.links.every(link => !link.children?.length), 'Independent technical pages must not be nested under a report hub')
 assert.ok(!sections.find(section => section.id === 'support')?.links.some(link => link.to?.includes('test-report')),
   'SUPPORT must not retain ownership of the migrated test report')
 const toolsSection = sections.find(section => section.id === 'tools')
@@ -187,6 +200,22 @@ assert.deepEqual(shopCategoryLinks, [
 assert.deepEqual(
   createFooterShopLinksFromProductCategories([]),
   [{ labelKey: 'products.nav.shop', fallback: 'Shop', to: '/shop' }],
+)
+
+assert.deepEqual(
+  createFooterShopLinksFromProductCategories([
+    { name: 'Wheelsets', slug: 'wheelset' },
+    { name: 'Carbon Rim', slug: 'carbon-rim' },
+    { name: 'Custom aero wheels', slug: 'wheelset' },
+    { name: 'Roues artisanales', slug: 'wheelset' },
+  ]),
+  [
+    { labelKey: 'footer.categories.wheelset', fallback: 'Wheelsets', to: '/shop/wheelset' },
+    { labelKey: 'footer.categories.carbonRim', fallback: 'Carbon Rim', to: '/shop/carbon-rim' },
+    { fallback: 'Custom aero wheels', to: '/shop/wheelset' },
+    { fallback: 'Roues artisanales', to: '/shop/wheelset' },
+  ],
+  'System category defaults need translations; editor-provided and already localized names must be preserved',
 )
 
 const sectionsWithProductCategories = createFooterMenusFromRoutes(

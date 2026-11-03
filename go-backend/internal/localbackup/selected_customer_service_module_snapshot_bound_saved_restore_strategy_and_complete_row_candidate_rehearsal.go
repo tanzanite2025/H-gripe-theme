@@ -13,73 +13,21 @@ import (
 	"github.com/lib/pq"
 )
 
-// No full customer rows, connection strings or credentials enter these records.
-// Saving a choice authorizes only a disposable rehearsal, never an online switch.
-type SelectedCustomerServiceModuleSnapshotBinding struct {
-	Version                   int       `json:"version"`
-	TaskID                    string    `json:"task_id"`
-	PackageID                 string    `json:"package_id"`
-	SiteID                    string    `json:"site_id"`
-	Environment               string    `json:"environment"`
-	ApplicationVersion        string    `json:"application_version"`
-	MigrationVersion          int64     `json:"migration_version"`
-	ManifestSHA256            string    `json:"manifest_sha256"`
-	CiphertextSHA256          string    `json:"ciphertext_sha256"`
-	TargetDatabaseOID         int64     `json:"target_database_oid"`
-	TargetDatabaseFingerprint string    `json:"target_database_fingerprint"`
-	TargetSchemaSHA256        string    `json:"target_schema_sha256"`
-	TargetMediaFingerprint    string    `json:"target_media_fingerprint"`
-	ConfigurationSHA256       string    `json:"configuration_sha256"`
-	WorkCopyExpiresAt         time.Time `json:"work_copy_expires_at"`
-}
-
 type SelectedCustomerServiceModuleSavedRestoreChoice struct {
-	Version            int                                          `json:"version"`
-	State              string                                       `json:"state"`
-	TaskID             string                                       `json:"task_id"`
-	Operator           string                                       `json:"operator"`
-	Policy             string                                       `json:"policy"`
-	PreviewSHA256      string                                       `json:"preview_sha256"`
-	Binding            SelectedCustomerServiceModuleSnapshotBinding `json:"binding"`
-	RecordedAt         time.Time                                    `json:"recorded_at"`
-	SHA256             string                                       `json:"sha256"`
-	ExecutionAvailable bool                                         `json:"execution_available"`
-}
-
-func (manager *Manager) captureSelectedCustomerServiceModuleSnapshotBinding(ctx context.Context, live *sql.DB, task *Task, mediaFingerprint string) (*SelectedCustomerServiceModuleSnapshotBinding, error) {
-	cfg := manager.Configuration
-	binding := &SelectedCustomerServiceModuleSnapshotBinding{Version: 1, TaskID: task.ID, PackageID: task.Manifest.PackageID, SiteID: cfg.SiteID, Environment: cfg.Environment, ApplicationVersion: cfg.ApplicationVersion, MigrationVersion: cfg.ExpectedMigrationVersion, CiphertextSHA256: task.CiphertextSHA256, TargetMediaFingerprint: mediaFingerprint, WorkCopyExpiresAt: task.ExpiresAt}
-	var err error
-	binding.ManifestSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(task.Manifest)
-	if err != nil {
-		return nil, err
-	}
-	binding.ConfigurationSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(cfg)
-	if err != nil {
-		return nil, err
-	}
-	if err := live.QueryRowContext(ctx, `SELECT oid::bigint FROM pg_database WHERE datname=current_database()`).Scan(&binding.TargetDatabaseOID); err != nil {
-		return nil, err
-	}
-	tx, err := live.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
-	if err != nil {
-		return nil, err
-	}
-	defer func(closeResource func() error) { _ = closeResource() }(tx.Rollback)
-	observation, err := inspectModuleRecoveryDatabaseObservation(ctx, tx)
-	if err != nil {
-		return nil, err
-	}
-	if observation.Migration != cfg.ExpectedMigrationVersion {
-		return nil, errors.New("目标数据库迁移版本已变化，请重新预览")
-	}
-	binding.TargetDatabaseFingerprint = observation.Fingerprint
-	binding.TargetSchemaSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(struct{ Shapes, Indexes, WriteSideEffects any }{observation.Shapes, observation.Indexes, observation.WriteSideEffects})
-	return binding, err
+	Version            int                                  `json:"version"`
+	State              string                               `json:"state"`
+	TaskID             string                               `json:"task_id"`
+	Operator           string                               `json:"operator"`
+	Policy             string                               `json:"policy"`
+	PreviewSHA256      string                               `json:"preview_sha256"`
+	Binding            BusinessModuleRestoreSnapshotBinding `json:"binding"`
+	RecordedAt         time.Time                            `json:"recorded_at"`
+	SHA256             string                               `json:"sha256"`
+	ExecutionAvailable bool                                 `json:"execution_available"`
 }
 
 func validateSelectedCustomerServiceModuleTaskAndPreview(task *Task, previewSHA256 string) error {
-	if task.Kind != "upload" || task.Manifest == nil || task.Manifest.Scope != selectedBusinessModulesBackupScope || !reflect.DeepEqual(task.Manifest.SelectedModules, []string{"customer_service"}) || task.Journal != nil || task.StageDatabase != "" || task.SelectedModuleDisposableStage != nil || task.WorkCopyExpired || !time.Now().Before(task.ExpiresAt) {
+	if task == nil || task.Kind != "upload" || task.Manifest == nil || task.Manifest.Scope != selectedBusinessModulesBackupScope || !reflect.DeepEqual(task.Manifest.SelectedModules, []string{"customer_service"}) || task.Journal != nil || task.StageDatabase != "" || task.SelectedModuleDisposableStage != nil || taskHasAnyTransactionalBusinessModuleRestoreProgress(task) || task.WorkCopyExpired || !time.Now().Before(task.ExpiresAt) {
 		return errors.New("请选择未到期、已预览的单独聊天模块上传包")
 	}
 	if task.State != "module_isolated_restore_verified" && task.State != "module_restore_conflicts_found" && task.State != "module_chat_candidate_rehearsal_verified" {
@@ -91,7 +39,7 @@ func validateSelectedCustomerServiceModuleTaskAndPreview(task *Task, previewSHA2
 	}
 	copyReport := *report
 	copyReport.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(&copyReport)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(&copyReport)
 	if err != nil || digest != previewSHA256 {
 		return errors.New("聊天恢复预览摘要不一致，请重新预览")
 	}
@@ -153,7 +101,7 @@ func (manager *Manager) SaveSelectedCustomerServiceModuleRestoreChoice(ctx conte
 	if err := manager.verifySelectedCustomerServiceModuleSavedChoiceCurrentBinding(ctx, task, choice); err != nil {
 		return nil, err
 	}
-	choice.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(choice)
+	choice.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(choice)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +142,7 @@ func (manager *Manager) verifySelectedCustomerServiceModuleSavedChoiceCurrentBin
 		return err
 	}
 	defer func(closeResource func() error) { _ = closeResource() }(live.Close)
-	current, err := manager.captureSelectedCustomerServiceModuleSnapshotBinding(ctx, live, task, media)
+	current, err := manager.captureBusinessModuleRestoreSnapshotBinding(ctx, live, task, media)
 	if err != nil {
 		return err
 	}
@@ -207,6 +155,9 @@ func (manager *Manager) verifySelectedCustomerServiceModuleSavedChoiceCurrentBin
 	return nil
 }
 
+// This is the current selected-module strategy rehearsal with an HTTP entry.
+// Its disposable report authorizes only a later, separately confirmed formal
+// transaction; it neither builds nor accepts the older persistent chat candidate.
 func (manager *Manager) StartSelectedCustomerServiceModuleCandidateRehearsal(id, choiceSHA256, confirmation string) (*Task, error) {
 	task, err := manager.GetTask(id)
 	if err != nil {
@@ -218,7 +169,7 @@ func (manager *Manager) StartSelectedCustomerServiceModuleCandidateRehearsal(id,
 	}
 	copyChoice := *choice
 	copyChoice.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(&copyChoice)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(&copyChoice)
 	if err != nil || digest != choiceSHA256 {
 		return nil, errors.New("已保存的聊天恢复策略摘要不一致，请重新预览")
 	}
@@ -248,10 +199,14 @@ func (manager *Manager) StartSelectedCustomerServiceModuleCandidateRehearsal(id,
 }
 
 func restoreSelectedCustomerServiceModuleChosenCompleteRowsAndVerifyAllRetainedTables(ctx context.Context, tx *sql.Tx, snapshot selectedBusinessModuleCompleteSnapshot, observation *moduleRecoveryDatabaseObservation, policy string) (inserted, replaced int, resultErr error) {
+	return restoreSelectedCustomerServiceModuleChosenCompleteRowsWithExplicitTransactionPolicy(ctx, tx, snapshot, observation, policy, false)
+}
+
+func restoreSelectedCustomerServiceModuleChosenCompleteRowsWithExplicitTransactionPolicy(ctx context.Context, tx *sql.Tx, snapshot selectedBusinessModuleCompleteSnapshot, observation *moduleRecoveryDatabaseObservation, policy string, liveTransactionalRestore bool) (inserted, replaced int, resultErr error) {
 	if !reflect.DeepEqual(snapshot.Modules, []string{"customer_service"}) || (policy != "use_package_conversation_rows" && policy != "preserve_current_conflicting_conversation_rows") {
 		return 0, 0, errors.New("完整行写入只接受已登记的单独聊天模块策略")
 	}
-	sequences, err := readCustomerServiceCandidateSequenceStates(ctx, tx)
+	sequences, err := readBusinessModuleRestoreSequenceStates(ctx, tx)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -274,7 +229,7 @@ func restoreSelectedCustomerServiceModuleChosenCompleteRowsAndVerifyAllRetainedT
 				return 0, 0, errors.New("完整聊天记录缺少主键")
 			}
 			var same bool
-			err := tx.QueryRowContext(ctx, `SELECT to_jsonb(record)=$1::jsonb FROM public.`+pq.QuoteIdentifier(table)+` record WHERE `+customerServiceCandidateTypedPrimaryKeyPredicate(table, observation.PrimaryKeys[table]), string(raw)).Scan(&same)
+			err := tx.QueryRowContext(ctx, `SELECT to_jsonb(record)=$1::jsonb FROM public.`+pq.QuoteIdentifier(table)+` record WHERE `+businessModuleCompleteRowTypedPrimaryKeyPredicate(table, observation.PrimaryKeys[table]), string(raw)).Scan(&same)
 			if err != nil && err != sql.ErrNoRows {
 				return 0, 0, err
 			}
@@ -307,7 +262,7 @@ func restoreSelectedCustomerServiceModuleChosenCompleteRowsAndVerifyAllRetainedT
 	})
 	selection := &CustomerServiceEffectiveSelectionInspection{}
 	for table := range observation.Tables {
-		preserved, err := fingerprintCustomerServiceRecoveryPlanRetainedTargetTable(ctx, tx, table, observation.Shapes[table], keys[table])
+		preserved, err := fingerprintBusinessModuleRetainedTargetTable(ctx, tx, table, observation.Shapes[table], keys[table])
 		if err != nil {
 			return 0, 0, err
 		}
@@ -315,14 +270,22 @@ func restoreSelectedCustomerServiceModuleChosenCompleteRowsAndVerifyAllRetainedT
 	}
 	// A normal isolated owner must satisfy ordinary constraints; never suppress
 	// triggers using session_replication_role on this complete-row write path.
-	if _, err := tx.ExecContext(ctx, `SET LOCAL ROLE local_backup_isolated_owner`); err != nil {
-		return 0, 0, err
+	if !liveTransactionalRestore {
+		if _, err := tx.ExecContext(ctx, `SET LOCAL ROLE local_backup_isolated_owner`); err != nil {
+			return 0, 0, err
+		}
 	}
 	if err := writeCustomerServiceSelectedFullRowsAndValidateRetainedTables(ctx, tx, observation, selection, rows, keys); err != nil {
 		return 0, 0, err
 	}
-	if _, err := advanceCustomerServiceCandidateOwnedSequencesWithoutRewinding(ctx, tx, sequences, keys); err != nil {
-		return 0, 0, err
+	if liveTransactionalRestore {
+		if err := advanceBusinessModuleRestoreOwnedSequencesTransactionallyAndVerifyPreservation(ctx, tx, sequences, keys); err != nil {
+			return 0, 0, err
+		}
+	} else {
+		if _, err := advanceCustomerServiceCandidateOwnedSequencesWithoutRewinding(ctx, tx, sequences, keys); err != nil {
+			return 0, 0, err
+		}
 	}
 	return inserted, replaced, nil
 }

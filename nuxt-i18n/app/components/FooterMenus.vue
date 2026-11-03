@@ -1,12 +1,12 @@
 <template>
-  <nav v-if="sections.length" class="footer-menus" aria-label="Footer navigation">
+  <nav v-if="sections.length" class="footer-menus" :aria-label="$t('footer.accessibility.navigation')">
     <div v-if="compactSections.length" class="footer-menus__compact-row">
       <button
         v-if="hasCompactMenuOverflow"
         type="button"
         class="footer-menus__scroll-button footer-menus__scroll-button--previous"
         :disabled="!canScrollCompactLeft"
-        aria-label="Scroll footer navigation left"
+        :aria-label="$t('footer.accessibility.scrollLeft')"
         @click="scrollCompactMenus(-1)"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -37,10 +37,20 @@
                 :to="localePath(section.titleLinkTo)"
                 @click.stop
               >
-                {{ $t(section.titleKey, section.fallback || section.id) }}
+                <Icon
+                  :name="footerMenuSectionIconNames[section.id] || 'lucide:folder'"
+                  class="footer-menus__section-icon"
+                  aria-hidden="true"
+                />
+                <span>{{ $t(section.titleKey, section.fallback || section.id) }}</span>
               </NuxtLink>
               <span v-else class="footer-menus__title-text">
-                {{ $t(section.titleKey, section.fallback || section.id) }}
+                <Icon
+                  :name="footerMenuSectionIconNames[section.id] || 'lucide:folder'"
+                  class="footer-menus__section-icon"
+                  aria-hidden="true"
+                />
+                <span>{{ $t(section.titleKey, section.fallback || section.id) }}</span>
               </span>
               <button
                 v-if="section.links.length"
@@ -74,7 +84,7 @@
         type="button"
         class="footer-menus__scroll-button footer-menus__scroll-button--next"
         :disabled="!canScrollCompactRight"
-        aria-label="Scroll footer navigation right"
+        :aria-label="$t('footer.accessibility.scrollRight')"
         @click="scrollCompactMenus(1)"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -105,10 +115,20 @@
             :to="localePath(section.titleLinkTo)"
             @click.stop
           >
-            {{ $t(section.titleKey, section.fallback || section.id) }}
+            <Icon
+              :name="footerMenuSectionIconNames[section.id] || 'lucide:folder'"
+              class="footer-menus__section-icon"
+              aria-hidden="true"
+            />
+            <span>{{ $t(section.titleKey, section.fallback || section.id) }}</span>
           </NuxtLink>
           <span v-else class="footer-menus__title-text">
-            {{ $t(section.titleKey, section.fallback || section.id) }}
+            <Icon
+              :name="footerMenuSectionIconNames[section.id] || 'lucide:folder'"
+              class="footer-menus__section-icon"
+              aria-hidden="true"
+            />
+            <span>{{ $t(section.titleKey, section.fallback || section.id) }}</span>
           </span>
           <button
             v-if="section.links.length"
@@ -152,6 +172,18 @@ import { createFooterMenusFromRoutes } from '~/utils/footerMenus'
 const props = defineProps<{
   menus?: FooterSection[]
 }>()
+
+const footerMenuSectionIconNames: Readonly<Record<string, string>> = {
+  shop: 'lucide:shopping-bag',
+  resources: 'lucide:library',
+  support: 'lucide:life-buoy',
+  company: 'lucide:building-2',
+  tools: 'lucide:wrench',
+  policies: 'lucide:shield-check',
+  technology: 'lucide:cpu',
+  guides: 'lucide:book-open',
+  siteOverview: 'lucide:globe',
+}
 
 const router = useRouter()
 const localePath = useLocalePath()
@@ -225,9 +257,14 @@ const updateCompactScrollState = () => {
   }
 
   const maximumScrollLeft = Math.max(viewport.scrollWidth - viewport.clientWidth, 0)
+  const isRightToLeftNavigation = window.getComputedStyle(viewport).direction === 'rtl'
   hasCompactMenuOverflow.value = maximumScrollLeft > 1
-  canScrollCompactLeft.value = viewport.scrollLeft > 1
-  canScrollCompactRight.value = viewport.scrollLeft < maximumScrollLeft - 1
+  canScrollCompactLeft.value = isRightToLeftNavigation
+    ? viewport.scrollLeft > -maximumScrollLeft + 1
+    : viewport.scrollLeft > 1
+  canScrollCompactRight.value = isRightToLeftNavigation
+    ? viewport.scrollLeft < -1
+    : viewport.scrollLeft < maximumScrollLeft - 1
 }
 
 const scrollCompactMenus = (direction: -1 | 1) => {
@@ -316,7 +353,7 @@ const getFooterMenuNavigationItemKey = (
 .footer-menus__column {
   min-width: 0;
   flex: 1 0 clamp(11rem, 16vw, 17rem);
-  text-align: left;
+  text-align: start;
 }
 
 .footer-menus__second-row {
@@ -328,7 +365,7 @@ const getFooterMenuNavigationItemKey = (
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--tz-border-subtle);
-  text-align: left;
+  text-align: start;
 }
 
 .footer-menus__second-row--single-section {
@@ -364,10 +401,13 @@ const getFooterMenuNavigationItemKey = (
 }
 
 .footer-menus__title {
-  margin: 0 0 1.25rem;
-  font-size: 0.85rem; 
+  margin: 0 0 1.125rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--tz-border-subtle);
+  font-size: 0.95rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  line-height: 1.4;
+  letter-spacing: 0.025em;
   text-transform: uppercase;
   color: var(--tz-text-primary);
   background: none;
@@ -379,10 +419,28 @@ const getFooterMenuNavigationItemKey = (
   user-select: none;
 }
 
-.footer-menus__title-text {
-  /* Ensure gradient text logic works on the span if needed, 
-     but parent has it. If parent is flex, gradient on flex item might break in some browsers if not careful.
-     Putting gradient on text node only. */
+.footer-menus__title-text,
+.footer-menus__title-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.footer-menus__title-text > span,
+.footer-menus__title-link > span {
+  overflow-wrap: anywhere;
+}
+
+.footer-menus__section-icon {
+  box-sizing: content-box;
+  flex: 0 0 auto;
+  width: 1.125rem;
+  height: 1.125rem;
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  color: var(--tz-text-accent);
+  background: var(--tz-site-accent-soft-surface);
 }
 
 .footer-menus__title-link {
@@ -493,10 +551,11 @@ const getFooterMenuNavigationItemKey = (
 
   .footer-menus__title {
     box-sizing: border-box;
-    min-height: 3.25rem;
+    min-height: 3.75rem;
     margin: 0;
     padding: 0.25rem 0;
-    font-size: 0.85rem;
+    border-bottom: 0;
+    font-size: 0.95rem;
     line-height: 1.5;
     background: none;
     -webkit-text-fill-color: unset; /* Reset text fill to allow color change */
@@ -520,7 +579,7 @@ const getFooterMenuNavigationItemKey = (
   .mobile-accordion-content {
     display: none;
     padding-bottom: 1rem;
-    padding-left: 0.5rem; /* Indent slightly */
+    padding-inline-start: 2.375rem;
     animation: slideDown 0.3s ease-out;
   }
 

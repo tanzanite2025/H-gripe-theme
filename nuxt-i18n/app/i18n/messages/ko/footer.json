@@ -1,47 +1,77 @@
 {
   "menus": {
-    "technology": "기술",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "technology": "기술 정보",
+    "products": "제품",
+    "support": "고객 지원",
+    "company": "회사 소개",
+    "resources": "자료",
+    "siteOverview": "사이트 소개",
+    "policies": "정책"
   },
   "links": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "shop": "쇼핑몰",
+    "aboutTools": "도구 소개",
+    "tireSizeCharts": "타이어 가이드",
+    "blog": "블로그",
+    "technicalDocs": "기술 자료",
+    "wheelsetBuyersGuide": "휠셋 가이드",
+    "about": "회사 소개",
+    "aboutUs": "회사 소개",
+    "contact": "문의하기",
+    "contactUs": "문의하기",
+    "ourStory": "우리의 이야기",
+    "globalPartners": "글로벌 파트너",
+    "oemOdm": "OEM 및 ODM 제작",
+    "certificates": "인증서",
+    "membershipPoints": "회원 및 포인트",
+    "pictureWarehouse": "사진 자료실",
+    "meThisWebsite": "나와 이 웹사이트",
+    "whyThisName": "이 이름을 지은 이유",
+    "workbenchFeed": "공방 소식"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
-    "line4": "Hong Kong.",
-    "hkLabel": "Hongkong:",
-    "xmLabel": "Xiamen:"
+    "line1": "Top Sports Co., Limited.의 브랜드입니다.",
+    "line2": "Lucky Centre 16층 1602호",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
+    "line4": "홍콩.",
+    "hkLabel": "홍콩:",
+    "xmLabel": "샤먼:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "자주 묻는 질문",
+    "payment": "결제",
+    "afterSales": "구매 후 서비스",
+    "warranty": "보증",
+    "productFeedback": "제품 의견",
+    "spokecalculator": "스포크 계산기"
+  },
+  "subscription": {
+    "label": "신제품 및 블로그 소식 구독",
+    "placeholder": "이메일 주소를 입력하세요",
+    "emailLabel": "이메일 주소",
+    "button": "구독하기",
+    "loading": "구독 중…",
+    "success": "구독이 완료되었습니다. 이메일에서 확인해 주세요.",
+    "invalidEmail": "유효한 이메일 주소를 입력해 주세요.",
+    "failed": "구독에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    "verificationUnavailable": "인증 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    "verificationFailed": "인증에 실패했습니다. 다시 시도해 주세요.",
+    "verificationExpired": "인증이 만료되었습니다. 다시 시도해 주세요."
+  },
+  "accessibility": {
+    "navigation": "푸터 탐색",
+    "scrollLeft": "푸터 탐색을 왼쪽으로 스크롤",
+    "scrollRight": "푸터 탐색을 오른쪽으로 스크롤",
+    "paymentMethods": "지원되는 결제 방법",
+    "sslSecure": "안전한 SSL 연결",
+    "cardPayment": "카드 결제"
+  },
+  "categories": {
+    "wheelset": "휠셋",
+    "wheelComponents": "휠 부품",
+    "tire": "타이어",
+    "spokeRepairKits": "스포크 수리 키트",
+    "carbonRim": "카본 림"
+  },
+  "securityNotice": "모든 페이지는 HTTPS 및 SSL 암호화를 사용합니다. 결제는 안전하게 처리되며 카드 정보는 저장되지 않습니다."
 }

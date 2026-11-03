@@ -1,0 +1,12 @@
+{
+  "attachment": "Anexo",
+  "closePreview": "Fechar pré-visualização",
+  "download": "Transferir",
+  "downloadFailed": "Não foi possível transferir este anexo. Atualize a página e tente novamente.",
+  "downloadToView": "Transfira este ficheiro para o visualizar.",
+  "image": "Imagem",
+  "loading": "A carregar…",
+  "readFailed": "Não foi possível abrir este anexo. Atualize a página e tente novamente.",
+  "shipmentImage": "Imagem do envio",
+  "video": "Vídeo"
+}

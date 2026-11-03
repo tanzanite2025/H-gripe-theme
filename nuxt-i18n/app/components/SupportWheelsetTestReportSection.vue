@@ -1,6 +1,6 @@
 <template>
   <div class="support-wheelset-test-report rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-3 md:p-6">
-    <h3 class="support-section__title text-center">{{ t('testReportWheelset.title') }}</h3>
+    <component :is="headingTag" class="support-section__title text-center">{{ t('testReportWheelset.title') }}</component>
 
     <p class="support-section__body mt-4 text-center">
       {{ t('testReportWheelset.intro') }}
@@ -9,13 +9,12 @@
     <div class="mt-3 flex justify-center">
       <div class="support-wheelset-test-report__assembly-note inline-flex items-center rounded-full px-3 py-1 text-xs sm:text-sm">
         <span>{{ t('testReportWheelset.assemblyNote.prefix') }}</span>
-        <button
-          type="button"
+        <NuxtLink
+          :to="localePath('/technology/wheel-building-quality-checks')"
           class="support-wheelset-test-report__assembly-note-action ml-1 underline underline-offset-2 transition-colors duration-150"
-          @click="goToWheelsetAssembly"
         >
           {{ t('testReportWheelset.assemblyNote.link') }}
-        </button>
+        </NuxtLink>
       </div>
     </div>
 
@@ -25,9 +24,9 @@
       class="rim-test-card mt-4"
       :class="{ 'mt-6': test.id === 'lateral' }"
     >
-      <h4 class="sizecharts-section__subheading text-emerald-700 font-semibold">
+      <component :is="headingTag === 'h1' ? 'h2' : 'h4'" class="sizecharts-section__subheading text-emerald-700 font-semibold">
         {{ t(wheelsetMessage(test.id, 'title')) }}
-      </h4>
+      </component>
       <p class="support-section__body">
         <strong>{{ t('testReportWheelset.labels.purpose') }}</strong>
         {{ t(wheelsetMessage(test.id, 'purpose')) }}
@@ -75,9 +74,9 @@
     </div>
 
     <div class="support-wheelset-test-report__disclaimer mt-6 rounded-lg px-4 py-3 text-sm leading-relaxed">
-      <h4 class="support-wheelset-test-report__disclaimer-label mb-3 font-semibold">
+      <component :is="headingTag === 'h1' ? 'h2' : 'h4'" class="support-wheelset-test-report__disclaimer-label mb-3 font-semibold">
         {{ t('testReportWheelset.disclaimer.title') }}
-      </h4>
+      </component>
       <p class="mb-2">{{ t('testReportWheelset.disclaimer.body.0') }}</p>
       <p>{{ t('testReportWheelset.disclaimer.body.1') }}</p>
     </div>
@@ -86,14 +85,15 @@
 
 <script setup lang="ts">
 import { watch } from 'vue'
-import { useI18n } from '#imports'
+import { useI18n, useLocalePath } from '#imports'
 import { usePageMessages } from '~/composables/usePageMessages'
 
-const { openWheelsetVideo, goToWheelsetAssembly } = defineProps<{
+const { openWheelsetVideo, headingTag = 'h3' } = defineProps<{
+  headingTag?: 'h1' | 'h2' | 'h3'
   openWheelsetVideo: () => void | Promise<void>
-  goToWheelsetAssembly: () => void | Promise<void>
 }>()
 
+const localePath = useLocalePath()
 const { locale, t } = useI18n()
 const { loadPageMessages } = usePageMessages('testReportWheelset')
 

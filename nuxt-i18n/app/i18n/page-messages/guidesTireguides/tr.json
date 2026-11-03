@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Lastik ve kadro açıklığı"
+    },
+    "schwalbeCircumference": {
+      "label": "Schwalbe lastik çevresi"
+    },
+    "tubeless": {
+      "label": "İç lastiksiz lastikler ve montaj"
+    }
+  }
+}

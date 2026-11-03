@@ -114,7 +114,7 @@ func verifyStoppedProductMediaActualGuestAuthorizationHashesRangesAndUnchangedRe
 			result := payload.Result
 			require.Equal(t, expectedStatus, result.HTTPStatus)
 			require.Equal(t, int64(len(expectedBody)), result.ResponseBytes)
-			require.Equal(t, productCatalogBytesSHA256([]byte(expectedBody)), result.ResponseSHA256)
+			require.Equal(t, businessModuleRecoveryBytesSHA256([]byte(expectedBody)), result.ResponseSHA256)
 			require.Empty(t, result.Target.VisitorCookie)
 			require.Equal(t, query.VisitorCookie != "", result.VisitorCredentialSupplied)
 			require.Equal(t, baseline.ContractSHA256, result.ContractSHA256)

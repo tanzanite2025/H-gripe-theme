@@ -503,7 +503,7 @@
             <Button type="button" variant="ghost" size="icon" class="text-white hover:bg-white/15 hover:text-white" aria-label="旋转图片" title="旋转图片" @click="rotateImage">
               <RotateCw class="size-4" />
             </Button>
-            <Button type="button" variant="ghost" size="icon" class="text-white hover:bg-white/15 hover:text-white" aria-label="关闭图片预览" title="关闭图片预览" @click="closeImageLightbox">
+            <Button type="button" variant="close" size="icon" aria-label="关闭图片预览" title="关闭图片预览" @click="closeImageLightbox">
               <X class="size-5" />
             </Button>
           </div>

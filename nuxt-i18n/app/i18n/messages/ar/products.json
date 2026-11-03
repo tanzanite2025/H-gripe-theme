@@ -8,12 +8,12 @@
   "loadMore": "تحميل المزيد",
   "items": "قطعة",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "shop": "المتجر",
+    "aboutTools": "حول الأدوات",
+    "tireSizeCharts": "دليل الإطارات",
+    "blog": "المدونة",
+    "technicalDocs": "الوثائق التقنية",
+    "wheelsetBuyersGuide": "دليل العجلات",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

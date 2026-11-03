@@ -17,7 +17,7 @@ func TestSelectedBusinessModuleCustomerServiceSnapshotProjectionRejectsOversized
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			observation := &moduleRecoveryDatabaseObservation{PrimaryKeys: map[string][]string{"ticket_messages": {"id"}}, Columns: map[string]map[string]bool{"ticket_messages": {"id": true, "metadata": true}}}
-			snapshot := selectedBusinessModuleCompleteSnapshot{Tables: map[string]productCatalogTableSnapshot{"ticket_messages": {Rows: []json.RawMessage{json.RawMessage(scenario.row)}}}}
+			snapshot := selectedBusinessModuleCompleteSnapshot{Tables: map[string]businessModuleCompleteTableSnapshot{"ticket_messages": {Rows: []json.RawMessage{json.RawMessage(scenario.row)}}}}
 			checks := newSelectedCustomerServiceModuleDomainChecks()
 			_, err := buildSelectedCustomerServiceModuleSnapshotRelationshipRows(context.Background(), nil, snapshot, observation, checks)
 			require.NoError(t, err)

@@ -37,7 +37,7 @@ func seedStoppedProductCurrentSiteLogoAndFaviconBeforeRecoverySnapshots(t *testi
 		filename := filepath.Join(root, filepath.FromSlash(key))
 		require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0700))
 		require.NoError(t, os.WriteFile(filename, body, 0600))
-		_, err := database.ExecContext(context.Background(), `INSERT INTO `+table+`(id,filename,url,storage_key,mime_type,size,content_sha256,width,height) VALUES(1,$1,$2,$1,'image/png',$3,$4,512,512)`, key, "/uploads/"+key, len(body), productCatalogBytesSHA256(body))
+		_, err := database.ExecContext(context.Background(), `INSERT INTO `+table+`(id,filename,url,storage_key,mime_type,size,content_sha256,width,height) VALUES(1,$1,$2,$1,'image/png',$3,$4,512,512)`, key, "/uploads/"+key, len(body), businessModuleRecoveryBytesSHA256(body))
 		require.NoError(t, err)
 	}
 	return bodies
@@ -131,7 +131,7 @@ func TestPostgreSQLStoppedSiteIdentityImagesUseCurrentHistoricalOwnersSeparateRo
 		require.Equal(t, expectedStatus, result.HTTPStatus)
 		if expectedStatus == 200 {
 			require.Equal(t, bodies[key], result.capturedPublicImageBytes)
-			require.Equal(t, productCatalogBytesSHA256(bodies[key]), result.ResponseSHA256)
+			require.Equal(t, businessModuleRecoveryBytesSHA256(bodies[key]), result.ResponseSHA256)
 		} else {
 			require.Empty(t, result.capturedPublicImageBytes)
 		}

@@ -3,15 +3,11 @@ package localbackup
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	"time"
-
-	"github.com/lib/pq"
 )
 
 // A draft describes proposed changes, never permission to execute them. Target
@@ -32,7 +28,7 @@ type CustomerServiceConversationRecoveryPlan struct {
 	RowActionCounts         map[string]int                                                       `json:"row_action_counts"`
 	FileActions             []CustomerServiceRecoveryPlanFileAction                              `json:"file_actions"`
 	FileActionCounts        map[string]int                                                       `json:"file_action_counts"`
-	TargetPreservation      []CustomerServiceRecoveryPlanTablePreservation                       `json:"target_preservation"`
+	TargetPreservation      []BusinessModuleRestoreTablePreservation                             `json:"target_preservation"`
 	TargetMediaPolicy       string                                                               `json:"target_media_policy"`
 	DurableStatePolicy      string                                                               `json:"durable_state_policy"`
 	UnimplementedSafeguards []string                                                             `json:"unimplemented_safeguards"`
@@ -83,22 +79,6 @@ type CustomerServiceRecoveryPlanFileAction struct {
 	Action       string `json:"action"`
 }
 
-type CustomerServiceRecoveryPlanTablePreservation struct {
-	Table                      string `json:"table"`
-	RetainedRecords            int64  `json:"retained_records"`
-	ProposedReplacementRecords int    `json:"proposed_replacement_records"`
-	ContentFingerprint         string `json:"content_fingerprint"`
-}
-
-func customerServiceRecoveryPlanCanonicalJSONSHA256(value any) (string, error) {
-	encoded, err := json.Marshal(value)
-	if err != nil {
-		return "", err
-	}
-	digest := sha256.Sum256(encoded)
-	return hex.EncodeToString(digest[:]), nil
-}
-
 func customerServiceRecoveryPlanProposedRowReplacementAllowed(table string) bool {
 	// Upload receipts, global events, media and configuration remain shared even
 	// if the table-level dependency registry describes them as module-owned.
@@ -116,7 +96,7 @@ func buildCustomerServiceConversationRecoveryPlanDraft(ctx context.Context, sour
 		ReferenceChecks: source.Report.ConversationReferenceChecks,
 		RowActions:      []CustomerServiceRecoveryPlanRowAction{}, RowActionCounts: map[string]int{},
 		FileActions: []CustomerServiceRecoveryPlanFileAction{}, FileActionCounts: map[string]int{},
-		TargetPreservation: []CustomerServiceRecoveryPlanTablePreservation{},
+		TargetPreservation: []BusinessModuleRestoreTablePreservation{},
 		TargetMediaPolicy:  "clone_current_complete_media_then_add_approved_source_files_no_deletion",
 		DurableStatePolicy: "preserve_all_target_events_receipts_configuration_and_unselected_rows_no_replay",
 		UnimplementedSafeguards: []string{
@@ -157,7 +137,7 @@ func buildCustomerServiceConversationRecoveryPlanDraft(ctx context.Context, sour
 					current = matched
 				}
 			}
-			keyHash, err := customerServiceRecoveryPlanCanonicalJSONSHA256(json.RawMessage(identity))
+			keyHash, err := businessModuleRecoveryCanonicalJSONSHA256(json.RawMessage(identity))
 			if err != nil {
 				return nil, err
 			}
@@ -252,7 +232,7 @@ func buildCustomerServiceConversationRecoveryPlanDraft(ctx context.Context, sour
 		for _, table := range tables {
 			keys := replacements[table]
 			sort.Slice(keys, func(i, j int) bool { return string(keys[i]) < string(keys[j]) })
-			preserved, err := fingerprintCustomerServiceRecoveryPlanRetainedTargetTable(ctx, target.Transaction, table, target.Observation.Shapes[table], keys)
+			preserved, err := fingerprintBusinessModuleRetainedTargetTable(ctx, target.Transaction, table, target.Observation.Shapes[table], keys)
 			if err != nil {
 				return nil, err
 			}
@@ -263,71 +243,50 @@ func buildCustomerServiceConversationRecoveryPlanDraft(ctx context.Context, sour
 	return plan, nil
 }
 
-// The same aggregate format as table inspection is used for consistency
-// comparison. It is not a cryptographic authentication of individual records.
-func fingerprintCustomerServiceRecoveryPlanRetainedTargetTable(ctx context.Context, transaction *sql.Tx, table, shape string, excludedPrimaryKeys []json.RawMessage) (CustomerServiceRecoveryPlanTablePreservation, error) {
-	result := CustomerServiceRecoveryPlanTablePreservation{Table: table, ProposedReplacementRecords: len(excludedPrimaryKeys)}
-	if excludedPrimaryKeys == nil {
-		excludedPrimaryKeys = []json.RawMessage{}
-	}
-	encoded, err := json.Marshal(excludedPrimaryKeys)
-	if err != nil {
-		return result, err
-	}
-	query := `SELECT count(*),coalesce(sum(('x'||substr(md5(to_jsonb(record)::text),1,15))::bit(60)::bigint)::text,'0'),coalesce(sum(('x'||substr(md5(to_jsonb(record)::text),17,15))::bit(60)::bigint)::text,'0') FROM public.` + pq.QuoteIdentifier(table) + ` record WHERE NOT EXISTS(SELECT 1 FROM jsonb_array_elements($1::jsonb) excluded(key) WHERE to_jsonb(record) @> excluded.key)`
-	var first, second string
-	if err := transaction.QueryRowContext(ctx, query, string(encoded)).Scan(&result.RetainedRecords, &first, &second); err != nil {
-		return result, err
-	}
-	digest := sha256.Sum256([]byte(fmt.Sprintf("%s:%d:%s:%s", shape, result.RetainedRecords, first, second)))
-	result.ContentFingerprint = hex.EncodeToString(digest[:])
-	return result, nil
-}
-
 func (cfg Configuration) bindCustomerServiceRecoveryPlanToObservedSnapshots(plan *CustomerServiceConversationRecoveryPlan, task *Task, report *ModuleRecoveryDependencyReport, mediaFingerprint string, sourceObservation, targetObservation *moduleRecoveryDatabaseObservation) error {
 	if !time.Now().Before(task.ExpiresAt) {
 		return errors.New("work copy expired while observing the recovery plan draft")
 	}
-	manifestDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(task.Manifest)
+	manifestDigest, err := businessModuleRecoveryCanonicalJSONSHA256(task.Manifest)
 	if err != nil {
 		return err
 	}
-	sourceSchemaDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(sourceObservation.Shapes)
+	sourceSchemaDigest, err := businessModuleRecoveryCanonicalJSONSHA256(sourceObservation.Shapes)
 	if err != nil {
 		return err
 	}
 	targetSchemaDigest := "absent_database"
 	if targetObservation != nil {
-		targetSchemaDigest, err = customerServiceRecoveryPlanCanonicalJSONSHA256(targetObservation.Shapes)
+		targetSchemaDigest, err = businessModuleRecoveryCanonicalJSONSHA256(targetObservation.Shapes)
 		if err != nil {
 			return err
 		}
 	}
-	sourceIndexDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(sourceObservation.Indexes)
+	sourceIndexDigest, err := businessModuleRecoveryCanonicalJSONSHA256(sourceObservation.Indexes)
 	if err != nil {
 		return err
 	}
 	targetIndexDigest := "absent_database"
 	if targetObservation != nil {
-		targetIndexDigest, err = customerServiceRecoveryPlanCanonicalJSONSHA256(targetObservation.Indexes)
+		targetIndexDigest, err = businessModuleRecoveryCanonicalJSONSHA256(targetObservation.Indexes)
 		if err != nil {
 			return err
 		}
 	}
-	sourceWriteSideEffectDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(sourceObservation.WriteSideEffects)
+	sourceWriteSideEffectDigest, err := businessModuleRecoveryCanonicalJSONSHA256(sourceObservation.WriteSideEffects)
 	if err != nil {
 		return err
 	}
 	targetWriteSideEffectDigest := "absent_database"
 	if targetObservation != nil {
-		targetWriteSideEffectDigest, err = customerServiceRecoveryPlanCanonicalJSONSHA256(targetObservation.WriteSideEffects)
+		targetWriteSideEffectDigest, err = businessModuleRecoveryCanonicalJSONSHA256(targetObservation.WriteSideEffects)
 		if err != nil {
 			return err
 		}
 	}
 	origins := append([]string{}, cfg.PublicOrigins...)
 	sort.Strings(origins)
-	boundaryDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(struct {
+	boundaryDigest, err := businessModuleRecoveryCanonicalJSONSHA256(struct {
 		DatabaseName, DatabaseURL, ApplicationDatabaseRole, StageDatabase, Workspace, MaintenanceDirectory string
 		StorageRoots                                                                                       map[string]string
 		PublicOrigins                                                                                      []string
@@ -346,7 +305,7 @@ func (cfg Configuration) bindCustomerServiceRecoveryPlanToObservedSnapshots(plan
 	}
 	plan.DependencyBlockers = append([]ModuleRecoveryDependencyBlocker{}, report.Blockers...)
 	plan.SHA256 = ""
-	plan.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(plan)
+	plan.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(plan)
 	return err
 }
 
@@ -358,15 +317,15 @@ func verifyCustomerServiceRecoveryPlanDraftDigestExpirationAndSnapshotBinding(pl
 	}
 	copyOfPlan := *plan
 	copyOfPlan.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(&copyOfPlan)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(&copyOfPlan)
 	if err != nil || digest != plan.SHA256 {
 		return errors.New("recovery plan draft digest changed")
 	}
-	expected, err := customerServiceRecoveryPlanCanonicalJSONSHA256(current)
+	expected, err := businessModuleRecoveryCanonicalJSONSHA256(current)
 	if err != nil {
 		return err
 	}
-	bound, err := customerServiceRecoveryPlanCanonicalJSONSHA256(plan.Binding)
+	bound, err := businessModuleRecoveryCanonicalJSONSHA256(plan.Binding)
 	if err != nil || expected != bound {
 		return errors.New("recovery plan observed snapshot binding changed")
 	}

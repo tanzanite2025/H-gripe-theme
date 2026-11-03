@@ -87,10 +87,10 @@ func (manager *Manager) generateSelectedBusinessModuleEncryptedPackage(ctx conte
 	if err != nil {
 		return err
 	}
-	if len(data) > productCatalogMaximumJSONBytes {
+	if len(data) > businessModuleSnapshotMaximumJSONBytes {
 		return errors.New("模块组合超过 64 MiB 记录容量，请分别导出或使用整站备份")
 	}
-	manifest := Manifest{FormatVersion: PackageVersion, PackageID: task.ID, SiteID: cfg.SiteID, Environment: cfg.Environment, ApplicationVersion: cfg.ApplicationVersion, MigrationVersion: migration, CapturedAt: time.Now().UTC(), Scope: selectedBusinessModulesBackupScope, SelectedModules: modules, Tables: map[string]int64{}, Files: []FileIdentity{}, Gaps: []string{}, DatabaseFingerprint: productCatalogBytesSHA256(data)}
+	manifest := Manifest{FormatVersion: PackageVersion, PackageID: task.ID, SiteID: cfg.SiteID, Environment: cfg.Environment, ApplicationVersion: cfg.ApplicationVersion, MigrationVersion: migration, CapturedAt: time.Now().UTC(), Scope: selectedBusinessModulesBackupScope, SelectedModules: modules, Tables: map[string]int64{}, Files: []FileIdentity{}, Gaps: []string{}, DatabaseFingerprint: businessModuleRecoveryBytesSHA256(data)}
 	if err := tx.QueryRowContext(ctx, `SELECT pg_export_snapshot()`).Scan(&manifest.SnapshotID); err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func (manager *Manager) generateSelectedBusinessModuleEncryptedPackage(ctx conte
 		manifest.Tables[name] = int64(len(table.Rows))
 		rowCount += len(table.Rows)
 	}
-	if rowCount > productCatalogMaximumRows {
+	if rowCount > businessModuleSnapshotMaximumRows {
 		return errors.New("模块组合超过 100000 条记录，请分别导出或使用整站备份")
 	}
 	directory, _ := manager.taskDirectory(task.ID)
@@ -275,7 +275,7 @@ func (cfg Configuration) validateSelectedBusinessModulePackageContents(snapshot 
 			return errors.New("模块数据表范围或内容清单不匹配")
 		}
 		rows += len(contents.Rows)
-		if rows > productCatalogMaximumRows {
+		if rows > businessModuleSnapshotMaximumRows {
 			return errors.New("模块记录超过容量限制")
 		}
 		for _, raw := range contents.Rows {
@@ -315,15 +315,15 @@ func (cfg Configuration) validateSelectedBusinessModulePackageContents(snapshot 
 	}
 	assetVisibility := map[string]string{}
 	for _, row := range snapshot.Tables["media_assets"].Rows {
-		id, _ := productCatalogRowString(row, "id")
-		assetVisibility[id], _ = productCatalogRowString(row, "visibility")
+		id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
+		assetVisibility[id], _ = readBusinessModuleSnapshotRowColumnText(row, "visibility")
 	}
 	for _, table := range []string{"media_assets", "media_asset_derivatives", "order_evidence_attachments"} {
 		for _, row := range snapshot.Tables[table].Rows {
-			key, _ := productCatalogRowString(row, "storage_key")
-			visibility, _ := productCatalogRowString(row, "visibility")
+			key, _ := readBusinessModuleSnapshotRowColumnText(row, "storage_key")
+			visibility, _ := readBusinessModuleSnapshotRowColumnText(row, "visibility")
 			if table == "media_asset_derivatives" {
-				assetID, _ := productCatalogRowString(row, "media_asset_id")
+				assetID, _ := readBusinessModuleSnapshotRowColumnText(row, "media_asset_id")
 				visibility = assetVisibility[assetID]
 			}
 			root := registeredMediaStorageRootForObjectKeyAndVisibility(key, visibility)
@@ -331,13 +331,13 @@ func (cfg Configuration) validateSelectedBusinessModulePackageContents(snapshot 
 				root = "uploads_private"
 			}
 			path := "media/" + root + "/" + key
-			digest, _ := productCatalogRowString(row, "content_sha256")
+			digest, _ := readBusinessModuleSnapshotRowColumnText(row, "content_sha256")
 			if digest == "" {
-				digest, _ = productCatalogRowString(row, "sha256")
+				digest, _ = readBusinessModuleSnapshotRowColumnText(row, "sha256")
 			}
-			size, _ := productCatalogRowString(row, "size")
+			size, _ := readBusinessModuleSnapshotRowColumnText(row, "size")
 			if size == "" {
-				size, _ = productCatalogRowString(row, "size_bytes")
+				size, _ = readBusinessModuleSnapshotRowColumnText(row, "size_bytes")
 			}
 			declaredSize, parseErr := strconv.ParseInt(size, 10, 64)
 			if key != "" && ((digest != "" && files[path].SHA256 != strings.ToLower(digest)) || (parseErr == nil && declaredSize > 0 && files[path].Size != declaredSize)) {
@@ -352,7 +352,7 @@ func (manager *Manager) readValidatedSelectedBusinessModuleSnapshot(task *Task, 
 	var snapshot selectedBusinessModuleCompleteSnapshot
 	filename := filepath.Join(extracted, selectedBusinessModulesRowsFilename)
 	info, err := os.Stat(filename)
-	if err != nil || info.Size() > productCatalogMaximumJSONBytes {
+	if err != nil || info.Size() > businessModuleSnapshotMaximumJSONBytes {
 		return snapshot, errors.New("模块数据文件缺失或超过容量")
 	}
 	data, err := os.ReadFile(filename) // #nosec G304 -- Fixed filename in the authenticated private extraction workspace.
@@ -362,7 +362,7 @@ func (manager *Manager) readValidatedSelectedBusinessModuleSnapshot(task *Task, 
 	if err := decodeStrictJSON(data, &snapshot); err != nil {
 		return snapshot, err
 	}
-	if task.Manifest.DatabaseFingerprint != productCatalogBytesSHA256(data) {
+	if task.Manifest.DatabaseFingerprint != businessModuleRecoveryBytesSHA256(data) {
 		return snapshot, errors.New("模块记录内容摘要不一致")
 	}
 	if err := manager.Configuration.validateSelectedBusinessModulePackageContents(snapshot, *task.Manifest); err != nil {

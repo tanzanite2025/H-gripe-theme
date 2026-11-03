@@ -112,7 +112,7 @@ DELETE FROM media_asset_derivatives WHERE id=930004; DELETE FROM media_assets WH
 				changed := copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, snapshot, "", "", "")
 				selected := changed.Tables[source.table]
 				for index, row := range selected.Rows {
-					id, _ := productCatalogRowString(row, "id")
+					id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
 					if id != fmt.Sprint(source.id) {
 						continue
 					}
@@ -172,7 +172,7 @@ DELETE FROM media_asset_derivatives WHERE id=930004; DELETE FROM media_assets WH
 				selected := changed.Tables[source.table]
 				selected.Rows = nil
 				for _, row := range snapshot.Tables[source.table].Rows {
-					id, _ := productCatalogRowString(row, "id")
+					id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
 					if id != fmt.Sprint(source.id) {
 						selected.Rows = append(selected.Rows, row)
 					}
@@ -185,7 +185,7 @@ DELETE FROM media_asset_derivatives WHERE id=930004; DELETE FROM media_assets WH
 					translations := changed.Tables["product_category_translations"]
 					translations.Rows = nil
 					for _, row := range snapshot.Tables["product_category_translations"].Rows {
-						parentID, _ := productCatalogRowString(row, "product_category_id")
+						parentID, _ := readBusinessModuleSnapshotRowColumnText(row, "product_category_id")
 						if parentID != fmt.Sprint(source.id) {
 							translations.Rows = append(translations.Rows, row)
 						}

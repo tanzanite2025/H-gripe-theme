@@ -1,0 +1,12 @@
+{
+  "attachment": "Vedhæftet fil",
+  "closePreview": "Luk forhåndsvisning",
+  "download": "Download",
+  "downloadFailed": "Den vedhæftede fil kunne ikke downloades. Opdater siden, og prøv igen.",
+  "downloadToView": "Download filen for at se den.",
+  "image": "Billede",
+  "loading": "Indlæser…",
+  "readFailed": "Den vedhæftede fil kunne ikke åbnes. Opdater siden, og prøv igen.",
+  "shipmentImage": "Forsendelsesbillede",
+  "video": "Video"
+}

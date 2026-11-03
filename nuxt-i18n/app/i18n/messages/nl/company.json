@@ -1,14 +1,14 @@
 {
   "nav": {
-    "about": "About Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "contact": "Contact Us",
-    "aboutWebsite": "Me & This Website"
+    "about": "Over ons",
+    "ourStory": "Ons verhaal",
+    "globalPartners": "Internationale partners",
+    "oemOdm": "OEM- en ODM-productie",
+    "certificates": "Certificaten",
+    "membershipPoints": "Lidmaatschap en punten",
+    "pictureWarehouse": "Fotobibliotheek",
+    "contact": "Contact",
+    "aboutWebsite": "Ik en deze website"
   },
   "index": {
     "title": "Company",

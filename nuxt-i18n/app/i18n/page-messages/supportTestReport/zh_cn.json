@@ -15,8 +15,8 @@
       "description": "辐条张力目标、范围与组装检查。"
     },
     "assembly": {
-      "label": "轮组组装",
-      "description": "组装记录、流程说明与最终检查。"
+      "label": "编轮与质检",
+      "description": "轮组编轮流程、辐条张力标准与成品质量检查。"
     }
   }
 }

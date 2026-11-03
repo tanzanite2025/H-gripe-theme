@@ -137,8 +137,16 @@ func (cfg Configuration) inspectSelectedCustomerServiceModuleBoundedOverwriteStr
 		_, releaseErr := tx.ExecContext(ctx, `RELEASE SAVEPOINT selected_customer_service_shared_metadata`)
 		resultErr = errors.Join(resultErr, rollbackErr, releaseErr)
 	}()
-	if _, err := tx.ExecContext(ctx, `SET LOCAL session_replication_role='replica'`); err != nil {
-		return nil, err
+	// Only the disposable metadata adapter needs replica mode. The live formal
+	// restore rejects missing shared rows and runs these checks without changing
+	// roles or suppressing constraints/triggers.
+	for table, rows := range missing {
+		if !customerServiceRecoveryPlanProposedRowReplacementAllowed(table) && len(rows) > 0 {
+			if _, err := tx.ExecContext(ctx, `SET LOCAL session_replication_role='replica'`); err != nil {
+				return nil, err
+			}
+			break
+		}
 	}
 	for table, rows := range missing {
 		if customerServiceRecoveryPlanProposedRowReplacementAllowed(table) || len(rows) == 0 {

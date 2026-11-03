@@ -74,7 +74,8 @@ export const storefrontNoStorePagePaths = [
   // Initial geometry and editable FAQ content come from the backend.
   '/tools/spoke-lacing-topology-simulator',
   '/resources/workbench',
-  '/technology/test-report',
-  '/technology/test-report/**',
+  '/technology/rim-test-report',
+  '/technology/wheelset-test-report',
+  '/technology/wheel-building-quality-checks',
   '/support/warranty-check',
 ]

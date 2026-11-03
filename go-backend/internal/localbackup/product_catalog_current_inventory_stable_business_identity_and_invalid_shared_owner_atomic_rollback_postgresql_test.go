@@ -17,7 +17,7 @@ func verifyProductCatalogCurrentInventoryStableIdentitiesAndInvalidSharedOwnerAt
 	findRow := func(snapshot *productCatalogModuleSnapshot, tableName, field, value string) (int, map[string]json.RawMessage) {
 		t.Helper()
 		for index, row := range snapshot.Tables[tableName].Rows {
-			actual, err := productCatalogRowString(row, field)
+			actual, err := readBusinessModuleSnapshotRowColumnText(row, field)
 			require.NoError(t, err)
 			if actual == value {
 				var fields map[string]json.RawMessage

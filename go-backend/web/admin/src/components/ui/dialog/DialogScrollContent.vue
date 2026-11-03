@@ -12,6 +12,7 @@ import {
   useForwardPropsEmits,
 } from 'reka-ui'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 defineOptions({
   inheritAttrs: false,
@@ -57,10 +58,13 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         <slot />
 
         <DialogClose
-          class="absolute top-4 right-4 p-0.5 transition-colors rounded-md hover:bg-secondary"
+          data-slot="dialog-close"
+          as-child
         >
-          <XIcon class="w-4 h-4" />
-          <span class="sr-only">Close</span>
+          <Button variant="close" class="absolute right-3 top-3 z-30" size="icon-sm">
+            <XIcon />
+            <span class="sr-only">关闭</span>
+          </Button>
         </DialogClose>
       </DialogContent>
     </DialogOverlay>

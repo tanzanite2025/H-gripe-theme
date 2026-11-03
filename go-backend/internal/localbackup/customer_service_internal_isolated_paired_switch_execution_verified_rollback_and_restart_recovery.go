@@ -52,11 +52,11 @@ func (manager *Manager) loadCustomerServicePairedSwitchSealedCandidateAndInvento
 		return nil, nil, err
 	}
 	if journal != nil {
-		configurationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
+		configurationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(manager.Configuration)
 		if err != nil {
 			return nil, nil, err
 		}
-		taskDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(task)
+		taskDigest, err := businessModuleRecoveryCanonicalJSONSHA256(task)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -138,7 +138,7 @@ func (manager *Manager) verifyCustomerServicePairedSwitchBoundDatabaseContents(c
 		value    any
 		expected string
 	}{{observation.Shapes, binding.TargetColumnConstraintFingerprint}, {observation.Indexes, binding.TargetIndexFingerprint}, {observation.WriteSideEffects, binding.TargetWriteSideEffectFingerprint}} {
-		digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(contract.value)
+		digest, err := businessModuleRecoveryCanonicalJSONSHA256(contract.value)
 		if err != nil || digest != contract.expected {
 			return errors.New("independent paired database schema or write contract changed")
 		}
@@ -246,11 +246,11 @@ func (manager *Manager) prepareCustomerServiceIndependentPairedSwitchRehearsalJo
 	}
 	journal := &customerServiceIndependentPairedSwitchJournal{Version: 1, State: "prepared_isolated_rehearsal", TaskID: id, AttemptID: record.AttemptID, CreatedAt: time.Now().UTC(), CandidateLifecycleSHA256: record.SHA256, InventorySHA256: inventory.SHA256, PlanSHA256: record.Request.PlanSHA256, SelectionSHA256: record.Validation.SelectionSHA256, TargetDatabase: manager.Configuration.DatabaseName, CandidateDatabase: record.Identity.DatabaseName, RollbackDatabase: "local_backup_cs_old_" + record.AttemptID[:16], CandidateDatabaseOID: record.Identity.DatabaseOID, BaselineDatabaseFingerprint: record.Binding.TargetDatabaseFingerprint, CandidateDatabaseFingerprint: record.Validation.CandidateFingerprint, BaselineDirectories: baseline.Directories, Moves: moves}
 	journal.DatabasePhase = "not_started"
-	journal.ConfigurationSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
+	journal.ConfigurationSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(manager.Configuration)
 	if err != nil {
 		return nil, err
 	}
-	journal.OriginalTaskSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(task)
+	journal.OriginalTaskSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(task)
 	if err != nil {
 		return nil, err
 	}
@@ -301,6 +301,9 @@ func (manager *Manager) retainCustomerServicePairedSwitchFailureForInspection(jo
 
 // Internal rehearsal only. Even after all renames, the candidate keeps its
 // NOLOGIN owner, revoked application privileges, disabled logins and fence.
+// Internal execution only: no HTTP start/acceptance route and no promotion to
+// customer-service formal restore. A successful switch still requires verified
+// rollback before candidate disposal; restart invokes that compatibility path.
 func (manager *Manager) executeCustomerServiceIndependentPairedSwitchRehearsal(ctx context.Context, id, expectedJournalSHA256 string) (resultErr error) {
 	if !manager.operationMutex.TryLock() {
 		return errors.New("an operation is running")
@@ -578,7 +581,7 @@ func (manager *Manager) verifyCustomerServicePairedRollbackBeforeCandidateDispos
 	if journal.State != "rolled_back_isolated" {
 		return errors.New("independent paired rollback must be verified before candidate disposal")
 	}
-	configurationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
+	configurationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(manager.Configuration)
 	if err != nil || configurationDigest != journal.ConfigurationSHA256 || record.Binding == nil || record.MediaUnion == nil {
 		return errors.New("paired disposal configuration or baseline binding changed")
 	}

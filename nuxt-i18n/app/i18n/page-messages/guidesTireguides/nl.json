@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Ruimte tussen band en frame"
+    },
+    "schwalbeCircumference": {
+      "label": "Omtrek van Schwalbe-banden"
+    },
+    "tubeless": {
+      "label": "Tubeless banden en montage"
+    }
+  }
+}

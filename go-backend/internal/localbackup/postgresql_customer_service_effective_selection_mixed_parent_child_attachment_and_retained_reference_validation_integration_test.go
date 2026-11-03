@@ -103,7 +103,7 @@ func TestPostgreSQLCustomerServiceEffectiveSelectionValidatesMixedRowsFilesAndRe
 			require.NoError(t, err)
 			plan := original.ConversationRecoveryPlan
 			plan.Binding = CustomerServiceRecoveryPlanSnapshotBinding{TaskID: strings.Repeat("1", 32), SiteID: cfg.SiteID, Environment: cfg.Environment, PackageID: strings.Repeat("2", 32), WorkCopyExpiresAt: time.Now().UTC().Add(time.Hour)}
-			plan.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(plan)
+			plan.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(plan)
 			require.NoError(t, err)
 			request := CustomerServiceRecoveryConflictReviewRequest{PlanSHA256: plan.SHA256, Confirmation: "REVIEW " + cfg.SiteID + "/" + cfg.Environment + "/" + plan.Binding.PackageID}
 			for _, row := range plan.RowActions {
@@ -135,7 +135,7 @@ func TestPostgreSQLCustomerServiceEffectiveSelectionValidatesMixedRowsFilesAndRe
 			require.False(t, result.CandidateConstructionAvailable)
 			require.Len(t, result.TargetPreservation, len(observations[1].Tables))
 			if scenario.choices["tickets:1"] == "preserve_current_row" {
-				wholeCurrent, err := fingerprintCustomerServiceRecoveryPlanRetainedTargetTable(ctx, transactions[1], "tickets", observations[1].Shapes["tickets"], nil)
+				wholeCurrent, err := fingerprintBusinessModuleRetainedTargetTable(ctx, transactions[1], "tickets", observations[1].Shapes["tickets"], nil)
 				require.NoError(t, err)
 				for _, preserved := range result.TargetPreservation {
 					if preserved.Table == "tickets" {

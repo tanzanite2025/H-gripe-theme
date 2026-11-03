@@ -2,9 +2,7 @@ package localbackup
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,8 +14,6 @@ import (
 
 const productCatalogBackupScope = "product_catalog_with_images"
 const productCatalogRowsFilename = "product-catalog-rows.json"
-const productCatalogMaximumJSONBytes = 64 << 20
-const productCatalogMaximumRows = 100000
 
 // Explicit ownership is intentional: reviews, carts, orders, customer identities,
 // and feeds are separate modules even when they reference a product.
@@ -29,12 +25,6 @@ product_option_value_variant_rules product_custom_option_policies product_inform
 product_shipping_template_bindings product_quality_requirement_rules product_spoke_repair_kit_models
 product_display_price_snapshots product_procurement_records product_profit_calculations`)
 
-type productCatalogTableSnapshot struct {
-	SchemaSHA256      string            `json:"schema_sha256"`
-	ConstraintsSHA256 string            `json:"constraints_sha256"`
-	Rows              []json.RawMessage `json:"rows"`
-}
-
 type productCatalogExternalDependency struct {
 	Table     string `json:"table"`
 	Column    string `json:"column"`
@@ -43,9 +33,9 @@ type productCatalogExternalDependency struct {
 }
 
 type productCatalogModuleSnapshot struct {
-	ContractVersion      int                                    `json:"contract_version"`
-	Tables               map[string]productCatalogTableSnapshot `json:"tables"`
-	ExternalDependencies []productCatalogExternalDependency     `json:"external_dependencies"`
+	ContractVersion      int                                            `json:"contract_version"`
+	Tables               map[string]businessModuleCompleteTableSnapshot `json:"tables"`
+	ExternalDependencies []productCatalogExternalDependency             `json:"external_dependencies"`
 }
 
 type productCatalogForeignKey struct{ Table, Column, ParentTable, ParentColumn string }
@@ -82,49 +72,6 @@ func productCatalogAllowedTableNames() map[string]bool {
 	return allowed
 }
 
-func productCatalogBytesSHA256(data []byte) string {
-	digest := sha256.Sum256(data)
-	return hex.EncodeToString(digest[:])
-}
-
-func inspectProductCatalogTableSchema(ctx context.Context, tx *sql.Tx, table string) (string, []string, error) {
-	rows, err := tx.QueryContext(ctx, `SELECT a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull,a.attidentity,a.attgenerated,COALESCE(pg_get_expr(d.adbin,d.adrelid),'') FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=to_regclass($1) AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum`, "public."+table)
-	if err != nil {
-		return "", nil, err
-	}
-	var columns []string
-	var contract strings.Builder
-	for rows.Next() {
-		var name, typ, identity, generated, defaultValue string
-		var required bool
-		if err := rows.Scan(&name, &typ, &required, &identity, &generated, &defaultValue); err != nil {
-			_ = rows.Close()
-			return "", nil, err
-		}
-		if generated != "" || identity != "" {
-			_ = rows.Close()
-			return "", nil, errors.New("product module requires an explicit generated-column contract")
-		}
-		columns = append(columns, name)
-		fmt.Fprintf(&contract, "%q:%q:%t:%q\n", name, typ, required, defaultValue)
-	}
-	err = rows.Err()
-	_ = rows.Close()
-	if err != nil {
-		return "", nil, err
-	}
-	if len(columns) == 0 {
-		return "", nil, fmt.Errorf("product table missing: %s", table)
-	}
-	return productCatalogBytesSHA256([]byte(contract.String())), columns, nil
-}
-
-func captureProductCatalogConstraintFingerprint(ctx context.Context, tx *sql.Tx, table string) (string, error) {
-	var constraints string
-	err := tx.QueryRowContext(ctx, `SELECT COALESCE(string_agg(pg_get_constraintdef(oid),E'\n' ORDER BY conname),'') FROM pg_constraint WHERE conrelid=to_regclass($1)`, "public."+table).Scan(&constraints)
-	return productCatalogBytesSHA256([]byte(constraints)), err
-}
-
 func readProductCatalogRows(ctx context.Context, tx *sql.Tx, table, predicate string, arguments ...any) ([]json.RawMessage, error) {
 	rows, err := tx.QueryContext(ctx, `SELECT to_jsonb(r)::text FROM public.`+pq.QuoteIdentifier(table)+` r WHERE `+predicate+` ORDER BY r.id LIMIT 100001`, arguments...) // #nosec G202 -- The predicate comes from internal fixed recovery selectors; table identifiers are quoted and values are bound.
 	if err != nil {
@@ -139,7 +86,7 @@ func readProductCatalogRows(ctx context.Context, tx *sql.Tx, table, predicate st
 			return nil, err
 		}
 		total += len(raw)
-		if len(result) >= productCatalogMaximumRows || total > productCatalogMaximumJSONBytes {
+		if len(result) >= businessModuleSnapshotMaximumRows || total > businessModuleSnapshotMaximumJSONBytes {
 			return nil, errors.New("product module row or JSON capacity exceeded")
 		}
 		result = append(result, json.RawMessage(raw))
@@ -169,28 +116,6 @@ func inspectProductCatalogForeignKeys(ctx context.Context, tx *sql.Tx) ([]produc
 	return keys, rows.Err()
 }
 
-func productCatalogRowString(row json.RawMessage, column string) (string, error) {
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(row, &fields); err != nil {
-		return "", err
-	}
-	raw, exists := fields[column]
-	if !exists {
-		return "", fmt.Errorf("product row is missing column %s", column)
-	}
-	if string(raw) == "null" {
-		return "", nil
-	}
-	var value string
-	if len(raw) > 0 && raw[0] == '"' {
-		if err := json.Unmarshal(raw, &value); err != nil {
-			return "", err
-		}
-		return value, nil
-	}
-	return string(raw), nil
-}
-
 func captureProductCatalogExternalDependencies(ctx context.Context, tx *sql.Tx, snapshot *productCatalogModuleSnapshot) ([]productCatalogExternalDependency, error) {
 	keys, err := inspectProductCatalogForeignKeys(ctx, tx)
 	if err != nil {
@@ -204,7 +129,7 @@ func captureProductCatalogExternalDependencies(ctx context.Context, tx *sql.Tx, 
 			continue
 		}
 		for _, row := range table.Rows {
-			value, err := productCatalogRowString(row, key.Column)
+			value, err := readBusinessModuleSnapshotRowColumnText(row, key.Column)
 			if err != nil {
 				return nil, err
 			}
@@ -217,7 +142,7 @@ func captureProductCatalogExternalDependencies(ctx context.Context, tx *sql.Tx, 
 				if !exists {
 					values = map[string]bool{}
 					for _, candidate := range parent.Rows {
-						parentValue, err := productCatalogRowString(candidate, key.ParentColumn)
+						parentValue, err := readBusinessModuleSnapshotRowColumnText(candidate, key.ParentColumn)
 						if err != nil {
 							return nil, err
 						}
@@ -239,7 +164,7 @@ func captureProductCatalogExternalDependencies(ctx context.Context, tx *sql.Tx, 
 			if err != nil {
 				return nil, fmt.Errorf("shared product dependency unavailable: %s.%s", key.Table, key.Column)
 			}
-			dependencies[identity] = productCatalogExternalDependency{key.ParentTable, key.ParentColumn, value, productCatalogBytesSHA256([]byte(raw))}
+			dependencies[identity] = productCatalogExternalDependency{key.ParentTable, key.ParentColumn, value, businessModuleRecoveryBytesSHA256([]byte(raw))}
 		}
 	}
 	identities := make([]string, 0, len(dependencies))
@@ -255,7 +180,7 @@ func captureProductCatalogExternalDependencies(ctx context.Context, tx *sql.Tx, 
 }
 
 func (cfg Configuration) captureProductCatalogModuleSnapshot(ctx context.Context, tx *sql.Tx) (productCatalogModuleSnapshot, error) {
-	snapshot := productCatalogModuleSnapshot{ContractVersion: 1, Tables: map[string]productCatalogTableSnapshot{}}
+	snapshot := productCatalogModuleSnapshot{ContractVersion: 1, Tables: map[string]businessModuleCompleteTableSnapshot{}}
 	if err := requireRegisteredStorefrontTablesForProductCatalogModule(ctx, tx); err != nil {
 		return snapshot, err
 	}
@@ -267,7 +192,7 @@ func (cfg Configuration) captureProductCatalogModuleSnapshot(ctx context.Context
 	}
 	totalRows, totalBytes := 0, 0
 	for _, name := range productCatalogOwnedTableNames {
-		schema, _, err := inspectProductCatalogTableSchema(ctx, tx, name)
+		schema, _, err := inspectBusinessModuleCompleteTableSchema(ctx, tx, name)
 		if err != nil {
 			return snapshot, err
 		}
@@ -279,14 +204,14 @@ func (cfg Configuration) captureProductCatalogModuleSnapshot(ctx context.Context
 		for _, row := range rows {
 			totalBytes += len(row)
 		}
-		if totalRows > productCatalogMaximumRows || totalBytes > productCatalogMaximumJSONBytes {
+		if totalRows > businessModuleSnapshotMaximumRows || totalBytes > businessModuleSnapshotMaximumJSONBytes {
 			return snapshot, errors.New("product snapshot aggregate capacity exceeded")
 		}
-		constraints, err := captureProductCatalogConstraintFingerprint(ctx, tx, name)
+		constraints, err := captureBusinessModuleTableConstraintFingerprint(ctx, tx, name)
 		if err != nil {
 			return snapshot, err
 		}
-		snapshot.Tables[name] = productCatalogTableSnapshot{SchemaSHA256: schema, ConstraintsSHA256: constraints, Rows: rows}
+		snapshot.Tables[name] = businessModuleCompleteTableSnapshot{SchemaSHA256: schema, ConstraintsSHA256: constraints, Rows: rows}
 	}
 	keys, err := inspectProductCatalogForeignKeys(ctx, tx)
 	if err != nil {
@@ -298,7 +223,7 @@ func (cfg Configuration) captureProductCatalogModuleSnapshot(ctx context.Context
 			continue
 		}
 		for _, row := range snapshot.Tables[key.Table].Rows {
-			value, err := productCatalogRowString(row, key.Column)
+			value, err := readBusinessModuleSnapshotRowColumnText(row, key.Column)
 			if err != nil {
 				return snapshot, err
 			}
@@ -340,7 +265,7 @@ func (cfg Configuration) captureProductCatalogModuleSnapshot(ctx context.Context
 	}
 	sort.Strings(ids)
 	for _, name := range []string{"media_assets", "media_asset_derivatives"} {
-		schema, _, err := inspectProductCatalogTableSchema(ctx, tx, name)
+		schema, _, err := inspectBusinessModuleCompleteTableSchema(ctx, tx, name)
 		if err != nil {
 			return snapshot, err
 		}
@@ -356,21 +281,21 @@ func (cfg Configuration) captureProductCatalogModuleSnapshot(ctx context.Context
 		for _, row := range rows {
 			totalBytes += len(row)
 		}
-		if totalRows > productCatalogMaximumRows || totalBytes > productCatalogMaximumJSONBytes {
+		if totalRows > businessModuleSnapshotMaximumRows || totalBytes > businessModuleSnapshotMaximumJSONBytes {
 			return snapshot, errors.New("product snapshot aggregate capacity exceeded")
 		}
-		constraints, err := captureProductCatalogConstraintFingerprint(ctx, tx, name)
+		constraints, err := captureBusinessModuleTableConstraintFingerprint(ctx, tx, name)
 		if err != nil {
 			return snapshot, err
 		}
-		snapshot.Tables[name] = productCatalogTableSnapshot{SchemaSHA256: schema, ConstraintsSHA256: constraints, Rows: rows}
+		snapshot.Tables[name] = businessModuleCompleteTableSnapshot{SchemaSHA256: schema, ConstraintsSHA256: constraints, Rows: rows}
 	}
 	for _, row := range snapshot.Tables["media_assets"].Rows {
-		visibility, err := productCatalogRowString(row, "visibility")
+		visibility, err := readBusinessModuleSnapshotRowColumnText(row, "visibility")
 		if err != nil {
 			return snapshot, err
 		}
-		partition, err := productCatalogRowString(row, "library_partition")
+		partition, err := readBusinessModuleSnapshotRowColumnText(row, "library_partition")
 		if err != nil {
 			return snapshot, err
 		}

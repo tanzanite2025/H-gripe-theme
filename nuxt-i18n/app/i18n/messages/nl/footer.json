@@ -1,47 +1,77 @@
 {
   "menus": {
     "technology": "Technologie",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "products": "Producten",
+    "support": "Ondersteuning",
+    "company": "Bedrijf",
+    "resources": "Informatie",
+    "siteOverview": "Over deze website",
+    "policies": "Beleid"
   },
   "links": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
+    "shop": "Winkel",
+    "aboutTools": "Over de hulpmiddelen",
+    "tireSizeCharts": "Bandengids",
     "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
+    "technicalDocs": "Technische documentatie",
+    "wheelsetBuyersGuide": "Wielengids",
+    "about": "Over ons",
+    "aboutUs": "Over ons",
     "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "contactUs": "Contact",
+    "ourStory": "Ons verhaal",
+    "globalPartners": "Internationale partners",
+    "oemOdm": "OEM- en ODM-productie",
+    "certificates": "Certificaten",
+    "membershipPoints": "Lidmaatschap en punten",
+    "pictureWarehouse": "Fotobibliotheek",
+    "meThisWebsite": "Ik en deze website",
+    "whyThisName": "Waarom deze naam",
+    "workbenchFeed": "Nieuws uit de werkplaats"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
-    "line4": "Hong Kong.",
+    "line1": "Een merk van Top Sports Co., Limited.",
+    "line2": "Eenheid 1602, 16e verdieping, Lucky Centre,",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
+    "line4": "Hongkong.",
     "hkLabel": "Hongkong:",
     "xmLabel": "Xiamen:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "Veelgestelde vragen",
+    "payment": "Betaling",
+    "afterSales": "Service na aankoop",
+    "warranty": "Garantie",
+    "productFeedback": "Productfeedback",
+    "spokecalculator": "Spakencalculator"
+  },
+  "subscription": {
+    "label": "Ontvang nieuws over producten en blogartikelen",
+    "placeholder": "Voer je e-mailadres in",
+    "emailLabel": "E-mailadres",
+    "button": "Aanmelden",
+    "loading": "Bezig met aanmelden…",
+    "success": "Aanmelding geslaagd. Bevestig deze via je e-mail.",
+    "invalidEmail": "Voer een geldig e-mailadres in.",
+    "failed": "Aanmelden is mislukt. Probeer het later opnieuw.",
+    "verificationUnavailable": "Verificatie is niet beschikbaar. Probeer het later opnieuw.",
+    "verificationFailed": "Verificatie is mislukt. Probeer het opnieuw.",
+    "verificationExpired": "Verificatie is verlopen. Probeer het opnieuw."
+  },
+  "accessibility": {
+    "navigation": "Voettekstnavigatie",
+    "scrollLeft": "Voettekstnavigatie naar links schuiven",
+    "scrollRight": "Voettekstnavigatie naar rechts schuiven",
+    "paymentMethods": "Geaccepteerde betaalmethoden",
+    "sslSecure": "Beveiligde SSL-verbinding",
+    "cardPayment": "Kaartbetaling"
+  },
+  "categories": {
+    "wheelset": "Wielsets",
+    "wheelComponents": "Wielonderdelen",
+    "tire": "Banden",
+    "spokeRepairKits": "Spaakreparatiesets",
+    "carbonRim": "Carbon velgen"
+  },
+  "securityNotice": "Alle pagina’s gebruiken HTTPS met SSL-versleuteling. Betalingen worden veilig verwerkt; kaartgegevens worden niet opgeslagen."
 }

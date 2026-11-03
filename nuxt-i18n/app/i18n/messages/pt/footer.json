@@ -1,47 +1,77 @@
 {
   "menus": {
     "technology": "Tecnologia",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "products": "Produtos",
+    "support": "Apoio",
+    "company": "Empresa",
+    "resources": "Recursos",
+    "siteOverview": "Sobre o site",
+    "policies": "Políticas"
   },
   "links": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "shop": "Loja",
+    "aboutTools": "Sobre as ferramentas",
+    "tireSizeCharts": "Guia de pneus",
+    "blog": "Blogue",
+    "technicalDocs": "Documentação técnica",
+    "wheelsetBuyersGuide": "Guia de rodas",
+    "about": "Sobre nós",
+    "aboutUs": "Sobre nós",
+    "contact": "Contacte-nos",
+    "contactUs": "Contacte-nos",
+    "ourStory": "A nossa história",
+    "globalPartners": "Parceiros internacionais",
+    "oemOdm": "Fabrico OEM e ODM",
+    "certificates": "Certificados",
+    "membershipPoints": "Adesão e pontos",
+    "pictureWarehouse": "Galeria de imagens",
+    "meThisWebsite": "Eu e este site",
+    "whyThisName": "Porquê este nome",
+    "workbenchFeed": "Novidades da oficina"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
+    "line1": "Uma marca da Top Sports Co., Limited.",
+    "line2": "Unidade 1602, 16.º andar, Lucky Centre,",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
     "line4": "Hong Kong.",
-    "hkLabel": "Hongkong:",
+    "hkLabel": "Hong Kong:",
     "xmLabel": "Xiamen:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "Perguntas frequentes",
+    "payment": "Pagamento",
+    "afterSales": "Assistência pós-venda",
+    "warranty": "Garantia",
+    "productFeedback": "Opiniões sobre produtos",
+    "spokecalculator": "Calculadora de raios"
+  },
+  "subscription": {
+    "label": "Subscreva as novidades de produtos e do blogue",
+    "placeholder": "Introduza o seu e-mail",
+    "emailLabel": "Endereço de e-mail",
+    "button": "Subscrever",
+    "loading": "A subscrever…",
+    "success": "Subscrição concluída. Confirme no seu e-mail.",
+    "invalidEmail": "Introduza um endereço de e-mail válido.",
+    "failed": "Não foi possível subscrever. Tente mais tarde.",
+    "verificationUnavailable": "A verificação está indisponível. Tente mais tarde.",
+    "verificationFailed": "A verificação falhou. Tente novamente.",
+    "verificationExpired": "A verificação expirou. Tente novamente."
+  },
+  "accessibility": {
+    "navigation": "Navegação do rodapé",
+    "scrollLeft": "Deslocar a navegação para a esquerda",
+    "scrollRight": "Deslocar a navegação para a direita",
+    "paymentMethods": "Métodos de pagamento aceites",
+    "sslSecure": "Ligação SSL segura",
+    "cardPayment": "Pagamento com cartão"
+  },
+  "categories": {
+    "wheelset": "Pares de rodas",
+    "wheelComponents": "Componentes de rodas",
+    "tire": "Pneus",
+    "spokeRepairKits": "Kits de reparação de raios",
+    "carbonRim": "Aros de carbono"
+  },
+  "securityNotice": "Todas as páginas utilizam HTTPS com encriptação SSL. Os pagamentos são processados de forma segura; não são guardados dados de cartões."
 }

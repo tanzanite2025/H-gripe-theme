@@ -40,7 +40,7 @@ func verifyStoppedProductProjectionActualSQLBaselineOperatorRecordsAndStaleCache
 	require.Equal(t, before, afterRead, "SQL projection inspection must not save approval or change the task")
 	request := ProductCatalogStoppedProjectionEvidenceRequest{Confirmation: "RECORD STOPPED PRODUCT PROJECTIONS " + manager.Configuration.SiteID + "/" + manager.Configuration.Environment + "/" + taskID, ContractSHA256: first.ContractSHA256}
 	for _, requirement := range first.Requirements {
-		request.Attestations = append(request.Attestations, ExternalProjectionReconciliationAttestation{Projection: requirement.Projection, Action: requirement.Action, EvidenceReference: "synthetic-only-independent-record-" + requirement.Projection, EvidenceSHA256: productCatalogBytesSHA256([]byte("synthetic-only-record-" + requirement.Projection))})
+		request.Attestations = append(request.Attestations, ExternalProjectionReconciliationAttestation{Projection: requirement.Projection, Action: requirement.Action, EvidenceReference: "synthetic-only-independent-record-" + requirement.Projection, EvidenceSHA256: businessModuleRecoveryBytesSHA256([]byte("synthetic-only-record-" + requirement.Projection))})
 	}
 	// These are synthetic operator assertions, not actual storefront/CDN checks.
 	incomplete := request

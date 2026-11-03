@@ -1,47 +1,77 @@
 {
   "menus": {
     "technology": "เทคโนโลยี",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "products": "สินค้า",
+    "support": "ฝ่ายช่วยเหลือ",
+    "company": "บริษัท",
+    "resources": "แหล่งข้อมูล",
+    "siteOverview": "เกี่ยวกับเว็บไซต์",
+    "policies": "นโยบาย"
   },
   "links": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "shop": "ร้านค้า",
+    "aboutTools": "เกี่ยวกับเครื่องมือ",
+    "tireSizeCharts": "คู่มือยาง",
+    "blog": "บล็อก",
+    "technicalDocs": "เอกสารทางเทคนิค",
+    "wheelsetBuyersGuide": "คู่มือชุดล้อ",
+    "about": "เกี่ยวกับเรา",
+    "aboutUs": "เกี่ยวกับเรา",
+    "contact": "ติดต่อเรา",
+    "contactUs": "ติดต่อเรา",
+    "ourStory": "เรื่องราวของเรา",
+    "globalPartners": "พันธมิตรทั่วโลก",
+    "oemOdm": "การผลิตแบบ OEM และ ODM",
+    "certificates": "ใบรับรอง",
+    "membershipPoints": "สมาชิกและคะแนน",
+    "pictureWarehouse": "คลังภาพ",
+    "meThisWebsite": "ฉันกับเว็บไซต์นี้",
+    "whyThisName": "ที่มาของชื่อ",
+    "workbenchFeed": "ข่าวสารจากเวิร์กช็อป"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
-    "line4": "Hong Kong.",
-    "hkLabel": "Hongkong:",
-    "xmLabel": "Xiamen:"
+    "line1": "แบรนด์ของ Top Sports Co., Limited.",
+    "line2": "ห้อง 1602 ชั้น 16 อาคาร Lucky Centre",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
+    "line4": "ฮ่องกง",
+    "hkLabel": "ฮ่องกง:",
+    "xmLabel": "เซี่ยเหมิน:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "คำถามที่พบบ่อย",
+    "payment": "การชำระเงิน",
+    "afterSales": "บริการหลังการขาย",
+    "warranty": "การรับประกัน",
+    "productFeedback": "ความคิดเห็นเกี่ยวกับสินค้า",
+    "spokecalculator": "เครื่องคำนวณซี่ลวด"
+  },
+  "subscription": {
+    "label": "สมัครรับข่าวสินค้าใหม่และบทความบล็อก",
+    "placeholder": "กรอกอีเมลของคุณ",
+    "emailLabel": "ที่อยู่อีเมล",
+    "button": "สมัครรับข่าว",
+    "loading": "กำลังสมัคร…",
+    "success": "สมัครสำเร็จ โปรดยืนยันผ่านอีเมลของคุณ",
+    "invalidEmail": "โปรดกรอกที่อยู่อีเมลที่ถูกต้อง",
+    "failed": "สมัครไม่สำเร็จ โปรดลองอีกครั้งภายหลัง",
+    "verificationUnavailable": "ไม่สามารถยืนยันได้ในขณะนี้ โปรดลองอีกครั้งภายหลัง",
+    "verificationFailed": "ยืนยันไม่สำเร็จ โปรดลองอีกครั้ง",
+    "verificationExpired": "การยืนยันหมดอายุแล้ว โปรดลองอีกครั้ง"
+  },
+  "accessibility": {
+    "navigation": "เมนูส่วนท้ายเว็บไซต์",
+    "scrollLeft": "เลื่อนเมนูส่วนท้ายไปทางซ้าย",
+    "scrollRight": "เลื่อนเมนูส่วนท้ายไปทางขวา",
+    "paymentMethods": "วิธีชำระเงินที่รองรับ",
+    "sslSecure": "การเชื่อมต่อ SSL ที่ปลอดภัย",
+    "cardPayment": "ชำระเงินด้วยบัตร"
+  },
+  "categories": {
+    "wheelset": "ชุดล้อ",
+    "wheelComponents": "ชิ้นส่วนล้อ",
+    "tire": "ยาง",
+    "spokeRepairKits": "ชุดซ่อมซี่ลวด",
+    "carbonRim": "ขอบล้อคาร์บอน"
+  },
+  "securityNotice": "ทุกหน้าใช้ HTTPS พร้อมการเข้ารหัส SSL การชำระเงินได้รับการประมวลผลอย่างปลอดภัย และไม่มีการจัดเก็บข้อมูลบัตร"
 }

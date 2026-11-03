@@ -39,12 +39,17 @@ function Get-ValidatedLocalDevelopmentHistoricalAttachmentAccessEnvironment([str
           }
           $localMediaAccessEnvironment.DB_AUTO_MIGRATE = $configurationProperty.Value.ToString().ToLowerInvariant()
         }
+        'reviewed_historical_local_backup_media_origins' {
+          if ($configurationProperty.Value -isnot [Array]) { throw 'Reviewed local backup origins must be an explicit JSON array.' }
+          foreach ($origin in $configurationProperty.Value) { if ($origin -isnot [string] -or [string]::IsNullOrWhiteSpace($origin)) { throw 'Reviewed local backup origins must contain nonempty strings.' } }
+          $localMediaAccessEnvironment.LOCAL_BACKUP_REVIEWED_HISTORICAL_MEDIA_ORIGINS = $configurationProperty.Value -join ','
+        }
         default { throw 'Local media access configuration contains an unsupported setting.' }
       }
     }
   }
 
-  foreach ($environmentName in @('MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS', 'DB_AUTO_MIGRATE')) {
+  foreach ($environmentName in @('MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS', 'DB_AUTO_MIGRATE', 'LOCAL_BACKUP_REVIEWED_HISTORICAL_MEDIA_ORIGINS')) {
     $explicitEnvironmentValue = [Environment]::GetEnvironmentVariable($environmentName, 'Process')
     if (-not [string]::IsNullOrWhiteSpace($explicitEnvironmentValue)) {
       $localMediaAccessEnvironment[$environmentName] = $explicitEnvironmentValue
@@ -69,6 +74,16 @@ function Get-ValidatedLocalDevelopmentHistoricalAttachmentAccessEnvironment([str
     $parsedAutoMigrate = $false
     if (-not [bool]::TryParse($localMediaAccessEnvironment.DB_AUTO_MIGRATE, [ref]$parsedAutoMigrate)) {
       throw 'DB_AUTO_MIGRATE must be true or false.'
+    }
+  }
+  if ($localMediaAccessEnvironment.ContainsKey('LOCAL_BACKUP_REVIEWED_HISTORICAL_MEDIA_ORIGINS')) {
+    foreach ($origin in $localMediaAccessEnvironment.LOCAL_BACKUP_REVIEWED_HISTORICAL_MEDIA_ORIGINS.Split(',')) {
+      $parsedBackupOrigin = $null
+      if ($origin.Trim() -notmatch '\Ahttps?://[^/\\?#\s]+/?\z' -or
+          -not [Uri]::TryCreate($origin.Trim(), [UriKind]::Absolute, [ref]$parsedBackupOrigin) -or
+          -not $parsedBackupOrigin.IsLoopback -or $parsedBackupOrigin.UserInfo) {
+        throw 'Reviewed local backup media sources must be explicit loopback HTTP(S) origins without credentials, paths, queries, fragments or wildcards.'
+      }
     }
   }
   return $localMediaAccessEnvironment
@@ -366,6 +381,7 @@ function Wait-DevHttpReady(
 }
 
 function Stop-Dev {
+  & (Join-Path $Root 'start-local-development-module-backup-and-supervised-api.ps1') -Stop
   Write-Section 'Stopping local DEV'
 
   foreach ($port in $AppPorts) {
@@ -403,6 +419,7 @@ if ($ValidateLocalMediaAccessConfiguration) {
     local_configuration_exists = (Test-Path -LiteralPath $LocalMediaAccessConfigurationPath)
     reviewed_historical_attachment_origins = $localDevelopmentMediaAccessEnvironment.MEDIA_REVIEWED_HISTORICAL_CUSTOMER_SERVICE_ATTACHMENT_ORIGINS
     database_auto_migrate = $localDevelopmentMediaAccessEnvironment.DB_AUTO_MIGRATE
+    reviewed_historical_local_backup_media_origins = $localDevelopmentMediaAccessEnvironment.LOCAL_BACKUP_REVIEWED_HISTORICAL_MEDIA_ORIGINS
     services_started_or_stopped = $false
   } | ConvertTo-Json
   exit 0
@@ -431,6 +448,7 @@ foreach ($commandName in @('node', 'npm', 'go', 'docker')) {
 }
 
 Write-Section 'Cleaning app ports'
+& (Join-Path $Root 'start-local-development-module-backup-and-supervised-api.ps1') -Stop
 foreach ($port in $AppPorts) {
   Stop-ListenersOnPort $port
 }
@@ -506,7 +524,7 @@ $backendCommand = @"
 `$env:STOREFRONT_HTML_CACHE_PURGE_URL='http://localhost:$($Ports.Storefront)/_internal/html-cache/purge'
 `$env:STOREFRONT_HTML_CACHE_PURGE_TOKEN='dev-html-cache-purge-token'
 $localDevelopmentMediaAccessEnvironmentCommand
-go run ./cmd/server
+& '$Root/start-local-development-module-backup-and-supervised-api.ps1'
 "@
 $apiProcess = Start-DevProcess -Name 'Go API' -WorkingDirectory (Join-Path $Root 'go-backend') -Command $backendCommand -LogName 'go-api'
 

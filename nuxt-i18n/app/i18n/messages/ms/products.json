@@ -8,12 +8,12 @@
   "loadMore": "Muat Lebih Banyak",
   "items": "item",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
+    "shop": "Kedai",
+    "aboutTools": "Tentang alat",
+    "tireSizeCharts": "Panduan tayar",
     "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "technicalDocs": "Dokumentasi teknikal",
+    "wheelsetBuyersGuide": "Panduan set roda",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

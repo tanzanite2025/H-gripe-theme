@@ -1,47 +1,77 @@
 {
   "links": {
-    "technicalDocs": "技術",
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "technicalDocs": "技術資料",
+    "shop": "ショップ",
+    "aboutTools": "ツールについて",
+    "tireSizeCharts": "タイヤガイド",
+    "blog": "ブログ",
+    "wheelsetBuyersGuide": "ホイールガイド",
+    "about": "私たちについて",
+    "aboutUs": "私たちについて",
+    "contact": "お問い合わせ",
+    "contactUs": "お問い合わせ",
+    "ourStory": "私たちの歩み",
+    "globalPartners": "世界のパートナー",
+    "oemOdm": "OEM・ODM 製造",
+    "certificates": "認証書",
+    "membershipPoints": "会員とポイント",
+    "pictureWarehouse": "写真ライブラリー",
+    "meThisWebsite": "私とこのウェブサイト",
+    "whyThisName": "この名前の由来",
+    "workbenchFeed": "工房だより"
   },
   "menus": {
-    "technology": "テクノロジー",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "technology": "技術情報",
+    "products": "製品",
+    "support": "サポート",
+    "company": "会社情報",
+    "resources": "資料",
+    "siteOverview": "このサイトについて",
+    "policies": "各種ポリシー"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
-    "line4": "Hong Kong.",
-    "hkLabel": "Hongkong:",
-    "xmLabel": "Xiamen:"
+    "line1": "Top Sports Co., Limited. のブランドです。",
+    "line2": "Lucky Centre 16 階 1602 室",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
+    "line4": "香港。",
+    "hkLabel": "香港：",
+    "xmLabel": "厦門："
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "よくあるご質問",
+    "payment": "お支払い",
+    "afterSales": "アフターサービス",
+    "warranty": "保証",
+    "productFeedback": "製品へのご意見",
+    "spokecalculator": "スポーク計算ツール"
+  },
+  "subscription": {
+    "label": "新製品とブログの更新をメールで受け取る",
+    "placeholder": "メールアドレスを入力",
+    "emailLabel": "メールアドレス",
+    "button": "登録する",
+    "loading": "登録中…",
+    "success": "登録が完了しました。確認メールをご確認ください。",
+    "invalidEmail": "有効なメールアドレスを入力してください。",
+    "failed": "登録に失敗しました。しばらくしてからお試しください。",
+    "verificationUnavailable": "認証サービスを利用できません。しばらくしてからお試しください。",
+    "verificationFailed": "認証に失敗しました。もう一度お試しください。",
+    "verificationExpired": "認証の有効期限が切れました。もう一度お試しください。"
+  },
+  "accessibility": {
+    "navigation": "フッターナビゲーション",
+    "scrollLeft": "フッターを左にスクロール",
+    "scrollRight": "フッターを右にスクロール",
+    "paymentMethods": "ご利用可能なお支払い方法",
+    "sslSecure": "安全な SSL 接続",
+    "cardPayment": "カード払い"
+  },
+  "categories": {
+    "wheelset": "ホイールセット",
+    "wheelComponents": "ホイール部品",
+    "tire": "タイヤ",
+    "spokeRepairKits": "スポーク修理キット",
+    "carbonRim": "カーボンリム"
+  },
+  "securityNotice": "すべてのページで HTTPS と SSL 暗号化を使用しています。お支払いは安全に処理され、カード情報は保存されません。"
 }

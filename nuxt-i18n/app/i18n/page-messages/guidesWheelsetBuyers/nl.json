@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "Aankoopgids"
+    },
+    "safetyInstructions": {
+      "label": "Veiligheidsinstructies"
+    },
+    "sampleAssembly": {
+      "label": "Wielbouw en maatwerk"
+    },
+    "appearanceLogo": {
+      "label": "Afwerking en logo’s"
+    }
+  }
+}

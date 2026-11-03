@@ -1,14 +1,14 @@
 {
   "nav": {
-    "about": "About Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "contact": "Contact Us",
-    "aboutWebsite": "Me & This Website"
+    "about": "私たちについて",
+    "ourStory": "私たちの歩み",
+    "globalPartners": "世界のパートナー",
+    "oemOdm": "OEM・ODM 製造",
+    "certificates": "認証書",
+    "membershipPoints": "会員とポイント",
+    "pictureWarehouse": "写真ライブラリー",
+    "contact": "お問い合わせ",
+    "aboutWebsite": "私とこのウェブサイト"
   },
   "index": {
     "title": "Company",

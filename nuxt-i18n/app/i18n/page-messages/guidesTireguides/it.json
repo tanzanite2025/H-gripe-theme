@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Spazio tra pneumatico e telaio"
+    },
+    "schwalbeCircumference": {
+      "label": "Circonferenza degli pneumatici Schwalbe"
+    },
+    "tubeless": {
+      "label": "Pneumatici tubeless e montaggio"
+    }
+  }
+}

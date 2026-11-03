@@ -72,7 +72,7 @@ func TestCustomerServiceCleanupDispositionAuditRejectsUnsafeOrDuplicateDecisions
 			case "over_limit":
 				entries = make([]CustomerServiceRecoveryCleanupEventDisposition, 20001)
 			}
-			_, err := customerServiceRecoveryPlanCanonicalJSONSHA256(entries)
+			_, err := businessModuleRecoveryCanonicalJSONSHA256(entries)
 			require.NoError(t, err)
 			require.Error(t, validateCustomerServiceRecoveryPreservedCleanupDispositionEntries(entries))
 		})

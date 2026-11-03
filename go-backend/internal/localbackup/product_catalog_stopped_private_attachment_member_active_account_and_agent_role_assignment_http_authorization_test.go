@@ -234,7 +234,7 @@ func verifyStoppedProductMediaActualMemberAccountAndAgentPermissionsWithoutChang
 			require.False(t, result.OnlineOverwriteAvailable)
 			if expectedStatus < 400 || expectedStatus == http.StatusNotFound {
 				require.Equal(t, int64(len(expectedBody)), result.ResponseBytes)
-				require.Equal(t, productCatalogBytesSHA256([]byte(expectedBody)), result.ResponseSHA256)
+				require.Equal(t, businessModuleRecoveryBytesSHA256([]byte(expectedBody)), result.ResponseSHA256)
 				require.Equal(t, "private, no-store", result.Headers["Cache-Control"])
 			}
 		})

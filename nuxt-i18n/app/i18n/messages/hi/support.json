@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "अक्सर पूछे जाने वाले प्रश्न",
+    "payment": "भुगतान",
+    "shipping": "शिपिंग",
+    "afterSales": "बिक्री के बाद की सेवा",
+    "warranty": "वारंटी",
+    "warrantyCheck": "वारंटी की जाँच",
+    "productFeedback": "उत्पाद पर प्रतिक्रिया",
+    "spokeCalculator": "स्पोक कैलकुलेटर",
+    "testReport": "परीक्षण रिपोर्ट"
   }
 }

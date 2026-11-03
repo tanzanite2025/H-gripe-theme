@@ -1,14 +1,14 @@
 {
   "nav": {
-    "about": "About Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "contact": "Contact Us",
-    "aboutWebsite": "Me & This Website"
+    "about": "เกี่ยวกับเรา",
+    "ourStory": "เรื่องราวของเรา",
+    "globalPartners": "พันธมิตรทั่วโลก",
+    "oemOdm": "การผลิตแบบ OEM และ ODM",
+    "certificates": "ใบรับรอง",
+    "membershipPoints": "สมาชิกและคะแนน",
+    "pictureWarehouse": "คลังภาพ",
+    "contact": "ติดต่อเรา",
+    "aboutWebsite": "ฉันกับเว็บไซต์นี้"
   },
   "index": {
     "title": "Company",

@@ -20,25 +20,25 @@ type CustomerServiceEffectiveSelectionInspectionRequest struct {
 // This is an observation of a mixed selection, never a candidate or authority
 // to restore. Original repair blockers survive even if a selection avoids them.
 type CustomerServiceEffectiveSelectionInspection struct {
-	Version                        int                                            `json:"version"`
-	State                          string                                         `json:"state"`
-	ExecutionAvailable             bool                                           `json:"execution_available"`
-	CandidateConstructionAvailable bool                                           `json:"candidate_construction_available"`
-	TaskID                         string                                         `json:"task_id"`
-	PlanSHA256                     string                                         `json:"plan_sha256"`
-	ReviewSHA256                   string                                         `json:"review_sha256"`
-	SHA256                         string                                         `json:"sha256"`
-	InspectedAt                    time.Time                                      `json:"inspected_at"`
-	Binding                        CustomerServiceRecoveryPlanSnapshotBinding     `json:"binding"`
-	SelectionDependenciesSatisfied bool                                           `json:"selection_dependencies_satisfied"`
-	OriginalInspectionComplete     bool                                           `json:"original_inspection_complete"`
-	RepairRequiredIssueCounts      map[string]int                                 `json:"repair_required_issue_counts"`
-	DependencyBlockers             []ModuleRecoveryDependencyBlocker              `json:"dependency_blockers"`
-	EffectiveRows                  []CustomerServiceRecoveryPlanRowAction         `json:"effective_rows"`
-	EffectiveRowActionCounts       map[string]int                                 `json:"effective_row_action_counts"`
-	RequiredFiles                  []CustomerServiceRecoveryPlanFileAction        `json:"required_files"`
-	TargetPreservation             []CustomerServiceRecoveryPlanTablePreservation `json:"target_preservation"`
-	DependencyChecks               *ModuleRecoveryRowInspection                   `json:"dependency_checks"`
+	Version                        int                                        `json:"version"`
+	State                          string                                     `json:"state"`
+	ExecutionAvailable             bool                                       `json:"execution_available"`
+	CandidateConstructionAvailable bool                                       `json:"candidate_construction_available"`
+	TaskID                         string                                     `json:"task_id"`
+	PlanSHA256                     string                                     `json:"plan_sha256"`
+	ReviewSHA256                   string                                     `json:"review_sha256"`
+	SHA256                         string                                     `json:"sha256"`
+	InspectedAt                    time.Time                                  `json:"inspected_at"`
+	Binding                        CustomerServiceRecoveryPlanSnapshotBinding `json:"binding"`
+	SelectionDependenciesSatisfied bool                                       `json:"selection_dependencies_satisfied"`
+	OriginalInspectionComplete     bool                                       `json:"original_inspection_complete"`
+	RepairRequiredIssueCounts      map[string]int                             `json:"repair_required_issue_counts"`
+	DependencyBlockers             []ModuleRecoveryDependencyBlocker          `json:"dependency_blockers"`
+	EffectiveRows                  []CustomerServiceRecoveryPlanRowAction     `json:"effective_rows"`
+	EffectiveRowActionCounts       map[string]int                             `json:"effective_row_action_counts"`
+	RequiredFiles                  []CustomerServiceRecoveryPlanFileAction    `json:"required_files"`
+	TargetPreservation             []BusinessModuleRestoreTablePreservation   `json:"target_preservation"`
+	DependencyChecks               *ModuleRecoveryRowInspection               `json:"dependency_checks"`
 }
 
 func validateCustomerServiceSavedDecisionsAgainstLatestPlan(plan *CustomerServiceConversationRecoveryPlan, review *CustomerServiceRecoveryConflictReview, request CustomerServiceEffectiveSelectionInspectionRequest, now time.Time) (map[string]CustomerServiceRecoveryRecordedContentDecision, error) {
@@ -66,15 +66,15 @@ func validateCustomerServiceSavedDecisionsAgainstLatestPlan(plan *CustomerServic
 	}
 	copyOfReview := *review
 	copyOfReview.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(&copyOfReview)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(&copyOfReview)
 	if err != nil || digest != review.SHA256 || request.ReviewSHA256 != review.SHA256 || review.Version != 1 || review.State != "recorded_not_executable" || review.ExecutionAvailable || review.TaskID != plan.Binding.TaskID || review.PlanSHA256 != plan.SHA256 {
 		return nil, errors.New("saved decisions changed or belong to another plan; reload and review")
 	}
-	bound, err := customerServiceRecoveryPlanCanonicalJSONSHA256(review.Binding)
+	bound, err := businessModuleRecoveryCanonicalJSONSHA256(review.Binding)
 	if err != nil {
 		return nil, err
 	}
-	expected, err := customerServiceRecoveryPlanCanonicalJSONSHA256(plan.Binding)
+	expected, err := businessModuleRecoveryCanonicalJSONSHA256(plan.Binding)
 	if err != nil || bound != expected {
 		return nil, errors.New("saved decisions snapshot binding changed")
 	}
@@ -110,7 +110,7 @@ func (cfg Configuration) inspectCustomerServiceEffectiveSelectedRows(ctx context
 	checks := &ModuleRecoveryRowInspection{Version: 1, Complete: true, RowLimitPerSide: target.Limits.Rows, ProjectionByteLimit: target.Limits.ProjectionBytes, IssueSampleLimit: target.Limits.IssueSamples, IssueCounts: map[string]int{}, Tables: []ModuleRecoveryRowComparison{}, Issues: []ModuleRecoveryRowIssue{}, ConversationReferenceChecks: &CustomerServiceConversationNaturalKeyAndSnapshotReferenceInspection{Version: 1}}
 	effective := newModuleRecoveryRowDependencyGraph(target.Transaction, target.Observation, "target", checks, target.Limits)
 	effective.SelectedCustomerServiceRows = map[string]map[string]*moduleRecoveryDependencyRow{}
-	result := &CustomerServiceEffectiveSelectionInspection{Version: 1, State: "inspected_not_executable", TaskID: plan.Binding.TaskID, PlanSHA256: plan.SHA256, ReviewSHA256: request.ReviewSHA256, InspectedAt: time.Now().UTC(), Binding: plan.Binding, OriginalInspectionComplete: plan.InspectionComplete, RepairRequiredIssueCounts: buildCustomerServiceRecoveryConflictDecisionPolicy(plan).RepairRequiredIssueCounts, DependencyBlockers: plan.DependencyBlockers, EffectiveRows: []CustomerServiceRecoveryPlanRowAction{}, EffectiveRowActionCounts: map[string]int{}, RequiredFiles: []CustomerServiceRecoveryPlanFileAction{}, TargetPreservation: []CustomerServiceRecoveryPlanTablePreservation{}, DependencyChecks: checks}
+	result := &CustomerServiceEffectiveSelectionInspection{Version: 1, State: "inspected_not_executable", TaskID: plan.Binding.TaskID, PlanSHA256: plan.SHA256, ReviewSHA256: request.ReviewSHA256, InspectedAt: time.Now().UTC(), Binding: plan.Binding, OriginalInspectionComplete: plan.InspectionComplete, RepairRequiredIssueCounts: buildCustomerServiceRecoveryConflictDecisionPolicy(plan).RepairRequiredIssueCounts, DependencyBlockers: plan.DependencyBlockers, EffectiveRows: []CustomerServiceRecoveryPlanRowAction{}, EffectiveRowActionCounts: map[string]int{}, RequiredFiles: []CustomerServiceRecoveryPlanFileAction{}, TargetPreservation: []BusinessModuleRestoreTablePreservation{}, DependencyChecks: checks}
 	// Start with current scoped rows, including target-only rows and shared upload
 	// receipts. Recompute their dependencies instead of carrying stale source-only
 	// media into the effective closure.
@@ -124,7 +124,7 @@ func (cfg Configuration) inspectCustomerServiceEffectiveSelectedRows(ctx context
 	lookup := map[string]*moduleRecoveryDependencyRow{}
 	for table, rows := range source.Rows {
 		for identity, row := range rows {
-			hash, err := customerServiceRecoveryPlanCanonicalJSONSHA256(json.RawMessage(identity))
+			hash, err := businessModuleRecoveryCanonicalJSONSHA256(json.RawMessage(identity))
 			if err != nil {
 				return nil, err
 			}
@@ -200,7 +200,7 @@ func (cfg Configuration) inspectCustomerServiceEffectiveSelectedRows(ctx context
 	for _, table := range tables {
 		keys := replacements[table]
 		sort.Slice(keys, func(i, j int) bool { return string(keys[i]) < string(keys[j]) })
-		preserved, err := fingerprintCustomerServiceRecoveryPlanRetainedTargetTable(ctx, target.Transaction, table, target.Observation.Shapes[table], keys)
+		preserved, err := fingerprintBusinessModuleRetainedTargetTable(ctx, target.Transaction, table, target.Observation.Shapes[table], keys)
 		if err != nil {
 			return nil, err
 		}
@@ -212,7 +212,7 @@ func (cfg Configuration) inspectCustomerServiceEffectiveSelectedRows(ctx context
 	if !time.Now().Before(plan.Binding.WorkCopyExpiresAt) {
 		return nil, errors.New("work copy expired while inspecting selections")
 	}
-	result.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(result)
+	result.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(result)
 	return result, err
 }
 

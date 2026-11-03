@@ -8,12 +8,12 @@
   "loadMore": "加载更多",
   "items": "件",
   "nav": {
-    "technicalDocs": "技术",
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "technicalDocs": "技术资料",
+    "shop": "商城",
+    "aboutTools": "工具介绍",
+    "tireSizeCharts": "轮胎指南",
+    "blog": "博客",
+    "wheelsetBuyersGuide": "轮组指南",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

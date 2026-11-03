@@ -215,7 +215,7 @@ func (cfg Configuration) planCustomerServiceCompleteCurrentMediaUnion(ctx contex
 	if err != nil {
 		return nil, nil, err
 	}
-	baselineDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(inventory)
+	baselineDigest, err := businessModuleRecoveryCanonicalJSONSHA256(inventory)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -340,7 +340,7 @@ func (cfg Configuration) planCustomerServiceCompleteCurrentMediaUnion(ctx contex
 	}
 	sortCustomerServiceCandidateMediaInventory(inventory)
 	inventory.CandidateMediaFingerprint = fingerprintCustomerServiceCandidateMediaInventory(inventory)
-	inventory.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(inventory)
+	inventory.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(inventory)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -538,7 +538,7 @@ func (manager *Manager) verifyCustomerServiceCompleteCandidateMediaUnion(ctx con
 	if err != nil {
 		return err
 	}
-	baselineDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(current)
+	baselineDigest, err := businessModuleRecoveryCanonicalJSONSHA256(current)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,8 @@ import "strings"
 // This registry describes table boundaries, not permission to restore a module.
 // Row ownership in shared tables, JSON references and file retention still need
 // a separate executable contract before any partial replacement is enabled.
+// OwnedTables is the historical dependency-report classification, not a live
+// writer allowlist. See the sibling export/write/shared scope cross-index.
 const moduleDependencyRegistryVersion = 8
 const moduleDependencyRegistryMigrationVersion int64 = 434
 

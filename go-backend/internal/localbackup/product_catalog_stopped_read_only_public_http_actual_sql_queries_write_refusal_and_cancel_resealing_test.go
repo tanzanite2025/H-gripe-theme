@@ -51,7 +51,7 @@ func verifyStoppedProductReadOnlyActualPublicHTTPQueriesPreserveSQLRedisAndSeale
 		require.Equal(t, expectedStatus, response.Result.HTTPStatus, string(response.Result.Response))
 		require.Equal(t, baseline.ContractSHA256, response.Result.ContractSHA256)
 		require.Equal(t, query, response.Result.Request)
-		require.Equal(t, productCatalogBytesSHA256(response.Result.Response), response.Result.ResponseSHA256)
+		require.Equal(t, businessModuleRecoveryBytesSHA256(response.Result.Response), response.Result.ResponseSHA256)
 		require.True(t, response.Result.SQLReadOnly)
 		require.True(t, response.Result.ApplicationRemainsStopped)
 		require.False(t, response.Result.OnlineOverwriteAvailable)

@@ -1,0 +1,12 @@
+{
+  "attachment": "Attachment",
+  "closePreview": "Close preview",
+  "download": "Download",
+  "downloadFailed": "This attachment could not be downloaded. Refresh and try again.",
+  "downloadToView": "Download this file to view it.",
+  "image": "Image",
+  "loading": "Loading…",
+  "readFailed": "This attachment could not be opened. Refresh and try again.",
+  "shipmentImage": "Shipment image",
+  "video": "Video"
+}

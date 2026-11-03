@@ -84,7 +84,7 @@ func (cfg Configuration) collectProductCatalogMediaReferences(snapshot productCa
 					return nil, err
 				}
 				for _, column := range columns {
-					value, err := productCatalogRowString(row, column)
+					value, err := readBusinessModuleSnapshotRowColumnText(row, column)
 					if err != nil {
 						return nil, err
 					}
@@ -167,7 +167,7 @@ func (cfg Configuration) collectProductCatalogImageSources(snapshot productCatal
 	// Stored keys are authoritative even when a historical asset has an empty URL.
 	for _, table := range []string{"media_assets", "media_asset_derivatives"} {
 		for _, row := range snapshot.Tables[table].Rows {
-			key, err := productCatalogRowString(row, "storage_key")
+			key, err := readBusinessModuleSnapshotRowColumnText(row, "storage_key")
 			if err != nil {
 				return nil, err
 			}
@@ -252,7 +252,7 @@ func (manager *Manager) generateProductCatalogEncryptedModule(ctx context.Contex
 	if err != nil {
 		return err
 	}
-	if len(data) > productCatalogMaximumJSONBytes {
+	if len(data) > businessModuleSnapshotMaximumJSONBytes {
 		return errors.New("product JSON snapshot exceeds capacity")
 	}
 	directory, _ := manager.taskDirectory(task.ID)
@@ -264,7 +264,7 @@ func (manager *Manager) generateProductCatalogEncryptedModule(ctx context.Contex
 	if err := writeDurableFile(filepath.Join(snapshotDirectory, productCatalogRowsFilename), data); err != nil {
 		return err
 	}
-	manifest := Manifest{FormatVersion: PackageVersion, PackageID: task.ID, SiteID: cfg.SiteID, Environment: cfg.Environment, ApplicationVersion: cfg.ApplicationVersion, MigrationVersion: migration, CapturedAt: time.Now().UTC(), Scope: productCatalogBackupScope, Tables: map[string]int64{}, Files: []FileIdentity{}, Gaps: []string{}, DatabaseFingerprint: productCatalogBytesSHA256(data)}
+	manifest := Manifest{FormatVersion: PackageVersion, PackageID: task.ID, SiteID: cfg.SiteID, Environment: cfg.Environment, ApplicationVersion: cfg.ApplicationVersion, MigrationVersion: migration, CapturedAt: time.Now().UTC(), Scope: productCatalogBackupScope, Tables: map[string]int64{}, Files: []FileIdentity{}, Gaps: []string{}, DatabaseFingerprint: businessModuleRecoveryBytesSHA256(data)}
 	for name, table := range snapshot.Tables {
 		manifest.Tables[name] = int64(len(table.Rows))
 	}
@@ -380,11 +380,11 @@ func validateProductCatalogMediaMetadataAgainstFiles(snapshot productCatalogModu
 				return err
 			}
 			if table == "media_assets" {
-				visibility, err := productCatalogRowString(row, "visibility")
+				visibility, err := readBusinessModuleSnapshotRowColumnText(row, "visibility")
 				if err != nil {
 					return err
 				}
-				partition, err := productCatalogRowString(row, "library_partition")
+				partition, err := readBusinessModuleSnapshotRowColumnText(row, "library_partition")
 				if err != nil {
 					return err
 				}
@@ -392,11 +392,11 @@ func validateProductCatalogMediaMetadataAgainstFiles(snapshot productCatalogModu
 					return errors.New("product package refuses private or customer-service media")
 				}
 			}
-			key, err := productCatalogRowString(row, "storage_key")
+			key, err := readBusinessModuleSnapshotRowColumnText(row, "storage_key")
 			if err != nil {
 				return err
 			}
-			mediaURL, err := productCatalogRowString(row, "url")
+			mediaURL, err := readBusinessModuleSnapshotRowColumnText(row, "url")
 			if err != nil {
 				return err
 			}
@@ -449,7 +449,7 @@ func (cfg Configuration) collectProductCatalogPackagePathsWithoutReadingLiveFile
 	}
 	for _, table := range []string{"media_assets", "media_asset_derivatives"} {
 		for _, row := range snapshot.Tables[table].Rows {
-			key, err := productCatalogRowString(row, "storage_key")
+			key, err := readBusinessModuleSnapshotRowColumnText(row, "storage_key")
 			if err != nil {
 				return nil, err
 			}

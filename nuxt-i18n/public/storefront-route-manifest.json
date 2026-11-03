@@ -367,10 +367,28 @@
       "is_indexable": true
     },
     {
-      "key": "support-test-report",
-      "path": "/technology/test-report",
-      "label": "Test Report",
-      "description": "Product test reports",
+      "key": "technology-rim-test-report",
+      "path": "/technology/rim-test-report",
+      "label": "Rim Test Report",
+      "description": "Rim testing documents and compliance references",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "technology-wheelset-test-report",
+      "path": "/technology/wheelset-test-report",
+      "label": "Wheelset Test Report",
+      "description": "Wheelset testing reports and validation data",
+      "is_searchable": true,
+      "is_checkable": true,
+      "is_indexable": true
+    },
+    {
+      "key": "technology-wheelset-building-quality-checks",
+      "path": "/technology/wheel-building-quality-checks",
+      "label": "Wheel Building & Quality Checks",
+      "description": "Wheel building, spoke tension standards, and final quality checks",
       "is_searchable": true,
       "is_checkable": true,
       "is_indexable": true

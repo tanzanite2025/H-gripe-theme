@@ -31,6 +31,8 @@ type customerServiceIndependentPairedSwitchMediaEntryMove struct {
 
 // This journal permits only an internal isolated rehearsal and its rollback.
 // It never changes Task.StageDatabase or grants production execution authority.
+// It is a separate durable file, not Task.Journal or CustomerServiceModuleRestore;
+// generic whole-storefront completion cannot consume it.
 type customerServiceIndependentPairedSwitchJournal struct {
 	Version                      int                                                    `json:"version"`
 	State                        string                                                 `json:"state"`
@@ -72,7 +74,7 @@ func (manager *Manager) saveCustomerServiceIndependentPairedSwitchJournal(journa
 	}
 	journal.UpdatedAt = time.Now().UTC()
 	journal.SHA256 = ""
-	journal.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(journal)
+	journal.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(journal)
 	if err != nil {
 		return err
 	}
@@ -134,7 +136,7 @@ func (manager *Manager) loadCustomerServiceIndependentPairedSwitchJournal(id str
 	}
 	copyOfJournal := journal
 	copyOfJournal.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(&copyOfJournal)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(&copyOfJournal)
 	if err != nil || digest != journal.SHA256 || journal.Version != 1 || journal.ExecutionAvailable || journal.TaskID != id || !safeTaskID.MatchString(journal.AttemptID) {
 		return nil, errors.New("independent paired journal digest or identity changed")
 	}
@@ -223,7 +225,7 @@ func (manager *Manager) loadCustomerServicePairedSwitchBoundCompleteMediaInvento
 	}
 	copyOfInventory := inventory
 	copyOfInventory.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(&copyOfInventory)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(&copyOfInventory)
 	if err != nil || digest != inventory.SHA256 || record.MediaUnion == nil || record.Validation == nil || digest != record.MediaUnion.InventorySHA256 || inventory.Version != 1 || inventory.PlanSHA256 != record.Request.PlanSHA256 || inventory.SelectionSHA256 != record.Validation.SelectionSHA256 || inventory.CandidateMediaFingerprint != record.MediaUnion.CandidateMediaFingerprint || inventory.BaselineMediaFingerprint != record.MediaUnion.BaselineMediaFingerprint {
 		return nil, errors.New("paired switch media inventory binding changed")
 	}
@@ -250,7 +252,7 @@ func customerServicePairedSwitchMediaEntryDigest(inventory *customerServiceCandi
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
 	sort.Strings(directories)
-	return customerServiceRecoveryPlanCanonicalJSONSHA256(struct {
+	return businessModuleRecoveryCanonicalJSONSHA256(struct {
 		Files       []FileIdentity
 		Directories []string
 	}{files, directories})
@@ -369,7 +371,7 @@ func reconstructCustomerServicePairedSwitchBaselineAndValidateMoves(journal *cus
 			return errors.New("paired inventory file origin is unsupported")
 		}
 	}
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(baseline)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(baseline)
 	if err != nil || digest != inventory.BaselineTreeSHA256 {
 		return errors.New("paired switch baseline directory or file identity changed")
 	}

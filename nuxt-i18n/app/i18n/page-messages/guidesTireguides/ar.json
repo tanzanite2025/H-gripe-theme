@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "الخلوص بين الإطار وهيكل الدراجة"
+    },
+    "schwalbeCircumference": {
+      "label": "محيط إطارات Schwalbe"
+    },
+    "tubeless": {
+      "label": "الإطارات دون أنابيب وتركيبها"
+    }
+  }
+}

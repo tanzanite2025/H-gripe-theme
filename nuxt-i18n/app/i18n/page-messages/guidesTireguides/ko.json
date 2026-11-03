@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "타이어와 프레임 간격"
+    },
+    "schwalbeCircumference": {
+      "label": "Schwalbe 타이어 둘레"
+    },
+    "tubeless": {
+      "label": "튜블리스 타이어 및 장착"
+    }
+  }
+}

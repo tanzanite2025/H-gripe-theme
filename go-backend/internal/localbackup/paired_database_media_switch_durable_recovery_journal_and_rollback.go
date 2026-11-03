@@ -20,6 +20,9 @@ type RecoveryFileMove struct {
 	Started     bool   `json:"started"`
 }
 
+// Lifecycle map: backup-recovery-lifecycle-supported-entrypoints-internal-rehearsals-and-persisted-task-compatibility.zh-cn.md.
+// The whole-storefront journal also carries two explicitly distinguished product
+// subcontracts. Its presence alone never authorizes whole-storefront acceptance.
 type RecoveryJournal struct {
 	OldDatabaseOID              int64                                           `json:"old_database_oid"`
 	NewDatabaseOID              int64                                           `json:"new_database_oid"`
@@ -41,6 +44,8 @@ type ReconciliationEvidence struct {
 	ExternalProjections                  *ExternalProjectionReconciliationEvidence `json:"external_projections"`
 }
 
+// ApplyVerifiedRecovery is the whole_application entry, never a module importer.
+// Product acceptance and transactional module restores have dedicated entries.
 func (manager *Manager) ApplyVerifiedRecovery(id, confirmation string) (*Task, error) {
 	task, err := manager.GetTask(id)
 	if err != nil {
@@ -287,6 +292,8 @@ func performJournaledFileMove(move *RecoveryFileMove) error {
 	return nil
 }
 
+// RollbackRecovery retains compatibility dispatch for product_catalog_rehearsal.
+// A product_catalog_stopped_switch must use its window-bound dedicated rollback.
 func (manager *Manager) RollbackRecovery(id, confirmation string) (*Task, error) {
 	task, err := manager.GetTask(id)
 	if err != nil {

@@ -136,7 +136,7 @@
           </p>
           <div class="mt-4">
             <NuxtLink
-              :to="localePath('/technology/test-report/tension')"
+              :to="`${localePath('/technology/wheel-building-quality-checks')}#spoke-tension`"
               class="premium-button"
             >
               {{ t('testReportAssembly.notes.tensionLink') }}
@@ -262,7 +262,7 @@ const assemblySteps = [
     number: 4,
     itemCount: 3,
     imageSources: [
-      '/testreport/wheelsetassembly/4/self‑developed-wheel-building-equipment.webp',
+      '/testreport/wheelsetassembly/4/custom-wheel-building-and-truing-equipment.webp',
       '/testreport/wheelsetassembly/4/wheelsbuilding-and-check-spoke-tension.webp',
     ],
   },

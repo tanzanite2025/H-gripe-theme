@@ -1,0 +1,12 @@
+{
+  "attachment": "첨부 파일",
+  "closePreview": "미리보기 닫기",
+  "download": "다운로드",
+  "downloadFailed": "첨부 파일을 다운로드할 수 없습니다. 페이지를 새로고침한 후 다시 시도해 주세요.",
+  "downloadToView": "이 파일을 보려면 다운로드해 주세요.",
+  "image": "이미지",
+  "loading": "불러오는 중…",
+  "readFailed": "첨부 파일을 열 수 없습니다. 페이지를 새로고침한 후 다시 시도해 주세요.",
+  "shipmentImage": "배송 이미지",
+  "video": "동영상"
+}

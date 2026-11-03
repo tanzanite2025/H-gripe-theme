@@ -75,6 +75,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("load config: %v", err)
 	}
+	if command == "prepare-local-development-backup" {
+		if err := prepareLocalDevelopmentBackupFromEffectiveApplicationConfiguration(cfg); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if directory := os.Getenv("LOCAL_BACKUP_MAINTENANCE_DIRECTORY"); directory != "" {
 		sharedStorage := storage.LoadConfigFromEnv()
 		logoStorage := storage.LoadSiteLogoConfigFromEnv(sharedStorage)
@@ -581,7 +587,7 @@ func parseCommand() string {
 	if len(os.Args) <= 1 {
 		return "serve"
 	}
-	if len(os.Args) == 2 && (os.Args[1] == "migrate" || os.Args[1] == "render-edge-config" || os.Args[1] == "backfill-media-derivatives" || os.Args[1] == "register-backup-boundary") {
+	if len(os.Args) == 2 && (os.Args[1] == "migrate" || os.Args[1] == "render-edge-config" || os.Args[1] == "backfill-media-derivatives" || os.Args[1] == "register-backup-boundary" || os.Args[1] == "prepare-local-development-backup") {
 		return os.Args[1]
 	}
 	log.Fatalf("unsupported command: %v", os.Args[1:])

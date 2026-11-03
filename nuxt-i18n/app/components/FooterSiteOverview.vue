@@ -1,7 +1,8 @@
 <template>
   <section class="footer-site-overview" aria-labelledby="footer-site-overview-title">
     <h2 id="footer-site-overview-title" class="footer-site-overview__title">
-      {{ t('footer.menus.siteOverview', 'Site Overview') }}
+      <Icon name="lucide:globe" class="footer-site-overview__title-icon" aria-hidden="true" />
+      <span>{{ t('footer.menus.siteOverview', 'Site Overview') }}</span>
     </h2>
 
     <div v-if="canRenderSiteSettings" class="footer-site-overview__content">
@@ -91,17 +92,31 @@ onMounted(() => {
 <style scoped>
 .footer-site-overview {
   min-width: 0;
-  text-align: left;
+  text-align: start;
 }
 
 .footer-site-overview__title {
-  margin: 0 0 1.25rem;
-  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.125rem;
+  font-size: 0.95rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
-  line-height: 1.3;
+  letter-spacing: 0.025em;
+  line-height: 1.4;
   text-transform: uppercase;
   color: var(--tz-text-primary);
+}
+
+.footer-site-overview__title-icon {
+  box-sizing: content-box;
+  flex: 0 0 auto;
+  width: 1.125rem;
+  height: 1.125rem;
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  color: var(--tz-text-accent);
+  background: var(--tz-site-accent-soft-surface);
 }
 
 .footer-site-overview__content {

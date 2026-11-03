@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Зазор между покрышкой и рамой"
+    },
+    "schwalbeCircumference": {
+      "label": "Длина окружности покрышек Schwalbe"
+    },
+    "tubeless": {
+      "label": "Бескамерные покрышки и установка"
+    }
+  }
+}

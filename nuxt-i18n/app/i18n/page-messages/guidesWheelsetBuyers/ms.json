@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "Panduan pembelian"
+    },
+    "safetyInstructions": {
+      "label": "Arahan keselamatan"
+    },
+    "sampleAssembly": {
+      "label": "Pemasangan roda dan binaan tersuai"
+    },
+    "appearanceLogo": {
+      "label": "Rupa dan logo"
+    }
+  }
+}

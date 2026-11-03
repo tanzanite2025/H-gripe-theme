@@ -49,7 +49,7 @@ func selectedChatExternalReferenceIsOptionalAbsentVisitorBrowsingContext(snapsho
 			continue
 		}
 		for _, row := range snapshot.Tables[source.SourceTable].Rows {
-			value, err := productCatalogRowString(row, source.SourceColumns[0])
+			value, err := readBusinessModuleSnapshotRowColumnText(row, source.SourceColumns[0])
 			if err != nil || value != hash {
 				continue
 			}
@@ -137,7 +137,7 @@ func canPreserveAdvancedSelectedOrderPaymentRiskAlertState(ctx context.Context, 
 	if json.Unmarshal(row, &fields) != nil || len(fields) != 4 {
 		return false, nil
 	}
-	sourceID, err := productCatalogRowString(row, "current_snapshot_id")
+	sourceID, err := readBusinessModuleSnapshotRowColumnText(row, "current_snapshot_id")
 	if err != nil {
 		return false, nil
 	}
@@ -147,7 +147,7 @@ func canPreserveAdvancedSelectedOrderPaymentRiskAlertState(ctx context.Context, 
 	}
 	var originalSnapshot json.RawMessage
 	for _, candidate := range snapshot.Tables["payment_risk_snapshots"].Rows {
-		id, _ := productCatalogRowString(candidate, "id")
+		id, _ := readBusinessModuleSnapshotRowColumnText(candidate, "id")
 		if id == sourceID {
 			if originalSnapshot != nil {
 				return false, nil

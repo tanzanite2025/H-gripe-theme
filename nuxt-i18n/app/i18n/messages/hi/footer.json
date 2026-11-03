@@ -1,47 +1,77 @@
 {
   "menus": {
-    "technology": "प्रौद्योगिकी",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "technology": "तकनीक",
+    "products": "उत्पाद",
+    "support": "सहायता",
+    "company": "कंपनी",
+    "resources": "संसाधन",
+    "siteOverview": "वेबसाइट के बारे में",
+    "policies": "नीतियाँ"
   },
   "links": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "shop": "दुकान",
+    "aboutTools": "उपकरणों के बारे में",
+    "tireSizeCharts": "टायर मार्गदर्शिका",
+    "blog": "ब्लॉग",
+    "technicalDocs": "तकनीकी दस्तावेज़",
+    "wheelsetBuyersGuide": "व्हीलसेट मार्गदर्शिका",
+    "about": "हमारे बारे में",
+    "aboutUs": "हमारे बारे में",
+    "contact": "संपर्क करें",
+    "contactUs": "संपर्क करें",
+    "ourStory": "हमारी कहानी",
+    "globalPartners": "वैश्विक साझेदार",
+    "oemOdm": "OEM और ODM निर्माण",
+    "certificates": "प्रमाणपत्र",
+    "membershipPoints": "सदस्यता और अंक",
+    "pictureWarehouse": "चित्र संग्रह",
+    "meThisWebsite": "मैं और यह वेबसाइट",
+    "whyThisName": "यह नाम क्यों",
+    "workbenchFeed": "कार्यशाला की खबरें"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
-    "line4": "Hong Kong.",
-    "hkLabel": "Hongkong:",
-    "xmLabel": "Xiamen:"
+    "line1": "Top Sports Co., Limited. का एक ब्रांड।",
+    "line2": "इकाई 1602, 16वीं मंज़िल, Lucky Centre,",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
+    "line4": "हांगकांग।",
+    "hkLabel": "हांगकांग:",
+    "xmLabel": "श्यामेन:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "अक्सर पूछे जाने वाले प्रश्न",
+    "payment": "भुगतान",
+    "afterSales": "बिक्री के बाद की सेवा",
+    "warranty": "वारंटी",
+    "productFeedback": "उत्पाद पर प्रतिक्रिया",
+    "spokecalculator": "स्पोक कैलकुलेटर"
+  },
+  "subscription": {
+    "label": "नए उत्पादों और ब्लॉग अपडेट की सदस्यता लें",
+    "placeholder": "अपना ईमेल दर्ज करें",
+    "emailLabel": "ईमेल पता",
+    "button": "सदस्यता लें",
+    "loading": "सदस्यता ली जा रही है…",
+    "success": "सदस्यता सफल हुई। कृपया अपने ईमेल से पुष्टि करें।",
+    "invalidEmail": "कृपया मान्य ईमेल पता दर्ज करें।",
+    "failed": "सदस्यता नहीं हो सकी। कृपया बाद में फिर प्रयास करें।",
+    "verificationUnavailable": "सत्यापन उपलब्ध नहीं है। कृपया बाद में फिर प्रयास करें।",
+    "verificationFailed": "सत्यापन विफल हुआ। कृपया फिर प्रयास करें।",
+    "verificationExpired": "सत्यापन की अवधि समाप्त हो गई। कृपया फिर प्रयास करें।"
+  },
+  "accessibility": {
+    "navigation": "पादलेख नेविगेशन",
+    "scrollLeft": "पादलेख नेविगेशन को बाएँ स्क्रॉल करें",
+    "scrollRight": "पादलेख नेविगेशन को दाएँ स्क्रॉल करें",
+    "paymentMethods": "स्वीकृत भुगतान विधियाँ",
+    "sslSecure": "सुरक्षित SSL कनेक्शन",
+    "cardPayment": "कार्ड से भुगतान"
+  },
+  "categories": {
+    "wheelset": "व्हीलसेट",
+    "wheelComponents": "पहियों के पुर्ज़े",
+    "tire": "टायर",
+    "spokeRepairKits": "स्पोक मरम्मत किट",
+    "carbonRim": "कार्बन रिम"
+  },
+  "securityNotice": "सभी पेज SSL एन्क्रिप्शन के साथ HTTPS का उपयोग करते हैं। भुगतान सुरक्षित रूप से संसाधित होते हैं; कार्ड की जानकारी संग्रहीत नहीं की जाती।"
 }

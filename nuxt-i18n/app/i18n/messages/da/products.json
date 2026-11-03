@@ -8,12 +8,12 @@
   "loadMore": "Indlæs mere",
   "items": "stk",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
+    "shop": "Butik",
+    "aboutTools": "Om værktøjerne",
+    "tireSizeCharts": "Dækguide",
     "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "technicalDocs": "Teknisk dokumentation",
+    "wheelsetBuyersGuide": "Hjulguide",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

@@ -269,7 +269,7 @@
   },
   "breadcrumbs": {
     "home": "Home",
-    "guides": "Guides",
+    "guides": "ガイド",
     "blog": "Blog",
     "pageSections": "Page sections"
   },
@@ -782,15 +782,15 @@
   },
   "company": {
     "nav": {
-      "about": "About Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us",
-      "aboutWebsite": "Me & This Website"
+      "about": "私たちについて",
+      "ourStory": "私たちの歩み",
+      "globalPartners": "世界のパートナー",
+      "oemOdm": "OEM・ODM 製造",
+      "certificates": "認証書",
+      "membershipPoints": "会員とポイント",
+      "pictureWarehouse": "写真ライブラリー",
+      "contact": "お問い合わせ",
+      "aboutWebsite": "私とこのウェブサイト"
     },
     "index": {
       "title": "Company",
@@ -1104,50 +1104,80 @@
   },
   "footer": {
     "links": {
-      "technicalDocs": "技術",
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
-      "blog": "Blog",
-      "wheelsetBuyersGuide": "Wheelset Guide",
-      "about": "About",
-      "aboutUs": "About Us",
-      "contact": "Contact",
-      "contactUs": "Contact Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "meThisWebsite": "Me & This Website",
-      "whyThisName": "Why This Name"
+      "technicalDocs": "技術資料",
+      "shop": "ショップ",
+      "aboutTools": "ツールについて",
+      "tireSizeCharts": "タイヤガイド",
+      "blog": "ブログ",
+      "wheelsetBuyersGuide": "ホイールガイド",
+      "about": "私たちについて",
+      "aboutUs": "私たちについて",
+      "contact": "お問い合わせ",
+      "contactUs": "お問い合わせ",
+      "ourStory": "私たちの歩み",
+      "globalPartners": "世界のパートナー",
+      "oemOdm": "OEM・ODM 製造",
+      "certificates": "認証書",
+      "membershipPoints": "会員とポイント",
+      "pictureWarehouse": "写真ライブラリー",
+      "meThisWebsite": "私とこのウェブサイト",
+      "whyThisName": "この名前の由来",
+      "workbenchFeed": "工房だより"
     },
     "menus": {
-      "technology": "テクノロジー",
-      "products": "Products",
-      "support": "Support",
-      "company": "Company",
-      "resources": "RESOURCES",
-      "siteOverview": "Site Overview",
-      "policies": "Policies"
+      "technology": "技術情報",
+      "products": "製品",
+      "support": "サポート",
+      "company": "会社情報",
+      "resources": "資料",
+      "siteOverview": "このサイトについて",
+      "policies": "各種ポリシー"
     },
     "brand": {
-      "line1": "A brand of Top Sports Co., Limited.",
-      "line2": "Flat 1602, 16/F, Lucky Centre,",
-      "line3": "No.165-171 Wan Chai Road, Wan Chai",
-      "line4": "Hong Kong.",
-      "hkLabel": "Hongkong:",
-      "xmLabel": "Xiamen:"
+      "line1": "Top Sports Co., Limited. のブランドです。",
+      "line2": "Lucky Centre 16 階 1602 室",
+      "line3": "165–171 Wan Chai Road, Wan Chai",
+      "line4": "香港。",
+      "hkLabel": "香港：",
+      "xmLabel": "厦門："
     },
     "support": {
-      "allFaqs": "All FAQ'S",
-      "payment": "Payment",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "productFeedback": "Product Feedback",
-      "spokecalculator": "Spokecalculator"
-    }
+      "allFaqs": "よくあるご質問",
+      "payment": "お支払い",
+      "afterSales": "アフターサービス",
+      "warranty": "保証",
+      "productFeedback": "製品へのご意見",
+      "spokecalculator": "スポーク計算ツール"
+    },
+    "subscription": {
+      "label": "新製品とブログの更新をメールで受け取る",
+      "placeholder": "メールアドレスを入力",
+      "emailLabel": "メールアドレス",
+      "button": "登録する",
+      "loading": "登録中…",
+      "success": "登録が完了しました。確認メールをご確認ください。",
+      "invalidEmail": "有効なメールアドレスを入力してください。",
+      "failed": "登録に失敗しました。しばらくしてからお試しください。",
+      "verificationUnavailable": "認証サービスを利用できません。しばらくしてからお試しください。",
+      "verificationFailed": "認証に失敗しました。もう一度お試しください。",
+      "verificationExpired": "認証の有効期限が切れました。もう一度お試しください。"
+    },
+    "accessibility": {
+      "navigation": "フッターナビゲーション",
+      "scrollLeft": "フッターを左にスクロール",
+      "scrollRight": "フッターを右にスクロール",
+      "paymentMethods": "ご利用可能なお支払い方法",
+      "sslSecure": "安全な SSL 接続",
+      "cardPayment": "カード払い"
+    },
+    "categories": {
+      "wheelset": "ホイールセット",
+      "wheelComponents": "ホイール部品",
+      "tire": "タイヤ",
+      "spokeRepairKits": "スポーク修理キット",
+      "carbonRim": "カーボンリム"
+    },
+    "securityNotice": "すべてのページで HTTPS と SSL 暗号化を使用しています。お支払いは安全に処理され、カード情報は保存されません。"
   },
   "header": {
     "searchHint": {
@@ -1611,14 +1641,26 @@
     "contact": "Contact"
   },
   "policyTabs": {
-    "cookie": "Cookie",
-    "privacy": "Privacy",
-    "refundCancellation": "返金およびキャンセルポリシー",
-    "terms": "Terms"
+    "cookie": "Cookie ポリシー",
+    "privacy": "プライバシーポリシー",
+    "refundCancellation": "返金・キャンセルポリシー",
+    "terms": "利用規約"
   },
   "privacy": {
     "button": "プライバシーに関する声明",
     "title": "プライバシーに関する声明"
+  },
+  "privateOrderAttachments": {
+    "attachment": "添付ファイル",
+    "closePreview": "プレビューを閉じる",
+    "download": "ダウンロード",
+    "downloadFailed": "添付ファイルをダウンロードできませんでした。ページを更新して、もう一度お試しください。",
+    "downloadToView": "このファイルを表示するには、ダウンロードしてください。",
+    "image": "画像",
+    "loading": "読み込み中…",
+    "readFailed": "添付ファイルを開けませんでした。ページを更新して、もう一度お試しください。",
+    "shipmentImage": "発送画像",
+    "video": "動画"
   },
   "productCategoryNavigationCards": {
     "heading": "Product categories",
@@ -1669,12 +1711,12 @@
     "loadMore": "もっと読み込む",
     "items": "件",
     "nav": {
-      "technicalDocs": "技術",
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
-      "blog": "Blog",
-      "wheelsetBuyersGuide": "Wheelset Guide",
+      "technicalDocs": "技術資料",
+      "shop": "ショップ",
+      "aboutTools": "ツールについて",
+      "tireSizeCharts": "タイヤガイド",
+      "blog": "ブログ",
+      "wheelsetBuyersGuide": "ホイールガイド",
       "spokeGuides": "Spoke Guides"
     },
     "navShort": {
@@ -1936,15 +1978,15 @@
   },
   "support": {
     "nav": {
-      "faqs": "All FAQs",
-      "payment": "Payment",
-      "shipping": "Shipping",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "warrantyCheck": "Warranty Check",
-      "productFeedback": "Product Feedback",
-      "spokeCalculator": "Spoke Calculator",
-      "testReport": "Test report"
+      "faqs": "よくあるご質問",
+      "payment": "お支払い",
+      "shipping": "配送",
+      "afterSales": "アフターサービス",
+      "warranty": "保証",
+      "warrantyCheck": "保証の確認",
+      "productFeedback": "製品へのご意見",
+      "spokeCalculator": "スポーク計算ツール",
+      "testReport": "試験報告書"
     }
   },
   "toolsNavigation": {
@@ -1952,25 +1994,25 @@
     "eyebrow": "自転車部品の選定",
     "description": "部品の仕様を検索、絞り込み、比較できます。各ツールには結果を理解するための説明が含まれています。",
     "openTool": "ツールを開く",
-    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorLabel": "Schwalbe タイヤ選択ツール",
     "schwalbeTireSelectorDescription": "モデルとサイズで Schwalbe タイヤカタログを検索・絞り込みし、構造と仕様の説明を確認できます。",
-    "brandWheelsetSpokeSpecsLabel": "ホイールのスポーク・ニップル仕様",
+    "brandWheelsetSpokeSpecsLabel": "ホイールのスポーク・ニップル仕様検索",
     "brandWheelsetSpokeSpecsDescription": "ブランドで絞り込むかホイールモデルを検索し、スポーク長、組み方、ニップル仕様と補修キットの説明を確認できます。",
     "spokeLengthCalculatorLabel": "スポーク長計算ツール",
     "spokeLengthCalculatorDescription": "リム、ハブ、組み方、補正、ニップルを設定する完全なウィザードで前後輪のスポーク長を計算し、測定方法と結果の説明を確認できます。",
-    "spokeLacingTopologySimulatorLabel": "スポーク組み方トポロジーシミュレーター",
+    "spokeLacingTopologySimulatorLabel": "スポーク組みシミュレーター",
     "spokeLacingTopologySimulatorDescription": "スポーク穴位置、組み方、G3・2:1配置、左右フランジの形状を操作して確認できます。説明とプレビューの制限を含みます。",
     "dynamicTirePressureCalculatorLabel": "動的タイヤ空気圧計算ツール",
     "dynamicTirePressureCalculatorDescription": "荷重、空気圧、速度、リーン角が推定接地面積とコーナリングフォースをどう変えるかを確認できます。",
-    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsLabel": "ステンレススポークの応力除去力学",
     "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
-    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorLabel": "チューブのバルブ長適合計算ツール",
     "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
-    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineLabel": "フリーボディとカセットの互換性確認",
     "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
-    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineLabel": "タイヤ幅とリム幅の適合計算ツール",
     "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
-    "tireSizeMarkingConverterLabel": "Tire size marking converter",
+    "tireSizeMarkingConverterLabel": "タイヤサイズ表記変換ツール",
     "tireSizeMarkingConverterDescription": "Convert ETRTO, inch, and French tire markings with the complete size reference, explanations, and fitment limits."
   },
   "user": {

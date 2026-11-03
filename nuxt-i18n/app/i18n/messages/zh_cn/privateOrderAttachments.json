@@ -1,0 +1,12 @@
+{
+  "attachment": "附件",
+  "closePreview": "关闭预览",
+  "download": "下载",
+  "downloadFailed": "无法下载此附件，请刷新页面后重试。",
+  "downloadToView": "请下载此文件后查看。",
+  "image": "图片",
+  "loading": "正在加载…",
+  "readFailed": "无法打开此附件，请刷新页面后重试。",
+  "shipmentImage": "发货图片",
+  "video": "视频"
+}

@@ -269,7 +269,7 @@
   },
   "breadcrumbs": {
     "home": "Home",
-    "guides": "Guides",
+    "guides": "Guider",
     "blog": "Blog",
     "pageSections": "Page sections"
   },
@@ -782,15 +782,15 @@
   },
   "company": {
     "nav": {
-      "about": "About Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us",
-      "aboutWebsite": "Me & This Website"
+      "about": "Om oss",
+      "ourStory": "Vår historia",
+      "globalPartners": "Globala partner",
+      "oemOdm": "OEM- och ODM-tillverkning",
+      "certificates": "Certifikat",
+      "membershipPoints": "Medlemskap och poäng",
+      "pictureWarehouse": "Bildbibliotek",
+      "contact": "Kontakta oss",
+      "aboutWebsite": "Jag och den här webbplatsen"
     },
     "index": {
       "title": "Company",
@@ -1105,49 +1105,79 @@
   "footer": {
     "menus": {
       "technology": "Teknik",
-      "products": "Products",
-      "support": "Support",
-      "company": "Company",
-      "resources": "RESOURCES",
-      "siteOverview": "Site Overview",
-      "policies": "Policies"
+      "products": "Produkter",
+      "support": "Kundsupport",
+      "company": "Företag",
+      "resources": "Resurser",
+      "siteOverview": "Om webbplatsen",
+      "policies": "Policyer"
     },
     "links": {
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
-      "blog": "Blog",
-      "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide",
-      "about": "About",
-      "aboutUs": "About Us",
-      "contact": "Contact",
-      "contactUs": "Contact Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
-      "oemOdm": "OEM & ODM",
-      "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "meThisWebsite": "Me & This Website",
-      "whyThisName": "Why This Name"
+      "shop": "Butik",
+      "aboutTools": "Om verktygen",
+      "tireSizeCharts": "Däckguide",
+      "blog": "Blogg",
+      "technicalDocs": "Teknisk dokumentation",
+      "wheelsetBuyersGuide": "Hjulguide",
+      "about": "Om oss",
+      "aboutUs": "Om oss",
+      "contact": "Kontakta oss",
+      "contactUs": "Kontakta oss",
+      "ourStory": "Vår historia",
+      "globalPartners": "Globala partner",
+      "oemOdm": "OEM- och ODM-tillverkning",
+      "certificates": "Certifikat",
+      "membershipPoints": "Medlemskap och poäng",
+      "pictureWarehouse": "Bildbibliotek",
+      "meThisWebsite": "Jag och den här webbplatsen",
+      "whyThisName": "Varför detta namn",
+      "workbenchFeed": "Nytt från verkstaden"
     },
     "brand": {
-      "line1": "A brand of Top Sports Co., Limited.",
-      "line2": "Flat 1602, 16/F, Lucky Centre,",
-      "line3": "No.165-171 Wan Chai Road, Wan Chai",
-      "line4": "Hong Kong.",
+      "line1": "Ett varumärke som tillhör Top Sports Co., Limited.",
+      "line2": "Enhet 1602, våning 16, Lucky Centre,",
+      "line3": "165–171 Wan Chai Road, Wan Chai",
+      "line4": "Hongkong.",
       "hkLabel": "Hongkong:",
       "xmLabel": "Xiamen:"
     },
     "support": {
-      "allFaqs": "All FAQ'S",
-      "payment": "Payment",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "productFeedback": "Product Feedback",
-      "spokecalculator": "Spokecalculator"
-    }
+      "allFaqs": "Vanliga frågor",
+      "payment": "Betalning",
+      "afterSales": "Service efter köp",
+      "warranty": "Garanti",
+      "productFeedback": "Produktsynpunkter",
+      "spokecalculator": "Ekerkalkylator"
+    },
+    "subscription": {
+      "label": "Prenumerera på produktnyheter och blogguppdateringar",
+      "placeholder": "Ange din e-postadress",
+      "emailLabel": "E-postadress",
+      "button": "Prenumerera",
+      "loading": "Registrerar…",
+      "success": "Prenumerationen är registrerad. Bekräfta via din e-post.",
+      "invalidEmail": "Ange en giltig e-postadress.",
+      "failed": "Det gick inte att prenumerera. Försök igen senare.",
+      "verificationUnavailable": "Verifiering är inte tillgänglig. Försök igen senare.",
+      "verificationFailed": "Verifieringen misslyckades. Försök igen.",
+      "verificationExpired": "Verifieringen har gått ut. Försök igen."
+    },
+    "accessibility": {
+      "navigation": "Sidfotsnavigering",
+      "scrollLeft": "Rulla sidfotsnavigeringen åt vänster",
+      "scrollRight": "Rulla sidfotsnavigeringen åt höger",
+      "paymentMethods": "Godkända betalningsmetoder",
+      "sslSecure": "Säker SSL-anslutning",
+      "cardPayment": "Kortbetalning"
+    },
+    "categories": {
+      "wheelset": "Hjulset",
+      "wheelComponents": "Hjulkomponenter",
+      "tire": "Däck",
+      "spokeRepairKits": "Reparationssatser för ekrar",
+      "carbonRim": "Kolfiberfälgar"
+    },
+    "securityNotice": "Alla sidor använder HTTPS med SSL-kryptering. Betalningar behandlas säkert; inga kortuppgifter sparas."
   },
   "header": {
     "searchHint": {
@@ -1611,14 +1641,26 @@
     "contact": "Kontakt"
   },
   "policyTabs": {
-    "cookie": "Cookie",
-    "privacy": "Privacy",
-    "refundCancellation": "Policy för återbetalning och annullering",
-    "terms": "Terms"
+    "cookie": "Cookiepolicy",
+    "privacy": "Integritetspolicy",
+    "refundCancellation": "Återbetalning och avbeställning",
+    "terms": "Användarvillkor"
   },
   "privacy": {
     "button": "Integritetsmeddelande",
     "title": "Integritetsmeddelande"
+  },
+  "privateOrderAttachments": {
+    "attachment": "Bilaga",
+    "closePreview": "Stäng förhandsvisning",
+    "download": "Ladda ner",
+    "downloadFailed": "Det gick inte att ladda ner bilagan. Uppdatera sidan och försök igen.",
+    "downloadToView": "Ladda ner filen för att visa den.",
+    "image": "Bild",
+    "loading": "Laddar…",
+    "readFailed": "Det gick inte att öppna bilagan. Uppdatera sidan och försök igen.",
+    "shipmentImage": "Leveransbild",
+    "video": "Video"
   },
   "productCategoryNavigationCards": {
     "heading": "Product categories",
@@ -1669,12 +1711,12 @@
     "loadMore": "Ladda mer",
     "items": "artiklar",
     "nav": {
-      "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
-      "blog": "Blog",
-      "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide",
+      "shop": "Butik",
+      "aboutTools": "Om verktygen",
+      "tireSizeCharts": "Däckguide",
+      "blog": "Blogg",
+      "technicalDocs": "Teknisk dokumentation",
+      "wheelsetBuyersGuide": "Hjulguide",
       "spokeGuides": "Spoke Guides"
     },
     "navShort": {
@@ -1936,15 +1978,15 @@
   },
   "support": {
     "nav": {
-      "faqs": "All FAQs",
-      "payment": "Payment",
-      "shipping": "Shipping",
-      "afterSales": "After sales",
-      "warranty": "Warranty",
-      "warrantyCheck": "Warranty Check",
-      "productFeedback": "Product Feedback",
-      "spokeCalculator": "Spoke Calculator",
-      "testReport": "Test report"
+      "faqs": "Vanliga frågor",
+      "payment": "Betalning",
+      "shipping": "Frakt",
+      "afterSales": "Service efter köp",
+      "warranty": "Garanti",
+      "warrantyCheck": "Kontrollera garanti",
+      "productFeedback": "Produktsynpunkter",
+      "spokeCalculator": "Ekerkalkylator",
+      "testReport": "Testrapporter"
     }
   },
   "toolsNavigation": {
@@ -1952,25 +1994,25 @@
     "eyebrow": "Val av cykelkomponenter",
     "description": "Sök, filtrera och jämför komponentspecifikationer. Varje verktyg innehåller förklaringar för att tolka resultaten.",
     "openTool": "Öppna verktyg",
-    "schwalbeTireSelectorLabel": "Schwalbe tire selector",
+    "schwalbeTireSelectorLabel": "Schwalbe-däckväljare",
     "schwalbeTireSelectorDescription": "Sök och filtrera Schwalbes däckkatalog efter modell och storlek, med förklaringar av konstruktion och specifikationer.",
-    "brandWheelsetSpokeSpecsLabel": "Specifikationer för hjulekrar och nipplar",
+    "brandWheelsetSpokeSpecsLabel": "Specifikationer för ekrar och nipplar i hjulset",
     "brandWheelsetSpokeSpecsDescription": "Filtrera efter märke eller sök efter hjulmodell för att hitta ekerlängder, ekermönster och nippelspecifikationer med information om reparationssatser.",
-    "spokeLengthCalculatorLabel": "Ekerlängdsräknare",
+    "spokeLengthCalculatorLabel": "Ekerlängdskalkylator",
     "spokeLengthCalculatorDescription": "Beräkna ekerlängder för fram- och bakhjul med hela guiden för fälg, nav, ekermönster, korrigeringar och nipplar, inklusive mätningsråd och resultatförklaringar.",
     "spokeLacingTopologySimulatorLabel": "Simulator för ekringsmönster",
     "spokeLacingTopologySimulatorDescription": "Förhandsvisa ekerhålens lägen, ekringsmönster, G3- och 2:1-layouter samt båda flänsarnas geometri med förklaringar och begränsningar.",
     "dynamicTirePressureCalculatorLabel": "Dynamisk däcktryckskalkylator",
     "dynamicTirePressureCalculatorDescription": "Se hur belastning, tryck, hastighet och lutning ändrar den uppskattade kontaktytan och kurvkraften.",
-    "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
+    "spokeStressReliefMechanicsLabel": "Mekanik för avspänning av rostfria stålekrar",
     "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
-    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorLabel": "Ventillängdskalkylator för innerslangar",
     "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
-    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineLabel": "Kompatibilitetsassistent för frihjulsbody och kassett",
     "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
-    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineLabel": "Kompatibilitetskalkylator för däck- och fälgbredd",
     "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
-    "tireSizeMarkingConverterLabel": "Tire size marking converter",
+    "tireSizeMarkingConverterLabel": "Omvandlare för däckmått",
     "tireSizeMarkingConverterDescription": "Convert ETRTO, inch, and French tire markings with the complete size reference, explanations, and fitment limits."
   },
   "user": {

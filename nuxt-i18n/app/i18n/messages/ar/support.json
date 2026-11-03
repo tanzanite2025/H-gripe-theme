@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "الأسئلة الشائعة",
+    "payment": "الدفع",
+    "shipping": "الشحن",
+    "afterSales": "خدمة ما بعد البيع",
+    "warranty": "الضمان",
+    "warrantyCheck": "التحقق من الضمان",
+    "productFeedback": "آراء حول المنتجات",
+    "spokeCalculator": "حاسبة أسلاك العجلات",
+    "testReport": "تقارير الاختبارات"
   }
 }

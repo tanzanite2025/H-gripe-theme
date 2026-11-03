@@ -68,7 +68,7 @@ func (cfg Configuration) inspectProductCatalogRequiredImagesAndRetainedCleanupRe
 	if err != nil {
 		return nil, err
 	}
-	if len(assets)+len(derivatives) > productCatalogMaximumRows {
+	if len(assets)+len(derivatives) > businessModuleSnapshotMaximumRows {
 		return nil, errors.New("product shared media inspection exceeds registration capacity")
 	}
 	registrations := map[string]productCatalogMediaObjectRegistration{}
@@ -80,7 +80,10 @@ func (cfg Configuration) inspectProductCatalogRequiredImagesAndRetainedCleanupRe
 		rows []json.RawMessage
 	}{{"media_assets", assets}, {"media_asset_derivatives", derivatives}} {
 		for _, row := range table.rows {
-			field := func(column string) string { value, _ := productCatalogRowString(row, column); return value }
+			field := func(column string) string {
+				value, _ := readBusinessModuleSnapshotRowColumnText(row, column)
+				return value
+			}
 			registration := productCatalogMediaObjectRegistration{ID: field("id"), ParentID: field("media_asset_id"), Key: field("storage_key"), URL: field("url"), DeletedAt: field("deleted_at"), Visibility: field("visibility"), Partition: field("library_partition"), Status: field("status"), WriteLease: field("customer_service_derivative_write_token"), WriteLeaseExpiry: field("customer_service_derivative_write_expires_at")}
 			if table.name == "media_assets" {
 				registration.PublicBusinessReuseAllowed = media.CanMediaAssetBeReusedByPublicBusinessContent(&media.MediaAsset{
@@ -157,7 +160,7 @@ func (cfg Configuration) inspectProductCatalogRequiredImagesAndRetainedCleanupRe
 	}
 	for _, row := range events {
 		if err := cfg.validateProductCatalogRetainedCleanupReceipt(row, keys, requiredAssetIDs, parents, derivativeIDs); err != nil {
-			id, _ := productCatalogRowString(row, "id")
+			id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
 			return nil, fmt.Errorf("product cleanup receipt %s blocks restore: %w", id, err)
 		}
 	}
@@ -171,20 +174,23 @@ func (cfg Configuration) inspectProductCatalogRequiredImagesAndRetainedCleanupRe
 	result.MediaPlacementGuardVersion = productCatalogMediaPlacementGuardVersion
 	result.RichTextMediaGuardVersion = productCatalogRichTextMediaGuardVersion
 	result.TemplateAndCategoryRichTextGuardVersion = productCatalogTemplateAndCategoryRichTextGuardVersion
-	result.RequiredPathsSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(orderedPaths)
+	result.RequiredPathsSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(orderedPaths)
 	if err != nil {
 		return nil, err
 	}
-	result.RegistrationRowsSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256([][]json.RawMessage{assets, derivatives})
+	result.RegistrationRowsSHA256, err = businessModuleRecoveryCanonicalJSONSHA256([][]json.RawMessage{assets, derivatives})
 	if err != nil {
 		return nil, err
 	}
-	result.CleanupRowsSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(events)
+	result.CleanupRowsSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(events)
 	return result, err
 }
 
 func (cfg Configuration) validateProductCatalogRetainedCleanupReceipt(row json.RawMessage, requiredKeys, requiredAssetIDs map[string]bool, parents, derivatives map[string]productCatalogMediaObjectRegistration) error {
-	field := func(column string) string { value, _ := productCatalogRowString(row, column); return value }
+	field := func(column string) string {
+		value, _ := readBusinessModuleSnapshotRowColumnText(row, column)
+		return value
+	}
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(row, &fields); err != nil {
 		return err

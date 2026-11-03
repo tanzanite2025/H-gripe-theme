@@ -23,46 +23,15 @@ type selectedBusinessModuleExternalReference struct {
 }
 
 type selectedBusinessModuleCompleteSnapshot struct {
-	ContractVersion      int                                       `json:"contract_version"`
-	Modules              []string                                  `json:"modules"`
-	Tables               map[string]productCatalogTableSnapshot    `json:"tables"`
-	ExternalDependencies []selectedBusinessModuleExternalReference `json:"external_dependencies"`
-	RequiredFilePaths    []string                                  `json:"required_file_paths"`
-}
-
-func readSelectedBusinessModuleCompleteTableSnapshot(ctx context.Context, tx *sql.Tx, table, predicate string, arguments ...any) (productCatalogTableSnapshot, error) {
-	result := productCatalogTableSnapshot{Rows: []json.RawMessage{}}
-	var err error
-	result.SchemaSHA256, _, err = inspectProductCatalogTableSchema(ctx, tx, table)
-	if err != nil {
-		return result, err
-	}
-	result.ConstraintsSHA256, err = captureProductCatalogConstraintFingerprint(ctx, tx, table)
-	if err != nil {
-		return result, err
-	}
-	rows, err := tx.QueryContext(ctx, `SELECT to_jsonb(r)::text FROM public.`+pq.QuoteIdentifier(table)+` r WHERE `+predicate+` ORDER BY to_jsonb(r)::text LIMIT 100001`, arguments...) // #nosec G202 -- Selectors are internal registry literals; data values are bound.
-	if err != nil {
-		return result, fmt.Errorf("无法保存模块完整记录：%s", table)
-	}
-	defer func(closeResource func() error) { _ = closeResource() }(rows.Close)
-	totalBytes := 0
-	for rows.Next() {
-		var raw string
-		if err := rows.Scan(&raw); err != nil {
-			return result, err
-		}
-		totalBytes += len(raw)
-		if len(result.Rows) >= productCatalogMaximumRows || totalBytes > productCatalogMaximumJSONBytes {
-			return result, errors.New("模块记录超过容量限制，未生成截断备份")
-		}
-		result.Rows = append(result.Rows, json.RawMessage(raw))
-	}
-	return result, rows.Err()
+	ContractVersion      int                                            `json:"contract_version"`
+	Modules              []string                                       `json:"modules"`
+	Tables               map[string]businessModuleCompleteTableSnapshot `json:"tables"`
+	ExternalDependencies []selectedBusinessModuleExternalReference      `json:"external_dependencies"`
+	RequiredFilePaths    []string                                       `json:"required_file_paths"`
 }
 
 func (cfg Configuration) captureSelectedBusinessModuleCompleteSnapshot(ctx context.Context, tx *sql.Tx, modules []string) (selectedBusinessModuleCompleteSnapshot, error) {
-	snapshot := selectedBusinessModuleCompleteSnapshot{ContractVersion: 1, Modules: modules, Tables: map[string]productCatalogTableSnapshot{}, RequiredFilePaths: []string{}}
+	snapshot := selectedBusinessModuleCompleteSnapshot{ContractVersion: 1, Modules: modules, Tables: map[string]businessModuleCompleteTableSnapshot{}, RequiredFilePaths: []string{}}
 	if err := requireRegisteredStorefrontTablesForProductCatalogModule(ctx, tx); err != nil {
 		return snapshot, err
 	}
@@ -90,7 +59,7 @@ func (cfg Configuration) captureSelectedBusinessModuleCompleteSnapshot(ctx conte
 		}
 	}
 	for table, predicate := range selectors {
-		contents, err := readSelectedBusinessModuleCompleteTableSnapshot(ctx, tx, table, predicate)
+		contents, err := readBusinessModuleCompleteTableSnapshot(ctx, tx, table, predicate)
 		if err != nil {
 			return snapshot, err
 		}
@@ -122,7 +91,7 @@ func validateSelectedBusinessModuleSnapshotAggregateCapacity(snapshot selectedBu
 			bytes += len(row)
 		}
 	}
-	if rows > productCatalogMaximumRows || bytes > productCatalogMaximumJSONBytes {
+	if rows > businessModuleSnapshotMaximumRows || bytes > businessModuleSnapshotMaximumJSONBytes {
 		return errors.New("模块组合记录超过容量限制，请分别导出或使用整站备份")
 	}
 	return nil
@@ -131,7 +100,7 @@ func validateSelectedBusinessModuleSnapshotAggregateCapacity(snapshot selectedBu
 func (cfg Configuration) includeSelectedBusinessModuleReferencedMediaRows(ctx context.Context, tx *sql.Tx, snapshot *selectedBusinessModuleCompleteSnapshot) error {
 	assetIDs, objectKeys := map[string]bool{}, map[string]bool{}
 	for _, row := range snapshot.Tables["media_assets"].Rows {
-		id, _ := productCatalogRowString(row, "id")
+		id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
 		assetIDs[id] = true
 	}
 	// Asset columns are registered FK/business bindings, never arbitrary IDs.
@@ -143,7 +112,7 @@ func (cfg Configuration) includeSelectedBusinessModuleReferencedMediaRows(ctx co
 			}
 			for _, column := range []string{"media_asset_id", "avatar_media_asset_id"} {
 				if _, exists := fields[column]; exists {
-					id, _ := productCatalogRowString(row, column)
+					id, _ := readBusinessModuleSnapshotRowColumnText(row, column)
 					if id != "" && id != "0" {
 						assetIDs[id] = true
 					}
@@ -174,7 +143,7 @@ func (cfg Configuration) includeSelectedBusinessModuleReferencedMediaRows(ctx co
 		{"media_assets", `r.id::text=ANY($1) OR r.storage_key=ANY($2) OR r.id IN (SELECT media_asset_id FROM media_asset_derivatives WHERE storage_key=ANY($2))`},
 		{"media_asset_derivatives", `r.media_asset_id::text=ANY($1) OR r.media_asset_id IN (SELECT id FROM media_assets WHERE storage_key=ANY($2)) OR r.media_asset_id IN (SELECT media_asset_id FROM media_asset_derivatives WHERE storage_key=ANY($2))`},
 	} {
-		contents, err := readSelectedBusinessModuleCompleteTableSnapshot(ctx, tx, query.table, query.predicate, pq.Array(ids), pq.Array(keys))
+		contents, err := readBusinessModuleCompleteTableSnapshot(ctx, tx, query.table, query.predicate, pq.Array(ids), pq.Array(keys))
 		if err != nil {
 			return err
 		}
@@ -270,11 +239,11 @@ func (cfg Configuration) collectSelectedBusinessModuleRequiredFilePaths(snapshot
 	}
 	assets := map[string]string{}
 	for _, row := range snapshot.Tables["media_assets"].Rows {
-		id, _ := productCatalogRowString(row, "id")
-		visibility, _ := productCatalogRowString(row, "visibility")
+		id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
+		visibility, _ := readBusinessModuleSnapshotRowColumnText(row, "visibility")
 		assets[id] = visibility
 	}
-	productTables := productCatalogModuleSnapshot{Tables: map[string]productCatalogTableSnapshot{}}
+	productTables := productCatalogModuleSnapshot{Tables: map[string]businessModuleCompleteTableSnapshot{}}
 	productOwned := map[string]bool{}
 	for _, name := range productCatalogOwnedTableNames {
 		productOwned[name] = true
@@ -323,7 +292,7 @@ func (cfg Configuration) collectSelectedBusinessModuleRequiredFilePaths(snapshot
 				root := registeredMediaStorageRootForObjectKeyAndVisibility(key, visibility)
 				switch table {
 				case "media_asset_derivatives":
-					id, _ := productCatalogRowString(row, "media_asset_id")
+					id, _ := readBusinessModuleSnapshotRowColumnText(row, "media_asset_id")
 					root = registeredMediaStorageRootForObjectKeyAndVisibility(key, assets[id])
 				case "order_evidence_attachments":
 					root = "uploads_private"
@@ -368,17 +337,26 @@ func captureSelectedBusinessModuleExternalReferenceFingerprintsWithObservedSchem
 	references := append([]ModuleRecoveryDependencyReference(nil), observation.References...)
 	references = append(references, registeredNonForeignKeyModuleRecoveryReferences()...)
 	references = append(references, registeredOrderTransactionBusinessReferences()...)
+	references = append(references, configurationModulePackagingReadOnlyBusinessDependencyReferences()...)
 	dependencies := map[string]selectedBusinessModuleExternalReference{}
 	selectedReferenceKeys := map[string]map[string]bool{}
 	for _, reference := range references {
 		for _, row := range snapshot.Tables[reference.SourceTable].Rows {
+			// source_id is polymorphic: registration referrals and check-ins
+			// never identify an order. Match the existing row graph discriminator.
+			if reference.SourceTable == "loyalty_transactions" && len(reference.SourceColumns) == 1 && reference.SourceColumns[0] == "source_id" && reference.TargetTable == "orders" {
+				source, _ := readBusinessModuleSnapshotRowColumnText(row, "source")
+				if source != "order" {
+					continue
+				}
+			}
 			if len(reference.SourceColumns) != len(reference.TargetColumns) || len(reference.SourceColumns) == 0 {
 				return nil, errors.New("不支持的模块复合依赖")
 			}
 			values, predicates, arguments := map[string]string{}, []string{}, []any{}
 			valid := true
 			for index, column := range reference.SourceColumns {
-				value, valueErr := productCatalogRowString(row, column)
+				value, valueErr := readBusinessModuleSnapshotRowColumnText(row, column)
 				if valueErr != nil || value == "" || value == "0" || !observation.Columns[reference.TargetTable][reference.TargetColumns[index]] {
 					valid = false
 					break
@@ -398,7 +376,7 @@ func captureSelectedBusinessModuleExternalReferenceFingerprintsWithObservedSchem
 				for _, candidate := range snapshot.Tables[reference.TargetTable].Rows {
 					candidateValues := map[string]string{}
 					for _, column := range reference.TargetColumns {
-						candidateValues[column], _ = productCatalogRowString(candidate, column)
+						candidateValues[column], _ = readBusinessModuleSnapshotRowColumnText(candidate, column)
 					}
 					encoded, _ := json.Marshal(candidateValues)
 					index[string(encoded)] = true
@@ -420,10 +398,13 @@ func captureSelectedBusinessModuleExternalReferenceFingerprintsWithObservedSchem
 			}
 			digest := "missing"
 			if err == nil {
-				digest = productCatalogBytesSHA256([]byte(raw))
+				digest = businessModuleRecoveryBytesSHA256([]byte(raw))
 			}
 			dependencies[identity] = selectedBusinessModuleExternalReference{reference.TargetTable, values, digest}
 		}
+	}
+	if err := captureOrderModuleConfiguredComponentAndMasterInventoryDependencies(ctx, tx, snapshot, observation, dependencies); err != nil {
+		return nil, err
 	}
 	identities := []string{}
 	for identity := range dependencies {

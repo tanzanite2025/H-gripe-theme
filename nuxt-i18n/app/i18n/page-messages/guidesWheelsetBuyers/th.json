@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "คู่มือการเลือกซื้อ"
+    },
+    "safetyInstructions": {
+      "label": "คำแนะนำด้านความปลอดภัย"
+    },
+    "sampleAssembly": {
+      "label": "การประกอบล้อและการสั่งทำ"
+    },
+    "appearanceLogo": {
+      "label": "รูปลักษณ์และโลโก้"
+    }
+  }
+}

@@ -8,12 +8,12 @@
   "loadMore": "Charger plus",
   "items": "articles",
   "nav": {
-    "technicalDocs": "Technique",
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
+    "technicalDocs": "Documentation technique",
+    "shop": "Boutique",
+    "aboutTools": "À propos des outils",
+    "tireSizeCharts": "Guide des pneus",
     "blog": "Blog",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "wheelsetBuyersGuide": "Guide des roues",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

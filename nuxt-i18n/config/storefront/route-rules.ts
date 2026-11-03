@@ -4,7 +4,6 @@ import {
   type StorefrontHtmlCachePolicy,
 } from './html-cache-policies.js'
 import { htmlRouteCacheStorageBase } from './html-cache-runtime.js'
-import { testReportTabs } from '../../app/utils/pageSubNavigationData.js'
 
 type StorefrontRouteRule = {
   proxy?: string
@@ -66,7 +65,15 @@ const immutableAssetRoutePatterns = [
 // including when API route catalogs still carry their previous paths.
 export const storefrontRetiredPagePaths: readonly string[] = [
   '/support/test-report',
-  ...testReportTabs.map(tab => `/support/test-report/${tab.id}`),
+  '/support/test-report/rim-test-report',
+  '/support/test-report/wheelset-test-report',
+  '/support/test-report/wheelset-assembly',
+  '/support/test-report/tension',
+  '/technology/test-report',
+  '/technology/test-report/rim-test-report',
+  '/technology/test-report/wheelset-test-report',
+  '/technology/test-report/wheelset-assembly',
+  '/technology/test-report/tension',
   '/guides/tireguides/schwalbe-tire-selector',
   '/guides/spokeguides/brand-wheelset-spoke-specs',
   '/guides/spokeguides/spoke-length-calculator',

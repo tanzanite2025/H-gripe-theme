@@ -173,7 +173,7 @@ func verifyStoppedStorefrontActualNetworkHTTPUsesRecoveredSQLWithoutWritingOrRel
 			require.Equal(t, baseline.ContractSHA256, result.ContractSHA256)
 			require.Equal(t, baseline.DatabaseOID, result.DatabaseOID)
 			require.Equal(t, baseline.WindowID, result.WindowID)
-			require.Equal(t, productCatalogBytesSHA256(result.ResponseBytesBase64), result.ResponseSHA256)
+			require.Equal(t, businessModuleRecoveryBytesSHA256(result.ResponseBytesBase64), result.ResponseSHA256)
 			require.True(t, result.SQLReadOnly)
 			require.True(t, result.ApplicationRemainsStopped)
 			require.False(t, result.OnlineOverwriteAvailable)

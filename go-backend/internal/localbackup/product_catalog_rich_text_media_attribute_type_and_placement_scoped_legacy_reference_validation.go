@@ -95,7 +95,7 @@ func (cfg Configuration) validateProductCatalogCompleteRichTextRegisteredMediaTy
 			}
 			for _, column := range columns {
 				fieldIdentity := productCatalogRichTextFieldDisplayIdentity(table, column)
-				value, err := productCatalogRowString(row, column)
+				value, err := readBusinessModuleSnapshotRowColumnText(row, column)
 				if err != nil {
 					return err
 				}
@@ -138,9 +138,9 @@ func (cfg Configuration) validateProductCatalogIncomingRichTextLegacyMediaOccurr
 	}
 	dedicatedAssets := map[string]bool{}
 	for _, row := range snapshot.Tables["media_assets"].Rows {
-		id, _ := productCatalogRowString(row, "id")
-		key, _ := productCatalogRowString(row, "storage_key")
-		address, _ := productCatalogRowString(row, "url")
+		id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
+		key, _ := readBusinessModuleSnapshotRowColumnText(row, "storage_key")
+		address, _ := readBusinessModuleSnapshotRowColumnText(row, "url")
 		_, urlKey := cfg.resolveLocalMediaReference(address)
 		dedicatedAssets[id] = storage.DedicatedPublicObjectNamespaceForStorageKey(key) != "" || storage.DedicatedPublicObjectNamespaceForStorageKey(urlKey) != ""
 	}
@@ -150,7 +150,7 @@ func (cfg Configuration) validateProductCatalogIncomingRichTextLegacyMediaOccurr
 			if err != nil {
 				return err
 			}
-			id, err := productCatalogRowString(row, "id")
+			id, err := readBusinessModuleSnapshotRowColumnText(row, "id")
 			if err != nil {
 				return err
 			}
@@ -160,13 +160,13 @@ func (cfg Configuration) validateProductCatalogIncomingRichTextLegacyMediaOccurr
 				return err
 			}
 			for _, column := range columns {
-				value, err := productCatalogRowString(row, column)
+				value, err := readBusinessModuleSnapshotRowColumnText(row, column)
 				if err != nil {
 					return err
 				}
 				previousValue := ""
 				if previous != "" {
-					previousValue, err = productCatalogRowString(json.RawMessage(previous), column)
+					previousValue, err = readBusinessModuleSnapshotRowColumnText(json.RawMessage(previous), column)
 					if err != nil {
 						return err
 					}

@@ -1,8 +1,7 @@
 'use strict';
+const { loadMaintenanceConsoleScriptsInDocumentOrder } = require('./load-maintenance-console-classic-scripts-in-html-document-order.cjs');
 
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
-const { join } = require('node:path');
 const { test } = require('node:test');
 const vm = require('node:vm');
 
@@ -23,12 +22,12 @@ function createProductHandoffConsoleHarnessWithVerifiedCandidate() {
   const requests = [];
   const browserWindow = { addEventListener() {} }; browserWindow.parent = browserWindow;
   const context = vm.createContext({
-    document: { getElementById: findElement, createElement: tag => new SyntheticProductHandoffConsoleElement(tag) },
+    document: { getElementById: findElement, createElement: tag => new SyntheticProductHandoffConsoleElement(tag), querySelectorAll: () => [], querySelector: () => null },
     location: { pathname: '/local-backup-maintenance/', origin: 'https://synthetic.invalid' },
     window: browserWindow, Headers, console, clearInterval() {}, setInterval() { return 1; },
     fetch: async (...args) => { requests.push(args); throw new Error('unexpected synthetic network request'); },
   });
-  vm.runInContext(readFileSync(join(__dirname, '../internal/localbackup/maintenance_console/maintenance-console.js'), 'utf8'), context);
+  loadMaintenanceConsoleScriptsInDocumentOrder(context);
   const task = { id: 'synthetic-candidate-task', kind: 'upload', state: 'product_module_isolated_verified', expires_at: new Date(Date.now() + 3600000).toISOString(), size: 2048, manifest: { scope: 'product_catalog_with_images', package_id: 'synthetic-package' } };
   const status = { permissions: ['ops:backup:restore'], application_fenced: false, site_id: 'synthetic-store', environment: 'disposable', storage_roots: {}, max_package_bytes: 4096 };
   const report = { version: 1, task_id: task.id, package_id: task.manifest.package_id, scope: task.manifest.scope, expires_at: task.expires_at, captured_at: new Date().toISOString(), online_overwrite_available: false, custody_transfer_available: false, contract_sha256: 'a'.repeat(64), preserved_tables: 201, custody_rules: ['隔离候选仍由维护器保管'], projection_requirements: [{ description: '保留当前浏览增量与客服 Stream' }], blockers: ['production_product_candidate_ownership_handoff_not_implemented', 'product_projection_configuration_unknown_reregister_current_business_build', 'buffered_product_view_delta_drain_and_inflight_idempotency_contract_not_implemented'] };
@@ -379,6 +378,87 @@ for(const scenario of ['changed_task','permission_removed','cancelled','disconne
       await pending;assert.equal(posted,0);
     }else{
       await assert.rejects(pending,/商品状态已变化/);assert.equal(posted,0);
+    }
+  });
+}
+
+function configureSyntheticProductFormalRestoreAcceptanceWithSavedEvidence(harness) {
+  configureSyntheticStoppedProductSwitchConsoleScenario(harness);
+  harness.task.product_catalog_stopped_detail_cache_invalidation={phase:'verified_absent'};
+  harness.task.product_catalog_stopped_projection_evidence={sha256:'d'.repeat(64)};
+}
+
+for(const scenario of ['eligible','view_only','unfenced','wrong_scope','wrong_kind','expired','invalid_expiry','removed','missing_evidence','cache_unverified','interrupted','already_accepting','completed']) {
+  test(`formal product acceptance button requires the verified current stopped task: ${scenario}`,()=>{
+    const harness=createProductHandoffConsoleHarnessWithVerifiedCandidate();
+    configureSyntheticProductFormalRestoreAcceptanceWithSavedEvidence(harness);
+    if(scenario==='view_only')harness.status.permissions=['ops:backup:view'];
+    if(scenario==='unfenced')harness.status.application_fenced=false;
+    if(scenario==='wrong_scope')harness.task.manifest.scope='selected_business_modules';
+    if(scenario==='wrong_kind')harness.task.kind='product_catalog_backup';
+    if(scenario==='expired')harness.task.expires_at=new Date(0).toISOString();
+    if(scenario==='invalid_expiry')harness.task.expires_at='invalid';
+    if(scenario==='removed')harness.task.work_copy_expired=true;
+    if(scenario==='missing_evidence')delete harness.task.product_catalog_stopped_projection_evidence;
+    if(scenario==='cache_unverified')harness.task.product_catalog_stopped_detail_cache_invalidation.phase='deleting';
+    if(scenario==='interrupted')harness.task.state='interrupted';
+    if(scenario==='already_accepting')harness.task.recovery_journal.product_catalog_stopped_switch.phase='accepting_product';
+    if(scenario==='completed'){
+      harness.task.state='completed';harness.task.phase='product_restore_accepted_and_service_resumed';
+      harness.task.recovery_journal.product_catalog_stopped_switch.phase='product_released';
+      harness.task.product_catalog_recovery={restored_rows:12,verified_image_files:1,preserved_tables:202,inventory_preservation:{existing_variant_stocks_preserved:1,different_snapshot_stock_values_not_applied:1,new_variant_stocks_restored_from_snapshot:0}};
+      harness.status.application_fenced=false;
+    }
+    harness.run('renderBackupTasks([syntheticTask])');
+    const text=harness.text('tasks');
+    assert.equal(text.includes('正式接收商品恢复并恢复服务'),scenario==='eligible');
+    if(scenario==='completed'){
+      assert.match(text,/商品与图片已正式恢复并恢复服务/);
+      for(const staleText of ['成对回退商品并恢复原商城','商城继续停写','尚未开放','正式恢复须继续'])assert(!text.includes(staleText),staleText);
+    }
+    assert.equal(harness.requests.length,0);
+  });
+}
+
+test('formal product acceptance submits only the exact target confirmation and saved evidence hash',async()=>{
+  const harness=createProductHandoffConsoleHarnessWithVerifiedCandidate();
+  configureSyntheticProductFormalRestoreAcceptanceWithSavedEvidence(harness);
+  let posted;
+  harness.context.prompt=message=>{
+    assert.match(message,/库存和未选择的订单、客户、聊天按预览保留/);
+    assert.match(message,/恢复服务后不能再用旧任务回退/);
+    return `ACCEPT PRODUCT RESTORE synthetic-store/disposable/${harness.task.id}`;
+  };
+  harness.context.postMaintenanceRequest=async(path,body)=>{posted={path,body};return {};};
+  await harness.run('acceptProductCatalogRestoreAndResumeService(syntheticTask.id)');
+  assert.equal(posted.path,`/api/tasks/${harness.task.id}/product-catalog-formal-restore-acceptance`);
+  assert.deepEqual(JSON.parse(JSON.stringify(posted.body)),{confirmation:`ACCEPT PRODUCT RESTORE synthetic-store/disposable/${harness.task.id}`,expected_evidence_sha256:'d'.repeat(64)});
+  assert.match(harness.text('message'),/请查看任务最终状态/);
+});
+
+for(const scenario of ['cancelled','changed_task','changed_evidence','permission_removed','disconnect_during_prompt','reconnect_same_credential','disconnect_during_request']) {
+  test(`formal product acceptance rejects changed state and ignores late session responses: ${scenario}`,async()=>{
+    const harness=createProductHandoffConsoleHarnessWithVerifiedCandidate();
+    configureSyntheticProductFormalRestoreAcceptanceWithSavedEvidence(harness);
+    let posted=0,finish;
+    harness.context.prompt=()=>{
+      if(scenario==='cancelled')return null;
+      if(scenario==='changed_task')harness.task.recovery_journal.product_catalog_stopped_switch.sha256='changed';
+      if(scenario==='changed_evidence')harness.task.product_catalog_stopped_projection_evidence.sha256='e'.repeat(64);
+      if(scenario==='permission_removed')harness.status.permissions=['ops:backup:view'];
+      if(scenario==='disconnect_during_prompt')harness.findElement('disconnect').listeners.click();
+      if(scenario==='reconnect_same_credential')harness.run('maintenanceConnectionRevision++');
+      return `ACCEPT PRODUCT RESTORE synthetic-store/disposable/${harness.task.id}`;
+    };
+    harness.context.postMaintenanceRequest=()=>{posted++;return new Promise(resolve=>{finish=resolve;});};
+    const pending=harness.run('acceptProductCatalogRestoreAndResumeService(syntheticTask.id)');
+    if(scenario==='disconnect_during_request'){
+      harness.findElement('disconnect').listeners.click();finish({});await pending;
+      assert(!harness.text('message').includes('正在正式接收商品恢复'));assert.equal(posted,1);
+    }else if(scenario==='cancelled'){
+      await pending;assert.equal(posted,0);
+    }else{
+      await assert.rejects(pending,/恢复状态已变化/);assert.equal(posted,0);
     }
   });
 }

@@ -1,47 +1,77 @@
 {
   "menus": {
     "technology": "Технологии",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "products": "Товары",
+    "support": "Поддержка",
+    "company": "Компания",
+    "resources": "Материалы",
+    "siteOverview": "О сайте",
+    "policies": "Правила"
   },
   "links": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "shop": "Магазин",
+    "aboutTools": "Об инструментах",
+    "tireSizeCharts": "Руководство по покрышкам",
+    "blog": "Блог",
+    "technicalDocs": "Техническая документация",
+    "wheelsetBuyersGuide": "Руководство по колёсам",
+    "about": "О нас",
+    "aboutUs": "О нас",
+    "contact": "Связаться с нами",
+    "contactUs": "Связаться с нами",
+    "ourStory": "Наша история",
+    "globalPartners": "Международные партнёры",
+    "oemOdm": "Производство OEM и ODM",
+    "certificates": "Сертификаты",
+    "membershipPoints": "Участие и баллы",
+    "pictureWarehouse": "Фотогалерея",
+    "meThisWebsite": "Я и этот сайт",
+    "whyThisName": "Почему такое название",
+    "workbenchFeed": "Новости мастерской"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
-    "line4": "Hong Kong.",
-    "hkLabel": "Hongkong:",
-    "xmLabel": "Xiamen:"
+    "line1": "Бренд компании Top Sports Co., Limited.",
+    "line2": "Офис 1602, 16-й этаж, Lucky Centre,",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
+    "line4": "Гонконг.",
+    "hkLabel": "Гонконг:",
+    "xmLabel": "Сямынь:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "Частые вопросы",
+    "payment": "Оплата",
+    "afterSales": "Послепродажное обслуживание",
+    "warranty": "Гарантия",
+    "productFeedback": "Отзывы о товарах",
+    "spokecalculator": "Калькулятор спиц"
+  },
+  "subscription": {
+    "label": "Подпишитесь на новости о товарах и блоге",
+    "placeholder": "Введите адрес электронной почты",
+    "emailLabel": "Электронная почта",
+    "button": "Подписаться",
+    "loading": "Оформление подписки…",
+    "success": "Подписка оформлена. Подтвердите её в письме на вашей почте.",
+    "invalidEmail": "Введите действительный адрес электронной почты.",
+    "failed": "Не удалось оформить подписку. Повторите попытку позже.",
+    "verificationUnavailable": "Проверка недоступна. Повторите попытку позже.",
+    "verificationFailed": "Проверка не пройдена. Повторите попытку.",
+    "verificationExpired": "Срок действия проверки истёк. Повторите попытку."
+  },
+  "accessibility": {
+    "navigation": "Навигация внизу страницы",
+    "scrollLeft": "Прокрутить нижнюю навигацию влево",
+    "scrollRight": "Прокрутить нижнюю навигацию вправо",
+    "paymentMethods": "Принимаемые способы оплаты",
+    "sslSecure": "Безопасное SSL-соединение",
+    "cardPayment": "Оплата картой"
+  },
+  "categories": {
+    "wheelset": "Колёсные пары",
+    "wheelComponents": "Компоненты колёс",
+    "tire": "Покрышки",
+    "spokeRepairKits": "Ремкомплекты спиц",
+    "carbonRim": "Карбоновые обода"
+  },
+  "securityNotice": "Все страницы используют HTTPS с шифрованием SSL. Платежи обрабатываются безопасно; данные карт не сохраняются."
 }

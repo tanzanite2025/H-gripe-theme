@@ -1,0 +1,12 @@
+{
+  "attachment": "Liite",
+  "closePreview": "Sulje esikatselu",
+  "download": "Lataa",
+  "downloadFailed": "Liitettä ei voitu ladata. Päivitä sivu ja yritä uudelleen.",
+  "downloadToView": "Lataa tiedosto, jotta voit katsella sitä.",
+  "image": "Kuva",
+  "loading": "Ladataan…",
+  "readFailed": "Liitettä ei voitu avata. Päivitä sivu ja yritä uudelleen.",
+  "shipmentImage": "Lähetyksen kuva",
+  "video": "Video"
+}

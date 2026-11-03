@@ -1,14 +1,14 @@
 {
   "nav": {
-    "about": "About Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
+    "about": "About us",
+    "ourStory": "Our story",
+    "globalPartners": "Global partners",
     "oemOdm": "OEM & ODM",
     "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "contact": "Contact Us",
-    "aboutWebsite": "Me & This Website"
+    "membershipPoints": "Membership & points",
+    "pictureWarehouse": "Picture library",
+    "contact": "Contact us",
+    "aboutWebsite": "Me & this website"
   },
   "index": {
     "title": "Company",

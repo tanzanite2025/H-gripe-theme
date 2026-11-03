@@ -8,12 +8,12 @@
   "loadMore": "Cargar más",
   "items": "artículos",
   "nav": {
-    "technicalDocs": "Técnico",
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
+    "technicalDocs": "Documentación técnica",
+    "shop": "Tienda",
+    "aboutTools": "Acerca de las herramientas",
+    "tireSizeCharts": "Guía de neumáticos",
     "blog": "Blog",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "wheelsetBuyersGuide": "Guía de ruedas",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

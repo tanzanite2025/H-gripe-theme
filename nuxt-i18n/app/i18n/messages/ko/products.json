@@ -8,12 +8,12 @@
   "loadMore": "더 보기",
   "items": "개",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "shop": "쇼핑몰",
+    "aboutTools": "도구 소개",
+    "tireSizeCharts": "타이어 가이드",
+    "blog": "블로그",
+    "technicalDocs": "기술 자료",
+    "wheelsetBuyersGuide": "휠셋 가이드",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

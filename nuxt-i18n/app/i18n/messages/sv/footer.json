@@ -1,47 +1,77 @@
 {
   "menus": {
     "technology": "Teknik",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "products": "Produkter",
+    "support": "Kundsupport",
+    "company": "Företag",
+    "resources": "Resurser",
+    "siteOverview": "Om webbplatsen",
+    "policies": "Policyer"
   },
   "links": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "shop": "Butik",
+    "aboutTools": "Om verktygen",
+    "tireSizeCharts": "Däckguide",
+    "blog": "Blogg",
+    "technicalDocs": "Teknisk dokumentation",
+    "wheelsetBuyersGuide": "Hjulguide",
+    "about": "Om oss",
+    "aboutUs": "Om oss",
+    "contact": "Kontakta oss",
+    "contactUs": "Kontakta oss",
+    "ourStory": "Vår historia",
+    "globalPartners": "Globala partner",
+    "oemOdm": "OEM- och ODM-tillverkning",
+    "certificates": "Certifikat",
+    "membershipPoints": "Medlemskap och poäng",
+    "pictureWarehouse": "Bildbibliotek",
+    "meThisWebsite": "Jag och den här webbplatsen",
+    "whyThisName": "Varför detta namn",
+    "workbenchFeed": "Nytt från verkstaden"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
-    "line4": "Hong Kong.",
+    "line1": "Ett varumärke som tillhör Top Sports Co., Limited.",
+    "line2": "Enhet 1602, våning 16, Lucky Centre,",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
+    "line4": "Hongkong.",
     "hkLabel": "Hongkong:",
     "xmLabel": "Xiamen:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "Vanliga frågor",
+    "payment": "Betalning",
+    "afterSales": "Service efter köp",
+    "warranty": "Garanti",
+    "productFeedback": "Produktsynpunkter",
+    "spokecalculator": "Ekerkalkylator"
+  },
+  "subscription": {
+    "label": "Prenumerera på produktnyheter och blogguppdateringar",
+    "placeholder": "Ange din e-postadress",
+    "emailLabel": "E-postadress",
+    "button": "Prenumerera",
+    "loading": "Registrerar…",
+    "success": "Prenumerationen är registrerad. Bekräfta via din e-post.",
+    "invalidEmail": "Ange en giltig e-postadress.",
+    "failed": "Det gick inte att prenumerera. Försök igen senare.",
+    "verificationUnavailable": "Verifiering är inte tillgänglig. Försök igen senare.",
+    "verificationFailed": "Verifieringen misslyckades. Försök igen.",
+    "verificationExpired": "Verifieringen har gått ut. Försök igen."
+  },
+  "accessibility": {
+    "navigation": "Sidfotsnavigering",
+    "scrollLeft": "Rulla sidfotsnavigeringen åt vänster",
+    "scrollRight": "Rulla sidfotsnavigeringen åt höger",
+    "paymentMethods": "Godkända betalningsmetoder",
+    "sslSecure": "Säker SSL-anslutning",
+    "cardPayment": "Kortbetalning"
+  },
+  "categories": {
+    "wheelset": "Hjulset",
+    "wheelComponents": "Hjulkomponenter",
+    "tire": "Däck",
+    "spokeRepairKits": "Reparationssatser för ekrar",
+    "carbonRim": "Kolfiberfälgar"
+  },
+  "securityNotice": "Alla sidor använder HTTPS med SSL-kryptering. Betalningar behandlas säkert; inga kortuppgifter sparas."
 }

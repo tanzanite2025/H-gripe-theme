@@ -15,23 +15,24 @@ import (
 	"commerce-platform/internal/pkg/maintenancegate"
 )
 
-// This is an operator-requested isolated switch, independent of internal
-// rehearsals. The candidate retains its isolated owner; no service-resume API
-// accepts this journal or its read-only post-switch inspection as approval.
+// This operator-requested switch starts isolated, independently of rehearsals.
+// Only the dedicated formal acceptance may transfer custody and resume service;
+// ordinary whole-storefront release and read-only inspections cannot do so.
 type ProductCatalogContinuouslyStoppedSwitchJournal struct {
-	Version                   int                            `json:"version"`
-	TaskID                    string                         `json:"task_id"`
-	WindowID                  string                         `json:"window_id"`
-	PreparationSHA256         string                         `json:"preparation_sha256"`
-	PackageSHA256             string                         `json:"package_sha256"`
-	PreviewBindingSHA256      string                         `json:"preview_binding_sha256"`
-	Operator                  string                         `json:"operator"`
-	StartedAt                 time.Time                      `json:"started_at"`
-	Phase                     string                         `json:"phase"`
-	Moves                     []moduleRecoveryMediaEntryMove `json:"moves"`
-	RollbackVerifiedAt        time.Time                      `json:"rollback_verified_at,omitempty"`
-	OriginalServiceReleasedAt time.Time                      `json:"original_service_released_at,omitempty"`
-	SHA256                    string                         `json:"sha256"`
+	Version                   int                                    `json:"version"`
+	TaskID                    string                                 `json:"task_id"`
+	WindowID                  string                                 `json:"window_id"`
+	PreparationSHA256         string                                 `json:"preparation_sha256"`
+	PackageSHA256             string                                 `json:"package_sha256"`
+	PreviewBindingSHA256      string                                 `json:"preview_binding_sha256"`
+	Operator                  string                                 `json:"operator"`
+	StartedAt                 time.Time                              `json:"started_at"`
+	Phase                     string                                 `json:"phase"`
+	Moves                     []moduleRecoveryMediaEntryMove         `json:"moves"`
+	RollbackVerifiedAt        time.Time                              `json:"rollback_verified_at,omitempty"`
+	OriginalServiceReleasedAt time.Time                              `json:"original_service_released_at,omitempty"`
+	Acceptance                *ProductCatalogFormalRestoreAcceptance `json:"acceptance,omitempty"`
+	SHA256                    string                                 `json:"sha256"`
 }
 
 type ProductCatalogStoppedSwitchConfirmationRequest struct {
@@ -77,26 +78,30 @@ func productCatalogStoppedSwitchCompleteJournalSHA256(task *Task) (string, error
 	inner := *outer.ProductCatalogStoppedSwitch
 	inner.SHA256 = ""
 	outer.ProductCatalogStoppedSwitch = &inner
-	return customerServiceRecoveryPlanCanonicalJSONSHA256(outer)
+	return businessModuleRecoveryCanonicalJSONSHA256(outer)
 }
 
 func taskHasDurablyReleasedOriginalAfterProductCatalogStoppedSwitchRollback(task *Task) bool {
+	return stoppedProductSwitchImmutableIdentityAndCompleteJournalMatch(task) && task.Journal.ProductCatalogStoppedSwitch.Phase == "original_released" && !task.Journal.ProductCatalogStoppedSwitch.RollbackVerifiedAt.IsZero() && !task.Journal.ProductCatalogStoppedSwitch.OriginalServiceReleasedAt.IsZero()
+}
+
+func stoppedProductSwitchImmutableIdentityAndCompleteJournalMatch(task *Task) bool {
 	if !taskHasProductCatalogContinuouslyStoppedSwitchJournal(task) {
 		return false
 	}
 	journal := task.Journal.ProductCatalogStoppedSwitch
 	digest, err := productCatalogStoppedSwitchCompleteJournalSHA256(task)
-	if err != nil || journal.SHA256 != digest || journal.Version != 1 || journal.TaskID != task.ID || journal.Phase != "original_released" || journal.RollbackVerifiedAt.IsZero() || journal.OriginalServiceReleasedAt.IsZero() || task.ProductCatalogStoppedHandoffPreparation == nil || task.ProductCatalogPreviewBinding == nil || task.ProductViewStoppedDrain == nil {
+	if err != nil || journal.SHA256 != digest || journal.Version != 1 || journal.TaskID != task.ID || task.Manifest == nil || task.Manifest.Scope != productCatalogBackupScope || task.Journal.ProductCatalog != nil || len(task.Journal.Moves) != 0 || task.ProductCatalogStoppedHandoffPreparation == nil || task.ProductCatalogPreviewBinding == nil || task.ProductViewStoppedDrain == nil {
 		return false
 	}
 	preparation := *task.ProductCatalogStoppedHandoffPreparation
 	preparation.SHA256 = ""
-	preparationDigest, preparationErr := customerServiceRecoveryPlanCanonicalJSONSHA256(preparation)
+	preparationDigest, preparationErr := businessModuleRecoveryCanonicalJSONSHA256(preparation)
 	packageDigest, packageErr := productCatalogStoppedHandoffImmutablePackageSHA256(task)
-	previewDigest, previewErr := customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
+	previewDigest, previewErr := businessModuleRecoveryCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
 	drain := *task.ProductViewStoppedDrain
 	drain.SHA256 = ""
-	drainDigest, drainErr := customerServiceRecoveryPlanCanonicalJSONSHA256(drain)
+	drainDigest, drainErr := businessModuleRecoveryCanonicalJSONSHA256(drain)
 	return preparationErr == nil && packageErr == nil && previewErr == nil && drainErr == nil && preparationDigest == task.ProductCatalogStoppedHandoffPreparation.SHA256 && preparationDigest == journal.PreparationSHA256 && preparation.WindowID == journal.WindowID && preparation.TaskID == task.ID && packageDigest == journal.PackageSHA256 && previewDigest == journal.PreviewBindingSHA256 && drainDigest == preparation.DrainProgressSHA256
 }
 
@@ -120,13 +125,13 @@ func (manager *Manager) validateProductCatalogStoppedSwitchJournalBinding(task *
 	}
 	snapshotCopy := *preparation
 	snapshotCopy.SHA256 = ""
-	preparationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
+	preparationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(snapshotCopy)
 	if err != nil || preparationDigest != preparation.SHA256 || preparation.SHA256 != journal.PreparationSHA256 || preparation.Version != 1 || preparation.TaskID != task.ID || preparation.Phase != "ready" || preparation.PreparedAt.IsZero() || preparation.FenceSHA256 == "" {
 		return errors.New("stopped product switch lost its exact ready preparation and maintenance window")
 	}
 	packageDigest, packageErr := productCatalogStoppedHandoffImmutablePackageSHA256(task)
-	configurationDigest, configurationErr := customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
-	previewDigest, previewErr := customerServiceRecoveryPlanCanonicalJSONSHA256(binding)
+	configurationDigest, configurationErr := businessModuleRecoveryCanonicalJSONSHA256(manager.Configuration)
+	previewDigest, previewErr := businessModuleRecoveryCanonicalJSONSHA256(binding)
 	if packageErr != nil || configurationErr != nil || previewErr != nil || packageDigest != journal.PackageSHA256 || packageDigest != preparation.PackageSHA256 || configurationDigest != preparation.ConfigurationSHA256 || configurationDigest != binding.ConfigurationSHA256 || previewDigest != journal.PreviewBindingSHA256 || previewDigest != preparation.PreviewBindingSHA256 || binding.Version != 1 || binding.TargetMedia == nil || binding.CandidateMedia == nil || binding.Candidate.Owner != "local_backup_isolated_owner" || task.StageDatabase != "local_backup_stage_"+task.ID[:16] || task.StageFingerprint != binding.Candidate.Fingerprint || task.Journal.RollbackDatabase != "local_backup_product_old_"+task.ID[:16] || task.Journal.OldDatabaseOID != binding.Target.OID || task.Journal.NewDatabaseOID != binding.Candidate.OID || binding.Target.OID <= 0 || binding.Candidate.OID <= 0 || binding.Target.OID == binding.Candidate.OID {
 		return errors.New("stopped product switch package, configuration, preview or database identities changed")
 	}
@@ -151,6 +156,21 @@ func (manager *Manager) validateProductCatalogStoppedSwitchJournalBinding(task *
 	}
 	switch journal.Phase {
 	case "switching", "switched_still_isolated", "rolling_back":
+		if journal.Acceptance != nil {
+			return errors.New("product switch has an acceptance receipt outside its dedicated phase")
+		}
+	case "accepting_product", "releasing_product", "product_released":
+		if !task.Journal.DatabaseSwitched || journal.Acceptance == nil || journal.Acceptance.ApplicationDatabaseRole != manager.Configuration.ApplicationDatabaseRole {
+			return errors.New("product acceptance database or configured application role changed")
+		}
+		for _, move := range journal.Moves {
+			if !move.Completed || move.RollbackStarted || move.RolledBack {
+				return errors.New("product acceptance requires every media move to remain fully switched")
+			}
+		}
+		if err := validateProductCatalogFormalAcceptanceReceipt(task); err != nil {
+			return err
+		}
 	case "releasing_original", "original_released":
 		if journal.RollbackVerifiedAt.IsZero() {
 			return errors.New("stopped product rollback has no durable verified release intent")
@@ -187,6 +207,8 @@ func (manager *Manager) renameStoppedProductSwitchMediaEntryWithVerifiedJournalA
 	return manager.renameProductCatalogPairedMediaEntryAfterLayoutValidation(ctx, task, move, reverse)
 }
 
+// This supported switch retains isolation for cache/projection inspection and
+// dedicated formal acceptance; whole-storefront reconciliation cannot accept it.
 func (manager *Manager) StartProductCatalogIsolatedSwitchWithinContinuouslyStoppedWindow(id, actor string, request ProductCatalogStoppedSwitchConfirmationRequest) (*Task, error) {
 	task, err := manager.GetTask(id)
 	if err != nil {
@@ -407,13 +429,13 @@ func (manager *Manager) inspectStoppedProductCatalogPostSwitchWithHeldLease(ctx 
 	if err := manager.verifyStoppedProductHandoffRedisEmptyAndDatabaseClients(ctx, task); err != nil {
 		return nil, err
 	}
-	mediaDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding.CandidateMedia)
+	mediaDigest, err := businessModuleRecoveryCanonicalJSONSHA256(task.ProductCatalogPreviewBinding.CandidateMedia)
 	if err != nil {
 		return nil, err
 	}
 	preparation, binding := task.ProductCatalogStoppedHandoffPreparation, task.ProductCatalogPreviewBinding
 	report := &ProductCatalogStoppedPostSwitchInspection{Version: 1, Scope: productCatalogBackupScope, Observation: "database_and_complete_media_verified_with_application_stopped_external_actions_pending", TaskID: task.ID, WindowID: journal.WindowID, PackageID: task.Manifest.PackageID, PackageSHA256: journal.PackageSHA256, SwitchJournalSHA256: journal.SHA256, PreviewBindingSHA256: journal.PreviewBindingSHA256, ConfigurationSHA256: binding.ConfigurationSHA256, ApplicationBoundarySHA256: preparation.ApplicationBoundarySHA256, FenceSHA256: preparation.FenceSHA256, RedisOwnershipSHA256: task.ProductViewStoppedDrain.OwnershipSHA256, DatabaseName: candidate, DatabaseOID: binding.Candidate.OID, DatabaseFingerprint: binding.Candidate.Fingerprint, CompleteMediaSHA256: mediaDigest, ApplicationRemainsStopped: true, CandidateRemainsIsolated: true, ProjectionRequirements: productCatalogPartialProjectionReconciliationRequirements("verify_owned_redis_buffers_remain_empty_and_preserve_committed_sql_receipts", "已在本次停写窗口核对 Redis 归属和空缓冲，并核对完整 SQL 与收据；继续停写，最终接收前仍须重新核对，禁止清理浏览数或重放批次。")}
-	report.ContractSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(report)
+	report.ContractSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(report)
 	if err != nil {
 		return nil, err
 	}
@@ -453,6 +475,9 @@ func (manager *Manager) rollbackStoppedProductCatalogSwitchWithVerifiedOriginalR
 	if err != nil {
 		return err
 	}
+	if journal.Phase == "product_released" || (!fenced && journal.Phase == "releasing_product") {
+		return errors.New("accepted product service has resumed; historical paired rollback is forbidden")
+	}
 	// A persisted release intent may have already removed the fence. Do not
 	// reseal, inspect or roll back a database after service was allowed to resume.
 	if !fenced && (journal.Phase == "releasing_original" || journal.Phase == "original_released") {
@@ -477,6 +502,9 @@ func (manager *Manager) rollbackStoppedProductCatalogSwitchWithVerifiedOriginalR
 		return err
 	}
 	if err := manager.verifyStoppedProductHandoffRedisEmptyAndDatabaseClients(ctx, task); err != nil {
+		return err
+	}
+	if err := manager.restoreAcceptedProductIsolatedCustodyBeforePairedRollback(ctx, task); err != nil {
 		return err
 	}
 	control, err := cfg.connectDatabase(ctx, "postgres")
@@ -624,10 +652,28 @@ func (manager *Manager) revokeApplicationAccessToBoundStoppedProductCandidate(ct
 	return err
 }
 
+// Preserve verified historical releases; otherwise require this lifecycle's
+// dedicated rollback. Do not reuse the internal rehearsal's automatic rollback.
 func (manager *Manager) retainStoppedProductCatalogSwitchForExplicitRollbackAfterRestart(task *Task) error {
+	if taskHasDurablyReleasedAcceptedProductCatalog(task) {
+		// Later deployments and maintenance windows may change configuration and
+		// live data. A completed receipt must never inspect or reseal that data.
+		return nil
+	}
+	if taskHasDurablyVerifiedAcceptedProductCatalogReleaseIntent(task) {
+		fenced, err := maintenancegate.IsApplicationFenced(manager.Configuration.MaintenanceDirectory)
+		if err == nil && !fenced {
+			// Service already resumed before the acknowledgement was saved. Later
+			// configuration must not turn that historical task into a new outage.
+			return manager.acknowledgeAcceptedProductCatalogServiceRelease(task)
+		}
+	}
 	if err := manager.validateProductCatalogStoppedSwitchJournalBinding(task); err == nil {
 		fenced, fenceErr := maintenancegate.IsApplicationFenced(manager.Configuration.MaintenanceDirectory)
 		phase := task.Journal.ProductCatalogStoppedSwitch.Phase
+		if fenceErr == nil && !fenced && (phase == "releasing_product" || phase == "product_released") {
+			return manager.acknowledgeAcceptedProductCatalogServiceRelease(task)
+		}
 		if fenceErr == nil && !fenced && (phase == "releasing_original" || phase == "original_released") {
 			return manager.acknowledgeStoppedProductCatalogOriginalRelease(task)
 		}
@@ -658,8 +704,8 @@ func (manager *Manager) cleanupVerifiedRolledBackStoppedProductSwitchMediaVolume
 			expected[source] = move.EntrySHA256
 		}
 	}
-	actualDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(actual)
-	expectedDigest, expectedErr := customerServiceRecoveryPlanCanonicalJSONSHA256(expected)
+	actualDigest, err := businessModuleRecoveryCanonicalJSONSHA256(actual)
+	expectedDigest, expectedErr := businessModuleRecoveryCanonicalJSONSHA256(expected)
 	if err != nil || expectedErr != nil || actualDigest != expectedDigest {
 		return errors.New("stopped product cleanup media changed; retain materials for inspection")
 	}

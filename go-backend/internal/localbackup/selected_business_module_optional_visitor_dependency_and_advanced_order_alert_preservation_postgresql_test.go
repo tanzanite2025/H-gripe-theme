@@ -18,7 +18,7 @@ import (
 func TestSelectedBusinessModuleExternalDependencyReasonsKeepMissingAccountsAndChangedVisitorProfilesBlocked(t *testing.T) {
 	hash := strings.Repeat("a", 64)
 	reference := selectedBusinessModuleExternalReference{Table: "visitor_profiles", Values: map[string]string{"customer_service_visitor_hash": hash}, RowSHA256: "missing"}
-	snapshot := selectedBusinessModuleCompleteSnapshot{Modules: []string{"customer_service"}, Tables: map[string]productCatalogTableSnapshot{"tickets": {Rows: []json.RawMessage{json.RawMessage(`{"visitor_session_hash":"` + hash + `"}`)}}}, ExternalDependencies: []selectedBusinessModuleExternalReference{reference}}
+	snapshot := selectedBusinessModuleCompleteSnapshot{Modules: []string{"customer_service"}, Tables: map[string]businessModuleCompleteTableSnapshot{"tickets": {Rows: []json.RawMessage{json.RawMessage(`{"visitor_session_hash":"` + hash + `"}`)}}}, ExternalDependencies: []selectedBusinessModuleExternalReference{reference}}
 	for _, scenario := range []struct {
 		name      string
 		change    func(*selectedBusinessModuleCompleteSnapshot, *moduleRecoveryDatabaseObservation, *[]selectedBusinessModuleExternalReference)
@@ -118,9 +118,9 @@ func TestPostgreSQLSelectedBusinessModuleAdvancedOrderAlertAndOptionalVisitorCon
 	observation, err := inspectModuleRecoveryDatabaseObservation(ctx, baseline)
 	require.NoError(t, err)
 	require.NoError(t, baseline.Rollback())
-	readRows := func(tx *sql.Tx, table string) productCatalogTableSnapshot {
+	readRows := func(tx *sql.Tx, table string) businessModuleCompleteTableSnapshot {
 		t.Helper()
-		contents, err := readSelectedBusinessModuleCompleteTableSnapshot(ctx, tx, table, "true")
+		contents, err := readBusinessModuleCompleteTableSnapshot(ctx, tx, table, "true")
 		require.NoError(t, err)
 		return contents
 	}
@@ -149,7 +149,7 @@ func TestPostgreSQLSelectedBusinessModuleAdvancedOrderAlertAndOptionalVisitorCon
 			require.NoError(t, tx.QueryRowContext(ctx, `INSERT INTO payment_risk_snapshots(provider,window_days,window_start,window_end,computed_at,level) VALUES('stripe',30,'2025-11-01Z','2025-12-01Z','2025-12-01Z','normal') RETURNING id`).Scan(&archiveID))
 			_, err = tx.ExecContext(ctx, `INSERT INTO payment_risk_alert_states(provider,current_level,current_snapshot_id,updated_at) VALUES('stripe','normal',$1,'2026-01-01Z')`, originalID)
 			require.NoError(t, err)
-			snapshot := selectedBusinessModuleCompleteSnapshot{Modules: []string{"orders"}, Tables: map[string]productCatalogTableSnapshot{"payment_risk_alert_states": readRows(tx, "payment_risk_alert_states"), "payment_risk_snapshots": readRows(tx, "payment_risk_snapshots")}, ExternalDependencies: []selectedBusinessModuleExternalReference{}}
+			snapshot := selectedBusinessModuleCompleteSnapshot{Modules: []string{"orders"}, Tables: map[string]businessModuleCompleteTableSnapshot{"payment_risk_alert_states": readRows(tx, "payment_risk_alert_states"), "payment_risk_snapshots": readRows(tx, "payment_risk_snapshots")}, ExternalDependencies: []selectedBusinessModuleExternalReference{}}
 			_, err = tx.ExecContext(ctx, `WITH next AS (INSERT INTO payment_risk_snapshots(provider,window_days,window_start,window_end,computed_at,level) VALUES('stripe',30,'2025-12-02Z','2026-01-02Z','2026-01-02Z','normal') RETURNING id) UPDATE payment_risk_alert_states SET current_snapshot_id=(SELECT id FROM next),updated_at='2026-01-02Z'`)
 			require.NoError(t, err)
 			_, err = tx.ExecContext(ctx, `INSERT INTO outbox_events(event_key,event_type,aggregate_type,aggregate_id,payload,status,processed_at) VALUES('preserved-runtime-alert','payment.risk.level_changed','payment_risk','stripe','{}','processed',now())`)
@@ -183,7 +183,7 @@ func TestPostgreSQLSelectedBusinessModuleAdvancedOrderAlertAndOptionalVisitorCon
 			if scenario.allowed {
 				var scansBefore, scansAfter int64
 				require.NoError(t, tx.QueryRowContext(ctx, `SELECT COALESCE(sum(seq_scan),0) FROM pg_stat_xact_user_tables`).Scan(&scansBefore))
-				count, err := restoreSelectedBusinessModuleMissingRowsAndVerifyPreservation(ctx, tx, snapshot, observation, missing)
+				count, err := restoreSelectedBusinessModuleMissingRowsInDisposableCloneAndVerifyPreservation(ctx, tx, snapshot, observation, missing)
 				require.NoError(t, err)
 				require.NoError(t, tx.QueryRowContext(ctx, `SELECT COALESCE(sum(seq_scan),0) FROM pg_stat_xact_user_tables`).Scan(&scansAfter))
 				if scenario.missing {

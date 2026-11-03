@@ -88,6 +88,7 @@ import { useGlobalProductDetailBottomSheet } from '~/composables/useGlobalProduc
 
 definePageMeta({
   layout: 'products',
+  footerLabelKey: 'footer.links.workbenchFeed',
   footerLabelFallback: 'Workbench Feed',
 })
 

@@ -1,14 +1,14 @@
 {
   "nav": {
-    "about": "About Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "contact": "Contact Us",
-    "aboutWebsite": "Me & This Website"
+    "about": "Hakkımızda",
+    "ourStory": "Hikâyemiz",
+    "globalPartners": "Küresel iş ortakları",
+    "oemOdm": "OEM ve ODM üretimi",
+    "certificates": "Sertifikalar",
+    "membershipPoints": "Üyelik ve puanlar",
+    "pictureWarehouse": "Fotoğraf arşivi",
+    "contact": "İletişim",
+    "aboutWebsite": "Ben ve bu web sitesi"
   },
   "index": {
     "title": "Company",

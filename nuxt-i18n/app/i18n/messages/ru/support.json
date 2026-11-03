@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "Частые вопросы",
+    "payment": "Оплата",
+    "shipping": "Доставка",
+    "afterSales": "Послепродажное обслуживание",
+    "warranty": "Гарантия",
+    "warrantyCheck": "Проверка гарантии",
+    "productFeedback": "Отзывы о товарах",
+    "spokeCalculator": "Калькулятор спиц",
+    "testReport": "Отчёты об испытаниях"
   }
 }

@@ -69,9 +69,9 @@ func TestCustomerServiceRetainedMediaOwnerColumnContractsCountAllUnknownFieldsAn
 	legacy := json.RawMessage(`{"version":1,"complete":true,"natural_key_comparisons":0,"snapshot_reference_checks":0,"shared_business_rows_preserved":0,"column_contracts":[{"version":1,"side":"target","complete":true,"observed_columns":0,"registered_columns":0,"foreign_key_columns":0,"unregistered_columns":0,"unregistered_column_counts_by_table":{},"missing_candidate_tables":[],"column_contracts_sha256":"","unregistered_column_samples":[],"samples_truncated":false,"sample_limit":200}]}`)
 	var legacyReport CustomerServiceConversationNaturalKeyAndSnapshotReferenceInspection
 	require.NoError(t, json.Unmarshal(legacy, &legacyReport))
-	legacyDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(legacy)
+	legacyDigest, err := businessModuleRecoveryCanonicalJSONSHA256(legacy)
 	require.NoError(t, err)
-	currentDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(legacyReport)
+	currentDigest, err := businessModuleRecoveryCanonicalJSONSHA256(legacyReport)
 	require.NoError(t, err)
 	require.Equal(t, legacyDigest, currentDigest)
 }

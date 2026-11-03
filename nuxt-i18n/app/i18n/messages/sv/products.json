@@ -8,12 +8,12 @@
   "loadMore": "Ladda mer",
   "items": "artiklar",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "shop": "Butik",
+    "aboutTools": "Om verktygen",
+    "tireSizeCharts": "Däckguide",
+    "blog": "Blogg",
+    "technicalDocs": "Teknisk dokumentation",
+    "wheelsetBuyersGuide": "Hjulguide",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

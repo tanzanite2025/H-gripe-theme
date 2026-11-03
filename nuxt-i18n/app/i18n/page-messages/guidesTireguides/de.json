@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Abstand zwischen Reifen und Rahmen"
+    },
+    "schwalbeCircumference": {
+      "label": "Schwalbe-Reifenumfang"
+    },
+    "tubeless": {
+      "label": "Tubeless-Reifen und Montage"
+    }
+  }
+}

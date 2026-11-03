@@ -20,36 +20,45 @@ import (
 // attachment keys, credentials or full rows. This is a disposable rehearsal,
 // not a candidate accepted by any switch or whole-application apply endpoint.
 type SelectedBusinessModuleIsolatedRestorePreview struct {
-	SHA256                          string                                                `json:"sha256,omitempty"`
-	Binding                         *SelectedCustomerServiceModuleSnapshotBinding         `json:"binding,omitempty"`
-	SavedChoiceSHA256               string                                                `json:"saved_choice_sha256,omitempty"`
-	ReplacedRows                    int                                                   `json:"replaced_rows"`
-	CandidateDatabaseFingerprint    string                                                `json:"candidate_database_fingerprint,omitempty"`
-	Modules                         []string                                              `json:"modules"`
-	Tables                          []SelectedBusinessModuleTableRestorePreview           `json:"tables"`
-	DependencyConflicts             int                                                   `json:"dependency_conflicts"`
-	DependencyIssues                []SelectedBusinessModuleExternalDependencyIssue       `json:"dependency_issues,omitempty"`
-	DependencyReviews               int                                                   `json:"dependency_reviews"`
-	FileConflicts                   int                                                   `json:"file_conflicts"`
-	VerifiedFiles                   int                                                   `json:"verified_files"`
-	RestoredRows                    int                                                   `json:"restored_rows"`
-	PreservedTables                 int                                                   `json:"preserved_tables"`
-	TargetUnchanged                 bool                                                  `json:"target_unchanged"`
-	IsolatedRestoreVerified         bool                                                  `json:"isolated_restore_verified"`
-	DisposableStageRemoved          bool                                                  `json:"disposable_stage_removed"`
-	OnlineOverwriteAvailable        bool                                                  `json:"online_overwrite_available"`
-	CustomerServiceOverwritePreview *SelectedCustomerServiceModuleBoundedOverwritePreview `json:"customer_service_overwrite_preview,omitempty"`
-	Limitations                     []string                                              `json:"limitations"`
+	ConfigurationSiteContentRestoreEligibility *ConfigurationModuleSiteContentRestoreEligibility     `json:"configuration_site_content_restore_eligibility,omitempty"`
+	CustomerProfileRestoreEligibility          *CustomerProfileModuleRestoreEligibility              `json:"customer_profile_restore_eligibility,omitempty"`
+	CustomerServiceFormalRestorePolicy         string                                                `json:"customer_service_formal_restore_policy,omitempty"`
+	SHA256                                     string                                                `json:"sha256,omitempty"`
+	Binding                                    *BusinessModuleRestoreSnapshotBinding                 `json:"binding,omitempty"`
+	SavedChoiceSHA256                          string                                                `json:"saved_choice_sha256,omitempty"`
+	ReplacedRows                               int                                                   `json:"replaced_rows"`
+	CandidateDatabaseFingerprint               string                                                `json:"candidate_database_fingerprint,omitempty"`
+	Modules                                    []string                                              `json:"modules"`
+	Tables                                     []SelectedBusinessModuleTableRestorePreview           `json:"tables"`
+	DependencyConflicts                        int                                                   `json:"dependency_conflicts"`
+	DependencyIssues                           []SelectedBusinessModuleExternalDependencyIssue       `json:"dependency_issues,omitempty"`
+	DependencyReviews                          int                                                   `json:"dependency_reviews"`
+	FileConflicts                              int                                                   `json:"file_conflicts"`
+	VerifiedFiles                              int                                                   `json:"verified_files"`
+	RestoredRows                               int                                                   `json:"restored_rows"`
+	PreservedTables                            int                                                   `json:"preserved_tables"`
+	TargetUnchanged                            bool                                                  `json:"target_unchanged"`
+	IsolatedRestoreVerified                    bool                                                  `json:"isolated_restore_verified"`
+	DisposableStageRemoved                     bool                                                  `json:"disposable_stage_removed"`
+	OnlineOverwriteAvailable                   bool                                                  `json:"online_overwrite_available"`
+	CustomerServiceOverwritePreview            *SelectedCustomerServiceModuleBoundedOverwritePreview `json:"customer_service_overwrite_preview,omitempty"`
+	Limitations                                []string                                              `json:"limitations"`
+	OrderHistoryRestoreEligibility             *OrderModuleHistoryRestoreEligibility                 `json:"order_history_restore_eligibility,omitempty"`
+	OrderHistoryCurrentExecutionConflicts      int                                                   `json:"order_history_current_execution_conflicts,omitempty"`
+	OrderHistoryDomainBlockingIssues           int                                                   `json:"order_history_domain_blocking_issues,omitempty"`
+	MediaRestoreEligibility                    *MediaModuleRestoreEligibility                        `json:"media_restore_eligibility,omitempty"`
 }
 
 type SelectedBusinessModuleTableRestorePreview struct {
-	Table                       string `json:"table"`
-	IdenticalRows               int    `json:"identical_rows"`
-	MissingRows                 int    `json:"missing_rows"`
-	ConflictingRows             int    `json:"conflicting_rows"`
-	ProtectedNewRows            int    `json:"protected_new_rows"`
-	PreservedCurrentRuntimeRows int    `json:"preserved_current_runtime_rows"`
-	UnsupportedReason           string `json:"unsupported_reason,omitempty"`
+	PreservedCurrentCustomerRows  int    `json:"preserved_current_customer_rows,omitempty"`
+	Table                         string `json:"table"`
+	IdenticalRows                 int    `json:"identical_rows"`
+	MissingRows                   int    `json:"missing_rows"`
+	ConflictingRows               int    `json:"conflicting_rows"`
+	ProtectedNewRows              int    `json:"protected_new_rows"`
+	PreservedCurrentRuntimeRows   int    `json:"preserved_current_runtime_rows"`
+	PreservedCurrentOrderNoteRows int    `json:"preserved_current_order_note_rows,omitempty"`
+	UnsupportedReason             string `json:"unsupported_reason,omitempty"`
 }
 
 func (manager *Manager) StartSelectedBusinessModuleIsolatedRestorePreview(id, confirmation string) (*Task, error) {
@@ -57,7 +66,7 @@ func (manager *Manager) StartSelectedBusinessModuleIsolatedRestorePreview(id, co
 	if err != nil {
 		return nil, err
 	}
-	if task.Kind != "upload" || task.Manifest == nil || task.Manifest.Scope != selectedBusinessModulesBackupScope || task.Journal != nil || task.StageDatabase != "" || task.SelectedModuleDisposableStage != nil || task.WorkCopyExpired || !time.Now().Before(task.ExpiresAt) {
+	if task.Kind != "upload" || task.Manifest == nil || task.Manifest.Scope != selectedBusinessModulesBackupScope || task.Journal != nil || task.StageDatabase != "" || task.SelectedModuleDisposableStage != nil || taskHasAnyTransactionalBusinessModuleRestoreProgress(task) || task.WorkCopyExpired || !time.Now().Before(task.ExpiresAt) {
 		return nil, errors.New("请选择未到期且已通过完整性校验的业务模块上传包")
 	}
 	if task.State != "module_package_integrity_verified" && task.State != "module_isolated_restore_verified" && task.State != "module_restore_conflicts_found" && task.State != "module_chat_candidate_rehearsal_verified" && ((task.State != "failed" && task.State != "interrupted") || task.SelectedModuleRestorePreview == nil) {
@@ -134,12 +143,19 @@ func inspectSelectedBusinessModuleRowsForRestore(ctx context.Context, tx *sql.Tx
 				}
 				seen[string(encoded)] = true
 				var same bool
-				query := `SELECT to_jsonb(record)=$1::jsonb FROM public.` + pq.QuoteIdentifier(name) + ` record WHERE ` + customerServiceCandidateTypedPrimaryKeyPredicate(name, keys)
+				query := `SELECT to_jsonb(record)=$1::jsonb FROM public.` + pq.QuoteIdentifier(name) + ` record WHERE ` + businessModuleCompleteRowTypedPrimaryKeyPredicate(name, keys)
 				err := tx.QueryRowContext(ctx, query, string(row)).Scan(&same)
 				switch {
 				case err == sql.ErrNoRows:
 					preview.MissingRows++
-					if selectedBusinessModuleTableRequiresDedicatedMissingRowRecovery(name) || len(snapshot.Modules) > 1 && customerServiceRecoveryPlanProposedRowReplacementAllowed(name) {
+					naturalIdentityConflict, err := orderModuleMissingGlobalPaymentReceiptConflictsWithCurrentNaturalIdentity(ctx, tx, snapshot, name, row)
+					if err != nil {
+						return nil, false, err
+					}
+					if naturalIdentityConflict {
+						preview.ConflictingRows++
+						blocked = true
+					} else if reflect.DeepEqual(snapshot.Modules, []string{"configuration"}) && !configurationModuleHasMissingSiteContentWriteContract(snapshot, name) || selectedBusinessModuleTableRequiresDedicatedMissingRowRecovery(name) && !orderModuleHasDedicatedCompletedHistoryInsertContract(snapshot, name) && !customerProfileModuleHasDedicatedMissingRowContract(snapshot, name) && !mediaModuleHasDedicatedMissingRowContract(snapshot, name) && !configurationModuleHasMissingSiteContentWriteContract(snapshot, name) || len(snapshot.Modules) > 1 && customerServiceRecoveryPlanProposedRowReplacementAllowed(name) {
 						preview.ProtectedNewRows++
 						blocked = true
 					} else {
@@ -148,6 +164,14 @@ func inspectSelectedBusinessModuleRowsForRestore(ctx context.Context, tx *sql.Tx
 				case err != nil:
 					return nil, false, fmt.Errorf("无法检查模块记录身份：%s", name)
 				case !same:
+					preserveCustomer, err := canPreserveCurrentCustomerProfileModuleRow(ctx, tx, snapshot, name, row)
+					if err != nil {
+						return nil, false, err
+					}
+					if preserveCustomer {
+						preview.PreservedCurrentCustomerRows++
+						continue
+					}
 					preserve, err := canPreserveAdvancedSelectedOrderPaymentRiskAlertState(ctx, tx, snapshot, name, row)
 					if err != nil {
 						return nil, false, err
@@ -155,8 +179,16 @@ func inspectSelectedBusinessModuleRowsForRestore(ctx context.Context, tx *sql.Tx
 					if preserve {
 						preview.PreservedCurrentRuntimeRows++
 					} else {
-						preview.ConflictingRows++
-						blocked = true
+						preserveNotes, err := canPreserveCurrentRestorableOrderNotesWithOtherwiseIdenticalFacts(ctx, tx, snapshot, name, row)
+						if err != nil {
+							return nil, false, err
+						}
+						if preserveNotes {
+							preview.PreservedCurrentOrderNoteRows++
+						} else {
+							preview.ConflictingRows++
+							blocked = true
+						}
 					}
 				default:
 					preview.IdenticalRows++
@@ -191,7 +223,39 @@ func validateSelectedBusinessModuleIsolatedInsertWriteContract(ctx context.Conte
 	return nil
 }
 
-func restoreSelectedBusinessModuleMissingRowsAndVerifyPreservation(ctx context.Context, tx *sql.Tx, snapshot selectedBusinessModuleCompleteSnapshot, observation *moduleRecoveryDatabaseObservation, missing map[string][]json.RawMessage) (int, error) {
+// Each domain decides whether its INSERT-only scope may retain UPDATE guards.
+// Combined and other module scopes retain the stricter generic table check.
+func validateSelectedBusinessModuleMissingRowInsertWriteContract(ctx context.Context, tx *sql.Tx, snapshot selectedBusinessModuleCompleteSnapshot, table string, observation *moduleRecoveryDatabaseObservation) error {
+	if reflect.DeepEqual(snapshot.Modules, []string{"configuration"}) {
+		return validateConfigurationModuleMissingSiteContentInsertContract(ctx, tx, snapshot, table, observation)
+	}
+	if reflect.DeepEqual(snapshot.Modules, []string{"orders"}) {
+		return validateOrderModuleInsertOnlyWriteContract(ctx, tx, snapshot, table, observation)
+	}
+	if reflect.DeepEqual(snapshot.Modules, []string{"customers"}) {
+		return validateCustomerProfileModuleInsertOnlyWriteContract(ctx, tx, snapshot, table, observation)
+	}
+	if reflect.DeepEqual(snapshot.Modules, []string{"media"}) {
+		return validateMediaModuleInsertOnlyWriteContract(ctx, tx, snapshot, table, observation)
+	}
+	return validateSelectedBusinessModuleIsolatedInsertWriteContract(ctx, tx, table, observation)
+}
+
+// Only disposable clones may use the remaining generic replica writer. Live
+// executors call their dedicated normal-constraint writers directly.
+func restoreSelectedBusinessModuleMissingRowsInDisposableCloneAndVerifyPreservation(ctx context.Context, tx *sql.Tx, snapshot selectedBusinessModuleCompleteSnapshot, observation *moduleRecoveryDatabaseObservation, missing map[string][]json.RawMessage) (int, error) {
+	if reflect.DeepEqual(snapshot.Modules, []string{"configuration"}) {
+		return restoreConfigurationModuleMissingBusinessConfigurationRowsWithNormalConstraintsAndVerifiedPreservation(ctx, tx, snapshot, observation, missing)
+	}
+	if reflect.DeepEqual(snapshot.Modules, []string{"orders"}) {
+		return restoreOrderModuleMissingRowsWithNormalConstraintsTransactionalSequencesAndVerifiedPreservation(ctx, tx, snapshot, observation, missing)
+	}
+	if reflect.DeepEqual(snapshot.Modules, []string{"customers"}) {
+		return restoreCustomerProfileModuleMissingRowsWithNormalConstraintsAndVerifiedPreservation(ctx, tx, snapshot, observation, missing, false)
+	}
+	if reflect.DeepEqual(snapshot.Modules, []string{"media"}) {
+		return restoreMediaModuleMissingRowsWithNormalConstraintsAndVerifiedPreservation(ctx, tx, snapshot, observation, missing, false)
+	}
 	// Inspection and the chat strategy savepoint have completed in this same
 	// transaction. With no inserts there are no changes to re-fingerprint. The
 	// outer clone verification and live database/media preservation checks stay.
@@ -202,13 +266,13 @@ func restoreSelectedBusinessModuleMissingRowsAndVerifyPreservation(ctx context.C
 	if !hasMissingRows {
 		return 0, nil
 	}
-	baselineSequences, err := readCustomerServiceCandidateSequenceStates(ctx, tx)
+	baselineSequences, err := readBusinessModuleRestoreSequenceStates(ctx, tx)
 	if err != nil {
 		return 0, err
 	}
-	before := map[string]CustomerServiceRecoveryPlanTablePreservation{}
+	before := map[string]BusinessModuleRestoreTablePreservation{}
 	for table := range observation.Tables {
-		fingerprint, err := fingerprintCustomerServiceRecoveryPlanRetainedTargetTable(ctx, tx, table, observation.Shapes[table], missing[table])
+		fingerprint, err := fingerprintBusinessModuleRetainedTargetTable(ctx, tx, table, observation.Shapes[table], missing[table])
 		if err != nil {
 			return 0, err
 		}
@@ -239,7 +303,7 @@ func restoreSelectedBusinessModuleMissingRowsAndVerifyPreservation(ctx context.C
 	for table, contents := range snapshot.Tables {
 		for _, row := range contents.Rows {
 			var same bool
-			query := `SELECT to_jsonb(record)=$1::jsonb FROM public.` + pq.QuoteIdentifier(table) + ` record WHERE ` + customerServiceCandidateTypedPrimaryKeyPredicate(table, observation.PrimaryKeys[table])
+			query := `SELECT to_jsonb(record)=$1::jsonb FROM public.` + pq.QuoteIdentifier(table) + ` record WHERE ` + businessModuleCompleteRowTypedPrimaryKeyPredicate(table, observation.PrimaryKeys[table])
 			if err := tx.QueryRowContext(ctx, query, string(row)).Scan(&same); err != nil {
 				return 0, fmt.Errorf("无法核对隔离恢复后的完整记录：%s", table)
 			}
@@ -251,12 +315,19 @@ func restoreSelectedBusinessModuleMissingRowsAndVerifyPreservation(ctx context.C
 				if preserve {
 					continue
 				}
+				preserveNotes, err := canPreserveCurrentRestorableOrderNotesWithOtherwiseIdenticalFacts(ctx, tx, snapshot, table, row)
+				if err != nil {
+					return 0, err
+				}
+				if preserveNotes {
+					continue
+				}
 				return 0, fmt.Errorf("隔离恢复后的完整记录与备份不一致：%s", table)
 			}
 		}
 	}
 	for table, expected := range before {
-		actual, err := fingerprintCustomerServiceRecoveryPlanRetainedTargetTable(ctx, tx, table, observation.Shapes[table], missing[table])
+		actual, err := fingerprintBusinessModuleRetainedTargetTable(ctx, tx, table, observation.Shapes[table], missing[table])
 		if err != nil {
 			return 0, err
 		}
@@ -281,7 +352,7 @@ func (manager *Manager) previewSelectedBusinessModuleRestoreOrSavedChatChoiceInD
 		if resultErr == nil && completedState != "" {
 			if report.Binding != nil {
 				report.SHA256 = ""
-				report.SHA256, resultErr = customerServiceRecoveryPlanCanonicalJSONSHA256(report)
+				report.SHA256, resultErr = businessModuleRecoveryCanonicalJSONSHA256(report)
 				if resultErr != nil {
 					return
 				}
@@ -326,12 +397,20 @@ func (manager *Manager) previewSelectedBusinessModuleRestoreOrSavedChatChoiceInD
 		"订单预警保留已验证前进的当前运行状态；其他内容差异阻断，商品组合写入、事件执行事实及推荐积分缺失需要专用恢复规则。",
 		"正式分模块覆盖导入及从组合包再次选择子模块尚未开放。",
 	}}
+	if reflect.DeepEqual(snapshot.Modules, []string{"orders"}) {
+		report.Limitations = []string{
+			"本次只在一次性副本演练，结束后删除副本并恢复原商城服务；正式恢复须使用任务中的订单恢复入口。",
+			"可补回终态订单及符合条件的已付款未结束订单（已付款、处理中、已发货）、附件、已完成执行事实和已完成全局支付请求凭据；已有记录和较新备注按已验证规则保留。",
+			"配置组件及主库存 SKU 须有原包依赖摘要且当前一致，库存保持当前值；旧包缺少对应摘要时拒绝。待付款预留库存、退款/售后/争议/审核、未知金融执行、响应不完整的支付请求及其他内容冲突仍阻断；组合包再次选择订单尚未支持。",
+		}
+	}
 	if choice == nil {
 		task.SelectedModuleRestorePreview = report
 	} else {
 		task.SelectedCustomerServiceCandidateRehearsal = report
 		report.SavedChoiceSHA256 = choice.SHA256
-		report.Limitations = []string{"本次按已保存策略在一次性独立副本写入完整聊天记录，验证结束删除副本；不会覆盖当前商城。", "正式候选接收、成对切换、对账与放行尚未开放。"}
+		report.CustomerServiceFormalRestorePolicy = customerServiceModuleFormalRestorePolicy
+		report.Limitations = []string{"本次按已保存策略在一次性独立副本写入完整聊天记录，验证结束删除副本；不会覆盖当前商城。", "演练通过后可使用单独聊天正式恢复入口；另行确认维护窗口，重新核对原包、策略和当前数据，原库事务写入四张会话表并核验附件与审计后恢复服务。共享数据和事件事实保持。"}
 	}
 	required, err := cfg.estimateBackupWorkspaceBytes(ctx)
 	if err != nil {
@@ -359,8 +438,8 @@ func (manager *Manager) previewSelectedBusinessModuleRestoreOrSavedChatChoiceInD
 		return err
 	}
 	defer func(closeResource func() error) { _ = closeResource() }(live.Close)
-	if len(snapshot.Modules) == 1 && snapshot.Modules[0] == "customer_service" {
-		binding, err := manager.captureSelectedCustomerServiceModuleSnapshotBinding(ctx, live, task, mediaBefore)
+	if len(snapshot.Modules) == 1 && (snapshot.Modules[0] == "customer_service" || snapshot.Modules[0] == "orders" || snapshot.Modules[0] == "customers" || snapshot.Modules[0] == "media" || snapshot.Modules[0] == "configuration") {
+		binding, err := manager.captureBusinessModuleRestoreSnapshotBinding(ctx, live, task, mediaBefore)
 		if err != nil {
 			return err
 		}
@@ -377,9 +456,17 @@ func (manager *Manager) previewSelectedBusinessModuleRestoreOrSavedChatChoiceInD
 		_ = liveTx.Rollback()
 		return err
 	}
+	// pg_dump/restore recreates internal FK triggers enabled. Check the actual
+	// target first so a clone cannot mask disabled enforcement in the live DB.
+	if reflect.DeepEqual(snapshot.Modules, []string{"configuration"}) {
+		if err := validateBusinessModuleNormalForeignKeyEnforcementBeforeWriting(ctx, liveTx, snapshot); err != nil {
+			_ = liveTx.Rollback()
+			return err
+		}
+	}
 	for name, contents := range snapshot.Tables {
-		schema, _, schemaErr := inspectProductCatalogTableSchema(ctx, liveTx, name)
-		constraints, constraintErr := captureProductCatalogConstraintFingerprint(ctx, liveTx, name)
+		schema, _, schemaErr := inspectBusinessModuleCompleteTableSchema(ctx, liveTx, name)
+		constraints, constraintErr := captureBusinessModuleTableConstraintFingerprint(ctx, liveTx, name)
 		if schemaErr != nil || constraintErr != nil || schema != contents.SchemaSHA256 || constraints != contents.ConstraintsSHA256 {
 			_ = liveTx.Rollback()
 			return fmt.Errorf("目标模块结构或约束已变化：%s", name)
@@ -460,15 +547,17 @@ func (manager *Manager) previewSelectedBusinessModuleRestoreOrSavedChatChoiceInD
 	for index := range report.Tables {
 		preview := &report.Tables[index]
 		if len(missing[preview.Table]) > 0 {
-			if err := validateSelectedBusinessModuleIsolatedInsertWriteContract(ctx, tx, preview.Table, observation); err != nil {
+			if err := validateSelectedBusinessModuleMissingRowInsertWriteContract(ctx, tx, snapshot, preview.Table, observation); err != nil {
 				preview.UnsupportedReason = err.Error()
 				blocked = true
 			}
 		}
 	}
-	// Copy current media, then merge only missing package paths. Existing bytes
-	// must match. Private roots stay private, including the rehearsal copy.
+	// Copy current media, then merge missing package paths. Only standalone media
+	// with unchanged registrations may rehearse byte repair. Private roots stay private.
 	var currentMedia Manifest
+	var missingPackageMediaFiles []FileIdentity
+	var existingRegisteredMediaFileRepairs []BusinessModuleTransactionalRestoreFile
 	if err := cfg.copyMediaSnapshot(ctx, candidate, &currentMedia); err != nil {
 		return err
 	}
@@ -486,11 +575,29 @@ func (manager *Manager) previewSelectedBusinessModuleRestoreOrSavedChatChoiceInD
 		}
 		if _, err := os.Lstat(destination); err == nil {
 			identity, err := fileIdentity(destination, entry.Path)
-			if err != nil || identity != entry {
+			if err != nil {
 				report.FileConflicts++
 				continue
 			}
+			if identity != entry {
+				repair, err := cfg.inspectMediaModuleExistingRegisteredFileByteRepair(ctx, tx, snapshot, entry, identity)
+				if err != nil {
+					return err
+				}
+				if repair == nil {
+					report.FileConflicts++
+					continue
+				}
+				existingRegisteredMediaFileRepairs = append(existingRegisteredMediaFileRepairs, *repair)
+				if err := os.Remove(destination); err != nil {
+					return err
+				}
+				if identity, err := copyVerifiedRegularFile(filepath.Join(extracted, filepath.FromSlash(entry.Path)), destination, entry.Path); err != nil || identity != entry {
+					return errors.New("媒体修复副本字节与认证包不一致")
+				}
+			}
 		} else if errors.Is(err, os.ErrNotExist) {
+			missingPackageMediaFiles = append(missingPackageMediaFiles, entry)
 			if identity, err := copyVerifiedRegularFile(filepath.Join(extracted, filepath.FromSlash(entry.Path)), destination, entry.Path); err != nil || identity != entry {
 				if err == nil {
 					err = errors.New("隔离复制文件摘要与清单不一致")
@@ -502,7 +609,42 @@ func (manager *Manager) previewSelectedBusinessModuleRestoreOrSavedChatChoiceInD
 		}
 		report.VerifiedFiles++
 	}
+	if reflect.DeepEqual(snapshot.Modules, []string{"media"}) {
+		report.MediaRestoreEligibility, err = cfg.inspectMediaModuleRestoreEligibility(ctx, tx, snapshot, missing, task.Manifest)
+		if err != nil {
+			return err
+		}
+		if err := applyMediaModuleExistingByteRepairCountsAndDigestToEligibility(report.MediaRestoreEligibility, existingRegisteredMediaFileRepairs); err != nil {
+			return err
+		}
+		blocked = blocked || !report.MediaRestoreEligibility.Eligible
+		report.Limitations = []string{"单独媒体恢复补回缺失文件、登记及业务绑定；当前完整登记与原包一致时可修复损坏字节，确认前显示修复数量，原字节保留至提交核验。", "相同 ID 内容不同、未登记文件字节冲突、未完成上传/派生或清理风险会阻断。company 静态资源须与应用版本一致。"}
+	}
+	if reflect.DeepEqual(snapshot.Modules, []string{"customers"}) {
+		report.CustomerProfileRestoreEligibility, err = inspectCustomerProfileModuleRestoreEligibility(ctx, tx, snapshot, missing)
+		if err != nil {
+			return err
+		}
+		blocked = blocked || !report.CustomerProfileRestoreEligibility.Eligible
+		report.Limitations = []string{"本次只在一次性副本演练；通过后可另行确认补回缺失客户资料。", "保留当前账号、密码、限制、积分与订阅状态；缺失积分及推荐事实只支持没有当前金融足迹的完整缺失账号组。", "订单和聊天保持；身份冲突、进行中奖励、共享元数据缺失或无法核验的积分缺口仍阻断。"}
+	}
+	if reflect.DeepEqual(snapshot.Modules, []string{"configuration"}) {
+		report.ConfigurationSiteContentRestoreEligibility, err = cfg.inspectConfigurationModuleMissingSiteContentRestoreEligibility(ctx, tx, snapshot, missing, task.Manifest, report)
+		if err != nil {
+			return err
+		}
+		blocked = blocked || !report.ConfigurationSiteContentRestoreEligibility.Eligible
+		report.Limitations = []string{"本期补回缺失的文章分类、文章、图库、FAQ、视觉展示、跳转规则及车架/前叉/花鼓、辐条计算和轮胎适配目录、选购流程/问卷及市场/汇率/税率、邮件模板/历史版本和会员等级；同 ID 内容差异阻断。", "支付、邮件、物流、账号、业务设置及媒体登记保持且须与原包兼容；引用文件须先已恢复且与原包一致。", "正式写入后继续维护隔离，须核对目录/计算结果、选购流程/问卷、文章缓存、页面/CDN缓存和实际内容后另行确认恢复服务。"}
+	}
 	blocked = blocked || report.FileConflicts > 0
+	if reflect.DeepEqual(snapshot.Modules, []string{"orders"}) {
+		report.OrderHistoryCurrentExecutionConflicts, err = countOrderHistoryCurrentExecutionScopesWithRowsAbsentFromPackage(ctx, tx, snapshot, observation)
+		if err != nil {
+			return err
+		}
+		report.OrderHistoryRestoreEligibility = inspectOrderModuleMissingOrderRecordsRestoreEligibility(snapshot, missing, report, missingPackageMediaFiles)
+		blocked = blocked || !report.OrderHistoryRestoreEligibility.Eligible
+	}
 	if len(snapshot.Modules) == 1 && snapshot.Modules[0] == "customer_service" {
 		report.CustomerServiceOverwritePreview, err = cfg.inspectSelectedCustomerServiceModuleBoundedOverwriteStrategies(ctx, tx, snapshot, observation, missing, task.Manifest, extracted, report)
 		if err != nil {
@@ -531,15 +673,53 @@ func (manager *Manager) previewSelectedBusinessModuleRestoreOrSavedChatChoiceInD
 		report.IsolatedRestoreVerified = true
 		blocked = false
 	} else if !blocked {
-		report.RestoredRows, err = restoreSelectedBusinessModuleMissingRowsAndVerifyPreservation(ctx, tx, snapshot, observation, missing)
+		report.RestoredRows, err = restoreSelectedBusinessModuleMissingRowsInDisposableCloneAndVerifyPreservation(ctx, tx, snapshot, observation, missing)
 		if err != nil {
 			return err
 		}
-		if err := tx.Commit(); err != nil {
-			return err
+		if report.MediaRestoreEligibility != nil {
+			if err := cfg.validateMediaModuleRestoredBusinessBindings(ctx, tx, snapshot, task.Manifest); err != nil {
+				report.MediaRestoreEligibility.Eligible = false
+				report.MediaRestoreEligibility.Blockers = append(report.MediaRestoreEligibility.Blockers, err.Error())
+				report.RestoredRows = 0
+				blocked = true
+				if err := tx.Rollback(); err != nil {
+					return err
+				}
+			}
 		}
-		report.PreservedTables = len(observation.Tables)
-		report.IsolatedRestoreVerified = true
+		if report.OrderHistoryRestoreEligibility != nil {
+			afterObservation, err := inspectModuleRecoveryDatabaseObservation(ctx, tx)
+			if err != nil {
+				return err
+			}
+			candidateConfiguration := cfg
+			candidateConfiguration.StorageRoots = map[string]string{}
+			for root := range cfg.StorageRoots {
+				candidateConfiguration.StorageRoots[root] = filepath.Join(candidate, "media", root)
+			}
+			domain, err := candidateConfiguration.inspectOrderTransactionRows(ctx, tx, tx, afterObservation, afterObservation, task.Manifest, extracted, defaultModuleRecoveryRowInspectionLimits())
+			if err != nil {
+				return err
+			}
+			if !domain.Complete || domain.BlockingIssues > 0 {
+				report.OrderHistoryDomainBlockingIssues = domain.BlockingIssues
+				report.OrderHistoryRestoreEligibility.Eligible = false
+				report.OrderHistoryRestoreEligibility.Blockers = append(report.OrderHistoryRestoreEligibility.Blockers, "restored_order_domain_or_receipt_validation_failed")
+				report.RestoredRows = 0
+				blocked = true
+				if err := tx.Rollback(); err != nil {
+					return err
+				}
+			}
+		}
+		if !blocked {
+			if err := tx.Commit(); err != nil {
+				return err
+			}
+			report.PreservedTables = len(observation.Tables)
+			report.IsolatedRestoreVerified = true
+		}
 	} else if err := tx.Rollback(); err != nil {
 		return err
 	}
@@ -553,7 +733,7 @@ func (manager *Manager) previewSelectedBusinessModuleRestoreOrSavedChatChoiceInD
 	}
 	report.TargetUnchanged = true
 	if report.Binding != nil {
-		current, err := manager.captureSelectedCustomerServiceModuleSnapshotBinding(ctx, live, task, mediaAfter)
+		current, err := manager.captureBusinessModuleRestoreSnapshotBinding(ctx, live, task, mediaAfter)
 		if err != nil {
 			return err
 		}

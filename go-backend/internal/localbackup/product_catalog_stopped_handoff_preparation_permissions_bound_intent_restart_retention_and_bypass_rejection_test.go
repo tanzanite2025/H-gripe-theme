@@ -56,13 +56,13 @@ func TestProductCatalogStoppedHandoffCancellationFinishesDurableReleaseIntentAft
 	task.ExpiresAt = time.Now().Add(-time.Hour)
 	task.State = "running"
 	task.ProductCatalogPreviewBinding = &productCatalogRecoveryPreviewBinding{Version: 1}
-	configurationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(cfg)
+	configurationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(cfg)
 	require.NoError(t, err)
 	task.ProductViewStoppedDrain = &ProductViewStoppedDrainAndCandidateRebuildProgress{Version: 1, TaskID: task.ID, PackageID: task.Manifest.PackageID, ConfigurationSHA256: configurationDigest, Operator: task.Actor, TargetDatabaseOID: 42, Phase: "candidate_rebuilt", RebuiltPreviewSHA256: "synthetic-preview", After: &service.ProductViewCountRecoveryBoundaryInspection{RedisBuffersEmpty: true}}
 	require.NoError(t, manager.saveProductViewStoppedDrainProgress(task))
 	packageDigest, err := productCatalogStoppedHandoffImmutablePackageSHA256(task)
 	require.NoError(t, err)
-	previewDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
+	previewDigest, err := businessModuleRecoveryCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
 	require.NoError(t, err)
 	task.ProductCatalogStoppedHandoffPreparation = &ProductCatalogStoppedHandoffPreparationJournal{Version: 1, WindowID: newTaskID(), TaskID: task.ID, PackageSHA256: packageDigest, ConfigurationSHA256: configurationDigest, Operator: task.Actor, Phase: "canceling", StartedAt: time.Now().Add(-time.Hour), PreparedAt: time.Now().Add(-time.Minute), CancellationVerifiedAt: time.Now(), FenceSHA256: "synthetic-removed-fence", PreviewBindingSHA256: previewDigest, DrainProgressSHA256: task.ProductViewStoppedDrain.SHA256}
 	require.NoError(t, manager.saveProductCatalogStoppedHandoffPreparationJournal(task))
@@ -92,7 +92,7 @@ func TestProductCatalogStoppedHandoffPreparationRetainsWorkCopiesAndRefusesAllOr
 	task.State, task.ExpiresAt = "running", time.Now().Add(-time.Hour)
 	packageDigest, err := productCatalogStoppedHandoffImmutablePackageSHA256(task)
 	require.NoError(t, err)
-	configurationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(cfg)
+	configurationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(cfg)
 	require.NoError(t, err)
 	task.ProductCatalogStoppedHandoffPreparation = &ProductCatalogStoppedHandoffPreparationJournal{Version: 1, WindowID: newTaskID(), TaskID: task.ID, PackageSHA256: packageDigest, ConfigurationSHA256: configurationDigest, Operator: task.Actor, Phase: "preparing", StartedAt: time.Now().UTC(), FenceSHA256: "synthetic-fence-sha256"}
 	require.NoError(t, manager.saveProductCatalogStoppedHandoffPreparationJournal(task))

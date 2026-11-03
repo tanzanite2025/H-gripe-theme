@@ -136,7 +136,7 @@ SELECT id,'small','/uploads/products/small.png','products/small.png','image/png'
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, scenario.Status, result.HTTPStatus)
-				require.Equal(t, productCatalogBytesSHA256(result.capturedPublicImageBytes), result.ResponseSHA256)
+				require.Equal(t, businessModuleRecoveryBytesSHA256(result.capturedPublicImageBytes), result.ResponseSHA256)
 				if scenario.Status == 200 {
 					require.Equal(t, imageBytes, result.capturedPublicImageBytes)
 				} else {
@@ -206,7 +206,7 @@ func verifyStoppedProductPublicImageActualNetworkBytesAndFailureResealingPreserv
 				require.False(t, result.OnlineOverwriteAvailable)
 				body, err := base64.StdEncoding.DecodeString(result.ResponseBytesBase64)
 				require.NoError(t, err)
-				require.Equal(t, productCatalogBytesSHA256(body), result.ResponseSHA256)
+				require.Equal(t, businessModuleRecoveryBytesSHA256(body), result.ResponseSHA256)
 				require.Equal(t, int64(len(body)), result.ResponseBytes)
 				if scenario.Status == 200 {
 					expected, err := os.ReadFile(filepath.Join(manager.Configuration.StorageRoots["uploads"], filepath.FromSlash(query.ObjectKey)))

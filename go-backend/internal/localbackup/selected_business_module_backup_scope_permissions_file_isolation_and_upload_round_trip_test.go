@@ -64,7 +64,7 @@ func TestSelectedBusinessModulePreviewAndGenerationRequireExportPermission(t *te
 
 func TestSelectedBusinessModuleAttachmentDiscoveryPreservesPrivateFilesAndRejectsDirtyJSONAndTraversal(t *testing.T) {
 	cfg := createIndependentRecoveryTestConfiguration(t)
-	snapshot := selectedBusinessModuleCompleteSnapshot{Tables: map[string]productCatalogTableSnapshot{
+	snapshot := selectedBusinessModuleCompleteSnapshot{Tables: map[string]businessModuleCompleteTableSnapshot{
 		"ticket_messages":         {Rows: []json.RawMessage{json.RawMessage(`{"id":1,"content":"customer message","attachments":"[\"/uploads-private/conversations/photo.png\"]"}`)}},
 		"media_assets":            {Rows: []json.RawMessage{json.RawMessage(`{"id":2,"visibility":"private","storage_key":"conversations/original.png","url":"/api/customer-service/attachments/2"}`)}},
 		"media_asset_derivatives": {Rows: []json.RawMessage{json.RawMessage(`{"id":3,"media_asset_id":2,"storage_key":"conversations/small.png","url":"/api/customer-service/attachments/2/small"}`)}},
@@ -73,7 +73,7 @@ func TestSelectedBusinessModuleAttachmentDiscoveryPreservesPrivateFilesAndReject
 	require.NoError(t, err)
 	require.Equal(t, map[string]bool{"media/uploads_private/conversations/photo.png": true, "media/uploads_private/conversations/original.png": true, "media/uploads_private/conversations/small.png": true}, paths)
 	for _, raw := range []string{`{"attachments":"not-json"}`, `{"attachments":"{}"}`, `{"attachments":"[\"/uploads/../outside\"]"}`, `{"attachments":"[\"https://remote.invalid/file.png\"]"}`, `{"attachments":"[\"unresolved-filename\"]"}`} {
-		snapshot.Tables["ticket_messages"] = productCatalogTableSnapshot{Rows: []json.RawMessage{json.RawMessage(raw)}}
+		snapshot.Tables["ticket_messages"] = businessModuleCompleteTableSnapshot{Rows: []json.RawMessage{json.RawMessage(raw)}}
 		_, err := cfg.collectSelectedBusinessModuleRequiredFilePaths(snapshot)
 		require.Error(t, err, raw)
 	}
@@ -87,16 +87,16 @@ func TestSelectedBusinessModuleEncryptedUploadChecksActualBytesWithoutPromotingT
 	manager, err := NewManager(cfg)
 	require.NoError(t, err)
 	defer manager.Close()
-	snapshot := selectedBusinessModuleCompleteSnapshot{ContractVersion: 1, Modules: []string{"orders"}, Tables: map[string]productCatalogTableSnapshot{}, RequiredFilePaths: []string{"media/uploads_private/evidence/receipt.bin"}}
+	snapshot := selectedBusinessModuleCompleteSnapshot{ContractVersion: 1, Modules: []string{"orders"}, Tables: map[string]businessModuleCompleteTableSnapshot{}, RequiredFilePaths: []string{"media/uploads_private/evidence/receipt.bin"}}
 	selectors := selectedBusinessModuleTableSelectors(snapshot.Modules)
 	selectors["media_assets"], selectors["media_asset_derivatives"] = "true", "true"
 	manifest := Manifest{FormatVersion: PackageVersion, PackageID: newTaskID(), SiteID: cfg.SiteID, Environment: cfg.Environment, ApplicationVersion: cfg.ApplicationVersion, MigrationVersion: cfg.ExpectedMigrationVersion, Scope: selectedBusinessModulesBackupScope, SelectedModules: snapshot.Modules, Tables: map[string]int64{}, Files: []FileIdentity{}, Gaps: []string{}}
 	for name := range selectors {
-		snapshot.Tables[name] = productCatalogTableSnapshot{SchemaSHA256: strings.Repeat("a", 64), ConstraintsSHA256: strings.Repeat("b", 64), Rows: []json.RawMessage{}}
+		snapshot.Tables[name] = businessModuleCompleteTableSnapshot{SchemaSHA256: strings.Repeat("a", 64), ConstraintsSHA256: strings.Repeat("b", 64), Rows: []json.RawMessage{}}
 		manifest.Tables[name] = 0
 	}
 	evidence := []byte("complete private evidence bytes")
-	row, err := json.Marshal(map[string]any{"id": 1, "storage_key": "evidence/receipt.bin", "size_bytes": len(evidence), "sha256": productCatalogBytesSHA256(evidence)})
+	row, err := json.Marshal(map[string]any{"id": 1, "storage_key": "evidence/receipt.bin", "size_bytes": len(evidence), "sha256": businessModuleRecoveryBytesSHA256(evidence)})
 	require.NoError(t, err)
 	contents := snapshot.Tables["order_evidence_attachments"]
 	contents.Rows = []json.RawMessage{row}
@@ -104,7 +104,7 @@ func TestSelectedBusinessModuleEncryptedUploadChecksActualBytesWithoutPromotingT
 	manifest.Tables["order_evidence_attachments"] = 1
 	data, err := json.Marshal(snapshot)
 	require.NoError(t, err)
-	manifest.DatabaseFingerprint = productCatalogBytesSHA256(data)
+	manifest.DatabaseFingerprint = businessModuleRecoveryBytesSHA256(data)
 	source := t.TempDir()
 	for path, body := range map[string][]byte{selectedBusinessModulesRowsFilename: data, snapshot.RequiredFilePaths[0]: evidence} {
 		filename := filepath.Join(source, filepath.FromSlash(path))

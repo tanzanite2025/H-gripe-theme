@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "Soalan lazim",
+    "payment": "Pembayaran",
+    "shipping": "Penghantaran",
+    "afterSales": "Perkhidmatan selepas jualan",
+    "warranty": "Waranti",
+    "warrantyCheck": "Semakan waranti",
+    "productFeedback": "Maklum balas produk",
+    "spokeCalculator": "Kalkulator jejari",
+    "testReport": "Laporan ujian"
   }
 }

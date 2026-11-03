@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "Kaufübersicht"
+    },
+    "safetyInstructions": {
+      "label": "Sicherheitshinweise"
+    },
+    "sampleAssembly": {
+      "label": "Laufradbau und individuelle Aufbauten"
+    },
+    "appearanceLogo": {
+      "label": "Optik und Logos"
+    }
+  }
+}

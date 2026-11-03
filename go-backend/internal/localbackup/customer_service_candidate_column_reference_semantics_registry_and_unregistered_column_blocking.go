@@ -103,7 +103,7 @@ func inspectCustomerServiceCandidateColumnReferenceContractCoverage(observation 
 		}
 	}
 	coverage.SamplesTruncated = coverage.UnregisteredColumns > len(coverage.UnregisteredColumnSamples)
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(contracts)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(contracts)
 	coverage.ColumnContractsSHA256 = digest
 	return coverage, err
 }

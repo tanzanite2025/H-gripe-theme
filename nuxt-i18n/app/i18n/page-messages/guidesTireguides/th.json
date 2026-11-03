@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "ระยะห่างระหว่างยางกับเฟรม"
+    },
+    "schwalbeCircumference": {
+      "label": "เส้นรอบวงยาง Schwalbe"
+    },
+    "tubeless": {
+      "label": "ยางไร้ยางในและการติดตั้ง"
+    }
+  }
+}

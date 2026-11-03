@@ -1,80 +1,89 @@
 <template>
-  <Card class="h-full min-h-0 overflow-hidden py-0">
-    <CardHeader class="shrink-0 border-b bg-muted/30 px-4 py-3">
-      <CardTitle class="flex items-center gap-2">
-        <Fingerprint class="size-4 text-primary" />
-        画像详情
-      </CardTitle>
-      <CardDescription>只展示已采集事实，不猜测邮箱、地区或身份</CardDescription>
+  <Card v-bind="$attrs" class="h-full min-h-0 gap-0 overflow-hidden py-0">
+    <CardHeader class="shrink-0 border-b bg-muted/30 px-4 py-3 pr-14">
+      <DialogTitle as-child>
+        <CardTitle class="flex items-center gap-2">
+          <Fingerprint class="size-4 text-primary" />
+          画像详情
+        </CardTitle>
+      </DialogTitle>
+      <DialogDescription as-child>
+        <CardDescription>只展示已采集事实，不猜测邮箱、地区或身份</CardDescription>
+      </DialogDescription>
     </CardHeader>
-    <CardContent class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+    <CardContent
+      class="min-h-0 min-w-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto overscroll-contain p-4 [scrollbar-gutter:stable] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50"
+      tabindex="0"
+      role="region"
+      aria-label="访客画像详情内容"
+    >
       <div v-if="!selectedProfile" class="flex min-h-72 flex-col items-center justify-center text-center text-muted-foreground">
         <UserRound class="mb-2 size-8 opacity-55" />
         <p class="text-xs leading-6">从左侧列表选择一个访客画像查看详情。</p>
       </div>
 
       <template v-else>
-        <section class="rounded-2xl border p-3">
+        <section class="rounded-xl border border-border/70 p-3">
           <div class="mb-3 flex items-center justify-between gap-2">
-            <h3 class="text-xs font-black uppercase tracking-wider">身份</h3>
+            <h3 class="text-sm font-semibold">身份</h3>
             <AdminStatusBadge :tone="selectedProfile.identity === 'account' ? 'green' : 'amber'">
               {{ selectedProfile.identity === 'account' ? '会员账号' : '匿名访客' }}
             </AdminStatusBadge>
           </div>
-          <dl class="grid grid-cols-2 gap-2 text-xs">
-            <DetailItem label="Profile ID">#{{ selectedProfile.id }}</DetailItem>
-            <DetailItem label="User ID">{{ selectedProfile.user_id || '-' }}</DetailItem>
-            <DetailItem label="Status">
+          <dl class="grid grid-cols-2 gap-2 text-xs lg:grid-cols-4">
+            <VisitorProfileDetailField label="画像 ID">#{{ selectedProfile.id }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="用户 ID">{{ selectedProfile.user_id || '-' }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="状态">
               <AdminStatusBadge :tone="statusTone(selectedProfile.profile_status)">
                 {{ statusLabel(selectedProfile.profile_status) }}
               </AdminStatusBadge>
-            </DetailItem>
-            <DetailItem label="Quality">Q{{ selectedProfile.profile_quality_score || 0 }}</DetailItem>
- <DetailItem label="Email" class="col-span-2">{{ selectedProfile.email || '未采集'}}</DetailItem>
- <DetailItem label="Email Source" class="col-span-2">{{ selectedProfile.email_source || 'not_captured'}}</DetailItem>
+            </VisitorProfileDetailField>
+            <VisitorProfileDetailField label="质量评分">Q{{ selectedProfile.profile_quality_score || 0 }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="邮箱" class="col-span-2">{{ selectedProfile.email || '未采集' }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="邮箱来源" class="col-span-2">{{ selectedProfile.email_source || 'not_captured' }}</VisitorProfileDetailField>
           </dl>
         </section>
 
-        <section class="rounded-2xl border p-3">
-          <h3 class="mb-3 text-xs font-black uppercase tracking-wider">绑定事实</h3>
-          <div class="space-y-2 text-xs">
-            <FactRow label="Public Chat visitor" :active="selectedProfile.has_customer_service_visitor">
+        <section class="rounded-xl border border-border/70 p-3">
+          <h3 class="mb-3 text-sm font-semibold">绑定事实</h3>
+          <div class="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-3">
+            <VisitorProfileCollectionFact label="聊天访客" :active="selectedProfile.has_customer_service_visitor">
               {{ selectedProfile.customer_service_visitor_hash_preview || '未绑定' }}
-            </FactRow>
-            <FactRow label="Cart session" :active="selectedProfile.has_cart_session">
- <span class="break-all font-mono">{{ selectedProfile.cart_session_id || '未绑定'}}</span>
-            </FactRow>
-            <FactRow label="Locale" :active="Boolean(selectedProfile.locale)">
+            </VisitorProfileCollectionFact>
+            <VisitorProfileCollectionFact label="购物车会话" :active="selectedProfile.has_cart_session">
+              {{ selectedProfile.cart_session_id || '未绑定' }}
+            </VisitorProfileCollectionFact>
+            <VisitorProfileCollectionFact label="语言 / 来源" :active="Boolean(selectedProfile.locale)">
               {{ selectedProfile.locale || '未采集' }} / {{ selectedProfile.locale_source || 'not_captured' }}
-            </FactRow>
+            </VisitorProfileCollectionFact>
           </div>
         </section>
 
-        <section class="rounded-2xl border p-3">
-          <h3 class="mb-3 text-xs font-black uppercase tracking-wider">地区与采集状态</h3>
-          <dl class="grid grid-cols-2 gap-2 text-xs">
-            <DetailItem label="Country">{{ selectedProfile.country_code || '-' }}</DetailItem>
-            <DetailItem label="Timezone">{{ selectedProfile.timezone || '-' }}</DetailItem>
- <DetailItem label="Region" class="col-span-2">{{ selectedProfile.region || '-'}}</DetailItem>
- <DetailItem label="City" class="col-span-2">{{ selectedProfile.city || '-'}}</DetailItem>
+        <section class="rounded-xl border border-border/70 p-3">
+          <h3 class="mb-3 text-sm font-semibold">地区与采集状态</h3>
+          <dl class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
+            <VisitorProfileDetailField label="国家">{{ selectedProfile.country_code || '-' }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="时区">{{ selectedProfile.timezone || '-' }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="省 / 州">{{ selectedProfile.region || '-' }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="城市">{{ selectedProfile.city || '-' }}</VisitorProfileDetailField>
           </dl>
           <div class="mt-3 flex flex-wrap gap-1.5">
-            <AdminStatusBadge :tone="selectedProfile.has_ip_fingerprint ? 'green' : 'gray'">IP fingerprint</AdminStatusBadge>
-            <AdminStatusBadge :tone="selectedProfile.has_user_agent_fingerprint ? 'green' : 'gray'">User-Agent fingerprint</AdminStatusBadge>
+            <AdminStatusBadge :tone="selectedProfile.has_ip_fingerprint ? 'green' : 'gray'">IP 指纹{{ selectedProfile.has_ip_fingerprint ? '已采集' : '未采集' }}</AdminStatusBadge>
+            <AdminStatusBadge :tone="selectedProfile.has_user_agent_fingerprint ? 'green' : 'gray'">浏览器指纹{{ selectedProfile.has_user_agent_fingerprint ? '已采集' : '未采集' }}</AdminStatusBadge>
           </div>
         </section>
 
-        <section class="rounded-2xl border border-rose-500/20 p-3">
+        <section class="rounded-xl border border-rose-500/20 p-3">
           <div class="mb-3 flex items-center justify-between gap-2">
-            <h3 class="text-xs font-black uppercase tracking-wider">访问控制</h3>
+            <h3 class="text-sm font-semibold">访问控制</h3>
             <AdminStatusBadge :tone="selectedProfile.ip_block_match ? 'coral' : selectedProfile.ip_address ? 'green' : 'gray'">
               {{ selectedProfile.ip_block_match ? 'IP 实际已拦截' : selectedProfile.ip_address ? 'IP 当前未拦截' : '当前 IP 未保留' }}
             </AdminStatusBadge>
           </div>
-          <dl class="grid grid-cols-2 gap-2 text-xs">
-            <DetailItem label="IP（已脱敏）" class="col-span-2">
+          <dl class="text-xs">
+            <VisitorProfileDetailField label="IP（已脱敏）">
               <span class="break-all font-mono">{{ selectedProfile.ip_address || '未保留可操作 IP' }}</span>
-            </DetailItem>
+            </VisitorProfileDetailField>
           </dl>
           <p class="mt-3 text-xs leading-5 text-amber-800/80 dark:text-amber-100/80">
             画像中的 IP 仅展示脱敏值。这里的封禁是全局 IP 封禁，会影响使用同一出口 IP 的其他用户。
@@ -98,7 +107,7 @@
                 :key="rule.id"
                 class="rounded-lg border border-rose-500/15 bg-background/50 p-2"
               >
-                <div class="flex items-start justify-between gap-2">
+                <div class="flex flex-wrap items-start justify-between gap-2">
                   <span class="break-all font-mono text-[11px] font-bold text-rose-800 dark:text-rose-100">
                     #{{ rule.id }} · {{ rule.cidr || 'unknown-cidr' }}
                   </span>
@@ -166,16 +175,16 @@
           </div>
         </section>
 
-        <section class="rounded-2xl border p-3">
-          <h3 class="mb-3 text-xs font-black uppercase tracking-wider">时间</h3>
-          <dl class="grid gap-2 text-xs">
-            <DetailItem label="Last Seen">{{ formatDate(selectedProfile.last_seen_at) }}</DetailItem>
-            <DetailItem label="Last Meaningful">{{ formatDate(selectedProfile.last_meaningful_seen_at) }}</DetailItem>
-            <DetailItem label="First Meaningful">{{ formatDate(selectedProfile.first_meaningful_seen_at) }}</DetailItem>
-            <DetailItem label="Last Action">{{ actionLabel(selectedProfile.last_meaningful_action) }}</DetailItem>
-            <DetailItem label="Retention Until">{{ formatDate(selectedProfile.retention_until) }}</DetailItem>
-            <DetailItem label="Created">{{ formatDate(selectedProfile.created_at) }}</DetailItem>
-            <DetailItem label="Updated">{{ formatDate(selectedProfile.updated_at) }}</DetailItem>
+        <section class="rounded-xl border border-border/70 p-3">
+          <h3 class="mb-3 text-sm font-semibold">时间</h3>
+          <dl class="grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
+            <VisitorProfileDetailField label="最后访问">{{ formatDate(selectedProfile.last_seen_at) }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="最后有效活动">{{ formatDate(selectedProfile.last_meaningful_seen_at) }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="首次有效活动">{{ formatDate(selectedProfile.first_meaningful_seen_at) }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="最近有效动作">{{ actionLabel(selectedProfile.last_meaningful_action) }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="保留截止">{{ formatDate(selectedProfile.retention_until) }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="创建时间">{{ formatDate(selectedProfile.created_at) }}</VisitorProfileDetailField>
+            <VisitorProfileDetailField label="更新时间">{{ formatDate(selectedProfile.updated_at) }}</VisitorProfileDetailField>
           </dl>
         </section>
       </template>
@@ -244,6 +253,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { VisitorIPBlockPayload, VisitorProfile } from '@/modules/visitor/visitorTypes'
+
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<{
   selectedProfile?: VisitorProfile | null
@@ -373,30 +384,30 @@ const sourceLabel = (source?: string): string => ({
   risk_automation: '风险自动化',
 } as Record<string, string>)[source || ''] || source || '未知'
 
-const DetailItem = defineComponent({
+const VisitorProfileDetailField = defineComponent({
   props: {
     label: { type: String, required: true }
   },
-  setup(props, { slots, attrs }) {
-    return () => h('div', { class: ['space-y-1 rounded-xl border p-2', attrs.class] }, [
- h('dt', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70'}, props.label),
- h('dd', { class: 'break-words font-bold text-foreground'}, slots.default ? slots.default() : '-')
+  setup(props, { slots }) {
+    return () => h('div', { class: 'min-w-0 space-y-1 rounded-lg bg-muted/60 px-3 py-2' }, [
+      h('dt', { class: 'text-[11px] font-medium text-muted-foreground' }, props.label),
+      h('dd', { class: 'font-medium leading-5 text-foreground [overflow-wrap:anywhere]' }, slots.default ? slots.default() : '-')
     ])
   }
 })
 
-const FactRow = defineComponent({
+const VisitorProfileCollectionFact = defineComponent({
   props: {
     label: { type: String, required: true },
     active: { type: Boolean, default: false }
   },
   setup(props, { slots }) {
- return () => h('div', { class: 'rounded-xl border p-2'}, [
- h('div', { class: 'mb-1 flex items-center justify-between gap-2'}, [
- h('span', { class: 'text-[10px] font-black uppercase tracking-widest text-muted-foreground/70'}, props.label),
-        h(AdminStatusBadge, { tone: props.active ? 'green' : 'gray' }, { default: () => props.active ? 'captured' : 'missing' })
+    return () => h('div', { class: 'min-w-0 rounded-lg bg-muted/60 px-3 py-2' }, [
+      h('div', { class: 'mb-1 flex flex-wrap items-center justify-between gap-2' }, [
+        h('span', { class: 'text-[11px] font-medium text-muted-foreground' }, props.label),
+        h(AdminStatusBadge, { tone: props.active ? 'green' : 'gray' }, { default: () => props.active ? '已采集' : '未采集' })
       ]),
- h('p', { class: 'break-words font-mono text-[11px] text-foreground'}, slots.default ? slots.default() : '-')
+      h('p', { class: 'font-medium leading-5 text-foreground [overflow-wrap:anywhere]' }, slots.default ? slots.default() : '-')
     ])
   }
 })

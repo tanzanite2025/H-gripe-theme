@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "Vanliga frågor",
+    "payment": "Betalning",
+    "shipping": "Frakt",
+    "afterSales": "Service efter köp",
+    "warranty": "Garanti",
+    "warrantyCheck": "Kontrollera garanti",
+    "productFeedback": "Produktsynpunkter",
+    "spokeCalculator": "Ekerkalkylator",
+    "testReport": "Testrapporter"
   }
 }

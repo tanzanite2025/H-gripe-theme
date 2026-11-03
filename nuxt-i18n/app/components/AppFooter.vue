@@ -7,7 +7,7 @@
 
         <div class="footer-subscription">
           <SubscriptionOptIn
-            label="Subscribe for new products & blog updates"
+            :label="t('footer.subscription.label')"
           />
           <div class="footer-subscription__social">
             <ClientOnly>
@@ -30,9 +30,10 @@
         <div class="footer-bottom__info">
           <div class="footer-info__text-wrapper">
             <p class="footer-info__text">
-              &copy; {{ currentYear }}. All pages use HTTPS with SSL encryption. Payments are securely processed; no card data stored.
+              &copy; {{ currentYear }}. {{ t('footer.securityNotice') }}
             </p>
-            <svg class="footer-secure-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" title="SSL Secure">
+            <svg class="footer-secure-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" :aria-label="t('footer.accessibility.sslSecure')">
+              <title>{{ t('footer.accessibility.sslSecure') }}</title>
               <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 2Z" fill="#059669" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M12 2L3 5V11C3 16.55 6.84 21.74 12 23" fill="#059669" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="6" font-weight="bold" font-family="MapleUILatin">SSL</text>
@@ -42,11 +43,11 @@
           </div>
 
           <div class="footer-bottom__utilities">
-            <div class="footer-bottom__payment" aria-label="Accepted payment methods">
+            <div class="footer-bottom__payment" :aria-label="t('footer.accessibility.paymentMethods')">
               <span v-for="icon in paymentIcons" :key="icon.src" class="payment-icon-tile">
                 <img
                   :src="icon.src"
-                  :alt="icon.alt"
+                  :alt="icon.altKey ? t(icon.altKey) : icon.alt"
                   :width="icon.width"
                   :height="icon.height"
                   :class="['payment-icon-tile__img', icon.className]"
@@ -64,7 +65,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onServerPrefetch } from 'vue'
-import { useRouter } from '#imports'
+import { useI18n, useRouter } from '#imports'
 import SocialIcons from '~/components/SocialIcons.vue'
 import FooterSiteOverview from '~/components/FooterSiteOverview.vue'
 import FooterMenus from '~/components/FooterMenus.vue'
@@ -78,6 +79,7 @@ import {
 import { useProductCategories } from '~/composables/useProductCategories'
 
 const currentYear = computed(() => new Date().getFullYear())
+const { t } = useI18n()
 const router = useRouter()
 // SHOP is data-driven; the remaining footer columns are discovered from the
 // static router below.
@@ -112,6 +114,7 @@ onMounted(() => {
 interface PaymentIcon {
   src: string
   alt: string
+  altKey?: string
   width: number
   height: number
   className?: string
@@ -129,7 +132,7 @@ const paymentIcons: PaymentIcon[] = [
   { src: '/icons/payment/wechatpay.svg', alt: 'WeChat Pay', width: 200, height: 120 },
   { src: '/icons/payment/applepay.svg?v=7', alt: 'Apple Pay', width: 200, height: 120 },
   { src: '/icons/payment/googlepay.svg', alt: 'Google Pay', width: 200, height: 120 },
-  { src: '/icons/payment/default.svg', alt: 'Card Payment', width: 750, height: 471 },
+  { src: '/icons/payment/default.svg', alt: 'Card Payment', altKey: 'footer.accessibility.cardPayment', width: 750, height: 471 },
 ]
 </script>
 

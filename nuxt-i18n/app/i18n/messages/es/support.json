@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "Preguntas frecuentes",
+    "payment": "Pago",
+    "shipping": "Envío",
+    "afterSales": "Servicio posventa",
+    "warranty": "Garantía",
+    "warrantyCheck": "Consultar garantía",
+    "productFeedback": "Opiniones sobre productos",
+    "spokeCalculator": "Calculadora de radios",
+    "testReport": "Informes de pruebas"
   }
 }

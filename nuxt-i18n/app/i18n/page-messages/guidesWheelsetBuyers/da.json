@@ -1,0 +1,16 @@
+{
+  "tabs": {
+    "overview": {
+      "label": "Købsvejledning"
+    },
+    "safetyInstructions": {
+      "label": "Sikkerhedsanvisninger"
+    },
+    "sampleAssembly": {
+      "label": "Hjulbygning og specialbygninger"
+    },
+    "appearanceLogo": {
+      "label": "Udseende og logoer"
+    }
+  }
+}

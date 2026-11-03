@@ -41,10 +41,11 @@ for (const locale of ['en', 'zh_cn']) {
     '/tools/dynamic-tire-pressure-calculator',
     '/tools/tire-rim-width-compatibility-engine',
     '/tools/schwalbe-tire-selector',
-    '/technology/test-report',
-    '/technology/test-report/tension',
+    '/technology/rim-test-report',
+    '/technology/wheelset-test-report',
+    '/technology/wheel-building-quality-checks',
   ]) {
-    const usesStableTestReportFaqIdentity = routePath.startsWith('/technology/test-report')
+    const usesStableTestReportFaqIdentity = routePath.startsWith('/technology/')
     const backendFaqUrl = new URL(usesStableTestReportFaqIdentity
       ? '/api/v1/content/faq-pages/support-test-report'
       : '/api/v1/content/faq-pages/by-route', faqBackendOrigin)

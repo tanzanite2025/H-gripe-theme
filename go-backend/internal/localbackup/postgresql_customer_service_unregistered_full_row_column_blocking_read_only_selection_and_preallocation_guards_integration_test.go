@@ -118,7 +118,7 @@ func TestPostgreSQLCustomerServiceUnknownColumnOrPreviousRegistryPlanCannotAlloc
 				legacy.ReferenceChecks = nil
 				legacy.SHA256 = ""
 				var err error
-				legacy.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(&legacy)
+				legacy.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(&legacy)
 				require.NoError(t, err)
 				_, err = validateCustomerServiceSavedDecisionsAgainstLatestPlan(plan, nil, CustomerServiceEffectiveSelectionInspectionRequest{PlanSHA256: legacy.SHA256}, time.Now())
 				require.ErrorContains(t, err, "plan changed")

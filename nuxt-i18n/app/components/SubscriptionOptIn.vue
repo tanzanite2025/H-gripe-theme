@@ -1,5 +1,5 @@
 <template>
-  <form class="subscription-opt-in space-y-2" @submit.prevent="handleSubmit">
+  <form class="subscription-opt-in space-y-2" novalidate @submit.prevent="handleSubmit">
     <HoneypotField
       v-model="corporateTaxNumber"
       name="corporate_tax_number"
@@ -13,7 +13,9 @@
       <input
         type="email"
         v-model="email"
-        :placeholder="placeholder"
+        :placeholder="placeholder || t('footer.subscription.placeholder')"
+        :aria-label="t('footer.subscription.emailLabel')"
+        :aria-invalid="errorMessage === 'footer.subscription.invalidEmail' || undefined"
         class="subscription-opt-in__input rounded-full bg-[var(--tz-input-surface)] border-none tz-text-primary placeholder:tz-text-muted text-sm shadow-md focus:shadow-md focus:outline-none transition-all"
         :disabled="loading"
         required
@@ -29,29 +31,34 @@
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          {{ loadingText }}
+          {{ loadingText || t('footer.subscription.loading') }}
         </span>
-        <span v-else>{{ buttonLabel }}</span>
+        <span v-else>{{ buttonLabel || t('footer.subscription.button') }}</span>
       </button>
     </div>
 
     <p
       v-if="successMessage"
+      role="status"
       class="text-xs text-emerald-600 text-center mt-2 font-medium"
     >
-      {{ successMessage }}
+      {{ t(successMessage) }}
     </p>
 
     <p
       v-if="errorMessage"
+      role="alert"
       class="text-xs text-red-400 text-center mt-2"
     >
-      {{ errorMessage }}
+      {{ t(errorMessage) }}
     </p>
   </form>
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { useI18n, useRuntimeConfig } from '#imports'
+import { useApiRequest } from '~/composables/useApiRequest'
 import { loadTurnstileScript } from '~/utils/security/trustedScriptUrl'
 import HoneypotField from '~/components/security/HoneypotField.vue'
 
@@ -87,6 +94,13 @@ type WindowWithTurnstile = Window & {
   turnstile?: TurnstileApi
 }
 
+class SubscriptionVerificationError extends Error {
+  constructor(readonly translationKey: string) {
+    super(translationKey)
+    this.name = 'SubscriptionVerificationError'
+  }
+}
+
 const props = withDefaults(
   defineProps<{
     label?: string
@@ -97,9 +111,9 @@ const props = withDefaults(
   }>(),
   {
     label: '',
-    placeholder: 'Enter your email',
-    buttonLabel: 'Subscribe',
-    loadingText: 'Subscribing...',
+    placeholder: '',
+    buttonLabel: '',
+    loadingText: '',
     endpointPath: '/subscriptions',
   }
 )
@@ -108,7 +122,7 @@ const emit = defineEmits<{
   (e: 'subscribed', payload: SubscriptionSubmitResponse): void
 }>()
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const { request } = useApiRequest()
 const runtimeConfig = useRuntimeConfig()
 
@@ -156,18 +170,18 @@ const loadTurnstile = () => {
 const ensureTurnstileWidget = async () => {
   const siteKey = String(runtimeConfig.public?.turnstileSiteKey || '').trim()
   if (!siteKey) {
-    throw new Error('Verification challenge is not configured')
+    throw new SubscriptionVerificationError('footer.subscription.verificationUnavailable')
   }
   if (!import.meta.client || typeof window === 'undefined') return null
   if (!turnstileContainer.value) {
-    throw new Error('Verification challenge is not ready')
+    throw new SubscriptionVerificationError('footer.subscription.verificationUnavailable')
   }
 
   await loadTurnstile()
 
   const browserWindow = window as WindowWithTurnstile
   if (!browserWindow.turnstile) {
-    throw new Error('Verification challenge is unavailable')
+    throw new SubscriptionVerificationError('footer.subscription.verificationUnavailable')
   }
 
   if (turnstileWidgetId === null) {
@@ -180,11 +194,11 @@ const ensureTurnstileWidget = async () => {
         pendingTurnstile = null
       },
       'error-callback': () => {
-        pendingTurnstile?.reject(new Error('Verification challenge failed'))
+        pendingTurnstile?.reject(new SubscriptionVerificationError('footer.subscription.verificationFailed'))
         pendingTurnstile = null
       },
       'expired-callback': () => {
-        pendingTurnstile?.reject(new Error('Verification challenge expired'))
+        pendingTurnstile?.reject(new SubscriptionVerificationError('footer.subscription.verificationExpired'))
         pendingTurnstile = null
       },
     })
@@ -202,7 +216,7 @@ const executeTurnstileChallenge = async (): Promise<string> => {
   return new Promise<string>((resolve, reject) => {
     const browserWindow = window as WindowWithTurnstile
     if (!browserWindow.turnstile) {
-      reject(new Error('Verification challenge is unavailable'))
+      reject(new SubscriptionVerificationError('footer.subscription.verificationUnavailable'))
       return
     }
 
@@ -218,7 +232,7 @@ async function handleSubmit() {
 
   const value = email.value.trim()
   if (!value || !emailPattern.test(value)) {
-    errorMessage.value = '请输入有效的邮箱地址'
+    errorMessage.value = 'footer.subscription.invalidEmail'
     return
   }
 
@@ -240,13 +254,13 @@ async function handleSubmit() {
         captcha_token: captchaToken || '',
         timing_token: timingToken.value,
       }),
-    }, 'Subscription failed, please try again later')
+    }, t('footer.subscription.failed'))
 
     if (data && data.success === false) {
-      throw new Error(data?.message || data?.error || '订阅失败，请稍后重试')
+      throw new Error(data?.message || data?.error || 'footer.subscription.failed')
     }
 
-    successMessage.value = data?.message || '订阅成功，请前往邮箱确认'
+    successMessage.value = 'footer.subscription.success'
     email.value = ''
     corporateTaxNumber.value = ''
 	void loadTimingToken()
@@ -254,7 +268,9 @@ async function handleSubmit() {
     emit('subscribed', data)
   } catch (error: unknown) {
     console.error('Subscription failed', error)
-    errorMessage.value = error instanceof Error ? error.message : '订阅失败，请稍后重试'
+    errorMessage.value = error instanceof SubscriptionVerificationError
+      ? error.translationKey
+      : 'footer.subscription.failed'
   } finally {
     loading.value = false
   }

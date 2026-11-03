@@ -105,9 +105,13 @@
     </Tabs>
 
     <Dialog :open="profileDetailDialogOpen" @update:open="updateProfileDetailDialogOpen">
-      <DialogContent size="lg" class="max-h-[90dvh] overflow-hidden p-0" @open-auto-focus.prevent>
+      <DialogContent
+        size="lg"
+        class="h-[min(90dvh,56rem)] grid-rows-[minmax(0,1fr)] gap-0 overflow-hidden p-0"
+        @open-auto-focus.prevent
+      >
         <VisitorProfileDetailPanel
-          class="max-h-[90dvh] border-0 shadow-none"
+          class="rounded-none border-0 shadow-none"
           :selected-profile="selectedProfile"
           :format-date="formatDate"
           :block-ip="canManageGlobalIPBlocks ? blockProfileIP : undefined"

@@ -74,7 +74,7 @@ func validateFreshProductCatalogCandidateTaskForHandoffInspection(task *Task) er
 // change owners, consume events, or contact Redis or an external provider.
 func (manager *Manager) validateProductCatalogCandidateStillMatchesIsolatedPreview(ctx context.Context, task *Task) error {
 	cfg, binding := manager.Configuration, task.ProductCatalogPreviewBinding
-	configurationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(cfg)
+	configurationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(cfg)
 	if err != nil || binding == nil || configurationDigest != binding.ConfigurationSHA256 {
 		return errors.New("product recovery configuration changed after preview")
 	}
@@ -169,7 +169,7 @@ func (manager *Manager) buildProductCatalogCandidateHandoffInspection(task *Task
 	if err != nil {
 		return nil, err
 	}
-	previewDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(binding)
+	previewDigest, err := businessModuleRecoveryCanonicalJSONSHA256(binding)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +212,7 @@ func (manager *Manager) buildProductCatalogCandidateHandoffInspection(task *Task
 	report.ProjectionRequirements = productCatalogPartialProjectionReconciliationRequirements(viewAction, viewDescription)
 	// The timestamp is informational. Stable recorded identities give the same
 	// plan digest; none of these fields are accepted by whole-storefront release.
-	report.ContractSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(report)
+	report.ContractSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(report)
 	if err != nil {
 		return nil, err
 	}

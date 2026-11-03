@@ -8,12 +8,12 @@
   "loadMore": "Daha Fazla Yükle",
   "items": "ürün",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
+    "shop": "Mağaza",
+    "aboutTools": "Araçlar hakkında",
+    "tireSizeCharts": "Lastik rehberi",
     "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "technicalDocs": "Teknik belgeler",
+    "wheelsetBuyersGuide": "Tekerlek seti rehberi",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

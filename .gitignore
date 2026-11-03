@@ -15,6 +15,8 @@ vendor/
 .codex-gh-artifacts-*/
 go-backend/uploads/
 go-backend/site-logo-uploads/
+go-backend/uploads-private/
+nuxt-i18n/public/company/.storefront-release-version
 
 # IDE & OS
 .vscode/
@@ -84,3 +86,7 @@ release-evidence/
 # Local HTML report references and temporary report previews
 /modular_report/
 /report_temp.html
+
+# Private local competitor wheelset planning references
+/wheelset_matrix.html
+/wheelset_planner/

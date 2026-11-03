@@ -9,6 +9,7 @@ import { createServer } from 'vite'
 import { createSSRApp, defineComponent, h, type Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { FooterNavigationItem, FooterSection } from '../app/utils/footerMenus.js'
+import storefrontLocales from '../app/i18n/locales.manifest.js'
 
 const frontendDirectory = fileURLToPath(new URL('..', import.meta.url))
 const footerTranslationTestContext = {
@@ -76,7 +77,7 @@ try {
   ).filter(item => item.labelKey?.startsWith('guides'))
   assert.equal(guideItems.length, 7, 'All tire and wheelset guide child links must be exercised')
 
-  for (const locale of ['zh_cn', 'en', 'fr']) {
+  for (const { code: locale } of storefrontLocales) {
     const baseMessages = JSON.parse(await readFile(
       path.join(frontendDirectory, `app/i18n/locales/${locale}.json`), 'utf8',
     )) as LocaleMessage<string>
@@ -120,23 +121,38 @@ try {
       props: ['to'],
       setup: (props, { slots }) => () => h('a', { href: props.to }, slots.default?.()),
     }))
+    application.component('Icon', defineComponent({
+      setup: () => () => h('svg', { 'aria-hidden': 'true' }),
+    }))
     const renderErrors: unknown[] = []
     application.config.errorHandler = error => { renderErrors.push(error) }
     const markup = await renderToString(application)
     assert.deepEqual(renderErrors, [])
     assert.deepEqual(loadedNamespaces.sort(), ['guidesTireguides', 'guidesWheelsetBuyers'])
     assert.deepEqual(missingTranslationKeys, [], 'Fresh footer SSR must not produce missing-key warnings')
+    const localizedGuideResources = Object.fromEntries(await Promise.all(
+      ['guidesTireguides', 'guidesWheelsetBuyers'].map(async namespace => [
+        namespace,
+        JSON.parse(await readFile(
+          path.join(frontendDirectory, `app/i18n/page-messages/${namespace}/${locale}.json`), 'utf8',
+        )),
+      ]),
+    ))
     for (const item of guideItems) {
       const translatedLabel = applicationTranslations.global.t(item.labelKey!)
       assert.notEqual(translatedLabel, item.labelKey)
+      const expectedLocalizedLabel = item.labelKey!.split('.').reduce(
+        (resource, segment) => resource?.[segment], localizedGuideResources,
+      )
+      assert.equal(typeof expectedLocalizedLabel, 'string', `${locale}: every guide link needs its own translation`)
+      assert.equal(translatedLabel, expectedLocalizedLabel, `${locale}: guide links must use the selected language`)
       const escapedLabel = translatedLabel.replaceAll('&', '&amp;').replaceAll('<', '&lt;')
         .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
       assert.ok(markup.includes(escapedLabel), `Initial footer HTML must contain ${translatedLabel}`)
       assert.ok(markup.includes(`href="${item.to}"`), 'Translated child links must keep their canonical routes')
     }
-    assert.ok(markup.includes(locale === 'zh_cn' ? '购买概览' : 'Buying overview'))
   }
-  console.log('Footer independent translation loading passed: Chinese, English, English page-copy fallback, and unloaded recursive item labels render without missing-key events.')
+  console.log('Footer independent translation loading passed for all 20 locales: guide links render in the selected language without missing-key events, including unloaded recursive item fallbacks.')
 } finally {
   await componentCompilationServer.close()
   delete globalFooterTranslationTestContext.footerTranslationTestContext

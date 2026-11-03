@@ -21,26 +21,11 @@ type customerServiceCandidateSelectedFullRow struct {
 	Content                 json.RawMessage
 }
 
-type customerServiceCandidateSequenceState struct {
-	Name, Table, Column, Definition        string
-	LastValue, Increment, Minimum, Maximum int64
-	Called, Cycle                          bool
-}
-
 type customerServiceCandidateSequenceAdjustment struct {
 	Sequence       string `json:"sequence"`
 	PreviousValue  int64  `json:"previous_value"`
 	PreviousCalled bool   `json:"previous_called"`
 	CandidateValue int64  `json:"candidate_value"`
-}
-
-func customerServiceCandidateTypedPrimaryKeyPredicate(table string, primaryKeys []string) string {
-	var equalities []string
-	for _, column := range primaryKeys {
-		quoted := pq.QuoteIdentifier(column)
-		equalities = append(equalities, "record."+quoted+"=(jsonb_populate_record(NULL::public."+pq.QuoteIdentifier(table)+",$1::jsonb))."+quoted)
-	}
-	return strings.Join(equalities, " AND ")
 }
 
 // Full content is bounded independently of the relationship projection budget.
@@ -56,7 +41,7 @@ func readCustomerServiceCandidateSelectedFullRows(ctx context.Context, source *m
 	lookup := map[string]*moduleRecoveryDependencyRow{}
 	for table, rows := range source.Rows {
 		for identity, row := range rows {
-			digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(json.RawMessage(identity))
+			digest, err := businessModuleRecoveryCanonicalJSONSHA256(json.RawMessage(identity))
 			if err != nil {
 				return nil, nil, err
 			}
@@ -76,7 +61,7 @@ func readCustomerServiceCandidateSelectedFullRows(ctx context.Context, source *m
 		}
 		var content, digest string
 		// The size condition executes on the server before a body enters Go memory.
-		query := `SELECT to_jsonb(record)::text,encode(sha256(convert_to(to_jsonb(record)::text,'UTF8')),'hex') FROM public.` + pq.QuoteIdentifier(action.Table) + ` record WHERE ` + customerServiceCandidateTypedPrimaryKeyPredicate(action.Table, source.Observation.PrimaryKeys[action.Table]) + ` AND octet_length(to_jsonb(record)::text)<=$2`
+		query := `SELECT to_jsonb(record)::text,encode(sha256(convert_to(to_jsonb(record)::text,'UTF8')),'hex') FROM public.` + pq.QuoteIdentifier(action.Table) + ` record WHERE ` + businessModuleCompleteRowTypedPrimaryKeyPredicate(action.Table, source.Observation.PrimaryKeys[action.Table]) + ` AND octet_length(to_jsonb(record)::text)<=$2`
 		if err := source.Transaction.QueryRowContext(ctx, query, row.Identity, customerServiceCandidateFullRowByteLimit).Scan(&content, &digest); err != nil {
 			return nil, nil, errors.New("selected full row is absent or exceeds the candidate row size limit")
 		}
@@ -163,7 +148,7 @@ func writeCustomerServiceSelectedFullRowsAndValidateRetainedTables(ctx context.C
 	}
 	for _, row := range rows {
 		var digest string
-		if err := transaction.QueryRowContext(ctx, `SELECT encode(sha256(convert_to(to_jsonb(record)::text,'UTF8')),'hex') FROM public.`+pq.QuoteIdentifier(row.Table)+` record WHERE `+customerServiceCandidateTypedPrimaryKeyPredicate(row.Table, observation.PrimaryKeys[row.Table]), row.Identity).Scan(&digest); err != nil || digest != row.Digest {
+		if err := transaction.QueryRowContext(ctx, `SELECT encode(sha256(convert_to(to_jsonb(record)::text,'UTF8')),'hex') FROM public.`+pq.QuoteIdentifier(row.Table)+` record WHERE `+businessModuleCompleteRowTypedPrimaryKeyPredicate(row.Table, observation.PrimaryKeys[row.Table]), row.Identity).Scan(&digest); err != nil || digest != row.Digest {
 			return errors.New("candidate full row does not match the selected source digest")
 		}
 	}
@@ -176,7 +161,7 @@ func writeCustomerServiceSelectedFullRowsAndValidateRetainedTables(ctx context.C
 			return errors.New("candidate retained table is absent or repeated")
 		}
 		seen[expected.Table] = true
-		actual, err := fingerprintCustomerServiceRecoveryPlanRetainedTargetTable(ctx, transaction, expected.Table, observation.Shapes[expected.Table], selectedKeys[expected.Table])
+		actual, err := fingerprintBusinessModuleRetainedTargetTable(ctx, transaction, expected.Table, observation.Shapes[expected.Table], selectedKeys[expected.Table])
 		if err != nil {
 			return err
 		}
@@ -189,40 +174,11 @@ func writeCustomerServiceSelectedFullRowsAndValidateRetainedTables(ctx context.C
 	return nil
 }
 
-func readCustomerServiceCandidateSequenceStates(ctx context.Context, transaction *sql.Tx) ([]customerServiceCandidateSequenceState, error) {
-	query := `SELECT sequence.relname,coalesce(owner.relname,''),coalesce(attribute.attname,''),jsonb_build_array(definition.seqstart,definition.seqincrement,definition.seqmax,definition.seqmin,definition.seqcache,definition.seqcycle)::text,definition.seqincrement,definition.seqmin,definition.seqmax,definition.seqcycle FROM pg_class sequence JOIN pg_sequence definition ON definition.seqrelid=sequence.oid LEFT JOIN pg_depend dependency ON dependency.classid='pg_class'::regclass AND dependency.objid=sequence.oid AND dependency.refclassid='pg_class'::regclass AND dependency.deptype IN ('a','i') LEFT JOIN pg_class owner ON owner.oid=dependency.refobjid LEFT JOIN pg_attribute attribute ON attribute.attrelid=owner.oid AND attribute.attnum=dependency.refobjsubid WHERE sequence.relnamespace='public'::regnamespace ORDER BY sequence.relname`
-	result, err := transaction.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	var states []customerServiceCandidateSequenceState
-	for result.Next() {
-		var state customerServiceCandidateSequenceState
-		if err := result.Scan(&state.Name, &state.Table, &state.Column, &state.Definition, &state.Increment, &state.Minimum, &state.Maximum, &state.Cycle); err != nil {
-			_ = result.Close()
-			return nil, err
-		}
-		states = append(states, state)
-	}
-	err = result.Err()
-	_ = result.Close()
-	if err != nil {
-		return nil, err
-	}
-	for index := range states {
-		state := &states[index]
-		if err := transaction.QueryRowContext(ctx, `SELECT last_value,is_called FROM public.`+pq.QuoteIdentifier(state.Name)).Scan(&state.LastValue, &state.Called); err != nil {
-			return nil, err
-		}
-	}
-	return states, nil
-}
-
 // Advance only a sequence owned by a selected table/column, and only when an
 // explicitly restored value would collide. Every other sequence stays exact.
 // setval is nontransactional: any later error requires discarding this database.
-func advanceCustomerServiceCandidateOwnedSequencesWithoutRewinding(ctx context.Context, transaction *sql.Tx, baseline []customerServiceCandidateSequenceState, selectedKeys map[string][]json.RawMessage) ([]customerServiceCandidateSequenceAdjustment, error) {
-	before, err := readCustomerServiceCandidateSequenceStates(ctx, transaction)
+func advanceCustomerServiceCandidateOwnedSequencesWithoutRewinding(ctx context.Context, transaction *sql.Tx, baseline []businessModuleRestoreSequenceState, selectedKeys map[string][]json.RawMessage) ([]customerServiceCandidateSequenceAdjustment, error) {
+	before, err := readBusinessModuleRestoreSequenceStates(ctx, transaction)
 	if err != nil {
 		return nil, err
 	}
@@ -265,11 +221,11 @@ func advanceCustomerServiceCandidateOwnedSequencesWithoutRewinding(ctx context.C
 		}
 		adjustments = append(adjustments, customerServiceCandidateSequenceAdjustment{state.Name, state.LastValue, state.Called, bound.Int64})
 	}
-	after, err := readCustomerServiceCandidateSequenceStates(ctx, transaction)
+	after, err := readBusinessModuleRestoreSequenceStates(ctx, transaction)
 	if err != nil {
 		return nil, err
 	}
-	expected := append([]customerServiceCandidateSequenceState(nil), baseline...)
+	expected := append([]businessModuleRestoreSequenceState(nil), baseline...)
 	for index := range expected {
 		for _, adjustment := range adjustments {
 			if expected[index].Name == adjustment.Sequence {

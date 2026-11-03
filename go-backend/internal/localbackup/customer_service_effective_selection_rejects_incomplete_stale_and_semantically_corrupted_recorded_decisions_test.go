@@ -72,7 +72,7 @@ func TestCustomerServiceEffectiveSelectionRejectsIncompleteStaleAndSemanticallyC
 			// A matching JSON digest alone must not hide invalid selection semantics.
 			if scenario.name != "stale_plan" && scenario.name != "stale_review" {
 				review.SHA256 = ""
-				review.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(review)
+				review.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(review)
 				require.NoError(t, err)
 				selectionRequest.ReviewSHA256 = review.SHA256
 			}
@@ -92,7 +92,7 @@ func TestCustomerServiceEffectiveSelectionNeedsNoOldReviewWhenNewPlanHasNoConten
 	newPlan.BlockingIssueCounts = map[string]int{}
 	newPlan.ConflictDecisionPolicy = buildCustomerServiceRecoveryConflictDecisionPolicy(&newPlan)
 	newPlan.SHA256 = ""
-	newPlan.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(&newPlan)
+	newPlan.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(&newPlan)
 	require.NoError(t, err)
 	request := CustomerServiceEffectiveSelectionInspectionRequest{PlanSHA256: newPlan.SHA256}
 	decisions, err := validateCustomerServiceSavedDecisionsAgainstLatestPlan(&newPlan, oldReview, request, time.Now().UTC())

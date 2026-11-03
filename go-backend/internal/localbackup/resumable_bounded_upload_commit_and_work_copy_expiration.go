@@ -148,6 +148,8 @@ func (manager *Manager) CommitUpload(id string) (*Task, error) {
 	return task, manager.saveTask(task)
 }
 
+// TTL only expires safe working copies; it never resolves a pending restore.
+// Keep historical candidate guards even when their start paths are internal.
 func (manager *Manager) ExpireWorkCopies(ctx context.Context) error {
 	if !manager.operationMutex.TryLock() {
 		return nil
@@ -168,7 +170,7 @@ func (manager *Manager) ExpireWorkCopies(ctx context.Context) error {
 		if task.ProductViewStoppedDrain != nil && task.ProductViewStoppedDrain.Phase != "candidate_rebuilt" {
 			return errors.New("unresolved product view drain work copies must be retained for explicit retry")
 		}
-		if (task.Journal != nil && task.State != "completed" && task.State != "rolled_back") || task.State == "running" || task.State == "queued" || task.State == "expired" || task.WorkCopyExpired || time.Now().Before(task.ExpiresAt) {
+		if taskHasUnresolvedTransactionalBusinessModuleRestore(task) || (task.Journal != nil && task.State != "completed" && task.State != "rolled_back") || task.State == "running" || task.State == "queued" || task.State == "expired" || task.WorkCopyExpired || time.Now().Before(task.ExpiresAt) {
 			continue
 		}
 		if err := manager.requireCustomerServicePersistentCandidateDiscarded(task.ID); err != nil {

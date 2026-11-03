@@ -8,12 +8,12 @@
   "loadMore": "โหลดเพิ่มเติม",
   "items": "รายการ",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "shop": "ร้านค้า",
+    "aboutTools": "เกี่ยวกับเครื่องมือ",
+    "tireSizeCharts": "คู่มือยาง",
+    "blog": "บล็อก",
+    "technicalDocs": "เอกสารทางเทคนิค",
+    "wheelsetBuyersGuide": "คู่มือชุดล้อ",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

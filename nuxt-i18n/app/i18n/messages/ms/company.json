@@ -1,14 +1,14 @@
 {
   "nav": {
-    "about": "About Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "contact": "Contact Us",
-    "aboutWebsite": "Me & This Website"
+    "about": "Tentang kami",
+    "ourStory": "Kisah kami",
+    "globalPartners": "Rakan kongsi global",
+    "oemOdm": "Pembuatan OEM dan ODM",
+    "certificates": "Sijil",
+    "membershipPoints": "Keahlian dan mata",
+    "pictureWarehouse": "Galeri gambar",
+    "contact": "Hubungi kami",
+    "aboutWebsite": "Saya dan laman ini"
   },
   "index": {
     "title": "Company",

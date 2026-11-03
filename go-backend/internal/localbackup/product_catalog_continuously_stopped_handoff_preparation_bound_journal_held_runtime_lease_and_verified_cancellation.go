@@ -13,6 +13,8 @@ import (
 
 // Preparation only: no database/media rename, ownership transfer or permission
 // to resume a switched database. RecoveryJournal remains a separate contract.
+// This is preparation for the supported continuously stopped product path, not
+// the older internal paired rehearsal. See the sibling lifecycle navigation.
 type ProductCatalogStoppedHandoffPreparationJournal struct {
 	Version                   int       `json:"version"`
 	WindowID                  string    `json:"window_id"`
@@ -42,7 +44,7 @@ type ProductCatalogStoppedHandoffCancellationRequest struct {
 
 func taskHasUnresolvedProductCatalogStoppedHandoffPreparation(task *Task) bool {
 	if taskHasProductCatalogContinuouslyStoppedSwitchJournal(task) {
-		return !taskHasDurablyReleasedOriginalAfterProductCatalogStoppedSwitchRollback(task)
+		return !taskHasDurablyReleasedOriginalAfterProductCatalogStoppedSwitchRollback(task) && !taskHasDurablyReleasedAcceptedProductCatalog(task)
 	}
 	if task == nil || task.ProductCatalogStoppedHandoffPreparation == nil {
 		return false
@@ -53,14 +55,14 @@ func taskHasUnresolvedProductCatalogStoppedHandoffPreparation(task *Task) bool {
 	}
 	snapshotCopy := *journal
 	snapshotCopy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(snapshotCopy)
 	// A damaged terminal marker must not turn off release/TTL protection. A
 	// valid historical cancellation need not match a later reverified preview.
 	return err != nil || digest != journal.SHA256 || journal.Version != 1 || journal.TaskID != task.ID || journal.CancellationVerifiedAt.IsZero()
 }
 
 func productCatalogStoppedHandoffImmutablePackageSHA256(task *Task) (string, error) {
-	return customerServiceRecoveryPlanCanonicalJSONSHA256(struct {
+	return businessModuleRecoveryCanonicalJSONSHA256(struct {
 		TaskID           string
 		Manifest         *Manifest
 		CiphertextSHA256 string
@@ -71,7 +73,7 @@ func productCatalogStoppedHandoffImmutablePackageSHA256(task *Task) (string, err
 func (manager *Manager) saveProductCatalogStoppedHandoffPreparationJournal(task *Task) error {
 	journal := task.ProductCatalogStoppedHandoffPreparation
 	journal.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(journal)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(journal)
 	if err != nil {
 		return err
 	}
@@ -86,16 +88,16 @@ func (manager *Manager) validateProductCatalogStoppedHandoffPreparationJournal(t
 	}
 	snapshotCopy := *journal
 	snapshotCopy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(snapshotCopy)
 	packageDigest, packageErr := productCatalogStoppedHandoffImmutablePackageSHA256(task)
-	configurationDigest, configurationErr := customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
+	configurationDigest, configurationErr := businessModuleRecoveryCanonicalJSONSHA256(manager.Configuration)
 	if err != nil || packageErr != nil || configurationErr != nil || journal.SHA256 != digest || journal.Version != 1 || !safeTaskID.MatchString(journal.WindowID) || journal.TaskID != task.ID || journal.PackageSHA256 != packageDigest || journal.ConfigurationSHA256 != configurationDigest || strings.TrimSpace(journal.Operator) == "" || journal.StartedAt.IsZero() || task.Kind != "upload" || task.Manifest == nil || task.Manifest.Scope != productCatalogBackupScope || task.Journal != nil || task.WorkCopyExpired {
 		return errors.New("stopped product handoff task, package, configuration or journal changed; retain isolation")
 	}
 	switch journal.Phase {
 	case "waiting_for_stop", "preparing":
 	case "ready", "canceling", "cancelled":
-		previewDigest, previewErr := customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
+		previewDigest, previewErr := businessModuleRecoveryCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
 		if previewErr != nil || task.ProductCatalogPreviewBinding == nil || journal.PreviewBindingSHA256 != previewDigest || task.ProductViewStoppedDrain == nil || task.ProductViewStoppedDrain.Phase != "candidate_rebuilt" || journal.DrainProgressSHA256 != task.ProductViewStoppedDrain.SHA256 || journal.PreparedAt.IsZero() || journal.FenceSHA256 == "" {
 			return errors.New("stopped product handoff readiness binding changed; revalidate before proceeding")
 		}
@@ -214,7 +216,7 @@ func (manager *Manager) StartProductCatalogContinuouslyStoppedHandoffPreparation
 			if err != nil {
 				return err
 			}
-			configurationDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(cfg)
+			configurationDigest, err := businessModuleRecoveryCanonicalJSONSHA256(cfg)
 			if err != nil {
 				return err
 			}
@@ -250,7 +252,7 @@ func (manager *Manager) StartProductCatalogContinuouslyStoppedHandoffPreparation
 		if err := manager.verifyStoppedProductHandoffRedisEmptyAndDatabaseClients(ctx, task); err != nil {
 			return err
 		}
-		journal.PreviewBindingSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
+		journal.PreviewBindingSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
 		if err != nil {
 			return err
 		}

@@ -18,8 +18,9 @@ const dashboardPresentationPath = path.join(srcRoot, 'lib', 'dashboardPresentati
 const fontRoot = path.join(srcRoot, 'assets', 'fonts')
 const expectedFontPath = path.join(fontRoot, 'maple-ui', 'MapleUI-CJK.f8ce6d72e8cb.woff2')
 const expectedFontHash = 'f8ce6d72e8cbda22971300b1367fe49ba98f5f798e0a1a297f4dea90c7fb8be9'
+const independentMaintenanceConsoleRoot = path.resolve(adminRoot, '../../internal/localbackup/maintenance_console')
 const distRoot = path.join(adminRoot, 'dist')
-const sourceExtensions = new Set(['.css', '.js', '.ts', '.vue'])
+const sourceExtensions = new Set(['.css', '.html', '.js', '.ts', '.vue'])
 const inspectableOutputExtensions = new Set(['.css', '.html', '.js', '.mjs', '.json'])
 const outputFontExtensions = new Set(['.otf', '.ttf', '.woff', '.woff2'])
 const forbiddenFontReference = /(?:\b(?:AdminSystem|system-ui|ui-sans-serif|sans-serif|serif|monospace|ui-monospace|-apple-system|BlinkMacSystemFont|Segoe UI|Arial|Helvetica|Noto Sans|SFMono-Regular|Menlo|Monaco|Consolas|Liberation Mono|Courier New)\b|fonts\.(?:googleapis|gstatic)\.com|use\.typekit\.net|data:font\/)/i
@@ -227,7 +228,7 @@ function tailwindFontUtilityViolations(line: string): string[] {
   return [...new Set(violations)]
 }
 
-for (const file of collectSourceFiles(srcRoot)) {
+for (const file of [...collectSourceFiles(srcRoot), ...collectSourceFiles(independentMaintenanceConsoleRoot)]) {
   const source = fs.readFileSync(file, 'utf8')
   source.split(/\r?\n/).forEach((line, index) => {
     const match = line.match(forbiddenFontReference)
@@ -294,6 +295,13 @@ assertIncludes(adminCssPath, adminCss, 'font-display: block;', 'admin @font-face
 assertIncludes(adminCssPath, adminCss, "--tz-font-admin-ui: 'MapleUICJK';", 'admin font stack must not include system fallbacks')
 assertIncludes(adminCssPath, adminCss, '--font-sans: var(--tz-font-admin-ui);', 'Tailwind font-sans must use the admin Maple UI stack')
 assertIncludes(adminCssPath, adminCss, '--font-mono: var(--tz-font-admin-ui);', 'Tailwind font-mono must use the admin Maple UI stack')
+
+const independentMaintenanceConsoleCssPath = path.join(independentMaintenanceConsoleRoot, 'maintenance-console.css')
+const independentMaintenanceConsoleCss = fs.readFileSync(independentMaintenanceConsoleCssPath, 'utf8')
+assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'font-family:"MapleUICJK";', 'independent recovery page must register the approved admin font')
+assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'src:url("MapleUI-CJK.f8ce6d72e8cb.woff2") format("woff2");', 'independent recovery page must use the existing embedded admin font file')
+assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'font-family:var(--tz-font-admin-ui);', 'independent recovery page must use the same font for its document')
+assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'pre,code,kbd,samp,button,input,textarea,select{font:inherit}', 'independent recovery controls and technical details must inherit the approved font')
 
 const dashboardPresentation = fs.readFileSync(dashboardPresentationPath, 'utf8')
 assertIncludes(

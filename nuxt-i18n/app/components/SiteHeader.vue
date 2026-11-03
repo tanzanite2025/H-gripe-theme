@@ -776,9 +776,11 @@ const router = useRouter()
 const route = useRoute()
 
 const pageNavigationMessageNamespaces = Array.from(new Set(
-  pageSubNavigationEntries
-    .flatMap(entry => entry.tabs)
-    .map(tab => tab.labelKey?.split('.')[0] || '')
+  [
+    ...pageSubNavigationEntries.flatMap(entry => entry.tabs).map(tab => tab.labelKey),
+    ...primaryMegaNavSections.flatMap(section => section.cards).map(card => card.labelKey),
+  ]
+    .map(labelKey => labelKey?.split('.')[0] || '')
     .filter(namespace => pageMessageNamespaces.includes(namespace)),
 ))
 const pageNavigationMessageHandles = new Map(
@@ -862,12 +864,16 @@ const getPageNavigationMessageNamespacesForSection = (
   if (!section) return []
 
   return Array.from(new Set(
-    pageSubNavigationEntries
-      .filter(entry => section.routePrefixes.some(prefix => (
-        normalizeNavPath(entry.path) === normalizeNavPath(prefix) ||
-        normalizeNavPath(entry.path).startsWith(`${normalizeNavPath(prefix)}/`)
-      )))
-      .flatMap(entry => getPageNavigationMessageNamespacesForEntry(entry)),
+    [
+      ...section.cards.map(card => card.labelKey.split('.')[0] || '')
+        .filter(namespace => pageNavigationMessageHandles.has(namespace)),
+      ...pageSubNavigationEntries
+        .filter(entry => section.routePrefixes.some(prefix => (
+          normalizeNavPath(entry.path) === normalizeNavPath(prefix) ||
+          normalizeNavPath(entry.path).startsWith(`${normalizeNavPath(prefix)}/`)
+        )))
+        .flatMap(entry => getPageNavigationMessageNamespacesForEntry(entry)),
+    ],
   ))
 }
 
@@ -883,7 +889,14 @@ const loadPageNavigationMessages = async (namespaces: string[]) => {
 
 const loadCurrentPageNavigationMessages = async () => {
   const entry = getPageSubNavigationForPath(route.path || '/', getAllLocaleCodes())
-  await loadPageNavigationMessages(getPageNavigationMessageNamespacesForEntry(entry))
+  const section = findPrimaryMegaNavSectionByPath(route.path || '/', primaryMegaNavSections, getAllLocaleCodes())
+  const cardMessageNamespaces = (section?.cards || [])
+    .map(card => card.labelKey.split('.')[0] || '')
+    .filter(namespace => pageNavigationMessageHandles.has(namespace))
+  await loadPageNavigationMessages(Array.from(new Set([
+    ...getPageNavigationMessageNamespacesForEntry(entry),
+    ...cardMessageNamespaces,
+  ])))
 }
 
 await loadCurrentPageNavigationMessages()

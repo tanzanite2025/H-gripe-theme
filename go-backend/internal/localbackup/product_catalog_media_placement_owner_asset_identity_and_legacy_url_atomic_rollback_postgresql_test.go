@@ -87,7 +87,7 @@ func verifyProductCatalogMediaPlacementOwnersAssetBindingsAndLegacyURLAtomicRoll
 			mediaTable := changed.Tables["product_media"]
 			matched := false
 			for i, row := range mediaTable.Rows {
-				id, err := productCatalogRowString(row, "id")
+				id, err := readBusinessModuleSnapshotRowColumnText(row, "id")
 				require.NoError(t, err)
 				if id != fmt.Sprint(mediaID) {
 					continue

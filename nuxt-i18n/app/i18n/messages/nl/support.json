@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "Veelgestelde vragen",
+    "payment": "Betaling",
+    "shipping": "Verzending",
+    "afterSales": "Service na aankoop",
+    "warranty": "Garantie",
+    "warrantyCheck": "Garantie controleren",
+    "productFeedback": "Productfeedback",
+    "spokeCalculator": "Spakencalculator",
+    "testReport": "Testrapporten"
   }
 }

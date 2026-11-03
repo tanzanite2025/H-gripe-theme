@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "자주 묻는 질문",
+    "payment": "결제",
+    "shipping": "배송",
+    "afterSales": "구매 후 서비스",
+    "warranty": "보증",
+    "warrantyCheck": "보증 조회",
+    "productFeedback": "제품 의견",
+    "spokeCalculator": "스포크 계산기",
+    "testReport": "시험 보고서"
   }
 }

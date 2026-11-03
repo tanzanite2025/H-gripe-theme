@@ -782,15 +782,15 @@
   },
   "company": {
     "nav": {
-      "about": "About Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
+      "about": "About us",
+      "ourStory": "Our story",
+      "globalPartners": "Global partners",
       "oemOdm": "OEM & ODM",
       "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "contact": "Contact Us",
-      "aboutWebsite": "Me & This Website"
+      "membershipPoints": "Membership & points",
+      "pictureWarehouse": "Picture library",
+      "contact": "Contact us",
+      "aboutWebsite": "Me & this website"
     },
     "index": {
       "title": "Company",
@@ -1109,45 +1109,75 @@
       "support": "Support",
       "company": "Company",
       "policies": "Policies",
-      "resources": "RESOURCES",
-      "siteOverview": "SITE OVERVIEW"
+      "resources": "Resources",
+      "siteOverview": "Site overview"
     },
     "links": {
       "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
+      "aboutTools": "About tools",
+      "tireSizeCharts": "Tire guides",
       "blog": "Blog",
       "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide",
-      "about": "About",
-      "aboutUs": "About Us",
-      "contact": "Contact",
-      "contactUs": "Contact Us",
-      "ourStory": "Our Story",
-      "globalPartners": "Global Partners",
+      "wheelsetBuyersGuide": "Wheelset guide",
+      "about": "About us",
+      "aboutUs": "About us",
+      "contact": "Contact us",
+      "contactUs": "Contact us",
+      "ourStory": "Our story",
+      "globalPartners": "Global partners",
       "oemOdm": "OEM & ODM",
       "certificates": "Certificates",
-      "membershipPoints": "Membership and Points",
-      "pictureWarehouse": "Picture warehouse",
-      "meThisWebsite": "Me & This Website",
-      "whyThisName": "Why This Name"
+      "membershipPoints": "Membership & points",
+      "pictureWarehouse": "Picture library",
+      "meThisWebsite": "Me & this website",
+      "whyThisName": "Why this name",
+      "workbenchFeed": "Workshop updates"
     },
     "brand": {
       "line1": "A brand of Top Sports Co., Limited.",
       "line2": "Flat 1602, 16/F, Lucky Centre,",
-      "line3": "No.165-171 Wan Chai Road, Wan Chai",
+      "line3": "No. 165–171 Wan Chai Road, Wan Chai",
       "line4": "Hong Kong.",
-      "hkLabel": "Hongkong:",
+      "hkLabel": "Hong Kong:",
       "xmLabel": "Xiamen:"
     },
     "support": {
-      "allFaqs": "All FAQ'S",
+      "allFaqs": "All FAQs",
       "payment": "Payment",
-      "afterSales": "After sales",
+      "afterSales": "After-sales service",
       "warranty": "Warranty",
-      "productFeedback": "Product Feedback",
-      "spokecalculator": "Spokecalculator"
-    }
+      "productFeedback": "Product feedback",
+      "spokecalculator": "Spoke calculator"
+    },
+    "subscription": {
+      "label": "Subscribe for new products & blog updates",
+      "placeholder": "Enter your email",
+      "emailLabel": "Email address",
+      "button": "Subscribe",
+      "loading": "Subscribing…",
+      "success": "Subscription successful. Please check your email to confirm.",
+      "invalidEmail": "Please enter a valid email address.",
+      "failed": "Subscription failed. Please try again later.",
+      "verificationUnavailable": "Verification is unavailable. Please try again later.",
+      "verificationFailed": "Verification failed. Please try again.",
+      "verificationExpired": "Verification expired. Please try again."
+    },
+    "accessibility": {
+      "navigation": "Footer navigation",
+      "scrollLeft": "Scroll footer navigation left",
+      "scrollRight": "Scroll footer navigation right",
+      "paymentMethods": "Accepted payment methods",
+      "sslSecure": "Secure SSL connection",
+      "cardPayment": "Card payment"
+    },
+    "categories": {
+      "wheelset": "Wheelsets",
+      "wheelComponents": "Wheel components",
+      "tire": "Tires",
+      "spokeRepairKits": "Spoke repair kits",
+      "carbonRim": "Carbon rims"
+    },
+    "securityNotice": "All pages use HTTPS with SSL encryption. Payments are processed securely; no card details are stored."
   },
   "header": {
     "searchHint": {
@@ -1611,14 +1641,26 @@
     "contact": "Contact"
   },
   "policyTabs": {
-    "cookie": "Cookie",
-    "privacy": "Privacy",
-    "refundCancellation": "Refund & Cancellation Policy",
-    "terms": "Terms"
+    "cookie": "Cookie policy",
+    "privacy": "Privacy policy",
+    "refundCancellation": "Refund & cancellation policy",
+    "terms": "Terms of service"
   },
   "privacy": {
     "button": "Privacy statement",
     "title": "Privacy statement"
+  },
+  "privateOrderAttachments": {
+    "attachment": "Attachment",
+    "closePreview": "Close preview",
+    "download": "Download",
+    "downloadFailed": "This attachment could not be downloaded. Refresh and try again.",
+    "downloadToView": "Download this file to view it.",
+    "image": "Image",
+    "loading": "Loading…",
+    "readFailed": "This attachment could not be opened. Refresh and try again.",
+    "shipmentImage": "Shipment image",
+    "video": "Video"
   },
   "productCategoryNavigationCards": {
     "heading": "Product categories",
@@ -1670,11 +1712,11 @@
     "items": "items",
     "nav": {
       "shop": "Shop",
-      "aboutTools": "About Tools",
-      "tireSizeCharts": "Tire Guides",
+      "aboutTools": "About tools",
+      "tireSizeCharts": "Tire guides",
       "blog": "Blog",
       "technicalDocs": "Technical",
-      "wheelsetBuyersGuide": "Wheelset Guide",
+      "wheelsetBuyersGuide": "Wheelset guide",
       "spokeGuides": "Spoke Guides"
     },
     "navShort": {
@@ -1939,12 +1981,12 @@
       "faqs": "All FAQs",
       "payment": "Payment",
       "shipping": "Shipping",
-      "afterSales": "After sales",
+      "afterSales": "After-sales service",
       "warranty": "Warranty",
-      "warrantyCheck": "Warranty Check",
-      "productFeedback": "Product Feedback",
-      "spokeCalculator": "Spoke Calculator",
-      "testReport": "Test report"
+      "warrantyCheck": "Warranty check",
+      "productFeedback": "Product feedback",
+      "spokeCalculator": "Spoke calculator",
+      "testReport": "Test reports"
     }
   },
   "toolsNavigation": {
@@ -1964,11 +2006,11 @@
     "dynamicTirePressureCalculatorDescription": "Explore how load, pressure, speed, and lean change estimated tire contact area and cornering force.",
     "spokeStressReliefMechanicsLabel": "Stainless steel spoke stress-relief mechanics",
     "spokeStressReliefMechanicsDescription": "Calculate axial spoke elongation from material, section, length, and working tension inputs with the full engineering context.",
-    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length fitment calculator",
+    "valveLengthFitmentCalculatorLabel": "Inner tube valve-length calculator",
     "valveLengthFitmentCalculatorDescription": "Complete inner-tube size, valve, material, and deep-rim valve-length guidance with an interactive fitment calculator.",
-    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility engine",
+    "freehubCassetteFitmentEngineLabel": "Freehub and cassette compatibility assistant",
     "freehubCassetteFitmentEngineDescription": "Match cassette standards, freehub bodies, spacers, and mechanical fitment rules with the complete guide.",
-    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility engine",
+    "tireRimWidthCompatibilityEngineLabel": "Tire and rim width compatibility calculator",
     "tireRimWidthCompatibilityEngineDescription": "Calculate tire and rim width fit, inspect simulations, and compare published compatibility charts",
     "tireSizeMarkingConverterLabel": "Tire size marking converter",
     "tireSizeMarkingConverterDescription": "Convert ETRTO, inch, and French tire markings with the complete size reference, explanations, and fitment limits."

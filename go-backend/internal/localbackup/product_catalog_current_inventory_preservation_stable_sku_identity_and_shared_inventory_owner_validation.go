@@ -37,7 +37,7 @@ type productCatalogExistingInventoryAndIdentityFacts struct {
 // Only the in-memory merge changes: the authenticated package remains intact.
 func prepareProductCatalogSnapshotWithCurrentInventoryAndStableBusinessIdentities(ctx context.Context, tx *sql.Tx, snapshot productCatalogModuleSnapshot) (productCatalogModuleSnapshot, ProductCatalogInventoryPreservationResult, productCatalogExistingInventoryAndIdentityFacts, error) {
 	prepared := snapshot
-	prepared.Tables = make(map[string]productCatalogTableSnapshot, len(snapshot.Tables))
+	prepared.Tables = make(map[string]businessModuleCompleteTableSnapshot, len(snapshot.Tables))
 	for name, table := range snapshot.Tables {
 		prepared.Tables[name] = table
 	}
@@ -68,7 +68,7 @@ func prepareProductCatalogSnapshotWithCurrentInventoryAndStableBusinessIdentitie
 				comparisons = append(comparisons, "current."+quoted+" IS NOT DISTINCT FROM source."+quoted)
 			}
 			if tableName == "product_variants" {
-				stock, err := productCatalogRowString(sourceRow, "stock")
+				stock, err := readBusinessModuleSnapshotRowColumnText(sourceRow, "stock")
 				value, parseErr := strconv.ParseInt(stock, 10, 32)
 				if err != nil || parseErr != nil || value < 0 {
 					return snapshot, result, facts, errors.New("product snapshot contains an invalid inventory quantity")
@@ -102,7 +102,7 @@ func prepareProductCatalogSnapshotWithCurrentInventoryAndStableBusinessIdentitie
 				return snapshot, result, facts, err
 			}
 			preparedRows = append(preparedRows, row)
-			id, err := productCatalogRowString(json.RawMessage(currentRow), "id")
+			id, err := readBusinessModuleSnapshotRowColumnText(json.RawMessage(currentRow), "id")
 			if err != nil {
 				return snapshot, result, facts, err
 			}
@@ -164,7 +164,7 @@ func captureProductCatalogExistingInventoryAndIdentityFingerprint(ctx context.Co
 func validateProductCatalogSelectedAndRetainedSharedInventoryOwners(ctx context.Context, tx *sql.Tx, snapshot productCatalogModuleSnapshot) error {
 	ids := make([]string, 0, len(snapshot.Tables["product_variants"].Rows))
 	for _, row := range snapshot.Tables["product_variants"].Rows {
-		id, err := productCatalogRowString(row, "id")
+		id, err := readBusinessModuleSnapshotRowColumnText(row, "id")
 		if err != nil {
 			return err
 		}

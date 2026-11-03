@@ -15,8 +15,8 @@
       "description": "Spoke tension targets, ranges, and build checks."
     },
     "assembly": {
-      "label": "Wheelset Assembly",
-      "description": "Assembly records, process notes, and final checks."
+      "label": "Wheel Building & Quality Checks",
+      "description": "Wheel building, spoke tension standards, and final quality checks."
     }
   }
 }

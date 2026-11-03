@@ -8,12 +8,12 @@
   "loadMore": "Загрузить ещё",
   "items": "шт",
   "nav": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "shop": "Магазин",
+    "aboutTools": "Об инструментах",
+    "tireSizeCharts": "Руководство по покрышкам",
+    "blog": "Блог",
+    "technicalDocs": "Техническая документация",
+    "wheelsetBuyersGuide": "Руководство по колёсам",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

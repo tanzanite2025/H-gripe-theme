@@ -9,11 +9,11 @@
   "items": "items",
   "nav": {
     "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
+    "aboutTools": "About tools",
+    "tireSizeCharts": "Tire guides",
     "blog": "Blog",
     "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
+    "wheelsetBuyersGuide": "Wheelset guide",
     "spokeGuides": "Spoke Guides"
   },
   "navShort": {

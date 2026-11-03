@@ -1,0 +1,13 @@
+{
+  "tabs": {
+    "tireFrameClearance": {
+      "label": "Jarak bebas ban dan rangka"
+    },
+    "schwalbeCircumference": {
+      "label": "Keliling ban Schwalbe"
+    },
+    "tubeless": {
+      "label": "Ban tanpa ban dalam dan pemasangan"
+    }
+  }
+}

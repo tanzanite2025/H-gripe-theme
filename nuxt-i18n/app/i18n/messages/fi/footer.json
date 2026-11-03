@@ -1,47 +1,77 @@
 {
   "menus": {
     "technology": "Teknologia",
-    "products": "Products",
-    "support": "Support",
-    "company": "Company",
-    "resources": "RESOURCES",
-    "siteOverview": "Site Overview",
-    "policies": "Policies"
+    "products": "Tuotteet",
+    "support": "Asiakastuki",
+    "company": "Yritys",
+    "resources": "Aineistot",
+    "siteOverview": "Tietoa sivustosta",
+    "policies": "Käytännöt"
   },
   "links": {
-    "shop": "Shop",
-    "aboutTools": "About Tools",
-    "tireSizeCharts": "Tire Guides",
-    "blog": "Blog",
-    "technicalDocs": "Technical",
-    "wheelsetBuyersGuide": "Wheelset Guide",
-    "about": "About",
-    "aboutUs": "About Us",
-    "contact": "Contact",
-    "contactUs": "Contact Us",
-    "ourStory": "Our Story",
-    "globalPartners": "Global Partners",
-    "oemOdm": "OEM & ODM",
-    "certificates": "Certificates",
-    "membershipPoints": "Membership and Points",
-    "pictureWarehouse": "Picture warehouse",
-    "meThisWebsite": "Me & This Website",
-    "whyThisName": "Why This Name"
+    "shop": "Kauppa",
+    "aboutTools": "Tietoa työkaluista",
+    "tireSizeCharts": "Rengasopas",
+    "blog": "Blogi",
+    "technicalDocs": "Tekninen dokumentaatio",
+    "wheelsetBuyersGuide": "Kiekko-opas",
+    "about": "Tietoa meistä",
+    "aboutUs": "Tietoa meistä",
+    "contact": "Ota yhteyttä",
+    "contactUs": "Ota yhteyttä",
+    "ourStory": "Tarinamme",
+    "globalPartners": "Kansainväliset kumppanit",
+    "oemOdm": "OEM- ja ODM-valmistus",
+    "certificates": "Sertifikaatit",
+    "membershipPoints": "Jäsenyys ja pisteet",
+    "pictureWarehouse": "Kuvakirjasto",
+    "meThisWebsite": "Minä ja tämä sivusto",
+    "whyThisName": "Miksi tämä nimi",
+    "workbenchFeed": "Uutisia verstaalta"
   },
   "brand": {
-    "line1": "A brand of Top Sports Co., Limited.",
-    "line2": "Flat 1602, 16/F, Lucky Centre,",
-    "line3": "No.165-171 Wan Chai Road, Wan Chai",
-    "line4": "Hong Kong.",
+    "line1": "Top Sports Co., Limited. -yhtiön tuotemerkki.",
+    "line2": "Huoneisto 1602, 16. kerros, Lucky Centre,",
+    "line3": "165–171 Wan Chai Road, Wan Chai",
+    "line4": "Hongkong.",
     "hkLabel": "Hongkong:",
     "xmLabel": "Xiamen:"
   },
   "support": {
-    "allFaqs": "All FAQ'S",
-    "payment": "Payment",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "productFeedback": "Product Feedback",
-    "spokecalculator": "Spokecalculator"
-  }
+    "allFaqs": "Usein kysytyt kysymykset",
+    "payment": "Maksaminen",
+    "afterSales": "Myynnin jälkeinen palvelu",
+    "warranty": "Takuu",
+    "productFeedback": "Tuotepalaute",
+    "spokecalculator": "Pinnalaskuri"
+  },
+  "subscription": {
+    "label": "Tilaa tuoteuutiset ja blogipäivitykset",
+    "placeholder": "Anna sähköpostiosoitteesi",
+    "emailLabel": "Sähköpostiosoite",
+    "button": "Tilaa",
+    "loading": "Tilataan…",
+    "success": "Tilaus onnistui. Vahvista se sähköpostistasi.",
+    "invalidEmail": "Anna kelvollinen sähköpostiosoite.",
+    "failed": "Tilaus epäonnistui. Yritä myöhemmin uudelleen.",
+    "verificationUnavailable": "Vahvistus ei ole käytettävissä. Yritä myöhemmin uudelleen.",
+    "verificationFailed": "Vahvistus epäonnistui. Yritä uudelleen.",
+    "verificationExpired": "Vahvistus on vanhentunut. Yritä uudelleen."
+  },
+  "accessibility": {
+    "navigation": "Alatunnisteen navigaatio",
+    "scrollLeft": "Vieritä alatunnisteen navigaatiota vasemmalle",
+    "scrollRight": "Vieritä alatunnisteen navigaatiota oikealle",
+    "paymentMethods": "Hyväksytyt maksutavat",
+    "sslSecure": "Suojattu SSL-yhteys",
+    "cardPayment": "Korttimaksu"
+  },
+  "categories": {
+    "wheelset": "Kiekkosarjat",
+    "wheelComponents": "Kiekkojen osat",
+    "tire": "Renkaat",
+    "spokeRepairKits": "Pinnojen korjaussarjat",
+    "carbonRim": "Hiilikuituvanteet"
+  },
+  "securityNotice": "Kaikki sivut käyttävät HTTPS-yhteyttä ja SSL-salausta. Maksut käsitellään turvallisesti; korttitietoja ei tallenneta."
 }

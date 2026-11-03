@@ -37,6 +37,9 @@ func (manager *Manager) requireNoUnresolvedProductCatalogPairedRehearsalExceptTa
 		return err
 	}
 	for _, task := range tasks {
+		if task.ID != id && taskHasUnresolvedTransactionalBusinessModuleRestore(task) {
+			return errors.New("an unresolved order history restore retains maintenance; recover that task first")
+		}
 		if task.ID != id && taskHasUnresolvedProductCatalogStoppedHandoffPreparation(task) {
 			return errors.New("an unresolved stopped product handoff preparation retains the maintenance window; resume or cancel that task first")
 		}
@@ -51,7 +54,7 @@ func (manager *Manager) requireNoUnresolvedProductCatalogPairedRehearsalExceptTa
 }
 
 func productCatalogPairedRehearsalPackageBinding(task *Task) (string, error) {
-	return customerServiceRecoveryPlanCanonicalJSONSHA256(struct {
+	return businessModuleRecoveryCanonicalJSONSHA256(struct {
 		Manifest                                                             *Manifest
 		CiphertextSHA256, StageDatabase, StageFingerprint, TargetFingerprint string
 		ExpiresAt                                                            time.Time
@@ -61,7 +64,7 @@ func productCatalogPairedRehearsalPackageBinding(task *Task) (string, error) {
 func (manager *Manager) saveProductCatalogPairedRehearsalProgress(task *Task) error {
 	journal := task.Journal.ProductCatalog
 	journal.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(journal)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(journal)
 	if err != nil {
 		return err
 	}
@@ -76,15 +79,15 @@ func (manager *Manager) validateProductCatalogPairedRehearsalBinding(task *Task)
 	journal, binding := task.Journal.ProductCatalog, task.ProductCatalogPreviewBinding
 	snapshotCopy := *journal
 	snapshotCopy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(snapshotCopy)
 	if err != nil || digest != journal.SHA256 || journal.Version != 1 || journal.TaskID != task.ID || binding.Version != 1 {
 		return errors.New("product paired rehearsal journal identity or digest changed")
 	}
-	digest, err = customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
+	digest, err = businessModuleRecoveryCanonicalJSONSHA256(manager.Configuration)
 	if err != nil || digest != binding.ConfigurationSHA256 {
 		return errors.New("product paired rehearsal configuration changed")
 	}
-	digest, err = customerServiceRecoveryPlanCanonicalJSONSHA256(binding)
+	digest, err = businessModuleRecoveryCanonicalJSONSHA256(binding)
 	if err != nil || digest != journal.PreviewBindingSHA256 {
 		return errors.New("product paired preview binding changed")
 	}
@@ -141,7 +144,7 @@ func (manager *Manager) inspectProductCatalogPairedPhysicalMediaLayout(ctx conte
 		}
 		marker, err := readCustomerServicePairedRecoveryBoundedRegularFile(filepath.Join(volume, "product-paired-volume-binding.json"), 4096)
 		var identity struct{ TaskID, RootName, PreviewBindingSHA256 string }
-		previewDigest, previewErr := customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
+		previewDigest, previewErr := businessModuleRecoveryCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
 		if err != nil || previewErr != nil || task.ProductCatalogPreviewBinding == nil || decodeStrictJSON(marker, &identity) != nil || identity.TaskID != task.ID || identity.RootName != rootName || identity.PreviewBindingSHA256 != previewDigest {
 			return nil, errors.New("product paired media volume identity changed")
 		}
@@ -361,6 +364,9 @@ func (manager *Manager) inspectProductCatalogPairedDatabaseTopology(ctx context.
 
 // checkpoint is an internal fault-injection boundary, never a network input.
 // An error retains the journal and fence so restart recovery can verify rollback.
+// Internal rehearsal only, with no HTTP start route. Its product_catalog_rehearsal
+// journal still needs restart/rollback/TTL compatibility; it is not the supported
+// product_catalog_stopped_switch and cannot be accepted for ongoing service.
 func (manager *Manager) rehearseProductCatalogPairedSwitchAndVerifiedRollback(ctx context.Context, id string, checkpoint func(string) error) error {
 	if !manager.operationMutex.TryLock() {
 		return errors.New("an operation is running")
@@ -411,7 +417,7 @@ func (manager *Manager) rehearseProductCatalogPairedSwitchAndVerifiedRollback(ct
 	if err := assertNoUnfencedDatabaseSessions(ctx, control, task.StageDatabase); err != nil {
 		return err
 	}
-	previewDigest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(binding)
+	previewDigest, err := businessModuleRecoveryCanonicalJSONSHA256(binding)
 	if err != nil {
 		return err
 	}

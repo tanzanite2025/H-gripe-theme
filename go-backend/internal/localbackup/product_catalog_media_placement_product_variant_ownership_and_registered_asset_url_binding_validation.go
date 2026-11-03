@@ -22,11 +22,11 @@ type productCatalogRegisteredMediaReferenceIdentity struct {
 func (cfg Configuration) indexProductCatalogRegisteredMediaReferenceIdentities(snapshot productCatalogModuleSnapshot) (map[string][]productCatalogRegisteredMediaReferenceIdentity, map[string]string, error) {
 	assets := map[string]string{}
 	for _, row := range snapshot.Tables["media_assets"].Rows {
-		id, err := productCatalogRowString(row, "id")
+		id, err := readBusinessModuleSnapshotRowColumnText(row, "id")
 		if err != nil {
 			return nil, nil, err
 		}
-		mediaType, err := productCatalogRowString(row, "media_type")
+		mediaType, err := readBusinessModuleSnapshotRowColumnText(row, "media_type")
 		if err != nil {
 			return nil, nil, err
 		}
@@ -39,16 +39,16 @@ func (cfg Configuration) indexProductCatalogRegisteredMediaReferenceIdentities(s
 			if table == "media_asset_derivatives" {
 				idColumn = "media_asset_id"
 			}
-			assetID, err := productCatalogRowString(row, idColumn)
+			assetID, err := readBusinessModuleSnapshotRowColumnText(row, idColumn)
 			if err != nil {
 				return nil, nil, err
 			}
-			key, err := productCatalogRowString(row, "storage_key")
+			key, err := readBusinessModuleSnapshotRowColumnText(row, "storage_key")
 			if err != nil {
 				return nil, nil, err
 			}
 			if key == "" {
-				address, err := productCatalogRowString(row, "url")
+				address, err := readBusinessModuleSnapshotRowColumnText(row, "url")
 				if err != nil {
 					return nil, nil, err
 				}
@@ -110,11 +110,11 @@ func (cfg Configuration) validateProductCatalogCompleteMediaPlacementOwnershipAn
 	for _, table := range []string{"product_variants", "product_variant_option_values"} {
 		owners[table] = map[string]string{}
 		for _, row := range snapshot.Tables[table].Rows {
-			id, err := productCatalogRowString(row, "id")
+			id, err := readBusinessModuleSnapshotRowColumnText(row, "id")
 			if err != nil {
 				return err
 			}
-			owner, err := productCatalogRowString(row, "product_id")
+			owner, err := readBusinessModuleSnapshotRowColumnText(row, "product_id")
 			if err != nil {
 				return err
 			}
@@ -122,7 +122,10 @@ func (cfg Configuration) validateProductCatalogCompleteMediaPlacementOwnershipAn
 		}
 	}
 	for _, row := range snapshot.Tables["product_media"].Rows {
-		field := func(column string) string { value, _ := productCatalogRowString(row, column); return value }
+		field := func(column string) string {
+			value, _ := readBusinessModuleSnapshotRowColumnText(row, column)
+			return value
+		}
 		for _, relation := range []struct{ column, table string }{{"variant_id", "product_variants"}, {"variant_option_value_id", "product_variant_option_values"}} {
 			if id := field(relation.column); id != "" && owners[relation.table][id] != field("product_id") {
 				return fmt.Errorf("product media %s has a variant or option value belonging to another product", field("id"))
@@ -157,11 +160,11 @@ func (cfg Configuration) validateProductCatalogCompleteMediaPlacementOwnershipAn
 	}
 	for _, table := range []string{"product_variant_option_values", "product_spec_option_items"} {
 		for _, row := range snapshot.Tables[table].Rows {
-			address, err := productCatalogRowString(row, "swatch_url")
+			address, err := readBusinessModuleSnapshotRowColumnText(row, "swatch_url")
 			if err != nil {
 				return err
 			}
-			assetID, err := productCatalogRowString(row, "swatch_media_asset_id")
+			assetID, err := readBusinessModuleSnapshotRowColumnText(row, "swatch_media_asset_id")
 			if err != nil {
 				return err
 			}
@@ -187,11 +190,11 @@ func (cfg Configuration) validateProductCatalogIncomingMediaOwnersAndUnregistere
 		{"product_spec_option_items", "spec_definition_id", []string{"swatch_url"}},
 	} {
 		for _, row := range snapshot.Tables[placement.table].Rows {
-			id, err := productCatalogRowString(row, "id")
+			id, err := readBusinessModuleSnapshotRowColumnText(row, "id")
 			if err != nil {
 				return err
 			}
-			owner, err := productCatalogRowString(row, placement.owner)
+			owner, err := readBusinessModuleSnapshotRowColumnText(row, placement.owner)
 			if err != nil {
 				return err
 			}
@@ -201,7 +204,7 @@ func (cfg Configuration) validateProductCatalogIncomingMediaOwnersAndUnregistere
 				return err
 			}
 			if err == nil {
-				previousOwner, err := productCatalogRowString(json.RawMessage(previousRow), placement.owner)
+				previousOwner, err := readBusinessModuleSnapshotRowColumnText(json.RawMessage(previousRow), placement.owner)
 				if err != nil {
 					return err
 				}
@@ -211,15 +214,15 @@ func (cfg Configuration) validateProductCatalogIncomingMediaOwnersAndUnregistere
 			}
 			legacyPlacementRetained := previousRow != ""
 			if placement.table == "product_variant_option_values" && legacyPlacementRetained {
-				previousDefinition, _ := productCatalogRowString(json.RawMessage(previousRow), "spec_definition_id")
-				incomingDefinition, err := productCatalogRowString(row, "spec_definition_id")
+				previousDefinition, _ := readBusinessModuleSnapshotRowColumnText(json.RawMessage(previousRow), "spec_definition_id")
+				incomingDefinition, err := readBusinessModuleSnapshotRowColumnText(row, "spec_definition_id")
 				if err != nil {
 					return err
 				}
 				legacyPlacementRetained = previousDefinition == incomingDefinition
 			}
 			for _, column := range placement.columns {
-				address, err := productCatalogRowString(row, column)
+				address, err := readBusinessModuleSnapshotRowColumnText(row, column)
 				if err != nil {
 					return err
 				}
@@ -231,7 +234,7 @@ func (cfg Configuration) validateProductCatalogIncomingMediaOwnersAndUnregistere
 				if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM public.media_assets WHERE storage_key=$1 OR url=$2 UNION ALL SELECT 1 FROM public.media_asset_derivatives WHERE storage_key=$1 OR url=$2)`, key, address).Scan(&registered); err != nil {
 					return err
 				}
-				previousAddress, _ := productCatalogRowString(json.RawMessage(previousRow), column)
+				previousAddress, _ := readBusinessModuleSnapshotRowColumnText(json.RawMessage(previousRow), column)
 				if !registered && (!legacyPlacementRetained || previousAddress != address) {
 					return errors.New("unregistered product media URL can only remain on its exact existing placement and field")
 				}

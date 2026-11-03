@@ -19,7 +19,7 @@ func createCustomerServiceConflictReviewPlanWithContentChoicesAndNonwaivableIden
 	}}
 	plan.ConflictDecisionPolicy = buildCustomerServiceRecoveryConflictDecisionPolicy(plan)
 	var err error
-	plan.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(plan)
+	plan.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(plan)
 	require.NoError(t, err)
 	return plan
 }
@@ -134,7 +134,7 @@ func TestCustomerServiceConflictReviewRejectsStaleIncompleteAmbiguousAndNonwaiva
 		plan.RowActions[0].ReviewableIssueCounts = nil
 		plan.SHA256 = ""
 		var err error
-		plan.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(plan)
+		plan.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(plan)
 		require.NoError(t, err)
 		request := createCustomerServiceConflictReviewRequestForTest(plan)
 		_, err = buildCustomerServiceRecoveryConflictReview(plan, nil, request, "operator", time.Now())
@@ -147,7 +147,7 @@ func TestCustomerServiceConflictReviewRejectsStaleIncompleteAmbiguousAndNonwaiva
 		require.NoError(t, err)
 		plan.Binding.TargetIndexFingerprint = "new-index"
 		plan.SHA256 = ""
-		plan.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(plan)
+		plan.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(plan)
 		require.NoError(t, err)
 		request = createCustomerServiceConflictReviewRequestForTest(plan)
 		request.ExpectedReviewSHA256 = first.SHA256

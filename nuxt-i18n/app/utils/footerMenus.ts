@@ -471,6 +471,17 @@ export const createFooterMenusFromRoutes = (
   return routeSections
 }
 
+const footerSystemProductCategoryTranslations: Readonly<Record<string, {
+  labelKey: string
+  defaultNames: readonly string[]
+}>> = {
+  wheelset: { labelKey: 'footer.categories.wheelset', defaultNames: ['Wheelsets', '轮组'] },
+  'wheel-components': { labelKey: 'footer.categories.wheelComponents', defaultNames: ['Wheel Components', '轮组配件'] },
+  tire: { labelKey: 'footer.categories.tire', defaultNames: ['Tires', '外胎'] },
+  'spoke-repair-kits': { labelKey: 'footer.categories.spokeRepairKits', defaultNames: ['Spoke Repair Kits', '辐条修补件'] },
+  'carbon-rim': { labelKey: 'footer.categories.carbonRim', defaultNames: ['Carbon Rim', 'Carbon Rims', '碳纤维车圈'] },
+}
+
 const createFooterShopLinkFromProductCategory = (
   category: FooterProductCategory,
 ): FooterNavigationItem | null => {
@@ -489,8 +500,13 @@ const createFooterShopLinkFromProductCategory = (
   const children = (category.children || [])
     .map(createFooterShopLinkFromProductCategory)
     .filter((child): child is FooterNavigationItem => Boolean(child))
+  const systemCategoryTranslation = footerSystemProductCategoryTranslations[slug]
 
   return {
+    // Translate known system defaults while preserving names supplied by editors.
+    ...(systemCategoryTranslation?.defaultNames.includes(name)
+      ? { labelKey: systemCategoryTranslation.labelKey }
+      : {}),
     fallback: name,
     to: routePath,
     ...(children.length > 0 ? { children } : {}),

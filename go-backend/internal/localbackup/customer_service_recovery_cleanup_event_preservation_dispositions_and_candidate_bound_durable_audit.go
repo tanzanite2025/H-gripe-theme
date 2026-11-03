@@ -127,7 +127,7 @@ func finalizeCustomerServiceRecoveryCleanupEventDispositions(inspection *Custome
 	inspection.Samples = append([]CustomerServiceRecoveryCleanupEventDisposition{}, inspection.entries[:min(len(inspection.entries), inspection.SampleLimit)]...)
 	inspection.SamplesTruncated = len(inspection.entries) > len(inspection.Samples)
 	var err error
-	inspection.EntriesSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(inspection.entries)
+	inspection.EntriesSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(inspection.entries)
 	return err
 }
 
@@ -174,12 +174,12 @@ func (manager *Manager) persistCustomerServiceCandidateBoundCleanupDispositionAu
 	if err := validateCustomerServiceRecoveryPreservedCleanupDispositionEntries(inspection.entries); err != nil {
 		return err
 	}
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(inspection.entries)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(inspection.entries)
 	if err != nil || digest != inspection.EntriesSHA256 {
 		return errors.New("cleanup disposition entries changed before persistence")
 	}
 	audit := &customerServiceRecoveryCleanupEventDispositionAudit{Version: 1, TaskID: record.TaskID, AttemptID: record.AttemptID, PlanSHA256: selection.PlanSHA256, SelectionSHA256: selection.SHA256, TargetDatabaseFingerprint: selection.Binding.TargetDatabaseFingerprint, Policy: customerServiceCleanupDispositionPolicy, EntriesSHA256: digest, Entries: inspection.entries}
-	audit.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(audit)
+	audit.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(audit)
 	if err != nil {
 		return err
 	}
@@ -219,8 +219,8 @@ func (manager *Manager) verifyCustomerServiceCandidateBoundCleanupDispositionAud
 	}
 	copyOfAudit := audit
 	copyOfAudit.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(&copyOfAudit)
-	entriesDigest, entriesErr := customerServiceRecoveryPlanCanonicalJSONSHA256(audit.Entries)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(&copyOfAudit)
+	entriesDigest, entriesErr := businessModuleRecoveryCanonicalJSONSHA256(audit.Entries)
 	if err != nil || entriesErr != nil || digest != audit.SHA256 || digest != record.CleanupDispositionAuditSHA256 || audit.Version != 1 || audit.TaskID != record.TaskID || audit.AttemptID != record.AttemptID || audit.PlanSHA256 != record.Request.PlanSHA256 || audit.SelectionSHA256 != record.Validation.SelectionSHA256 || audit.TargetDatabaseFingerprint != record.Binding.TargetDatabaseFingerprint || audit.Policy != customerServiceCleanupDispositionPolicy || audit.EntriesSHA256 != entriesDigest || audit.EntriesSHA256 != record.Validation.CleanupDispositionEntriesSHA256 {
 		return errors.New("candidate cleanup disposition audit snapshot binding changed")
 	}

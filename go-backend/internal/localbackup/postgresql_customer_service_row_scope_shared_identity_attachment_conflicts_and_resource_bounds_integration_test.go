@@ -217,7 +217,7 @@ func TestPostgreSQLCustomerServiceRowInspectionPreservesSharedDataAndDetectsSpec
 		require.Equal(t, 1, plan.RowActionCounts["preserve_target_only"])
 		require.Positive(t, plan.BlockingIssueCounts["conversation_row_content_differs"])
 		require.Positive(t, plan.BlockingIssueCounts["target_only_conversation_row"])
-		preserved := map[string]CustomerServiceRecoveryPlanTablePreservation{}
+		preserved := map[string]BusinessModuleRestoreTablePreservation{}
 		for _, table := range plan.TargetPreservation {
 			preserved[table.Table] = table
 		}

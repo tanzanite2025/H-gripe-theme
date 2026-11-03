@@ -90,7 +90,7 @@ INSERT INTO media_asset_derivatives(id,media_asset_id,preset,url,storage_key) VA
 				changed := copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, snapshot, "", "", "")
 				products := changed.Tables["products"]
 				for index, row := range products.Rows {
-					id, _ := productCatalogRowString(row, "id")
+					id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
 					if id == fmt.Sprint(productID) {
 						products.Rows[index] = copyProductCatalogRowWithJSONFieldsChanged(t, row, string(mutation))
 					}
@@ -99,7 +99,7 @@ INSERT INTO media_asset_derivatives(id,media_asset_id,preset,url,storage_key) VA
 				if scenario.newProduct {
 					products := changed.Tables["products"]
 					for _, row := range products.Rows {
-						id, _ := productCatalogRowString(row, "id")
+						id, _ := readBusinessModuleSnapshotRowColumnText(row, "id")
 						if id == fmt.Sprint(productID) {
 							products.Rows = append(products.Rows, copyProductCatalogRowWithJSONFieldsChanged(t, row, `{"id":920010,"slug":"synthetic-rich-text-new-product"}`))
 						}
@@ -255,7 +255,7 @@ func TestProductCatalogRichTextMediaUsesEachPersistedShortDescriptionColumnAndOn
 	cfg.PublicOrigins = []string{"https://catalog.example.invalid"}
 	cfg.ProductStaticAssetsDirectory = t.TempDir()
 	row := json.RawMessage(`{"id":1,"description":"<p>/uploads/missing-text.png</p><img src='/uploads/photo.png?a=1&amp;b=2' alt='/uploads/missing-alt.png'><script><img src='/uploads/missing-script.png'></script><a href='https://external.invalid/photo.jpg'>External</a><a href='/products/page'>Navigation</a>","short_description":"<a href='/uploads/manual#page=2'>Manual</a>","short_desc":"<video src='https://catalog.example.invalid/uploads/video.mp4' poster='/uploads/photo.png'></video>"}`)
-	snapshot := productCatalogModuleSnapshot{Tables: map[string]productCatalogTableSnapshot{
+	snapshot := productCatalogModuleSnapshot{Tables: map[string]businessModuleCompleteTableSnapshot{
 		"products": {Rows: []json.RawMessage{row}},
 		"media_assets": {Rows: []json.RawMessage{
 			json.RawMessage(`{"id":1,"media_type":"image","storage_key":"photo.png"}`),

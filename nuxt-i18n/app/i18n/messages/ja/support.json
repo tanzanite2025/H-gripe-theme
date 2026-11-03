@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "よくあるご質問",
+    "payment": "お支払い",
+    "shipping": "配送",
+    "afterSales": "アフターサービス",
+    "warranty": "保証",
+    "warrantyCheck": "保証の確認",
+    "productFeedback": "製品へのご意見",
+    "spokeCalculator": "スポーク計算ツール",
+    "testReport": "試験報告書"
   }
 }

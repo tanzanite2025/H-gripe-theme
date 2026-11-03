@@ -213,7 +213,7 @@ func buildCustomerServiceRecoveryConflictReview(plan *CustomerServiceConversatio
 	review.PendingRowDecisions = review.RequiredRowDecisions - len(review.Decisions)
 	review.ContentDecisionsComplete = review.PendingRowDecisions == 0
 	var err error
-	review.SHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(review)
+	review.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(review)
 	return review, err
 }
 
@@ -240,7 +240,7 @@ func (manager *Manager) loadCustomerServiceRecoveryConflictReviewWhileOperationL
 	}
 	copyOfReview := review
 	copyOfReview.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(&copyOfReview)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(&copyOfReview)
 	if err != nil || digest != review.SHA256 || review.Version != 1 || review.State != "recorded_not_executable" || review.ExecutionAvailable || review.TaskID != id {
 		return nil, errors.New("stored conflict review integrity or task identity changed")
 	}

@@ -1,0 +1,41 @@
+/* Match the admin Button variants, including dynamically created task actions. */
+button,input[type=file]::file-selector-button{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  max-width:100%;min-height:var(--admin-action-button-min-height);padding:6px 12px;
+  margin:3px 4px 3px 0;border:1px solid transparent;
+  border-radius:var(--admin-action-button-radius);background:var(--primary);
+  color:var(--primary-foreground);font-family:var(--tz-font-admin-ui);
+  font-size:var(--admin-action-button-font-size);font-weight:var(--admin-action-button-font-weight);
+  line-height:18px;letter-spacing:-.025em;text-transform:uppercase;text-align:center;
+  overflow-wrap:anywhere;box-shadow:var(--admin-action-primary-shadow);cursor:pointer;
+  transition:background-color .15s,color .15s,border-color .15s,box-shadow .15s,transform .15s;
+}
+button:not(:disabled):hover{background:color-mix(in oklab,var(--primary) 90%,transparent)}
+button.secondary{
+  background:var(--secondary);color:var(--secondary-foreground);box-shadow:none;
+}
+button.secondary:not(:disabled):hover{background:color-mix(in oklab,var(--secondary) 80%,transparent)}
+button.outline,input[type=file]::file-selector-button{
+  border-color:color-mix(in oklab,var(--border) 80%,transparent);border-style:dashed;
+  background:var(--background);color:var(--foreground);box-shadow:none;
+}
+button.outline:not(:disabled):hover,input[type=file]:not(:disabled)::file-selector-button:hover{
+  background:var(--muted);color:var(--foreground);
+}
+.dark button.outline{
+  border-color:var(--input);background:color-mix(in oklab,var(--input) 30%,transparent);
+}
+.dark button.outline:not(:disabled):hover{background:color-mix(in oklab,var(--input) 50%,transparent)}
+button.danger{
+  border-color:color-mix(in oklab,var(--admin-action-danger) 20%,transparent);
+  background:var(--admin-action-danger-background);
+  color:var(--admin-action-danger-foreground);box-shadow:none;
+}
+button.danger:not(:disabled):hover{background:color-mix(in oklab,var(--admin-action-danger) 20%,transparent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
+  outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 50%,transparent);
+}
+button.danger:focus-visible{box-shadow:0 0 0 3px color-mix(in oklab,var(--admin-action-danger) 20%,transparent)}
+button:not(:disabled):active{transform:scale(.98)}
+button:disabled,input:disabled,textarea:disabled,select:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:600px){button,input[type=file]::file-selector-button{min-height:42px}}

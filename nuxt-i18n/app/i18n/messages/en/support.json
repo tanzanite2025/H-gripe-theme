@@ -3,11 +3,11 @@
     "faqs": "All FAQs",
     "payment": "Payment",
     "shipping": "Shipping",
-    "afterSales": "After sales",
+    "afterSales": "After-sales service",
     "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "warrantyCheck": "Warranty check",
+    "productFeedback": "Product feedback",
+    "spokeCalculator": "Spoke calculator",
+    "testReport": "Test reports"
   }
 }

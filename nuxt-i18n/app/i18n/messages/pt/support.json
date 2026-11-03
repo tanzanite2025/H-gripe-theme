@@ -1,13 +1,13 @@
 {
   "nav": {
-    "faqs": "All FAQs",
-    "payment": "Payment",
-    "shipping": "Shipping",
-    "afterSales": "After sales",
-    "warranty": "Warranty",
-    "warrantyCheck": "Warranty Check",
-    "productFeedback": "Product Feedback",
-    "spokeCalculator": "Spoke Calculator",
-    "testReport": "Test report"
+    "faqs": "Perguntas frequentes",
+    "payment": "Pagamento",
+    "shipping": "Envio",
+    "afterSales": "Assistência pós-venda",
+    "warranty": "Garantia",
+    "warrantyCheck": "Consultar garantia",
+    "productFeedback": "Opiniões sobre produtos",
+    "spokeCalculator": "Calculadora de raios",
+    "testReport": "Relatórios de ensaio"
   }
 }

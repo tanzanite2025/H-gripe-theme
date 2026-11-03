@@ -80,7 +80,7 @@ func (manager *Manager) saveStoppedProductDetailCacheInvalidationProgress(task *
 	progress := task.ProductCatalogStoppedDetailCacheInvalidation
 	snapshotCopy := *progress
 	snapshotCopy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(snapshotCopy)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func validateStoppedProductDetailCacheInvalidationBinding(task *Task, report *Pr
 	}
 	snapshotCopy := *progress
 	snapshotCopy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(snapshotCopy)
 	contract := service.DescribeProductCatalogRuntimeProjectionBoundaryForRecovery(true)
 	if err != nil || digest != progress.SHA256 || progress.Version != 1 || progress.TaskID != task.ID || progress.WindowID != report.WindowID || progress.SwitchJournalSHA256 != report.SwitchJournalSHA256 || progress.PostSwitchContractSHA256 != report.ContractSHA256 || progress.RedisOwnershipSHA256 != report.RedisOwnershipSHA256 || progress.DetailCacheContractSHA256 != contract.DetailCacheContractSHA256 || strings.TrimSpace(progress.Operator) == "" || progress.StartedAt.IsZero() || (progress.Phase != "deleting" && progress.Phase != "verified_absent") {
 		return errors.New("stopped product cache intent identity or digest changed; retain isolation")

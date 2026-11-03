@@ -73,7 +73,7 @@ func (configuration ProductViewRecoveryRedisConnectionConfiguration) validateExp
 func (manager *Manager) saveProductViewStoppedDrainProgress(task *Task) error {
 	progress := task.ProductViewStoppedDrain
 	progress.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(progress)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(progress)
 	if err != nil {
 		return err
 	}
@@ -88,8 +88,8 @@ func (manager *Manager) validateProductViewStoppedDrainProgress(task *Task) erro
 	}
 	snapshotCopy := *progress
 	snapshotCopy.SHA256 = ""
-	digest, err := customerServiceRecoveryPlanCanonicalJSONSHA256(snapshotCopy)
-	configurationDigest, configurationErr := customerServiceRecoveryPlanCanonicalJSONSHA256(manager.Configuration)
+	digest, err := businessModuleRecoveryCanonicalJSONSHA256(snapshotCopy)
+	configurationDigest, configurationErr := businessModuleRecoveryCanonicalJSONSHA256(manager.Configuration)
 	if err != nil || configurationErr != nil || digest != progress.SHA256 || progress.Version != 1 || progress.TaskID != task.ID || task.Manifest == nil || progress.PackageID != task.Manifest.PackageID || progress.ConfigurationSHA256 != configurationDigest || progress.Operator == "" || progress.TargetDatabaseOID <= 0 {
 		return errors.New("product view drain progress binding changed; retain maintenance for inspection")
 	}
@@ -264,7 +264,7 @@ func (manager *Manager) drainProductViewsAndRebuildCandidateWithHeldMaintenanceL
 	if err != nil {
 		return err
 	}
-	configurationDigest, _ := customerServiceRecoveryPlanCanonicalJSONSHA256(cfg)
+	configurationDigest, _ := businessModuleRecoveryCanonicalJSONSHA256(cfg)
 	ownershipDigest := maintenancegate.FingerprintExternalProjectionConfiguration(ownership)
 	inventoryDigest := maintenancegate.FingerprintExternalProjectionConfiguration(cfg.ProductViewRecoveryWriterInventory)
 	if task.ProductViewStoppedDrain == nil || task.ProductViewStoppedDrain.Phase == "candidate_rebuilt" {
@@ -360,7 +360,7 @@ func (manager *Manager) drainProductViewsAndRebuildCandidateWithHeldMaintenanceL
 	if err != nil || remaining != 0 {
 		return errors.New("product view buffers changed during candidate rebuild; retain maintenance and retry")
 	}
-	progress.RebuiltPreviewSHA256, err = customerServiceRecoveryPlanCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
+	progress.RebuiltPreviewSHA256, err = businessModuleRecoveryCanonicalJSONSHA256(task.ProductCatalogPreviewBinding)
 	if err != nil {
 		return err
 	}

@@ -160,7 +160,7 @@ func (cfg Configuration) constructCustomerServiceSelectedFullRowsInRecordedTarge
 	if err != nil {
 		return nil, err
 	}
-	baselineSequences, err := readCustomerServiceCandidateSequenceStates(ctx, target.Transaction)
+	baselineSequences, err := readBusinessModuleRestoreSequenceStates(ctx, target.Transaction)
 	if err != nil {
 		return nil, err
 	}
