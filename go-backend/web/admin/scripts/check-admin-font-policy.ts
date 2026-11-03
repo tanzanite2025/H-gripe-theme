@@ -39,6 +39,9 @@ const approvedFontVariables = new Set(['--tz-font-admin-ui', '--font-sans', '--f
 
 const violations: Violation[] = []
 const checkDist = process.argv.includes('--dist')
+// The standalone admin image contains only the admin build context. Full
+// repository builds also validate the independently embedded recovery console.
+const checkIndependentMaintenanceConsole = process.env.ADMIN_FONT_POLICY_SOURCE_SCOPE !== 'standalone-admin'
 
 function relativePath(filePath: string): string {
   return path.relative(adminRoot, filePath).replace(/\\/g, '/')
@@ -228,7 +231,9 @@ function tailwindFontUtilityViolations(line: string): string[] {
   return [...new Set(violations)]
 }
 
-for (const file of [...collectSourceFiles(srcRoot), ...collectSourceFiles(independentMaintenanceConsoleRoot)]) {
+const sourceFiles = collectSourceFiles(srcRoot)
+if (checkIndependentMaintenanceConsole) sourceFiles.push(...collectSourceFiles(independentMaintenanceConsoleRoot))
+for (const file of sourceFiles) {
   const source = fs.readFileSync(file, 'utf8')
   source.split(/\r?\n/).forEach((line, index) => {
     const match = line.match(forbiddenFontReference)
@@ -296,12 +301,14 @@ assertIncludes(adminCssPath, adminCss, "--tz-font-admin-ui: 'MapleUICJK';", 'adm
 assertIncludes(adminCssPath, adminCss, '--font-sans: var(--tz-font-admin-ui);', 'Tailwind font-sans must use the admin Maple UI stack')
 assertIncludes(adminCssPath, adminCss, '--font-mono: var(--tz-font-admin-ui);', 'Tailwind font-mono must use the admin Maple UI stack')
 
-const independentMaintenanceConsoleCssPath = path.join(independentMaintenanceConsoleRoot, 'maintenance-console.css')
-const independentMaintenanceConsoleCss = fs.readFileSync(independentMaintenanceConsoleCssPath, 'utf8')
-assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'font-family:"MapleUICJK";', 'independent recovery page must register the approved admin font')
-assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'src:url("MapleUI-CJK.f8ce6d72e8cb.woff2") format("woff2");', 'independent recovery page must use the existing embedded admin font file')
-assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'font-family:var(--tz-font-admin-ui);', 'independent recovery page must use the same font for its document')
-assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'pre,code,kbd,samp,button,input,textarea,select{font:inherit}', 'independent recovery controls and technical details must inherit the approved font')
+if (checkIndependentMaintenanceConsole) {
+  const independentMaintenanceConsoleCssPath = path.join(independentMaintenanceConsoleRoot, 'maintenance-console.css')
+  const independentMaintenanceConsoleCss = fs.readFileSync(independentMaintenanceConsoleCssPath, 'utf8')
+  assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'font-family:"MapleUICJK";', 'independent recovery page must register the approved admin font')
+  assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'src:url("MapleUI-CJK.f8ce6d72e8cb.woff2") format("woff2");', 'independent recovery page must use the existing embedded admin font file')
+  assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'font-family:var(--tz-font-admin-ui);', 'independent recovery page must use the same font for its document')
+  assertIncludes(independentMaintenanceConsoleCssPath, independentMaintenanceConsoleCss, 'pre,code,kbd,samp,button,input,textarea,select{font:inherit}', 'independent recovery controls and technical details must inherit the approved font')
+}
 
 const dashboardPresentation = fs.readFileSync(dashboardPresentationPath, 'utf8')
 assertIncludes(

@@ -8,7 +8,7 @@ RUN npm ci
 COPY . .
 ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-RUN npm run build
+RUN ADMIN_FONT_POLICY_SOURCE_SCOPE=standalone-admin npm run build
 
 FROM nginx:1.30.6-alpine3.24
 
