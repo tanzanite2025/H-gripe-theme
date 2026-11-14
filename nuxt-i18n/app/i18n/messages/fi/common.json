@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "Avaa puhelimen selaimessa",
+    "description": "Jos kirjautuminen tai maksaminen ei onnistu, avaa tämä sivu puhelimen selaimessa sovelluksen valikosta tai kopioi alla oleva linkki.",
+    "linkLabel": "Nykyisen sivun linkki",
+    "copyLink": "Kopioi linkki",
+    "copied": "Linkki kopioitu",
+    "copyFailed": "Automaattinen kopiointi ei onnistunut. Valitse yllä oleva linkki ja kopioi se käsin.",
+    "dismiss": "Sulje selainilmoitus"
+  },
   "close": "Close",
   "share": "Jaa",
   "previous": "Previous",

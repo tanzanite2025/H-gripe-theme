@@ -120,7 +120,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
       {
         id: 'rim-test-report',
         labelKey: 'supportTestReport.tabs.rim.label',
-        labelFallback: 'Rim Test Report',
+        labelFallback: 'Rim Test',
         description: 'Rim testing documents and compliance references.',
         to: '/technology/rim-test-report',
         icon: 'lucide:file-check-2',
@@ -130,7 +130,7 @@ export const primaryMegaNavSections: PrimaryMegaNavSection[] = [
       {
         id: 'wheelset-test-report',
         labelKey: 'supportTestReport.tabs.wheelset.label',
-        labelFallback: 'Wheelset Test Report',
+        labelFallback: 'Wheelset Test',
         description: 'Wheelset testing reports and validation data.',
         to: '/technology/wheelset-test-report',
         icon: 'lucide:circle-check',

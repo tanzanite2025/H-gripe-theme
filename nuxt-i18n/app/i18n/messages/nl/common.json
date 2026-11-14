@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "Open in de browser van je telefoon",
+    "description": "Als inloggen of afrekenen mislukt, open deze pagina dan via het appmenu in de browser van je telefoon of kopieer de onderstaande link.",
+    "linkLabel": "Link naar de huidige pagina",
+    "copyLink": "Link kopiëren",
+    "copied": "Link gekopieerd",
+    "copyFailed": "Automatisch kopiëren mislukt. Selecteer de link hierboven en kopieer deze handmatig.",
+    "dismiss": "Browsermelding sluiten"
+  },
   "close": "Close",
   "share": "Delen",
   "previous": "Previous",

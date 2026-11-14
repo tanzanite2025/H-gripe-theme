@@ -762,6 +762,15 @@
     }
   },
   "common": {
+    "embeddedBrowserCompatibility": {
+      "title": "Öppna i telefonens webbläsare",
+      "description": "Om inloggningen eller betalningen misslyckas kan du öppna sidan i telefonens webbläsare via appens meny eller kopiera länken nedan.",
+      "linkLabel": "Länk till den aktuella sidan",
+      "copyLink": "Kopiera länk",
+      "copied": "Länk kopierad",
+      "copyFailed": "Det gick inte att kopiera automatiskt. Markera länken ovan och kopiera den manuellt.",
+      "dismiss": "Stäng webbläsarmeddelandet"
+    },
     "close": "Close",
     "share": "Dela",
     "previous": "Previous",

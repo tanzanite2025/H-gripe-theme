@@ -35,11 +35,11 @@ const sections = createFooterMenusFromRoutes([
   createNormalizedFooterTestRoute('/guides', 'guides'),
   createNormalizedFooterTestRoute('/technology/rim-test-report', 'technology-rim-test-report', {
     footerLabelKey: 'supportTestReport.tabs.rim.label',
-    footerLabelFallback: 'Rim Test Report',
+    footerLabelFallback: 'Rim Test',
   }),
   createNormalizedFooterTestRoute('/technology/wheelset-test-report', 'technology-wheelset-test-report', {
     footerLabelKey: 'supportTestReport.tabs.wheelset.label',
-    footerLabelFallback: 'Wheelset Test Report',
+    footerLabelFallback: 'Wheelset Test',
   }),
   createNormalizedFooterTestRoute('/technology/wheel-building-quality-checks', 'technology-wheel-building-quality-checks', {
     footerLabelKey: 'supportTestReport.tabs.assembly.label',

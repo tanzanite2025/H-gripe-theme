@@ -11,10 +11,11 @@ const moduleDependencyRegistryVersion = 8
 const moduleDependencyRegistryMigrationVersion int64 = 434
 
 // Migration 435 reconciles product descriptions; 436 adds a preserved view flush
-// receipt table, outside every module-owned set. Keep the baseline in existing
+// receipt table, outside every module-owned set; 437 adds the tracking shipment
+// lease fields already used by the runtime. Keep the baseline in existing
 // plan/journal serialization and explicitly audit each additional version.
 func moduleDependencyRegistrySupportsAuditedMigrationVersion(version int64) bool {
-	return version == moduleDependencyRegistryMigrationVersion || version == 435 || version == 436
+	return version == moduleDependencyRegistryMigrationVersion || version == 435 || version == 436 || version == 437
 }
 
 type moduleRecoveryDependencyContract struct {

@@ -20,7 +20,7 @@ import { usePageMessages } from '~/composables/usePageMessages'
 definePageMeta({
   layout: 'products',
   footerLabelKey: 'supportTestReport.tabs.wheelset.label',
-  footerLabelFallback: 'Wheelset Test Report',
+  footerLabelFallback: 'Wheelset Test',
 })
 
 const { locale, t } = useI18n()

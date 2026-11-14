@@ -5,6 +5,7 @@
       :height="3"
       :throttle="80"
     />
+    <EmbeddedMobileBrowserCompatibilityBanner />
     <SiteHeader ref="siteHeaderRef" />
     <NuxtLayout>
       <!-- Render the current page inside the active layout -->
@@ -27,6 +28,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useHead, useI18n, useRequestURL, useRuntimeConfig } from '#imports'
+import EmbeddedMobileBrowserCompatibilityBanner from '~/components/EmbeddedMobileBrowserCompatibilityBanner.vue'
 import SiteHeader from '~/components/SiteHeader.vue'
 import SidePanel from '~/components/SidePanel.vue'
 import { useAuth } from '~/composables/useAuth'

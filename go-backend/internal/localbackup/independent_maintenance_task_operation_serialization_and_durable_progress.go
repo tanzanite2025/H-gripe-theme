@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"syscall"
 	"time"
 )
 
@@ -41,9 +43,32 @@ func (manager *Manager) startTaskOperation(task *Task, phase string, operation f
 			task.State = "failed"
 			task.Error = err.Error()
 			if saveErr := manager.saveTask(task); saveErr != nil {
-				fmt.Fprintln(os.Stderr, "backup task result could not be persisted; maintenance fence is retained")
+				_ = writeBackupTaskPersistenceFailureDiagnosticWithoutPrivatePaths(os.Stderr, task, saveErr)
 			}
 		}
 	}()
 	return nil
+}
+
+// Preserve the OS error code needed to diagnose durable writes without logging
+// workspace paths, task errors, credentials or filesystem error messages. A
+// release may already have removed the fence, so do not claim it is retained.
+func writeBackupTaskPersistenceFailureDiagnosticWithoutPrivatePaths(destination io.Writer, task *Task, persistenceError error) error {
+	filesystemOperation := "unavailable"
+	var pathError *os.PathError
+	var linkError *os.LinkError
+	if errors.As(persistenceError, &pathError) {
+		filesystemOperation = pathError.Op
+	} else if errors.As(persistenceError, &linkError) {
+		filesystemOperation = linkError.Op
+	}
+	switch filesystemOperation {
+	case "open", "write", "sync", "close", "rename":
+	default:
+		filesystemOperation = "unavailable"
+	}
+	var osErrorCode syscall.Errno
+	_ = errors.As(persistenceError, &osErrorCode)
+	_, err := fmt.Fprintf(destination, "backup task result could not be persisted; task=%s phase=%s persistence_error_type=%T filesystem_operation=%s os_error_code=%d; verify maintenance isolation before continuing\n", task.ID, task.Phase, persistenceError, filesystemOperation, uint64(osErrorCode))
+	return err
 }

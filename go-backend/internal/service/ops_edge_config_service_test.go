@@ -39,9 +39,11 @@ func TestOpsEdgeConfigRendersProductionRoutesFromBindings(t *testing.T) {
 	if strings.Join(config.Nginx.AdminServerNames, ",") != "admin.example.com" {
 		t.Fatalf("admin server names = %#v", config.Nginx.AdminServerNames)
 	}
-	if !strings.Contains(config.Caddy, "learn.example.com {") ||
+	if !strings.Contains(config.Caddy, "http://learn.example.com {") ||
+		!strings.Contains(config.Caddy, "redir @pageNavigation https://learn.example.com{uri} 301") ||
 		!strings.Contains(config.Caddy, "reverse_proxy theme-web:8080") ||
-		!strings.Contains(config.Caddy, "redir https://learn.example.com 308") {
+		!strings.Contains(config.Caddy, "redir @pageNavigation https://old.example.com{uri} 301") ||
+		!strings.Contains(config.Caddy, "redir https://old.example.com{uri} 308") {
 		t.Fatalf("generated Caddy config does not contain expected routes:\n%s", config.Caddy)
 	}
 	if config.Domains[0].QuickBuyRateLimit == nil {

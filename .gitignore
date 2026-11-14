@@ -87,6 +87,9 @@ release-evidence/
 /modular_report/
 /report_temp.html
 
+# Internal media placement guides are not public storefront content
+/nuxt-i18n/public/testreport/**/*.md
+
 # Private local competitor wheelset planning references
 /wheelset_matrix.html
 /wheelset_planner/

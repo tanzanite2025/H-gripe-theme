@@ -762,6 +762,15 @@
     }
   },
   "common": {
+    "embeddedBrowserCompatibility": {
+      "title": "Abrir no navegador do celular",
+      "description": "Se houver falha no login ou no pagamento, use o menu do aplicativo para abrir esta página no navegador do celular ou copie o link abaixo.",
+      "linkLabel": "Link da página atual",
+      "copyLink": "Copiar link",
+      "copied": "Link copiado",
+      "copyFailed": "Não foi possível copiar automaticamente. Selecione o link acima e copie manualmente.",
+      "dismiss": "Fechar aviso do navegador"
+    },
     "close": "Close",
     "share": "Compartilhar",
     "previous": "Previous",

@@ -47,7 +47,7 @@ func TestConfigurationEmailTemplatesAndMemberLevelsKeepOriginalValuesAndRejectIn
 			require.Equal(t, example.row, string(row))
 		})
 	}
-	for _, table := range []string{"email_provider_configs", "loyalty_program_configs", "referral_program_configs", "coupons", "user_loyalty", "loyalty_transactions", "outbox_events", "showcases"} {
+	for _, table := range []string{"coupon_usage", "user_loyalty", "loyalty_transactions", "outbox_events", "showcases"} {
 		require.False(t, configurationModuleHasMissingSiteContentWriteContract(selectedBusinessModuleCompleteSnapshot{Modules: []string{"configuration"}}, table), table)
 	}
 }

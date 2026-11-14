@@ -57,7 +57,7 @@ func TestConfigurationShippingReferencePackagingAndCustomsRejectInvalidOriginalF
 			require.Equal(t, sample.row, string(row))
 		})
 	}
-	for _, table := range strings.Fields("shipping_templates shipping_rules shipping_carrier_services shipping_route_groups shipping_route_group_carrier_services shipping_fpx_channels shipping_fpx_api_configs shipping_yanwen_published_channels shipping_tracking_providers product_shipping_template_bindings orders shipping_quote_snapshots") {
+	for _, table := range strings.Fields("shipping_tracking_shipments product_shipping_template_bindings orders shipping_quote_snapshots") {
 		require.False(t, configurationModuleHasMissingSiteContentWriteContract(selectedBusinessModuleCompleteSnapshot{Modules: []string{"configuration"}}, table), table)
 	}
 }

@@ -151,7 +151,7 @@ func (manager *Manager) PreviewSelectedBusinessModuleBackup(ctx context.Context,
 	preview := &SelectedBusinessModuleBackupPreview{
 		Modules: modules, Tables: map[string]int64{},
 		IncludedDependencies: []string{"按所选记录附带引用的素材登记、派生图和实际文件；选择图片与附件时保存全部媒体。", "未选择的共享客户、商品等只记录依赖身份及内容摘要，不导出其完整资料。"},
-		RecoveryLimitations:  []string{"单独商品、订单、聊天、客户与图片附件按专用规则恢复；配置仅补回缺失网站内容、适配目录、选购流程与问卷及市场/汇率/税率、邮件模板/历史版本和会员等级，核对内容与缓存后恢复服务。其余配置及多模块组合正式导入尚未开放。", "恢复到全新服务器请使用整站包；模块数据依赖兼容版本及共享身份，不能当作整站恢复。", "以下数量为预览时快照；最终数量和附带媒体以生成后的包清单为准。"},
+		RecoveryLimitations:  []string{"单独商品、订单、聊天、客户与图片附件按专用规则恢复；配置仅补回缺失网站内容、适配目录、选购流程与问卷及市场/汇率/税率、邮件模板/历史版本和会员等级、物流基础资料/包装/报关及运费模板/计费规则/线路聚合、承运服务/发布渠道/燕文参考目录及积分/推荐计划原版本、优惠券原规则与使用次数、追踪服务商/承运映射和税率采集配置、4PX/燕文物流账号及邮件发送方、支付方式/临时支付保护配置，核对业务内容与缓存后恢复服务。其余配置及多模块组合正式导入尚未开放。", "恢复到全新服务器请使用整站包；模块数据依赖兼容版本及共享身份，不能当作整站恢复。", "以下数量为预览时快照；最终数量和附带媒体以生成后的包清单为准。"},
 	}
 	for table, contents := range snapshot.Tables {
 		preview.Tables[table] = int64(len(contents.Rows))

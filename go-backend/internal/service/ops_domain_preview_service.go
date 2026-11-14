@@ -103,17 +103,28 @@ func previewDNSContent(target string) (string, string, string) {
 
 func buildCaddyPreview(domain ops.DomainBinding, target string) string {
 	host := domain.Domain
+	var httpRedirectBuilder strings.Builder
+	writeCaddyHTTPToHTTPSRedirectRoute(&httpRedirectBuilder, host)
+	httpRedirect := httpRedirectBuilder.String()
 	if domain.Role == ops.DomainRoleRedirect {
-		return fmt.Sprintf("%s {\n\tredir %s 308\n}", host, strings.TrimSpace(domain.RedirectTarget))
+		var domainRedirectBuilder strings.Builder
+		domainRedirectBuilder.WriteString(host + " {\n")
+		writeCaddyMethodAwareRedirect(
+			&domainRedirectBuilder,
+			redirectTargetWithPreservedRequestURIForDomainMigration(domain.RedirectTarget, "{uri}"),
+		)
+		domainRedirectBuilder.WriteString("}")
+		return httpRedirect + domainRedirectBuilder.String()
 	}
 	upstream := previewUpstream(target)
-	return fmt.Sprintf("%s {\n\tencode zstd gzip\n\treverse_proxy %s\n}", host, upstream)
+	return httpRedirect + fmt.Sprintf("%s {\n\tencode zstd gzip\n\treverse_proxy %s\n}", host, upstream)
 }
 
 func buildNginxPreview(domain ops.DomainBinding, target string) string {
 	host := domain.Domain
 	if domain.Role == ops.DomainRoleRedirect {
-		return fmt.Sprintf("server {\n\tserver_name %s;\n\treturn 308 %s$request_uri;\n}", host, strings.TrimSpace(domain.RedirectTarget))
+		target := redirectTargetWithPreservedRequestURIForDomainMigration(domain.RedirectTarget, "$request_uri")
+		return fmt.Sprintf("server {\n\tserver_name %s;\n\tif ($request_method ~ ^(GET|HEAD)$) {\n\t\treturn 301 %s;\n\t}\n\treturn 308 %s;\n}", host, target, target)
 	}
 	upstream := previewUpstream(target)
 	return fmt.Sprintf("server {\n\tserver_name %s;\n\tlocation / {\n\t\tproxy_pass http://%s;\n\t\tproxy_set_header Host $host;\n\t\tproxy_set_header X-Forwarded-Proto $scheme;\n\t}\n}", host, upstream)

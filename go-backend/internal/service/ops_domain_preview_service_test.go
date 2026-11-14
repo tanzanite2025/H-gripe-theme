@@ -56,11 +56,18 @@ func TestBuildOpsDomainPreviewGeneratesRedirectDrafts(t *testing.T) {
 	if !preview.DNS.Redirect || preview.DNS.RedirectTarget != "https://learn.gripe" {
 		t.Fatalf("preview redirect DNS metadata = (%v, %q), want true target", preview.DNS.Redirect, preview.DNS.RedirectTarget)
 	}
-	if !strings.Contains(preview.Caddy.Content, "redir https://learn.gripe 308") {
-		t.Fatalf("Caddy preview missing redirect: %s", preview.Caddy.Content)
+	if !strings.Contains(preview.Caddy.Content, "redir @pageNavigation https://learn.gripe{uri} 301") ||
+		!strings.Contains(preview.Caddy.Content, "redir https://learn.gripe{uri} 308") {
+		t.Fatalf("Caddy preview missing method-aware redirect: %s", preview.Caddy.Content)
 	}
-	if !strings.Contains(preview.Nginx.Content, "return 308 https://learn.gripe$request_uri;") {
-		t.Fatalf("Nginx preview missing redirect: %s", preview.Nginx.Content)
+	if !strings.Contains(preview.Caddy.Content, "http://www.learn.gripe {") ||
+		!strings.Contains(preview.Caddy.Content, "redir @pageNavigation https://www.learn.gripe{uri} 301") {
+		t.Fatalf("Caddy preview missing HTTP to HTTPS redirect: %s", preview.Caddy.Content)
+	}
+	if !strings.Contains(preview.Nginx.Content, "if ($request_method ~ ^(GET|HEAD)$) {") ||
+		!strings.Contains(preview.Nginx.Content, "return 301 https://learn.gripe$request_uri;") ||
+		!strings.Contains(preview.Nginx.Content, "return 308 https://learn.gripe$request_uri;") {
+		t.Fatalf("Nginx preview missing method-aware redirect: %s", preview.Nginx.Content)
 	}
 }
 
@@ -113,4 +120,34 @@ func hasWarning(warnings []string, fragment string) bool {
 		}
 	}
 	return false
+}
+
+func TestDomainMigrationRedirectPreservesRequestURIOnlyForOriginTargets(t *testing.T) {
+	for _, test := range []struct {
+		target string
+		want   string
+	}{
+		{"https://replacement.example", "https://replacement.example{uri}"},
+		{"https://replacement.example/", "https://replacement.example{uri}"},
+		{"https://replacement.example:8443", "https://replacement.example:8443{uri}"},
+		{"https://replacement.example/landing", "https://replacement.example/landing"},
+		{"https://replacement.example/%2F", "https://replacement.example/%2F"},
+		{"https://replacement.example/?campaign=old", "https://replacement.example/?campaign=old"},
+		{"https://replacement.example/?", "https://replacement.example/?"},
+		{"https://replacement.example/#section", "https://replacement.example/#section"},
+		{"https://replacement.example/#", "https://replacement.example/#"},
+	} {
+		t.Run(test.target, func(t *testing.T) {
+			preview := BuildOpsDomainPreview(ops.DomainBinding{Domain: "old.example", Role: ops.DomainRoleRedirect, RedirectTarget: test.target})
+			if !strings.Contains(preview.Caddy.Content, "redir @pageNavigation "+test.want+" 301") ||
+				!strings.Contains(preview.Caddy.Content, "redir "+test.want+" 308") {
+				t.Fatalf("Caddy preview has unexpected method-aware migration destination: %s", preview.Caddy.Content)
+			}
+			target := strings.ReplaceAll(test.want, "{uri}", "$request_uri")
+			if !strings.Contains(preview.Nginx.Content, "return 301 "+target+";") ||
+				!strings.Contains(preview.Nginx.Content, "return 308 "+target+";") {
+				t.Fatalf("Nginx preview disagrees with method-aware Caddy migration destination: %s", preview.Nginx.Content)
+			}
+		})
+	}
 }

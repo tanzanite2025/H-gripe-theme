@@ -1,5 +1,5 @@
 {
-  "title": "Wheelset Test Report",
+  "title": "Wheelset Test",
   "intro": "This section summarises how our wheelsets are validated in our in-house lab, covering lateral load, torsional stiffness, environmental durability, dynamic balance, fatigue, and braking performance tests.",
   "assemblyNote": {
     "prefix": "To learn more about wheelset shipping and assembly tests,",
@@ -113,8 +113,8 @@
     }
   },
   "video": {
-    "alt": "Play wheelset test report video for our wheelsets",
-    "label": "Watch wheelset test report video"
+    "alt": "Play wheelset test video for our wheelsets",
+    "label": "Watch wheelset test video"
   },
   "disclaimer": {
     "title": "Disclaimer",

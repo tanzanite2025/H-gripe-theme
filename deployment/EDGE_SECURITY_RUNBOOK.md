@@ -38,6 +38,95 @@ Configure the selected CDN/WAF provider to:
 - Alert on spikes in `413`, `429`, `5xx`, origin connection count, and upload
   volume.
 
+### Mobile in-app browser compatibility
+
+Apply the following protocol policy to every enabled storefront and alias
+hostname generated from `ops_domain_bindings`:
+
+- The edge generator publishes an explicit HTTP-to-HTTPS `301` for GET/HEAD
+  navigation and `308` for other methods so request bodies survive. It keeps
+  the configured host, original encoded path and query. The deployment
+  preflight rejects a generated route that omits this policy. Check the
+  response from both the public hostname and the origin's Caddy listener:
+  during this investigation the origin returned Caddy `308`, and Cloudflare
+  relayed it. That exact legacy response is a plausible cause of the supplied
+  Android WebView failure. Some old embedded browsers fail before following
+  `308`; a page-level notice cannot help before HTML loads. Confirm that GET
+  requests return `301` after the new generated route is deployed. Do not put
+  a blanket `301` on non-GET methods, because clients may turn POST into GET.
+  Nuxt does not redirect private HTTP origins or trust arbitrary forwarded
+  headers to decide the public protocol.
+- Keep the provider SSL/TLS mode at Full (strict) and keep certificates active
+  for every alias. Do not rely on a page-level redirect that exists only for
+  the current canonical hostname.
+- Inspect the CDN security event for a failed request (Ray ID, timestamp,
+  hostname, path, country and action). A `403` with `Cf-Mitigated: challenge`
+  means the CDN stopped the request before Nuxt rendered any page. Review the
+  rule that actually triggered, and use the provider's supported compatibility
+  controls or a narrowly scoped exception only when the event justifies it.
+  Do not blanket-allow user-agent strings or disable storefront bot protection:
+  user agents are spoofable, and a curl challenge alone does not prove that a
+  real customer's WeChat request received the same challenge.
+
+The storefront displays one centralized in-app browser notice after the page
+loads. It explains the app-menu action and offers a selectable current HTTPS
+URL with clipboard and manual-copy fallbacks. It derives the URL from the
+browser location, updates after navigation and never claims that a new tab can
+force the app to launch the system browser. Detection is client-side and does
+not change the SSR/cache response. Some apps expose the same user agent as an
+ordinary browser; absence of a notice does not indicate that sign-in or payment
+will work. The notice cannot repair DNS, TLS, app-level domain blocking or a
+CDN rejection that prevents the page from loading.
+
+When replacing a domain, update the domain bindings, DNS/CDN zone, active TLS
+certificates, deployment public URL (`NUXT_PUBLIC_SITE_URL`/`NUXT_SITE_URL`),
+and any payment/OAuth callback allowlists and provider domain verification.
+The storefront image workflow keeps `STOREFRONT_SITE_URL` synchronized: for a
+planned canonical-domain change, manually dispatch `Publish Production Images`
+and enter the new HTTPS origin in the `storefront_site_url` input. The run
+builds all images with that origin and, only after every image publishes
+successfully, a separate job with only Actions-variable write permission saves
+it to the repository variable. Leave the input blank for routine publishes.
+This planned-migration path skips only the live-origin comparison, because the
+new host may not be serving the storefront yet; it still validates the value
+as an HTTPS origin and runs the normal release checks. It does not change Ops
+domain bindings, deployment environment, DNS, CDN or certificates. Complete
+those deployment steps after publishing; routine publishing stays blocked
+until the live canonical origin matches the new repository variable. Routine
+publishes fetch the current homepage and compare its canonical origin with the
+repository variable; a stale or unavailable live canonical check blocks
+publication with a diagnostic. This catches a missed variable update after an
+out-of-band domain change. The Nuxt build
+automatically adds the canonical host to the optimized image allowlist;
+`STOREFRONT_IMAGE_DOMAINS` remains for additional image hosts. `deploy.sh`
+checks deployment URLs against the generated bindings. Keep old DNS/TLS active
+while old links remain in circulation.
+An origin-only redirect target (for example `https://new.example` or
+`https://new.example/`) preserves the original request URI in both generated
+Caddy configuration and Nginx preview. A target containing an explicit path,
+query or fragment remains an exact destination. Fragments are never sent to
+the gateway, so verify browser anchor behavior separately. Both the initial
+HTTP upgrade and the following old-domain migration return `301` to GET/HEAD
+requests; non-navigation methods use `308` at both steps to preserve bodies.
+Do not place gateway placeholders in the stored URL.
+
+Before promotion, verify HTTP and HTTPS on the canonical host, every alias,
+the admin host, and the old redirect host. Check a deep locale path with an
+encoded query, GET/HEAD navigation and a POST redirect that retains its body.
+Test the resulting login and checkout flows in real iOS/Android WeChat,
+Facebook and WhatsApp on relevant customer networks; desktop user-agent
+emulation does not certify embedded WebView behavior. Run the generated Caddy
+HTTP/TLS regression with Caddy installed:
+
+```sh
+cd go-backend
+go test ./internal/service -run 'TestGeneratedCaddyPreservesMobileNavigationAndPostBodiesAcrossDomainReplacement|TestDomainMigrationRedirect' -count=1 -v
+```
+
+Without Caddy on PATH, the HTTP/TLS regression explicitly skips; a skipped run
+is not gateway validation. The production image workflow installs a pinned
+Caddy release and makes a missing binary fail the backend verification job.
+
 At the origin firewall, allow HTTP/HTTPS only from the CDN provider's current
 published egress ranges. If another load balancer is used, allow only that
 load balancer's egress ranges instead. Do not copy a historical provider IP

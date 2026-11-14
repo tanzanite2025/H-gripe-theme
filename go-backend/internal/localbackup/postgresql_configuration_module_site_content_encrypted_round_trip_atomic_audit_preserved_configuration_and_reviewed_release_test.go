@@ -25,7 +25,14 @@ func TestPostgreSQLConfigurationModuleBusinessContentRulesAndReferenceDataRoundT
 	if connectionURL == "" || migrationsDirectory == "" || os.Getenv("LOCAL_BACKUP_DISPOSABLE_TEST_SERVER") != "true" {
 		t.Skip("requires disposable PostgreSQL and complete application migrations")
 	}
-	for _, scenario := range []string{"authenticated_restore", "restore_intent_persisted", "rows_and_sequences_before_commit", "rows_committed_before_acknowledgement", "stale_database_after_preview", "missing_picture", "missing_setting", "different_existing_content", "review_result_changed", "disabled_foreign_key_guard", "wrong_fork_hub_position", "wrong_frame_hub_position", "disabled_associated_hub", "enabled_fork_without_hub", "wrong_preset_rim_brand", "wrong_preset_wheel_position", "invalid_catalog_domain_field", "missing_catalog_product_brand", "catalog_natural_identity_conflict", "changed_existing_catalog", "legacy_policy_requires_rehearsal", "legacy_v2_policy_requires_rehearsal", "partial_questionnaire_source_translation", "partial_quickbuy_rule", "selection_missing_node", "selection_cycle", "selection_wrong_json_type", "selection_unknown_filter", "quickbuy_missing_rule_step", "quickbuy_invalid_selection_bounds", "questionnaire_missing_source_label", "questionnaire_unregistered_key", "questionnaire_disabled_key", "questionnaire_invalid_effects_type", "questionnaire_invalid_filter_values", "questionnaire_no_enabled_questions", "invalid_selection_key_kind", "partial_questionnaire_child_invalid_published_parent", "partial_quickbuy_rule_invalid_published_parent", "quickbuy_disabled_product_template", "selection_disabled_filter_definition", "quickbuy_missing_product_template", "quickbuy_second_published_version", "selection_second_published_version", "questionnaire_second_published_version", "selection_changed_existing_configuration", "partial_market_country_restore", "partial_reference_entry_restore", "legacy_reference_comments_not_collected", "market_invalid_locale", "market_default_currency_not_selectable", "market_country_wrong_case", "market_country_soft_deleted_parent", "exchange_unknown_currency", "exchange_invalid_expiry", "tax_unsupported_compound", "tax_invalid_location", "reference_count_mismatch", "reference_invalid_comment_shape", "reference_invalid_entry_type", "reference_missing_entry", "market_country_current_owner_conflict", "tax_newer_current_scope_conflict", "exchange_current_reverse_pair_conflict", "changed_existing_exchange_rate", "missing_tax_sync_configuration", "partial_reference_target_only_extra_entry", "legacy_v3_policy_requires_rehearsal", "partial_template_history_restore", "partial_email_current_version_restore", "disabled_email_template_restore", "email_unknown_template_code", "email_invalid_locale", "email_category_mismatch", "email_variables_wrong_type", "email_unknown_placeholder", "email_subject_header_injection", "email_history_wrong_identity", "email_history_missing_version", "email_current_snapshot_mismatch", "email_history_future_version", "partial_email_history_invalid_parent", "member_level_invalid_name", "member_level_invalid_range", "member_level_package_overlap", "member_level_current_overlap", "changed_existing_email_template", "partial_template_target_only_future_history", "legacy_v4_policy_requires_rehearsal", "partial_packaging_variant_binding_restore", "carrier_empty_code", "zone_invalid_json", "zone_invalid_country", "packaging_negative_dimension", "packaging_invalid_existing_parent", "packaging_wrong_variant_product", "packaging_missing_source_product", "packaging_missing_source_variant", "packaging_deleted_source_product", "packaging_deleted_source_variant", "customs_invalid_hs_code", "customs_invalid_risk_tag", "customs_repeated_risk_tag", "customs_invalid_status", "carrier_natural_identity_conflict", "customs_natural_identity_conflict", "packaging_current_default_binding_conflict", "packaging_current_variant_binding_conflict", "packaging_changed_read_only_product", "packaging_changed_read_only_variant", "partial_packaging_target_only_wrong_variant", "changed_existing_packaging_rule", "legacy_v5_policy_requires_rehearsal"} {
+	scenarios := []string{"authenticated_restore", "restore_intent_persisted", "rows_and_sequences_before_commit", "rows_committed_before_acknowledgement", "stale_database_after_preview", "missing_picture", "missing_setting", "different_existing_content", "review_result_changed", "disabled_foreign_key_guard", "wrong_fork_hub_position", "wrong_frame_hub_position", "disabled_associated_hub", "enabled_fork_without_hub", "wrong_preset_rim_brand", "wrong_preset_wheel_position", "invalid_catalog_domain_field", "missing_catalog_product_brand", "catalog_natural_identity_conflict", "changed_existing_catalog", "legacy_policy_requires_rehearsal", "legacy_v2_policy_requires_rehearsal", "partial_questionnaire_source_translation", "partial_quickbuy_rule", "selection_missing_node", "selection_cycle", "selection_wrong_json_type", "selection_unknown_filter", "quickbuy_missing_rule_step", "quickbuy_invalid_selection_bounds", "questionnaire_missing_source_label", "questionnaire_unregistered_key", "questionnaire_disabled_key", "questionnaire_invalid_effects_type", "questionnaire_invalid_filter_values", "questionnaire_no_enabled_questions", "invalid_selection_key_kind", "partial_questionnaire_child_invalid_published_parent", "partial_quickbuy_rule_invalid_published_parent", "quickbuy_disabled_product_template", "selection_disabled_filter_definition", "quickbuy_missing_product_template", "quickbuy_second_published_version", "selection_second_published_version", "questionnaire_second_published_version", "selection_changed_existing_configuration", "partial_market_country_restore", "partial_reference_entry_restore", "legacy_reference_comments_not_collected", "market_invalid_locale", "market_default_currency_not_selectable", "market_country_wrong_case", "market_country_soft_deleted_parent", "exchange_unknown_currency", "exchange_invalid_expiry", "tax_unsupported_compound", "tax_invalid_location", "reference_count_mismatch", "reference_invalid_comment_shape", "reference_invalid_entry_type", "reference_missing_entry", "market_country_current_owner_conflict", "tax_newer_current_scope_conflict", "exchange_current_reverse_pair_conflict", "changed_existing_exchange_rate", "missing_tax_sync_configuration", "partial_reference_target_only_extra_entry", "legacy_v3_policy_requires_rehearsal", "partial_template_history_restore", "partial_email_current_version_restore", "disabled_email_template_restore", "email_unknown_template_code", "email_invalid_locale", "email_category_mismatch", "email_variables_wrong_type", "email_unknown_placeholder", "email_subject_header_injection", "email_history_wrong_identity", "email_history_missing_version", "email_current_snapshot_mismatch", "email_history_future_version", "partial_email_history_invalid_parent", "member_level_invalid_name", "member_level_invalid_range", "member_level_package_overlap", "member_level_current_overlap", "changed_existing_email_template", "partial_template_target_only_future_history", "legacy_v4_policy_requires_rehearsal", "partial_packaging_variant_binding_restore", "carrier_empty_code", "zone_invalid_json", "zone_invalid_country", "packaging_negative_dimension", "packaging_invalid_existing_parent", "packaging_wrong_variant_product", "packaging_missing_source_product", "packaging_missing_source_variant", "packaging_deleted_source_product", "packaging_deleted_source_variant", "customs_invalid_hs_code", "customs_invalid_risk_tag", "customs_repeated_risk_tag", "customs_invalid_status", "carrier_natural_identity_conflict", "customs_natural_identity_conflict", "packaging_current_default_binding_conflict", "packaging_current_variant_binding_conflict", "packaging_changed_read_only_product", "packaging_changed_read_only_variant", "partial_packaging_target_only_wrong_variant", "changed_existing_packaging_rule", "legacy_v5_policy_requires_rehearsal", "shipping_partial_rule_restore", "shipping_partial_member_restore", "shipping_fpx_production_channel_restore", "shipping_yanwen_production_channel_restore", "shipping_invalid_template_type", "shipping_invalid_fuel_percent", "shipping_invalid_postal_json", "shipping_rule_currency_mismatch", "shipping_rule_inverted_threshold", "shipping_rule_missing_weight_step", "shipping_system_template_has_rules", "shipping_partial_rule_invalid_existing_template", "shipping_partial_member_invalid_existing_group", "shipping_empty_route_aggregate", "shipping_deleted_source_service", "shipping_wrong_yanwen_provider_identity", "shipping_deleted_source_group", "shipping_fpx_test_channel", "shipping_fpx_disabled_channel", "shipping_yanwen_fat_channel", "shipping_yanwen_disabled_channel", "shipping_changed_existing_template", "shipping_changed_read_only_service", "shipping_missing_service_restored", "shipping_partial_rule_target_only_currency_conflict", "shipping_partial_member_target_only_deleted_service", "legacy_v6_policy_requires_rehearsal"}
+	scenarios = append(scenarios, configurationShippingProviderCatalogRestoreIntegrationScenarios()...)
+	scenarios = append(scenarios, configurationLoyaltyAndReferralProgramVersionRestoreIntegrationScenarios()...)
+	scenarios = append(scenarios, configurationCouponRestoreIntegrationScenarios()...)
+	scenarios = append(scenarios, configurationTrackingProviderMappingAndTaxCollectionControlRestoreIntegrationScenarios()...)
+	scenarios = append(scenarios, configurationFpxAndYanwenAccountRestoreIntegrationScenarios()...)
+	scenarios = append(scenarios, configurationEmailSenderRestoreIntegrationScenarios()...)
+	for _, scenario := range append(scenarios, configurationPaymentMethodAndTimeBoundedProtectionRestoreIntegrationScenarios()...) {
 		t.Run(scenario, func(t *testing.T) {
 			ctx := context.Background()
 			cfg := createIndependentRecoveryTestConfiguration(t)
@@ -66,6 +73,8 @@ func TestPostgreSQLConfigurationModuleBusinessContentRulesAndReferenceDataRoundT
 			database, err = cfg.connectDatabase(ctx, cfg.DatabaseName)
 			require.NoError(t, err)
 			require.NoError(t, database.QueryRowContext(ctx, `SELECT version FROM schema_migrations WHERE NOT dirty`).Scan(&cfg.ExpectedMigrationVersion))
+			configureOriginalSyntheticLogisticsAccountBusinessKeysForRecovery(t, &cfg, scenario)
+			configureOriginalSyntheticEmailSenderBoundBusinessKeysForRecovery(t, &cfg, scenario)
 			require.NoError(t, maintenancegate.RegisterApplicationBoundary(cfg.MaintenanceDirectory, cfg.DatabaseName, cfg.ApplicationVersion, cfg.StorageRoots, cfg.RecoverySecrets))
 			picture := filepath.Join(cfg.StorageRoots["uploads"], "configuration-site-content-fixture.webp")
 			require.NoError(t, os.WriteFile(picture, []byte("synthetic website picture"), 0600))
@@ -97,6 +106,18 @@ INSERT INTO storefront_redirect_rules(id,source_path,target_path,state,created_b
 			createConfigurationMarketCurrencyAndTaxRestoreIntegrationFixture(t, database, scenario)
 			createConfigurationEmailTemplateHistoryAndMemberLevelRestoreIntegrationFixture(t, database, scenario)
 			createConfigurationShippingReferencePackagingAndCustomsRestoreIntegrationFixture(t, database, scenario)
+			createConfigurationCustomerShippingBillingAndPublishedRouteRestoreIntegrationFixture(t, database, scenario)
+			createConfigurationShippingProviderCatalogRestoreIntegrationFixture(t, database, scenario)
+			createConfigurationLoyaltyAndReferralProgramVersionRestoreFixtureAndPreservedRegistrationRewards(t, database, scenario)
+			createConfigurationCouponRestoreFixtureAndPreservedUsageRecords(t, database, scenario)
+			createConfigurationTrackingProviderMappingTaxCollectionFixtureAndPreservedPendingWork(t, database, scenario)
+			createConfigurationFpxAndYanwenAccountRestoreFixture(t, database, scenario)
+			createConfigurationEmailSenderRestoreFixtureAndPreservedDeliveryHistory(t, database, cfg, scenario)
+			createConfigurationPaymentMethodAndProtectionFixtureWithPreservedTransactions(t, database, scenario)
+			if scenario == "authenticated_restore" {
+				verifyConfigurationCouponOlderPackagesWithoutOriginalReceiptOrProductScopeFingerprintsAreRejected(t, database, cfg)
+				verifyConfigurationPaymentProtectionPackageWithoutOriginalActorFingerprintsIsRejected(t, database, cfg)
+			}
 			// These invalid source values cannot be persisted under the production
 			// schema. The fixture checks the exact constraint and unchanged row;
 			// malformed package fields are covered separately by domain tests.
@@ -146,6 +167,14 @@ INSERT INTO posts(id,title,slug,content,status,author_id,locale) VALUES(900020,'
 			expectedMarketRows := deleteConfigurationMarketCurrencyAndTaxFixtureRowsAndPreserveNewCurrentRules(t, database, scenario)
 			expectedEmailAndMemberRows := deleteConfigurationEmailTemplateAndMemberLevelFixtureRowsAndPreserveCurrentRules(t, database, scenario)
 			expectedShippingReferenceRows := deleteConfigurationShippingReferencePackagingAndCustomsFixtureRowsAndPreserveCurrentData(t, database, scenario)
+			expectedCustomerShippingRows := deleteConfigurationCustomerShippingBillingAndRouteFixtureRowsAndPreserveProviderData(t, database, scenario)
+			expectedProviderCatalogRows := deleteConfigurationShippingProviderCatalogFixtureRowsAndPreserveCurrentProviderControls(t, database, scenario)
+			expectedProgramVersionRows := deleteConfigurationLoyaltyAndReferralProgramVersionFixtureRowsAndPreserveTargetOnlyHistory(t, database, scenario)
+			expectedCouponRows := deleteConfigurationCouponFixtureRowsAndPreserveCurrentUsageAndTargetOnlyCoupons(t, database, scenario)
+			expectedEmailSenderRows := deleteConfigurationEmailSenderFixtureRowsAndPreserveCurrentSenders(t, database, scenario)
+			expectedLogisticsAccountRows := deleteConfigurationFpxAndYanwenAccountFixtureRowsAndPreserveExistingCredentials(t, database, scenario)
+			expectedTrackingAndTaxControlRows := deleteConfigurationTrackingProviderMappingTaxControlFixtureRowsAndPreserveTargetOnlyConfiguration(t, database, scenario)
+			expectedPaymentConfigurationRows := deleteConfigurationPaymentMethodAndProtectionFixtureRowsWithoutChangingCurrentPaymentFacts(t, database, scenario)
 			if scenario == "missing_picture" {
 				require.NoError(t, os.Remove(picture))
 			}
@@ -167,7 +196,15 @@ INSERT INTO posts(id,title,slug,content,status,author_id,locale) VALUES(900020,'
 			_, err = manager.StartSelectedBusinessModuleIsolatedRestorePreview(task.ID, "VERIFY MODULE RESTORE "+cfg.SiteID+"/"+cfg.Environment+"/"+task.ID)
 			require.NoError(t, err)
 			task = waitForIndependentRecoveryTask(t, manager, task.ID)
-			if configurationShippingReferencePackagingAndCustomsIntegrationScenarioRequiresRejection(scenario) || configurationEmailTemplateHistoryAndMemberLevelIntegrationScenarioRequiresRejection(scenario) || configurationMarketCurrencyAndTaxIntegrationScenarioRequiresRejection(scenario) || configurationSelectionFlowAndQuestionnaireIntegrationScenarioRequiresRejection(scenario) || scenario == "missing_picture" || scenario == "missing_setting" || scenario == "different_existing_content" || scenario == "disabled_foreign_key_guard" || scenario == "wrong_fork_hub_position" || scenario == "wrong_frame_hub_position" || scenario == "disabled_associated_hub" || scenario == "enabled_fork_without_hub" || scenario == "wrong_preset_rim_brand" || scenario == "wrong_preset_wheel_position" || scenario == "invalid_catalog_domain_field" || scenario == "missing_catalog_product_brand" || scenario == "catalog_natural_identity_conflict" || scenario == "changed_existing_catalog" {
+			publicAccountPreview, err := json.Marshal(task)
+			require.NoError(t, err)
+			require.NotContains(t, string(publicAccountPreview), configurationLogisticsAccountSyntheticMasterKey)
+			require.NotContains(t, string(publicAccountPreview), configurationLogisticsAccountSyntheticCredential)
+			require.NotContains(t, string(publicAccountPreview), "v1:")
+			for _, confidential := range []string{configurationEmailSenderSyntheticOriginalMasterKey, configurationEmailSenderSyntheticOriginalPassword, configurationEmailSenderSyntheticOriginalTestError, configurationPaymentMethodOriginalSyntheticSettings, configurationPaymentProtectionOriginalSyntheticReason} {
+				require.NotContains(t, string(publicAccountPreview), confidential)
+			}
+			if configurationPaymentMethodOrProtectionIntegrationScenarioRequiresRejection(scenario) || configurationEmailSenderIntegrationScenarioRequiresRejection(scenario) || configurationFpxAndYanwenAccountIntegrationScenarioRequiresRejection(scenario) || configurationTrackingProviderMappingOrTaxCollectionIntegrationScenarioRequiresRejection(scenario) || configurationCouponIntegrationScenarioRequiresRejection(scenario) || configurationLoyaltyAndReferralProgramVersionIntegrationScenarioRequiresRejection(scenario) || configurationShippingProviderCatalogIntegrationScenarioRequiresRejection(scenario) || configurationCustomerShippingBillingAndPublishedRouteIntegrationScenarioRequiresRejection(scenario) || configurationShippingReferencePackagingAndCustomsIntegrationScenarioRequiresRejection(scenario) || configurationEmailTemplateHistoryAndMemberLevelIntegrationScenarioRequiresRejection(scenario) || configurationMarketCurrencyAndTaxIntegrationScenarioRequiresRejection(scenario) || configurationSelectionFlowAndQuestionnaireIntegrationScenarioRequiresRejection(scenario) || scenario == "missing_picture" || scenario == "missing_setting" || scenario == "different_existing_content" || scenario == "disabled_foreign_key_guard" || scenario == "wrong_fork_hub_position" || scenario == "wrong_frame_hub_position" || scenario == "disabled_associated_hub" || scenario == "enabled_fork_without_hub" || scenario == "wrong_preset_rim_brand" || scenario == "wrong_preset_wheel_position" || scenario == "invalid_catalog_domain_field" || scenario == "missing_catalog_product_brand" || scenario == "catalog_natural_identity_conflict" || scenario == "changed_existing_catalog" {
 				require.Contains(t, []string{"module_restore_conflicts_found", "failed"}, task.State, task.Error)
 				require.Error(t, validateConfigurationModuleSiteContentFormalRestorePreview(task, task.SelectedModuleRestorePreview.SHA256))
 				database, err = cfg.connectDatabase(ctx, cfg.DatabaseName)
@@ -180,8 +217,8 @@ INSERT INTO posts(id,title,slug,content,status,author_id,locale) VALUES(900020,'
 			}
 			require.Equal(t, "module_isolated_restore_verified", task.State, task.Error)
 			require.True(t, task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Eligible)
-			require.Equal(t, 25+expectedSelectionRows+expectedMarketRows+expectedEmailAndMemberRows+expectedShippingReferenceRows, task.SelectedModuleRestorePreview.RestoredRows)
-			if scenario == "legacy_policy_requires_rehearsal" || scenario == "legacy_v2_policy_requires_rehearsal" || scenario == "legacy_v3_policy_requires_rehearsal" || scenario == "legacy_v4_policy_requires_rehearsal" || scenario == "legacy_v5_policy_requires_rehearsal" {
+			require.Equal(t, 25+expectedSelectionRows+expectedMarketRows+expectedEmailAndMemberRows+expectedShippingReferenceRows+expectedCustomerShippingRows+expectedProviderCatalogRows+expectedProgramVersionRows+expectedCouponRows+expectedTrackingAndTaxControlRows+expectedLogisticsAccountRows+expectedEmailSenderRows+expectedPaymentConfigurationRows, task.SelectedModuleRestorePreview.RestoredRows)
+			if scenario == "legacy_policy_requires_rehearsal" || scenario == "legacy_v2_policy_requires_rehearsal" || scenario == "legacy_v3_policy_requires_rehearsal" || scenario == "legacy_v4_policy_requires_rehearsal" || scenario == "legacy_v5_policy_requires_rehearsal" || scenario == "legacy_v6_policy_requires_rehearsal" || scenario == "legacy_v7_policy_requires_rehearsal" || scenario == "legacy_v8_policy_requires_rehearsal" || scenario == "legacy_v9_policy_requires_rehearsal" || scenario == "legacy_v10_policy_requires_rehearsal" || scenario == "legacy_v11_policy_requires_rehearsal" || scenario == "legacy_v12_policy_requires_rehearsal" || scenario == "legacy_v13_policy_requires_rehearsal" {
 				task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_site_content_preserve_existing_configuration_and_registered_files_v1"
 				if scenario == "legacy_v2_policy_requires_rehearsal" {
 					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_site_content_and_fitment_catalog_preserve_existing_configuration_and_registered_files_v2"
@@ -194,6 +231,30 @@ INSERT INTO posts(id,title,slug,content,status,author_id,locale) VALUES(900020,'
 				}
 				if scenario == "legacy_v5_policy_requires_rehearsal" {
 					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_business_configuration_including_email_templates_and_member_levels_preserve_existing_rows_and_registered_files_v5"
+				}
+				if scenario == "legacy_v6_policy_requires_rehearsal" {
+					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_business_configuration_including_shipping_reference_packaging_and_customs_preserve_existing_rows_and_registered_files_v6"
+				}
+				if scenario == "legacy_v7_policy_requires_rehearsal" {
+					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_business_configuration_including_customer_shipping_billing_and_published_route_membership_preserve_existing_rows_and_registered_files_v7"
+				}
+				if scenario == "legacy_v8_policy_requires_rehearsal" {
+					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_business_configuration_including_carrier_services_published_channels_and_yanwen_reference_catalogs_preserve_existing_rows_and_registered_files_v8"
+				}
+				if scenario == "legacy_v9_policy_requires_rehearsal" {
+					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_business_configuration_including_loyalty_and_referral_program_versions_preserve_existing_rows_and_registered_files_v9"
+				}
+				if scenario == "legacy_v10_policy_requires_rehearsal" {
+					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_business_configuration_including_coupons_with_original_limits_and_usage_receipts_preserve_existing_rows_and_registered_files_v10"
+				}
+				if scenario == "legacy_v11_policy_requires_rehearsal" {
+					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_business_configuration_including_tracking_provider_mapping_and_tax_collection_controls_preserve_existing_rows_and_registered_files_v11"
+				}
+				if scenario == "legacy_v12_policy_requires_rehearsal" {
+					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_business_configuration_including_fpx_and_yanwen_accounts_with_original_business_keys_preserve_existing_rows_and_registered_files_v12"
+				}
+				if scenario == "legacy_v13_policy_requires_rehearsal" {
+					task.SelectedModuleRestorePreview.ConfigurationSiteContentRestoreEligibility.Policy = "restore_missing_business_configuration_including_email_senders_with_original_bound_key_precedence_preserve_existing_rows_and_registered_files_v13"
 				}
 				task.SelectedModuleRestorePreview.SHA256 = ""
 				task.SelectedModuleRestorePreview.SHA256, err = businessModuleRecoveryCanonicalJSONSHA256(task.SelectedModuleRestorePreview)
@@ -319,11 +380,22 @@ INSERT INTO posts(id,title,slug,content,status,author_id,locale) VALUES(900020,'
 			require.NoError(t, err)
 			require.NotContains(t, string(public), secret)
 			require.NotContains(t, string(public), "Original content")
+			for _, confidential := range []string{configurationTrackingOriginalSyntheticAPIKey, configurationTrackingOriginalSyntheticWebhookSecret, configurationTaxCollectionOriginalSyntheticError} {
+				require.NotContains(t, string(public), confidential)
+			}
 			verifyRestoredConfigurationFitmentCatalogThroughPublicBusinessHTTPAndIndependentTireFacts(t, database)
 			verifyRestoredConfigurationSelectionFlowsAndQuestionnairesThroughPublicBusinessHTTPWithoutPublishingDraftsOrChangingSessions(t, database)
 			verifyRestoredConfigurationMarketsPublicTaxAndExactExchangeWithoutChangingOrdersExpiryOrSyncControls(t, database, scenario)
 			verifyRestoredEmailTemplatesHistoricalVersionsAndMemberLevelsThroughBusinessServicesWithoutSendingOrRewarding(t, database)
 			verifyRestoredShippingReferencePackagingAndCustomsThroughBusinessRepositoriesWithoutExternalCallsOrOrderWrites(t, database)
+			verifyRestoredCustomerShippingBillingAndRouteProjectionThroughReadOnlyBusinessServicesWithoutRepricingOrders(t, database)
+			verifyRestoredShippingProviderCatalogsThroughReadOnlyBusinessServicesWithoutSyncPublishingOrCustomerPriceWrites(t, database)
+			verifyRestoredLoyaltyAndReferralProgramVersionsThroughReadOnlyBusinessServicesAndUnchangedRegistrationRewardFacts(t, database)
+			verifyRestoredCouponsThroughReadOnlyBusinessValidationWithoutConsumingUsageOrReplayingRewards(t, database)
+			verifyRestoredTrackingCredentialsCarrierResolutionAndTaxControlThroughReadOnlyQueriesWithoutReplayingPendingWork(t, database, scenario)
+			verifyRestoredFpxAndYanwenAccountsThroughReadOnlyBusinessViewsAndLocalDecryptionWithoutGatewayCalls(t, database)
+			verifyRestoredEmailSenderThroughReadOnlyDefaultSMTPResolutionAndUnchangedDeliveryHistory(t, database, cfg, scenario)
+			verifyRestoredPaymentMethodsAndProtectionThroughReadOnlyBusinessServicesWithoutPaymentOrAuditReplay(t, database, scenario)
 		})
 	}
 }

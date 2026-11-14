@@ -338,6 +338,13 @@ func captureSelectedBusinessModuleExternalReferenceFingerprintsWithObservedSchem
 	references = append(references, registeredNonForeignKeyModuleRecoveryReferences()...)
 	references = append(references, registeredOrderTransactionBusinessReferences()...)
 	references = append(references, configurationModulePackagingReadOnlyBusinessDependencyReferences()...)
+	references = append(references, configurationModuleLoyaltyProgramCreatorReadOnlyDependencyReferences()...)
+	for _, module := range snapshot.Modules {
+		if module == "configuration" {
+			references = append(references, configurationModulePaymentProtectionActorReadOnlyDependencyReferences()...)
+			break
+		}
+	}
 	dependencies := map[string]selectedBusinessModuleExternalReference{}
 	selectedReferenceKeys := map[string]map[string]bool{}
 	for _, reference := range references {
@@ -404,6 +411,9 @@ func captureSelectedBusinessModuleExternalReferenceFingerprintsWithObservedSchem
 		}
 	}
 	if err := captureOrderModuleConfiguredComponentAndMasterInventoryDependencies(ctx, tx, snapshot, observation, dependencies); err != nil {
+		return nil, err
+	}
+	if err := captureConfigurationCouponOriginalReceiptSetsAndScopeDependencies(ctx, tx, snapshot, dependencies); err != nil {
 		return nil, err
 	}
 	identities := []string{}

@@ -2,7 +2,7 @@
   "site_id": "replace-with-unique-storefront-identity",
   "environment": "production",
   "application_version": "replace-with-the-exact-running-build-version",
-  "expected_migration_version": 436,
+  "expected_migration_version": 437,
   "application_database_role": "replace-with-storefront-database-role",
   "database_url": "postgres://maintenance-role:replace-with-password@db:5432/postgres?sslmode=disable",
   "database_name": "replace_with_storefront_database",

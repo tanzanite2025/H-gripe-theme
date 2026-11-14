@@ -1,6 +1,8 @@
 # 备份恢复生命周期、正式入口、内部演练与持久任务兼容
 
-核对日期：2026-11-02。本文对应 ARCH-06，并同步媒体及配置内容补缺的后续交付；只说明本地实现与源码责任，不代表已发布或通过目标商城验收。业务状态以[主架构 13.1](../../../docs/design/local-computer-module-backup-upload-validation-and-consistent-overwrite-recovery-architecture.zh-cn.md)为准，实际操作参照[手册 4.2、4.4–4.15](../../../docs/design/ops/local-computer-whole-storefront-backup-upload-validation-and-paired-recovery-runbook.zh-cn.md)。
+核对日期：2026-11-07。本文对应 ARCH-06，并同步媒体及配置内容补缺的后续交付；只说明本地实现与源码责任，不代表已发布或通过目标商城验收。业务状态以[主架构 13.1](../../../docs/design/local-computer-module-backup-upload-validation-and-consistent-overwrite-recovery-architecture.zh-cn.md)为准，实际操作参照[手册 4.2、4.4–4.25](../../../docs/design/ops/local-computer-whole-storefront-backup-upload-validation-and-paired-recovery-runbook.zh-cn.md)。
+
+本导航前两节是当前入口；第 6 节以后按日期保留历史批次边界，不能用旧 v11/v12/v13 段落替代当前 v14。`site_content` 是沿用的 HTTP/JSON/收据协议名称，当前覆盖上述业务配置，新增规则不另建恢复生命周期。当前架构回溯与未完成项见[职责回溯第 31 节](../../../docs/design/local-computer-backup-restore-file-responsibility-boundaries-and-remaining-module-delivery-review-2026-10-28.zh-cn.md#31-全链路架构回溯与交付目标校准2026-11-07)。
 
 ## 1. 按包范围选择恢复入口
 
@@ -14,7 +16,7 @@
 | `selected_business_modules` 且仅 `customer_service`；`customer_service_module_restore` | 保存聊天策略、完整行演练后在原库事务恢复四张会话表 | 模块预览 → `selected-customer-service-restore-choice` → `selected-customer-service-candidate-rehearsal` → `customer-service-module-formal-restore` → `released` / `completed` |
 | `selected_business_modules` 且仅 `customers`；`customer_profile_module_restore` | 缺失资料和符合条件的完整缺失账号组，在原库事务补入 | 模块预览 → `customer-profile-module-formal-restore` → `released` / `completed` |
 | `selected_business_modules` 且仅 `media`；`media_module_restore` | 缺失文件、媒体及已完成绑定补入；v2 可按计划修复登记一致的文件字节 | 模块预览 → `media-module-formal-restore` → `released` / `completed` |
-| `selected_business_modules` 且仅 `configuration`；`configuration_site_content_restore` | 53 张内容、目录、流程/问卷、市场/汇率/税率、邮件模板/历史、会员等级及物流基础资料/包装/报关表缺失行，其他配置/登记及文件匹配为前置 | 模块预览 → `configuration-site-content-formal-restore` → `configuration_site_content_restored_still_isolated` → `configuration-site-content-reviewed-service-release` → `released` / `completed` |
+| `selected_business_modules` 且仅 `configuration`；`configuration_site_content_restore` | v14 的 74 张业务配置表缺失行，含物流账号、邮件发送方、支付目录与原临时保护规则；其余 5 表、媒体登记及引用文件必须兼容 | 模块预览 → `configuration-site-content-formal-restore` → `configuration_site_content_restored_still_isolated` → `configuration-site-content-reviewed-service-release` → `released` / `completed` |
 | 配置其余范围、多模块组合或整站包子范围 | 尚无完整正式写入闭环 | 保留导出/上传校验及有限副本检查；不能从“可导出”“演练通过”推断全部可正式导入 |
 
 表内动作均位于 `/api/tasks/:id/` 下；`reconciliation-report` 使用 GET，其余表内动作使用 POST。`verify` 要求上传权限，正式恢复、策略和演练动作要求恢复权限，仍须满足原包、过期、摘要及目标绑定。`online_overwrite_available=false` 表示没有通用不停写覆盖；聊天 `recorded_not_executable` 表示选择记录本身不能执行覆盖，满足新版演练契约后仍须另行调用正式恢复入口。
@@ -29,7 +31,7 @@
 | 聊天原库事务恢复 | [保存策略与一次性演练](selected_customer_service_module_snapshot_bound_saved_restore_strategy_and_complete_row_candidate_rehearsal.go)、[四表正式事务](customer_service_module_formal_restore_saved_strategy_atomic_rows_audit_and_recoverable_attachment_installation.go)；`customer_service_module_restore` | 使用 `customer-service-module-interrupted-restore-recovery`，核验同事务收据和附件；共享身份、原事件处理状态及未选业务保持 | 不接收旧逐行候选 journal；不将聊天选择记录或副本直接提升为营业库 |
 | 媒体原库事务恢复 | [媒体正式执行](media_module_formal_restore_atomic_registration_files_audit_and_verified_interruption_recovery.go)、[媒体资格](media_module_standalone_restore_eligibility_completed_uploads_shared_owners_and_cleanup_hazard_inspection.go)；`media_module_restore` | `media-module-interrupted-restore-recovery` 核对原 SQL 收据、原库/结果及新增文件；v2 字节修复未提交时还须核验恢复原字节，再恢复服务 | 仅登记一致可修复文件，不覆盖不同完整行或未登记冲突，不重新生成派生或执行清理；不使用候选切换或通用解除维护 |
 | 客户原库事务恢复 | [客户准入及事务执行](customer_profile_module_formal_restore_atomic_rows_original_credentials_and_recoverable_interruption.go)、[身份和完整账号组契约](customer_profile_module_missing_account_cohort_financial_fact_and_existing_identity_preservation_contract.go)；`customer_profile_module_restore` | 使用 `customer-profile-module-interrupted-restore-recovery`，按原提交收据核验结果；保留当前身份、密码、积分、订阅、订单和聊天 | 不调用注册/奖励服务，不用旧余额覆盖现有账号，不把补缺等同任意客户覆盖 |
-| 配置内容原库事务恢复 | [53 表准入和正常约束 writer](configuration_module_missing_site_content_scope_public_file_prerequisites_and_normal_constraint_writer.go)、[正式事务和审计](configuration_module_missing_site_content_atomic_restore_audit_and_verified_interruption_recovery.go)、[内容/缓存核对及释放](configuration_module_site_content_projection_review_bound_service_release_and_http_routes.go)；`configuration_site_content_restore` | `configuration-site-content-interrupted-restore-recovery` 按原收据核验；已提交仍保持维护，人工核对后走 reviewed-service-release；未提交核验原状态才恢复原服务 | 当前 v6 增加物流基础资料/包装/报关五表，验证原商品/SKU指纹及最终绑定归属、精确包装规格、报关代码/风险/来源；保留原邮件模板/会员等级范围，校验模板渲染/完整历史、会员区间/精确折扣，并保留原市场/汇率/税率等规则；不发邮件、不改积分或发推荐奖励；未开始的 v1–v5 预览须重演练；已开始日志仍按原审计核验。运费模板/线路/外部渠道凭据、settings、同步开关和运行租约不写；旧包有包装绑定却缺原商品/SKU指纹阻断，不联网或重算旧订单；结算税率与参考资料分开。不安装文件，不写其他配置或原事件；普通释放和中断核验不能跳过提交后人工核对；核对记录不代表自动清缓存 |
+| 配置内容原库事务恢复 | [74 表准入和正常约束 writer](configuration_module_missing_site_content_scope_public_file_prerequisites_and_normal_constraint_writer.go)、[正式事务和审计](configuration_module_missing_site_content_atomic_restore_audit_and_verified_interruption_recovery.go)、[内容/缓存核对及释放](configuration_module_site_content_projection_review_bound_service_release_and_http_routes.go)；`configuration_site_content_restore` | `configuration-site-content-interrupted-restore-recovery` 按原收据核验；已提交仍保持维护，人工核对后走 reviewed-service-release；未提交核验原状态才恢复原服务 | 当前 v14 复用同一 writer、事务、收据和三项 HTTP 动作；原物流/邮件密文用已绑定的原业务密钥验证，支付费率与原保护到期时间保留，详见[范围索引](business-module-export-writable-restore-and-read-only-shared-dependency-scopes.zh-cn.md)及主架构 4.76–4.90 / 手册 4.11–4.25。未开始 v1–v13 预览须重演练，旧已开始收据继续原核验。settings、客户展示、Logo/Favicon 登记和第三方登录连接尚无配置补缺契约；不覆盖已有配置、不安装文件、不联网或重放支付/邮件/物流/奖励/原事件。普通释放和中断核验不能跳过提交后人工核对，核对声明不代表自动清缓存 |
 
 后五条共用[事务恢复日志、附件和提交核验](business_module_transactional_restore_shared_attachment_journal_atomic_receipt_and_verified_interruption_recovery.go)。每个任务只允许一种事务进度，且不与整站/商品切换日志、`StageDatabase` 或一次性副本身份混用。阶段为 `installing_files` → `committing_rows` → `rows_committed` → `releasing` → `released`。配置日志文件列表必须为空，不能借共用结构安装文件。最终 SQL 收据是判断提交是否发生的依据；本地阶段字段、请求成功日志或客户端超时均不能单独证明提交结果。
 
@@ -85,3 +87,23 @@ flowchart TD
 本轮仅增加本导航及关键源码职责注释；运行时函数、类型字段、JSON/摘要、权限路由、重启顺序和维护台脚本保持。核对覆盖 HTTP 动作到 Manager、五项内部启动方法的调用、持久身份到重启/释放/TTL 的反向引用；222 份 Go 文件的 398,925 个语法标记保持，五项内部启动方法合计 52 处调用均来自测试。18 项既有边界测试及 123 个子场景通过，零失败/跳过；本轮未重新执行数据库集成或真实浏览器矩阵。对应证据见[阶段登记 3.65](../../../docs/design/ops/local-computer-backup-roadmap-stage-alignment-and-target-environment-acceptance-register-2026-10-22.zh-cn.md)。未新增测试用例、未部署、未访问生产或改 Hostinger，未将既有集成测试证据当成本轮重新运行结果。
 
 后续 ARCH-07 的[导出/正式可写/共享依赖交叉索引](business-module-export-writable-restore-and-read-only-shared-dependency-scopes.zh-cn.md)已完成，见阶段 3.66；它补充范围差异检查，不改变本导航的生命周期或兼容责任。
+
+2026-11-06 配置 v7 只扩展同一 writer 的四表范围，见主架构 4.82 / 手册 4.17。未开始 v1–v6 预览须重演练；已开始旧日志继续按原收据核验。三项 HTTP 动作、确认词、日志字段、重启/TTL 和提交后人工核对释放保持；不会为线路新增独立切换、调用外部物流或重算旧订单。
+
+同日配置 v8 进一步增加承运服务、4PX/燕文发布渠道及燕文三类参考目录共六表，见主架构 4.83 / 手册 4.18。未开始 v1–v7 预览须重演练，已开始旧日志仍按原收据核验。仍为原三项 HTTP 动作和正常约束 writer，不新增任务字段或生命周期；恢复原启停状态而不调用同步/发布命令，物流凭据与轨迹运行控制仍不补写。
+
+同日配置 v9 增加积分/推荐计划原版本两表，见主架构 4.84 / 手册 4.19。未开始 v1–v8 预览须重新演练；已开始旧日志继续原收据路径。原三项 HTTP 动作、确认词、日志和维护释放流程保持，不新增迁移或生命周期，不调用注册、奖励、签到或发布方法；配置规则只在之后业务读取时生效。
+
+同日配置 v10 增加优惠券原规则/日期/额度及使用记录集合一致性，见主架构 4.85 / 手册 4.20 / 阶段 3.78。原三项动作、任务/日志字段及释放流程保持；未开始 v1–v9 预览须重新演练，旧已开始收据沿原核验路径。配置包仍只补缺失行，coupon_usage、订单、客户/积分和事件不获得新写权限。
+
+同日配置 v11 增加追踪服务商、承运映射与税率采集配置三表，见主架构 4.86 / 手册 4.21 / 阶段 3.79。未开始 v1–v10 预览须重演练，已开始旧日志仍按原收据核验；三项 HTTP 动作、任务/日志、同事务审计及人工核对释放不变。恢复与只读核查不创建默认行、注册物流、轮询或采集；放行后按原开关运行。原事件及待处理任务保持，未新增通用覆盖或组合写入。
+
+迁移 437 修正追踪租约正式结构缺口，见主架构 4.87 / 手册 4.22 / 阶段 3.80。只补 owner/generation/expiry 与索引，保留原租约/业务行；有同步中运单或使用过的代次时 down 拒绝。依赖登记显式接受 437，包目标同迁移版本限制、策略 v11、现有收据/重启/释放流程保持，不增加迁移前后跨版本恢复能力。真实开发库/服务器升级尚未执行。
+
+2026-11-07配置v12增加4PX/燕文原账号两表缺失行，见主架构4.88 / 手册4.23 / 阶段3.81。累计71表可补缺、8表只读兼容。每个非空密文用维护服务绑定的原业务密钥验证可解，不从未绑定进程变量补密钥；不调用Save/Ping/Sync或生成物流动作。原三项HTTP动作、任务/日志字段、审计、中断与人工核对释放保持，未开始v1–v11预览须重演练，已开始旧收据仍沿原核验路径；无新增迁移或生命周期。已有覆盖、图片联动、组合及实机验收保持待办。
+
+2026-11-07配置v13增加邮件发送方email_provider_configs缺失行，见主架构4.89 / 手册4.24 / 阶段3.82；累计72表可补缺、7表只读兼容。密钥仅从已绑定RecoverySecrets按现行业务优先级取首个非空值，不在失败后试低级密钥或读取未绑定进程变量。原SMTP/密文/启停/默认/测试记录保持，当前默认冲突阻断，不调用SetDefault/Test或发送邮件；原发送历史和待处理事件保持。三项HTTP动作、任务/日志、审计、中断及人工核对释放不变；未开始v1–v12预览须重演练，已开始旧收据仍沿原路径核验，无新迁移或生命周期。已有覆盖、图片联动、组合及发布/实机验收继续待办。
+
+同批首次矩阵在提交后响应丢失的人工释放阶段出现任务持久化失败，原二进制两次复验通过，根因仍未确认。共用任务执行器只增加不含私有路径/凭据的失败诊断，不更改文件持久化、重试或旧任务协议；不再断言围栏必定保留。写入失败须先核对实际隔离状态及原任务/收据，重启后沿本节原分派核验，不能按HTTP返回成功自动认定释放完成。故障注入证据及正式/三处中断复验见阶段3.82，首次失败保留待定位。
+
+2026-11-07配置v14增加支付方式及原临时支付保护两表缺失行，累计74/5表。保留原精确金额/费率、开关及保护主体/范围/到期时间，不重做创建/撤销或延期；非零主体原指纹缺失/变化阻断，零系统主体保留。旧包缺主体指纹须重出；未开始v1–v13预览须重演练，已开始旧收据仍走原中断核验。原三项动作/日志、审计和释放内核保持，无新迁移、任务字段或生命周期；仅订单包契约不扩张。原3.82持久化失败根因和发布/实机验收继续待办，见阶段3.83。

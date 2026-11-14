@@ -42,16 +42,12 @@ func TestConfigurationMarketCurrencyAndTaxDomainGuardsKeepExactBackupValuesAndRe
 		{"invalid_tax", "tax_rates", strings.ReplaceAll(tax, `7.500000000000000`, `101`), false},
 		{"compound_tax", "tax_rates", strings.ReplaceAll(tax, `false`, `true`), false},
 		{"lowercase_country", "storefront_market_countries", `{"code":"nz"}`, false},
-		{"sync_control", "tax_rate_source_configs", `{}`, true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			row := json.RawMessage(test.row)
 			err := validateConfigurationModuleMissingMarketCurrencyAndTaxDomainRows(map[string][]json.RawMessage{test.table: {row}})
 			require.Equal(t, test.valid, err == nil)
 			require.Equal(t, test.row, string(row))
-			if test.table == "tax_rate_source_configs" {
-				require.False(t, configurationModuleHasMissingSiteContentWriteContract(selectedBusinessModuleCompleteSnapshot{Modules: []string{"configuration"}}, test.table))
-			}
 		})
 	}
 }
@@ -128,7 +124,7 @@ INSERT INTO currency_exchange_rates(id,base_currency,quote_currency,rate_decimal
 
 func configurationMarketCurrencyAndTaxIntegrationScenarioRequiresRejection(scenario string) bool {
 	switch scenario {
-	case "market_invalid_locale", "market_default_currency_not_selectable", "market_country_wrong_case", "market_country_soft_deleted_parent", "exchange_unknown_currency", "exchange_invalid_expiry", "tax_unsupported_compound", "tax_invalid_location", "reference_count_mismatch", "reference_invalid_comment_shape", "reference_invalid_entry_type", "reference_missing_entry", "market_country_current_owner_conflict", "tax_newer_current_scope_conflict", "exchange_current_reverse_pair_conflict", "changed_existing_exchange_rate", "missing_tax_sync_configuration", "partial_reference_target_only_extra_entry":
+	case "market_invalid_locale", "market_default_currency_not_selectable", "market_country_wrong_case", "market_country_soft_deleted_parent", "exchange_unknown_currency", "exchange_invalid_expiry", "tax_unsupported_compound", "tax_invalid_location", "reference_count_mismatch", "reference_invalid_comment_shape", "reference_invalid_entry_type", "reference_missing_entry", "market_country_current_owner_conflict", "tax_newer_current_scope_conflict", "exchange_current_reverse_pair_conflict", "changed_existing_exchange_rate", "partial_reference_target_only_extra_entry":
 		return true
 	}
 	return false
@@ -188,7 +184,7 @@ func verifyRestoredConfigurationMarketsPublicTaxAndExactExchangeWithoutChangingO
 	require.Equal(t, "original-owner", owner)
 	var enabled bool
 	require.NoError(t, database.QueryRowContext(context.Background(), `SELECT enabled FROM tax_rate_source_configs WHERE id=1`).Scan(&enabled))
-	require.False(t, enabled)
+	require.Equal(t, scenario == "collection_partial_enabled_tax_control_restore", enabled)
 	var originalTotal int64
 	require.NoError(t, database.QueryRowContext(context.Background(), `SELECT total_amount_minor FROM orders WHERE id=900001`).Scan(&originalTotal))
 	require.Equal(t, int64(123), originalTotal)

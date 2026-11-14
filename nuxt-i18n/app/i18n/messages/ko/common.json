@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "휴대폰 브라우저에서 열기",
+    "description": "로그인이나 결제가 되지 않으면 앱 메뉴에서 이 페이지를 휴대폰 브라우저로 열거나 아래 링크를 복사하세요.",
+    "linkLabel": "현재 페이지 링크",
+    "copyLink": "링크 복사",
+    "copied": "링크 복사됨",
+    "copyFailed": "자동으로 복사하지 못했습니다. 위 링크를 선택하여 직접 복사하세요.",
+    "dismiss": "브라우저 안내 닫기"
+  },
   "close": "Close",
   "share": "공유",
   "previous": "Previous",

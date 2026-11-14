@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "Buka di browser ponsel",
+    "description": "Jika proses masuk atau pembayaran gagal, gunakan menu aplikasi untuk membuka halaman ini di browser ponsel, atau salin tautan di bawah.",
+    "linkLabel": "Tautan halaman saat ini",
+    "copyLink": "Salin tautan",
+    "copied": "Tautan disalin",
+    "copyFailed": "Tidak dapat menyalin otomatis. Pilih tautan di atas dan salin secara manual.",
+    "dismiss": "Tutup pesan browser"
+  },
   "close": "Close",
   "share": "Bagikan",
   "previous": "Previous",

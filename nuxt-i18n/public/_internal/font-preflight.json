@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "tanzanite-theme storefront",
-  "generated_at": "2026-11-03T12:18:54.619Z",
+  "generated_at": "2026-11-14T10:56:01.554Z",
   "overall_status": "pass",
   "baseline": {
     "id": "storefront-built-in-font-shards-v1",
@@ -140,8 +140,8 @@
   ],
   "coverage": {
     "locale_count": 20,
-    "source_file_count": 1144,
-    "checked_characters": 5081,
+    "source_file_count": 1146,
+    "checked_characters": 5091,
     "missing_characters": 0,
     "locales": [
       {
@@ -185,7 +185,7 @@
       },
       {
         "locale": "en",
-        "source_files": 104,
+        "source_files": 105,
         "checked_characters": 154,
         "missing_characters": 0,
         "missing_sample": [],
@@ -238,7 +238,7 @@
       {
         "locale": "hi",
         "source_files": 52,
-        "checked_characters": 188,
+        "checked_characters": 189,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -276,7 +276,7 @@
       {
         "locale": "ja",
         "source_files": 52,
-        "checked_characters": 603,
+        "checked_characters": 605,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -288,7 +288,7 @@
       {
         "locale": "ko",
         "source_files": 52,
-        "checked_characters": 487,
+        "checked_characters": 491,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [
@@ -388,8 +388,8 @@
       },
       {
         "locale": "zh-cn",
-        "source_files": 104,
-        "checked_characters": 1442,
+        "source_files": 105,
+        "checked_characters": 1445,
         "missing_characters": 0,
         "missing_sample": [],
         "font_stack": [

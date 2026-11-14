@@ -276,10 +276,14 @@ func renderCaddy(routes []ops.EdgeDomainRoute) string {
 	var builder strings.Builder
 	builder.WriteString("# Generated from ops_domain_bindings. Do not edit manually.\n\n")
 	for _, route := range routes {
+		writeCaddyHTTPToHTTPSRedirectRoute(&builder, route.Domain)
 		builder.WriteString(route.Domain)
 		builder.WriteString(" {\n")
 		if route.Role == ops.DomainRoleRedirect {
-			fmt.Fprintf(&builder, "\tredir %s 308\n", route.RedirectTarget)
+			writeCaddyMethodAwareRedirect(
+				&builder,
+				redirectTargetWithPreservedRequestURIForDomainMigration(route.RedirectTarget, "{uri}"),
+			)
 		} else {
 			builder.WriteString("\tencode zstd gzip\n")
 			writeQuickBuyRateLimitCaddyComment(&builder, route)
@@ -288,6 +292,45 @@ func renderCaddy(routes []ops.EdgeDomainRoute) string {
 		builder.WriteString("}\n\n")
 	}
 	return builder.String()
+}
+
+func writeCaddyHTTPToHTTPSRedirectRoute(builder *strings.Builder, domain string) {
+	if builder == nil {
+		return
+	}
+	fmt.Fprintf(
+		builder,
+		"http://%s {\n\t@pageNavigation method GET HEAD\n\tredir @pageNavigation https://%s{uri} 301\n\tredir https://%s{uri} 308\n}\n\n",
+		domain,
+		domain,
+		domain,
+	)
+}
+
+func writeCaddyMethodAwareRedirect(builder *strings.Builder, target string) {
+	if builder == nil {
+		return
+	}
+	fmt.Fprintf(
+		builder,
+		"\t@pageNavigation method GET HEAD\n\tredir @pageNavigation %s 301\n\tredir %s 308\n",
+		target,
+		target,
+	)
+}
+
+// An origin-only target represents a domain migration. An explicit path,
+// query, or fragment represents a destination page and must remain exact.
+func redirectTargetWithPreservedRequestURIForDomainMigration(target, requestURIPlaceholder string) string {
+	target = strings.TrimSpace(target)
+	parsedTarget, err := url.Parse(target)
+	if err != nil || parsedTarget.Host == "" ||
+		(parsedTarget.Scheme != "http" && parsedTarget.Scheme != "https") ||
+		(parsedTarget.EscapedPath() != "" && parsedTarget.EscapedPath() != "/") ||
+		parsedTarget.RawQuery != "" || parsedTarget.ForceQuery || strings.Contains(target, "#") {
+		return target
+	}
+	return strings.TrimSuffix(target, "/") + requestURIPlaceholder
 }
 
 func writeQuickBuyRateLimitCaddyComment(builder *strings.Builder, route ops.EdgeDomainRoute) {

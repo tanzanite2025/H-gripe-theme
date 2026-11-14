@@ -1,15 +1,27 @@
 {
-  "title": "Rim Test Report",
-  "intro": "This section summarises how our carbon rims are validated in our in-house lab, including strength, impact, radial load, spoke-hole tension, cutting-piece inspection, and X-ray flatness checks.",
+  "title": "Rim Test",
+  "intro": "This section summarises how our carbon rims are validated in our in-house lab, including strength, impact, inflation pressure, radial load, spoke-hole tension, cutting-piece inspection, and X-ray flatness checks.",
   "labels": {
     "purpose": "Purpose:",
     "testMethod": "Test Method:",
     "criteriaForEvaluation": "Criteria for Evaluation:",
     "evaluationCriteria": "Evaluation Criteria:"
   },
+  "media": {
+    "videoTitle": "{test} video",
+    "videoPending": "Video to be added",
+    "photoTitle": "{test} photos",
+    "photoPending": "Photo {number} to be added",
+    "photoAlt": "{test}, photo {number}",
+    "paginationLabel": "Switch between {test} video and photos"
+  },
   "tests": {
     "strength": {
       "title": "Strength Test",
+      "media": {
+        "videoCaption": "Rim fixture, static loading, and cyclic loading sequence.",
+        "photoCaption": "Loading equipment, test positions, and the rim after testing."
+      },
       "purpose": "Verify the rim's ability to withstand static and dynamic loads, ensuring no structural failure occurs during riding.",
       "standard": "ISO 4210-7:2023",
       "method": [
@@ -25,6 +37,10 @@
     },
     "impact": {
       "title": "Impact Test",
+      "media": {
+        "videoCaption": "Test setup, drop sequence, and the rim under impact.",
+        "photoCaption": "Impact location and the condition of the rim after testing."
+      },
       "purpose": "Simulates external impacts (e.g., rock strikes or landings) to assess rim resistance and structural integrity.",
       "standard": "ISO 4210-7:2023",
       "method": [
@@ -38,8 +54,32 @@
         "After impact, the rim must retain full functionality, ensuring safe tire mounting and riding."
       ]
     },
+    "inflation": {
+      "title": "Inflation Pressure Test",
+      "media": {
+        "videoCaption": "Tire fitting, staged inflation, pressure readings, and pressure retention observations.",
+        "photoCaption": "Bead seating, rim sidewalls, pressure readings, and the condition after testing."
+      },
+      "purpose": "Assess rim condition, tire bead retention, and pressure stability during inflation and pressure holding with a compatible tire.",
+      "method": [
+        "Verify rim and tire sizes, bead design, and applicable pressure limits. Record the sample model, tire size, and assembly type.",
+        "Fit a compatible tire, rim tape, and valve according to the laboratory protocol. Record the sealing configuration for tubeless assemblies.",
+        "Increase pressure in stages in a protected laboratory test fixture. Record pressure, rim condition, and bead seating at each stage.",
+        "Hold pressure as specified by the confirmed test protocol and record pressure changes. Depressurize and inspect the sidewalls, bead seats, and valve area."
+      ],
+      "criteria": [
+        "At the specified pressure and hold time, the sidewalls and bead seats should show no cracks, delamination, or permanent deformation beyond the protocol's limits.",
+        "The tire beads should remain correctly seated without abnormal lifting, slipping, or separation from the bead seats.",
+        "Assess pressure changes in relation to temperature, tire characteristics, and the sealing system. Investigate abnormal pressure loss before repeating the test.",
+        "Target pressure, hold time, and numerical acceptance limits are defined by the confirmed protocol and test records for the rim model."
+      ]
+    },
     "radial": {
       "title": "Radial Load Test",
+      "media": {
+        "videoCaption": "Radial loading, repeated load cycles, and deformation checks.",
+        "photoCaption": "Radial load setup, force application, and rim deformation checks."
+      },
       "purpose": "Tests rim deformation and load capacity under vertical forces to ensure safety and durability.",
       "standard": "ISO 4210-7:2023",
       "method": [
@@ -55,6 +95,10 @@
     },
     "holeTension": {
       "title": "Hole Tension Test",
+      "media": {
+        "videoCaption": "Spoke-hole loading position and tensile test sequence.",
+        "photoCaption": "Spoke-hole fixture and the condition of the loaded area."
+      },
       "purpose": "Evaluates rim ability to withstand spoke-hole tension under static and dynamic loads, ensuring durability and safety of spoke interfaces.",
       "standard": "ISO 4210-7:2023",
       "method": [
@@ -70,6 +114,10 @@
     },
     "cuttingPieces": {
       "title": "Rim Cutting Pieces Test",
+      "media": {
+        "videoCaption": "Rim section sampling, inspection, and measurement.",
+        "photoCaption": "Rim cross-sections, internal layup, and wall thickness details."
+      },
       "purpose": "Analyze rim cross-sections by cutting a portion to evaluate both internal and external features, ensuring compliance with dimensional and quality standards.",
       "method": [
         "Cut representative sections of the rim at critical points (e.g., spoke hole area, joint section, braking surface).",
@@ -86,6 +134,10 @@
     },
     "xray": {
       "title": "X-ray Flatness Inspection",
+      "media": {
+        "videoCaption": "X-ray positioning, imaging, and internal structure inspection.",
+        "photoCaption": "X-ray images for checking internal structure and flatness."
+      },
       "purpose": "Assess the internal flatness and structural uniformity of the rim using high-resolution X-ray imaging. This non-destructive test ensures that hidden defects do not compromise performance or safety.",
       "method": [
         "Place the rim in a high-resolution X-ray inspection system.",
@@ -100,40 +152,6 @@
         "Rim must pass inspection without requiring destructive sampling, confirming production quality."
       ]
     }
-  },
-  "gallery": [
-    {
-      "alt": "Overview of our rim laboratory test setup",
-      "caption": "Overall view of the rim test setup used in our lab."
-    },
-    {
-      "alt": "Carbon rim strength test under static load",
-      "caption": "Strength Test - evaluating rim performance under static and dynamic loads."
-    },
-    {
-      "alt": "Additional view of carbon rim strength testing",
-      "caption": "Strength Test - additional view of clamping and load application."
-    },
-    {
-      "alt": "Carbon rim radial load test showing vertical loading",
-      "caption": "Radial Load Test - checking deformation and load capacity under vertical forces."
-    },
-    {
-      "alt": "Spoke-hole tension test setup for a carbon rim",
-      "caption": "Hole Tension Test - measuring how spoke holes withstand spoke tension and repeated loading."
-    },
-    {
-      "alt": "Cross-section cutting piece of a carbon rim",
-      "caption": "Rim Cutting Pieces Test - inspecting internal layup, wall thickness, and burrs."
-    },
-    {
-      "alt": "X-ray flatness inspection of a carbon rim",
-      "caption": "X-ray Flatness Inspection - non-destructive check for internal uniformity and flatness."
-    }
-  ],
-  "video": {
-    "alt": "Play spoke-hole strength test video for our carbon rims",
-    "label": "Watch spoke-hole strength test video"
   },
   "disclaimer": {
     "title": "Disclaimer",

@@ -3,11 +3,11 @@
   "sections": "测试报告分区",
   "tabs": {
     "rim": {
-      "label": "轮圈测试报告",
+      "label": "轮圈测试",
       "description": "轮圈测试记录与合规参考。"
     },
     "wheelset": {
-      "label": "轮组测试报告",
+      "label": "轮组测试",
       "description": "轮组测试报告与验证数据。"
     },
     "tension": {

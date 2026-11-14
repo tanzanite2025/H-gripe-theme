@@ -1,0 +1,8 @@
+{
+  "title": "Test details",
+  "open": "View separately",
+  "openTest": "View separately: {test} details",
+  "loading": "Loading test details…",
+  "loadError": "Unable to load test details. Please try again.",
+  "retry": "Try again"
+}

@@ -369,7 +369,7 @@
     {
       "key": "technology-rim-test-report",
       "path": "/technology/rim-test-report",
-      "label": "Rim Test Report",
+      "label": "Rim Test",
       "description": "Rim testing documents and compliance references",
       "is_searchable": true,
       "is_checkable": true,
@@ -378,7 +378,7 @@
     {
       "key": "technology-wheelset-test-report",
       "path": "/technology/wheelset-test-report",
-      "label": "Wheelset Test Report",
+      "label": "Wheelset Test",
       "description": "Wheelset testing reports and validation data",
       "is_searchable": true,
       "is_checkable": true,

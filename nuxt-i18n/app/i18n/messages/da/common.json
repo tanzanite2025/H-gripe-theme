@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "Åbn i telefonens browser",
+    "description": "Hvis login eller betaling mislykkes, kan du åbne siden i telefonens browser via appens menu eller kopiere linket nedenfor.",
+    "linkLabel": "Link til den aktuelle side",
+    "copyLink": "Kopiér link",
+    "copied": "Link kopieret",
+    "copyFailed": "Kunne ikke kopiere automatisk. Markér linket ovenfor, og kopiér det manuelt.",
+    "dismiss": "Luk browserbeskeden"
+  },
   "close": "Close",
   "share": "Del",
   "previous": "Previous",

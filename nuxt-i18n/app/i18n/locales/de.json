@@ -762,6 +762,15 @@
     }
   },
   "common": {
+    "embeddedBrowserCompatibility": {
+      "title": "Im Browser deines Smartphones öffnen",
+      "description": "Falls Anmeldung oder Bezahlung fehlschlagen, öffne diese Seite über das App-Menü im Browser deines Smartphones oder kopiere den Link unten.",
+      "linkLabel": "Link zur aktuellen Seite",
+      "copyLink": "Link kopieren",
+      "copied": "Link kopiert",
+      "copyFailed": "Automatisches Kopieren fehlgeschlagen. Markiere den Link oben und kopiere ihn manuell.",
+      "dismiss": "Browserhinweis schließen"
+    },
     "close": "Close",
     "share": "Teilen",
     "previous": "Previous",

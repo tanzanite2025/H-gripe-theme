@@ -18,7 +18,7 @@ func TestConfigurationContentRestoreRejectsMixedScopeCredentialsAndUnreviewedSer
 				return
 			}
 			if scenario == "credential_missing" {
-				require.False(t, configurationModuleHasMissingSiteContentWriteContract(configurationSnapshot, "payment_methods"))
+				require.False(t, configurationModuleHasMissingSiteContentWriteContract(configurationSnapshot, "social_oauth_connections"))
 				require.False(t, configurationModuleHasMissingSiteContentWriteContract(configurationSnapshot, "settings"))
 				return
 			}

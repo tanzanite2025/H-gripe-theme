@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "Telefonunuzun tarayıcısında açın",
+    "description": "Giriş veya ödeme başarısız olursa uygulama menüsünden bu sayfayı telefonunuzun tarayıcısında açın ya da aşağıdaki bağlantıyı kopyalayın.",
+    "linkLabel": "Geçerli sayfanın bağlantısı",
+    "copyLink": "Bağlantıyı kopyala",
+    "copied": "Bağlantı kopyalandı",
+    "copyFailed": "Otomatik olarak kopyalanamadı. Yukarıdaki bağlantıyı seçip elle kopyalayın.",
+    "dismiss": "Tarayıcı mesajını kapat"
+  },
   "close": "Close",
   "share": "Paylaş",
   "previous": "Previous",

@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "Abrir en el navegador del teléfono",
+    "description": "Si falla el inicio de sesión o el pago, usa el menú de la aplicación para abrir esta página en el navegador del teléfono o copia el enlace de abajo.",
+    "linkLabel": "Enlace de la página actual",
+    "copyLink": "Copiar enlace",
+    "copied": "Enlace copiado",
+    "copyFailed": "No se pudo copiar automáticamente. Selecciona el enlace de arriba y cópialo manualmente.",
+    "dismiss": "Cerrar aviso del navegador"
+  },
   "close": "Close",
   "share": "Compartir",
   "previous": "Previous",

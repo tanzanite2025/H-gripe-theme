@@ -5,6 +5,12 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      storefront_site_url:
+        description: "Optional canonical-domain migration target. Enter the HTTPS origin; STOREFRONT_SITE_URL is saved after all images publish."
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -18,6 +24,12 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
+      - name: Require master branch for manual production publication
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/master'
+        run: |
+          echo "Production images can only be published from the master branch."
+          exit 1
+
       - name: Checkout code
         uses: actions/checkout@v7
         with:
@@ -29,6 +41,16 @@ jobs:
           go-version-file: go-backend/go.mod
           cache-dependency-path: go-backend/go.sum
 
+      - name: Install pinned Caddy for edge integration tests
+        run: |
+          caddy_version="2.11.4"
+          curl --fail --silent --show-error --location \
+            "https://github.com/caddyserver/caddy/releases/download/v${caddy_version}/caddy_${caddy_version}_linux_amd64.tar.gz" \
+            --output /tmp/caddy-linux-amd64.tar.gz
+          tar -xzf /tmp/caddy-linux-amd64.tar.gz -C /tmp caddy
+          sudo install -m 0755 /tmp/caddy /usr/local/bin/caddy
+          caddy version
+
       - name: Prepare production Nginx upload cache boundary test
         run: |
           production_nginx_image="$(awk '$1 == "FROM" { print $2; exit }' deployment/docker/web.Dockerfile)"
@@ -38,6 +60,8 @@ jobs:
 
       - name: Test backend
         working-directory: go-backend
+        env:
+          CADDY_EDGE_INTEGRATION_TEST_REQUIRED: "true"
         run: go test ./...
 
       - name: Setup Node.js
@@ -52,8 +76,14 @@ jobs:
 
       - name: Build storefront
         working-directory: nuxt-i18n
+        env:
+          STOREFRONT_SITE_URL: ${{ inputs.storefront_site_url || vars.STOREFRONT_SITE_URL }}
+          STOREFRONT_DOMAIN_MIGRATION: ${{ inputs.storefront_site_url != '' }}
+          STOREFRONT_CURRENT_SITE_URL: ${{ vars.STOREFRONT_SITE_URL }}
         run: |
           npm ci
+          npm run test:storefront-publish-domain-guard
+          npm run check:storefront-publish-domain
           npm run build
           npm run check:production-artifacts
           npm run smoke:html-cache
@@ -118,8 +148,46 @@ jobs:
             exit 1
           fi
 
-  publish:
+  resolve-storefront-site-url:
+    if: github.event_name == 'workflow_dispatch' && inputs.storefront_site_url != ''
     needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      site_url: ${{ steps.normalize.outputs.site_url }}
+    steps:
+      - name: Validate requested canonical storefront origin
+        id: normalize
+        env:
+          REQUESTED_STOREFRONT_SITE_URL: ${{ inputs.storefront_site_url }}
+          CURRENT_STOREFRONT_SITE_URL: ${{ vars.STOREFRONT_SITE_URL }}
+        run: |
+          node --input-type=module <<'NODE' >> "$GITHUB_OUTPUT"
+          const requestedValue = process.env.REQUESTED_STOREFRONT_SITE_URL?.trim()
+          const currentValue = process.env.CURRENT_STOREFRONT_SITE_URL?.trim()
+          if (!requestedValue) throw new Error('The migration target origin is empty.')
+
+          const requestedUrl = new URL(requestedValue)
+          if (requestedUrl.protocol !== 'https:' || requestedUrl.username || requestedUrl.password || requestedUrl.pathname !== '/' || requestedUrl.search || requestedUrl.hash) {
+            throw new Error('Enter only the new canonical HTTPS origin, such as https://shop.example.com')
+          }
+
+          if (currentValue) {
+            const currentUrl = new URL(currentValue)
+            if (currentUrl.origin === requestedUrl.origin) {
+              throw new Error('The migration input matches STOREFRONT_SITE_URL. Leave it blank for a routine publish.')
+            }
+          }
+
+          console.log(`site_url=${requestedUrl.origin}`)
+          NODE
+
+  publish:
+    needs:
+      - validate
+      - resolve-storefront-site-url
+    if: ${{ !cancelled() && needs.validate.result == 'success' && (needs.resolve-storefront-site-url.result == 'success' || needs.resolve-storefront-site-url.result == 'skipped') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -177,8 +245,8 @@ jobs:
           platforms: linux/amd64
           build-args: |
             VERSION=sha-${{ github.sha }}
-            NUXT_PUBLIC_SITE_URL=${{ vars.STOREFRONT_SITE_URL || 'https://learn.gripe' }}
-            NUXT_IMAGE_DOMAINS=${{ vars.STOREFRONT_IMAGE_DOMAINS || 'learn.gripe' }}
+            NUXT_PUBLIC_SITE_URL=${{ needs.resolve-storefront-site-url.outputs.site_url || vars.STOREFRONT_SITE_URL }}
+            NUXT_IMAGE_DOMAINS=${{ vars.STOREFRONT_IMAGE_DOMAINS }}
             NUXT_IMAGE_INTERNAL_ORIGIN=${{ vars.STOREFRONT_IMAGE_INTERNAL_ORIGIN || 'http://web:8080' }}
             NUXT_IMAGE_MAX_INPUT_PIXELS=${{ vars.STOREFRONT_IMAGE_MAX_INPUT_PIXELS || '24000000' }}
             NUXT_IMAGE_OPTIMIZE_UPLOADS=${{ vars.STOREFRONT_IMAGE_OPTIMIZE_UPLOADS || 'true' }}
@@ -264,3 +332,18 @@ jobs:
             docker tag "local/${{ matrix.image }}:${{ github.sha }}" "$tag"
             docker push "$tag"
           done <<< "$IMAGE_TAGS"
+
+  save-storefront-site-url-after-successful-domain-migration:
+    if: github.event_name == 'workflow_dispatch' && inputs.storefront_site_url != ''
+    needs:
+      - resolve-storefront-site-url
+      - publish
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Save published canonical origin to repository Actions variables
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STOREFRONT_SITE_URL: ${{ needs.resolve-storefront-site-url.outputs.site_url }}
+        run: gh variable set STOREFRONT_SITE_URL --body "$STOREFRONT_SITE_URL" --repo "$GITHUB_REPOSITORY"

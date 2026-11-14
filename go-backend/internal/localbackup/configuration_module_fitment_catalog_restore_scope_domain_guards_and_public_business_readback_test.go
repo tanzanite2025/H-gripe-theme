@@ -23,7 +23,7 @@ func TestConfigurationFitmentCatalogWriteScopeStaysInsideConfigurationExportWith
 	exported := selectedBusinessModuleTableSelectors(configuration.Modules)
 	require.Len(t, exported, 79)
 	allowed := configurationModuleMissingBusinessConfigurationWritableTableNames()
-	require.Len(t, allowed, 53)
+	require.Len(t, allowed, 74)
 	require.Len(t, configurationModuleMissingFitmentSpokeAndTireCatalogWritableTableNames(), 12)
 	seen := map[string]bool{}
 	for _, table := range allowed {

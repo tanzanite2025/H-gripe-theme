@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "Buka dalam pelayar telefon",
+    "description": "Jika log masuk atau pembayaran gagal, gunakan menu aplikasi untuk membuka halaman ini dalam pelayar telefon, atau salin pautan di bawah.",
+    "linkLabel": "Pautan halaman semasa",
+    "copyLink": "Salin pautan",
+    "copied": "Pautan disalin",
+    "copyFailed": "Tidak dapat menyalin secara automatik. Pilih pautan di atas dan salin secara manual.",
+    "dismiss": "Tutup mesej pelayar"
+  },
   "close": "Close",
   "share": "Kongsi",
   "previous": "Previous",

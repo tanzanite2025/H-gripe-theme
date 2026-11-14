@@ -762,6 +762,15 @@
     }
   },
   "common": {
+    "embeddedBrowserCompatibility": {
+      "title": "Ouvrir dans le navigateur du téléphone",
+      "description": "Si la connexion ou le paiement échoue, ouvrez cette page dans le navigateur du téléphone via le menu de l’application, ou copiez le lien ci-dessous.",
+      "linkLabel": "Lien de la page actuelle",
+      "copyLink": "Copier le lien",
+      "copied": "Lien copié",
+      "copyFailed": "La copie automatique a échoué. Sélectionnez le lien ci-dessus et copiez-le manuellement.",
+      "dismiss": "Fermer le message du navigateur"
+    },
     "close": "Close",
     "share": "Partager",
     "previous": "Previous",

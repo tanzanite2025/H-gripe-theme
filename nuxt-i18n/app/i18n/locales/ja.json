@@ -762,6 +762,15 @@
     }
   },
   "common": {
+    "embeddedBrowserCompatibility": {
+      "title": "スマートフォンのブラウザーで開く",
+      "description": "ログインや決済ができない場合は、アプリのメニューからこのページをスマートフォンのブラウザーで開くか、下のリンクをコピーしてください。",
+      "linkLabel": "現在のページのリンク",
+      "copyLink": "リンクをコピー",
+      "copied": "リンクをコピーしました",
+      "copyFailed": "自動でコピーできませんでした。上のリンクを選択し、手動でコピーしてください。",
+      "dismiss": "ブラウザーの案内を閉じる"
+    },
     "close": "Close",
     "share": "共有",
     "previous": "Previous",

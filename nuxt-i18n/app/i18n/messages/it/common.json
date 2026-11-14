@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "Apri nel browser del telefono",
+    "description": "Se l’accesso o il pagamento non riesce, usa il menu dell’app per aprire questa pagina nel browser del telefono, oppure copia il link qui sotto.",
+    "linkLabel": "Link della pagina attuale",
+    "copyLink": "Copia link",
+    "copied": "Link copiato",
+    "copyFailed": "Copia automatica non riuscita. Seleziona il link qui sopra e copialo manualmente.",
+    "dismiss": "Chiudi avviso del browser"
+  },
   "close": "Close",
   "share": "Condividi",
   "previous": "Previous",

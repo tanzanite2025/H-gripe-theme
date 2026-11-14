@@ -3,11 +3,11 @@
   "sections": "Test report sections",
   "tabs": {
     "rim": {
-      "label": "Rim Test Report",
+      "label": "Rim Test",
       "description": "Rim testing documents and compliance references."
     },
     "wheelset": {
-      "label": "Wheelset Test Report",
+      "label": "Wheelset Test",
       "description": "Wheelset testing reports and validation data."
     },
     "tension": {

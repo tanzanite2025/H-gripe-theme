@@ -17,7 +17,7 @@ function createConfigurationContentRestoreConsoleHarness(){
   const browserWindow={addEventListener(){}};browserWindow.parent=browserWindow;
   const context=vm.createContext({document:{getElementById:findElement,createElement:()=>new SyntheticConfigurationContentConsoleElement(),querySelectorAll:()=>[],querySelector:()=>null},location:{pathname:'/local-backup-maintenance/',origin:'https://synthetic.invalid'},window:browserWindow,Headers,console,clearInterval(){},setInterval(){return 1;},fetch:async()=>{throw new Error('unexpected network request');}});
   loadMaintenanceConsoleScriptsInDocumentOrder(context);
-  const task={id:'synthetic-configuration-task',kind:'upload',state:'module_isolated_restore_verified',size:100,uploaded_bytes:100,expires_at:new Date(Date.now()+3600000).toISOString(),manifest:{scope:'selected_business_modules',selected_modules:['configuration']},selected_module_restore_preview:{modules:['configuration'],sha256:'a'.repeat(64),binding:{},tables:[],limitations:[],online_overwrite_available:false,target_unchanged:true,disposable_stage_removed:true,isolated_restore_verified:true,configuration_site_content_restore_eligibility:{eligible:true,policy:'restore_missing_business_configuration_including_shipping_reference_packaging_and_customs_preserve_existing_rows_and_registered_files_v6'}}};
+  const task={id:'synthetic-configuration-task',kind:'upload',state:'module_isolated_restore_verified',size:100,uploaded_bytes:100,expires_at:new Date(Date.now()+3600000).toISOString(),manifest:{scope:'selected_business_modules',selected_modules:['configuration']},selected_module_restore_preview:{modules:['configuration'],sha256:'a'.repeat(64),binding:{},tables:[],limitations:[],online_overwrite_available:false,target_unchanged:true,disposable_stage_removed:true,isolated_restore_verified:true,configuration_site_content_restore_eligibility:{eligible:true,policy:'restore_missing_business_configuration_including_payment_methods_and_original_time_bounded_protection_preserve_existing_rows_and_registered_files_v14'}}};
   const status={site_id:'synthetic-store',environment:'disposable',permissions:['ops:backup:restore','ops:backup:upload'],application_fenced:false};
   Object.assign(context,{syntheticTask:task,syntheticStatus:status});
   vm.runInContext('maintenanceCredential="synthetic-token";targetStatus=syntheticStatus;displayedMaintenanceTasks=[syntheticTask]',context);
@@ -26,7 +26,7 @@ function createConfigurationContentRestoreConsoleHarness(){
 }
 
 
-for(const scenario of ['eligible','view_only','fenced','expired','mixed_scope','missing_preview','wrong_policy','legacy_policy','legacy_v2_policy','legacy_v3_policy','legacy_v4_policy','already_started','mixed_media_journal','missing_binding']){
+for(const scenario of ['eligible','view_only','fenced','expired','mixed_scope','missing_preview','wrong_policy','legacy_policy','legacy_v2_policy','legacy_v3_policy','legacy_v4_policy','legacy_v5_policy','legacy_v6_policy','legacy_v7_policy','legacy_v8_policy','legacy_v9_policy','legacy_v10_policy','legacy_v11_policy','legacy_v12_policy','legacy_v13_policy','already_started','mixed_media_journal','missing_binding']){
   test(`configuration content restore scope and permission: ${scenario}`,()=>{
     const h=createConfigurationContentRestoreConsoleHarness();
     if(scenario==='view_only')h.status.permissions=['ops:backup:view'];
@@ -39,6 +39,15 @@ for(const scenario of ['eligible','view_only','fenced','expired','mixed_scope','
     if(scenario==='legacy_v2_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_site_content_and_fitment_catalog_preserve_existing_configuration_and_registered_files_v2';
     if(scenario==='legacy_v3_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_content_catalog_selection_flows_and_questionnaires_preserve_existing_configuration_and_registered_files_v3';
     if(scenario==='legacy_v4_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_content_catalog_selection_and_market_currency_tax_preserve_existing_configuration_and_registered_files_v4';
+    if(scenario==='legacy_v5_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_business_configuration_including_email_templates_and_member_levels_preserve_existing_rows_and_registered_files_v5';
+    if(scenario==='legacy_v6_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_business_configuration_including_shipping_reference_packaging_and_customs_preserve_existing_rows_and_registered_files_v6';
+    if(scenario==='legacy_v8_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_business_configuration_including_carrier_services_published_channels_and_yanwen_reference_catalogs_preserve_existing_rows_and_registered_files_v8';
+    if(scenario==='legacy_v7_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_business_configuration_including_customer_shipping_billing_and_published_route_membership_preserve_existing_rows_and_registered_files_v7';
+    if(scenario==='legacy_v9_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_business_configuration_including_loyalty_and_referral_program_versions_preserve_existing_rows_and_registered_files_v9';
+    if(scenario==='legacy_v10_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_business_configuration_including_coupons_with_original_limits_and_usage_receipts_preserve_existing_rows_and_registered_files_v10';
+    if(scenario==='legacy_v11_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_business_configuration_including_tracking_provider_mapping_and_tax_collection_controls_preserve_existing_rows_and_registered_files_v11';
+    if(scenario==='legacy_v12_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_business_configuration_including_fpx_and_yanwen_accounts_with_original_business_keys_preserve_existing_rows_and_registered_files_v12';
+    if(scenario==='legacy_v13_policy')h.task.selected_module_restore_preview.configuration_site_content_restore_eligibility.policy='restore_missing_business_configuration_including_email_senders_with_original_bound_key_precedence_preserve_existing_rows_and_registered_files_v13';
     if(scenario==='already_started')h.task.configuration_site_content_restore={phase:'rows_committed',sha256:'c'.repeat(64)};
     if(scenario==='mixed_media_journal')h.task.media_module_restore={phase:'rows_committed'};
     if(scenario==='missing_binding')delete h.task.selected_module_restore_preview.binding;
@@ -69,7 +78,7 @@ for(const scenario of ['restore','recover','release','cancel','short_review','ch
     h.context.prompt=message=>{
       prompts++;
       if(scenario==='cancel')return null;
-      if(release&&prompts===1){assert(message.includes('不会自动清理缓存'));assert(message.includes('目录与计算结果'));return scenario==='short_review'?'x':'local-review-2026-10-30';}
+      if(release&&prompts===1){assert(message.includes('不会自动清理缓存'));assert(message.includes('目录与计算结果'));assert(message.includes('追踪原凭据'));assert(message.includes('放行后后台按原开关继续运行'));return scenario==='short_review'?'x':'local-review-2026-10-30';}
       if(scenario==='changed_task')h.task.configuration_site_content_restore.sha256='d'.repeat(64);
       if(scenario==='changed_session')h.findElement('disconnect').listeners.click();
       return `${release?'RELEASE':recover?'RECOVER':'RESTORE'} CONFIGURATION CONTENT synthetic-store/disposable/${h.task.id}`;
@@ -87,7 +96,10 @@ test('configuration preview names the bounded scope and post-commit review',()=>
   assert(h.text('selected-module-restore-preview').includes('车架/前叉/花鼓、辐条计算和轮胎适配目录'));
   assert(h.text('selected-module-restore-preview').includes('选购流程/问卷'));
   assert(h.text('selected-module-restore-preview').includes('市场/汇率/税率'));
-  assert(h.text('selected-module-restore-preview').includes('邮件模板/历史版本和会员等级、承运商/配送区域、包装规格/商品SKU绑定及报关分类'));
+  assert(h.text('selected-module-restore-preview').includes('邮件模板/历史版本和会员等级、承运商/配送区域、包装规格/商品SKU绑定及报关分类、运费模板/计费规则和线路聚合、承运服务/4PX渠道及燕文发布渠道和产品/国家/仓库参考目录'));
+  assert(h.text('selected-module-restore-preview').includes('追踪服务商/承运映射和税率采集配置'));
+  assert(h.text('selected-module-restore-preview').includes('4PX/燕文物流账号'));
+  assert(h.text('selected-module-restore-preview').includes('邮件发送方、支付方式/临时支付保护配置'));
   assert(h.text('selected-module-restore-preview').includes('另行核对内容、目录/计算结果与缓存'));
 });
 

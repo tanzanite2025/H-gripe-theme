@@ -12,13 +12,13 @@ import (
 )
 
 func TestModuleDependencyRegistryAcceptsOnlyAuditedDescriptionMigrationWithoutEnablingModuleRecovery(t *testing.T) {
-	for _, version := range []int64{433, 434, 435, 436, 437} {
+	for _, version := range []int64{433, 434, 435, 436, 437, 438} {
 		t.Run(fmt.Sprintf("migration_%d", version), func(t *testing.T) {
 			contract := moduleRecoveryDependencyContract{Name: "orders", OwnedTables: []string{"orders"}}
 			observation := &moduleRecoveryDatabaseObservation{Migration: version, Tables: map[string]int64{"orders": 0}}
 			report := buildModuleRecoveryDependencyReport(contract, &Task{Manifest: &Manifest{}}, observation, observation)
 			codes := collectModuleDependencyReportBlockerCodes(report)
-			if version == 434 || version == 435 || version == 436 {
+			if version == 434 || version == 435 || version == 436 || version == 437 {
 				require.NotContains(t, codes, "module_registry_migration_incompatible:")
 			} else {
 				require.Contains(t, codes, "module_registry_migration_incompatible:")
@@ -33,7 +33,7 @@ func TestModuleDependencyRegistryAcceptsOnlyAuditedDescriptionMigrationWithoutEn
 
 func TestAuditedMigrationCompatibilityDoesNotPermitCrossVersionPackageUploads(t *testing.T) {
 	for _, scope := range []string{"whole_application", productCatalogBackupScope} {
-		for _, versions := range []struct{ source, target int64 }{{434, 435}, {434, 436}, {435, 436}} {
+		for _, versions := range []struct{ source, target int64 }{{434, 435}, {434, 436}, {435, 436}, {434, 437}, {435, 437}, {436, 437}, {437, 436}} {
 			t.Run(fmt.Sprintf("%s/source_%d_target_%d", scope, versions.source, versions.target), func(t *testing.T) {
 				cfg := createIndependentRecoveryTestConfiguration(t)
 				cfg.ExpectedMigrationVersion = versions.target

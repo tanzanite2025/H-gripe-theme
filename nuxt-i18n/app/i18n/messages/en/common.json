@@ -1,4 +1,13 @@
 {
+  "embeddedBrowserCompatibility": {
+    "title": "Open in your phone’s browser",
+    "description": "If sign-in or checkout fails, use the app menu to open this page in your phone’s browser, or copy the link below.",
+    "linkLabel": "Current page link",
+    "copyLink": "Copy link",
+    "copied": "Link copied",
+    "copyFailed": "Could not copy automatically. Select the link above and copy it manually.",
+    "dismiss": "Dismiss browser message"
+  },
   "close": "Close",
   "share": "Share",
   "previous": "Previous",

@@ -480,6 +480,7 @@ validate_generated_edge_config() {
     "$(env_value GOOGLE_MERCHANT_POST_CONNECT_URL)" <<'PY'
 import json
 import sys
+from urllib.parse import urlsplit
 from urllib.parse import urlparse
 
 (
@@ -545,6 +546,31 @@ for route in domains:
     domain = str(route.get("domain", "")).strip()
     if not domain or domain not in caddy:
         errors.append(f"generated Caddy route is missing domain {domain or '<empty>'}")
+    elif (
+        f"http://{domain} {{" not in caddy
+        or f"redir @pageNavigation https://{domain}{{uri}} 301" not in caddy
+        or f"redir https://{domain}{{uri}} 308" not in caddy
+    ):
+        errors.append(
+            f"generated Caddy route for {domain} is missing the method-safe HTTP-to-HTTPS redirects"
+        )
+    if str(route.get("role", "")).strip() == "redirect":
+        redirect_target = str(route.get("redirect_target", "")).strip()
+        parsed_target = urlsplit(redirect_target)
+        preserves_request_uri = (
+            parsed_target.path in ("", "/")
+            and not parsed_target.query
+            and "?" not in redirect_target
+            and "#" not in redirect_target
+        )
+        rendered_target = redirect_target.rstrip("/") + "{uri}" if preserves_request_uri else redirect_target
+        if (
+            f"redir @pageNavigation {rendered_target} 301" not in caddy
+            or f"redir {rendered_target} 308" not in caddy
+        ):
+            errors.append(
+                f"generated domain migration for {domain} is missing method-safe GET/HEAD 301 and other-method 308 redirects"
+            )
 
 if errors:
     for error in errors:

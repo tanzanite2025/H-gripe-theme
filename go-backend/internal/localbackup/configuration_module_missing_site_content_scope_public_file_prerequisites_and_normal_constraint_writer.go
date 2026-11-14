@@ -16,7 +16,7 @@ import (
 	"commerce-platform/internal/pkg/storage"
 )
 
-const configurationModuleSiteContentRestorePolicy = "restore_missing_business_configuration_including_shipping_reference_packaging_and_customs_preserve_existing_rows_and_registered_files_v6"
+const configurationModuleSiteContentRestorePolicy = "restore_missing_business_configuration_including_payment_methods_and_original_time_bounded_protection_preserve_existing_rows_and_registered_files_v14"
 
 type ConfigurationModuleSiteContentRestoreEligibility struct {
 	Policy         string   `json:"policy"`
@@ -27,13 +27,21 @@ type ConfigurationModuleSiteContentRestoreEligibility struct {
 
 // This entry restores only the explicitly approved missing business configuration.
 // Exporting other configuration tables never grants write permission. Same-ID
-// differences, credentials, settings and current execution controls are refused.
+// differences and unapproved credentials, settings or execution controls are refused.
 func configurationModuleMissingBusinessConfigurationWritableTableNames() []string {
 	tables := append(strings.Fields("categories posts post_categories galleries gallery_images gallery_product_links faq_pages faqs visual_showcase_items storefront_redirect_rules"), configurationModuleMissingFitmentSpokeAndTireCatalogWritableTableNames()...)
 	tables = append(tables, configurationModuleMissingSelectionFlowAndQuestionnaireWritableTableNames()...)
 	tables = append(tables, configurationModuleMissingMarketCurrencyAndTaxWritableTableNames()...)
 	tables = append(tables, configurationModuleMissingEmailTemplateAndMemberLevelWritableTableNames()...)
-	return append(tables, configurationModuleMissingShippingReferencePackagingAndCustomsWritableTableNames()...)
+	tables = append(tables, configurationModuleMissingLoyaltyAndReferralProgramVersionWritableTableNames()...)
+	tables = append(tables, configurationModuleMissingCouponWritableTableNames()...)
+	tables = append(tables, configurationModuleMissingShippingReferencePackagingAndCustomsWritableTableNames()...)
+	tables = append(tables, configurationModuleMissingShippingCarrierServicesPublishedChannelsAndYanwenReferenceCatalogWritableTableNames()...)
+	tables = append(tables, configurationModuleMissingCustomerShippingTemplatesRulesAndRouteMembershipWritableTableNames()...)
+	tables = append(tables, configurationModuleMissingTrackingProviderMappingAndTaxCollectionControlWritableTableNames()...)
+	tables = append(tables, configurationModuleMissingFpxAndYanwenAccountWritableTableNames()...)
+	tables = append(tables, configurationModuleMissingEmailSenderWritableTableNames()...)
+	return append(tables, configurationModuleMissingPaymentMethodAndTimeBoundedProtectionWritableTableNames()...)
 }
 
 func configurationModuleHasMissingSiteContentWriteContract(snapshot selectedBusinessModuleCompleteSnapshot, table string) bool {
@@ -102,7 +110,7 @@ func (cfg Configuration) inspectConfigurationModuleMissingSiteContentRestoreElig
 	}
 	for table, rows := range missing {
 		if len(rows) > 0 && !configurationModuleHasMissingSiteContentWriteContract(snapshot, table) {
-			record("本期只补回网站内容、目录、选购问卷、市场/汇率/税率、邮件模板/会员等级及物流基础资料/包装/报关，其他配置或媒体登记缺失须另行恢复（" + table + "）")
+			record("本期只补回网站内容、目录、选购问卷、市场/汇率/税率、邮件模板/会员等级、物流基础资料/包装/报关、运费模板/规则/线路聚合及承运服务/发布渠道/燕文参考目录、积分计划/推荐计划原版本及优惠券原规则/使用次数、追踪服务商/承运映射及税率采集配置、4PX/燕文物流账号及邮件发送方配置，其他配置或媒体登记缺失须另行恢复（" + table + "）")
 		}
 	}
 	if err := cfg.verifyConfigurationModuleReferencedFilesAlreadyMatchPackage(manifest); err != nil {
@@ -121,6 +129,30 @@ func (cfg Configuration) inspectConfigurationModuleMissingSiteContentRestoreElig
 		record(err.Error())
 	}
 	if err := validateConfigurationModuleMissingShippingReferencePackagingAndCustomsDomainRows(missing); err != nil {
+		record(err.Error())
+	}
+	if err := validateConfigurationModuleMissingCustomerShippingTemplatesRulesAndRouteMembershipDomainRows(missing); err != nil {
+		record(err.Error())
+	}
+	if err := validateConfigurationModuleMissingShippingCarrierServicesPublishedChannelsAndYanwenReferenceCatalogDomainRows(missing); err != nil {
+		record(err.Error())
+	}
+	if err := validateConfigurationModuleMissingLoyaltyAndReferralProgramVersionDomainRows(missing); err != nil {
+		record(err.Error())
+	}
+	if err := validateConfigurationModuleMissingCouponDomainRows(missing); err != nil {
+		record(err.Error())
+	}
+	if err := validateConfigurationModuleMissingTrackingProviderMappingAndTaxCollectionControlDomainRows(missing); err != nil {
+		record(err.Error())
+	}
+	if err := cfg.validateConfigurationModuleMissingFpxAndYanwenAccountCredentialsWithOriginalBusinessKeys(missing); err != nil {
+		record(err.Error())
+	}
+	if err := cfg.validateConfigurationModuleMissingEmailSenderCredentialsWithOriginalBoundKeyPrecedence(missing); err != nil {
+		record(err.Error())
+	}
+	if err := validateConfigurationModuleMissingPaymentMethodAndTimeBoundedProtectionDomainRows(missing); err != nil {
 		record(err.Error())
 	}
 	keys, assetIDs := map[string]bool{}, map[string]bool{}
@@ -201,6 +233,15 @@ func (cfg Configuration) inspectConfigurationModuleMissingSiteContentRestoreElig
 // with normal statement-level FK enforcement. Existing rows, all other tables
 // and unrelated sequences are verified before the caller can commit.
 func restoreConfigurationModuleMissingBusinessConfigurationRowsWithNormalConstraintsAndVerifiedPreservation(ctx context.Context, tx *sql.Tx, snapshot selectedBusinessModuleCompleteSnapshot, observation *moduleRecoveryDatabaseObservation, missing map[string][]json.RawMessage) (int, error) {
+	if err := validateConfigurationModuleMissingPaymentMethodAndTimeBoundedProtectionDomainRows(missing); err != nil {
+		return 0, err
+	}
+	if err := validateConfigurationModuleMissingEmailSenderDomainRows(missing); err != nil {
+		return 0, err
+	}
+	if err := validateConfigurationModuleMissingFpxAndYanwenAccountDomainRows(missing); err != nil {
+		return 0, err
+	}
 	for table, rows := range missing {
 		if len(rows) > 0 {
 			if err := validateConfigurationModuleMissingSiteContentInsertContract(ctx, tx, snapshot, table, observation); err != nil {
@@ -277,6 +318,21 @@ func restoreConfigurationModuleMissingBusinessConfigurationRowsWithNormalConstra
 		return 0, err
 	}
 	if err := validateConfigurationModuleRestoredShippingPackagingProductVariantRelationships(ctx, tx, missing); err != nil {
+		return 0, err
+	}
+	if err := validateConfigurationModuleRestoredCustomerShippingBillingAndPublishedRouteRelationships(ctx, tx, missing); err != nil {
+		return 0, err
+	}
+	if err := validateConfigurationModuleRestoredShippingServicesPublishedChannelsAndOfficialProductReferences(ctx, tx, missing); err != nil {
+		return 0, err
+	}
+	if err := validateConfigurationModuleRestoredLoyaltyAndReferralProgramVersionRelationships(ctx, tx, missing); err != nil {
+		return 0, err
+	}
+	if err := validateConfigurationModuleRestoredCouponsAgainstOriginalScopeAndRetainedUsage(ctx, tx, snapshot, missing); err != nil {
+		return 0, err
+	}
+	if err := validateConfigurationModuleRestoredTrackingProviderMappingAndTaxCollectionControlRelationships(ctx, tx, missing); err != nil {
 		return 0, err
 	}
 	for table, contents := range snapshot.Tables {
