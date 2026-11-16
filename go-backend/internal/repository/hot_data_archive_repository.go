@@ -26,52 +26,59 @@ func NewHotDataArchiveRepository(db *gorm.DB) *HotDataArchiveRepository {
 	return &HotDataArchiveRepository{db: db}
 }
 
-func (r *HotDataArchiveRepository) ArchiveTerminalSiteQualityRuns(
+func (r *HotDataArchiveRepository) PurgeExpiredTerminalSiteQualityRuns(
 	ctx context.Context,
 	cutoff time.Time,
 	limit int,
 ) (int, error) {
 	if r == nil || r.db == nil {
-		return 0, errors.New("hot data archive repository is unavailable")
+		return 0, errors.New("hot data retention repository is unavailable")
 	}
-	if limit <= 0 {
+	if limit <= 0 || limit > defaultHotDataArchiveBatchSize {
 		limit = defaultHotDataArchiveBatchSize
 	}
+	return purgeExpiredSiteQualityRunRows(ctx, r.db, &sitequalitydomain.SiteQualityRun{}, cutoff, limit)
+}
 
-	var archived int
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var runs []sitequalitydomain.SiteQualityRun
-		if err := tx.Model(&sitequalitydomain.SiteQualityRun{}).
+func (r *HotDataArchiveRepository) PurgeExpiredArchivedSiteQualityRuns(
+	ctx context.Context,
+	cutoff time.Time,
+	limit int,
+) (int, error) {
+	if r == nil || r.db == nil {
+		return 0, errors.New("hot data retention repository is unavailable")
+	}
+	if limit <= 0 || limit > defaultHotDataArchiveBatchSize {
+		limit = defaultHotDataArchiveBatchSize
+	}
+	return purgeExpiredSiteQualityRunRows(ctx, r.db, &sitequalitydomain.SiteQualityRunArchive{}, cutoff, limit)
+}
+
+func purgeExpiredSiteQualityRunRows(
+	ctx context.Context,
+	db *gorm.DB,
+	model interface{},
+	cutoff time.Time,
+	limit int,
+) (int, error) {
+	if cutoff.IsZero() {
+		return 0, errors.New("site quality report retention cutoff is required")
+	}
+	var deleted int64
+	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		expiredIDs := tx.Model(model).
+			Select("id").
 			Where("created_at < ?", cutoff.UTC()).
-			Where("status IN ?", []string{
-				sitequalitydomain.SiteQualityRunStatusSuccess,
-				sitequalitydomain.SiteQualityRunStatusFailed,
-			}).
 			Order("created_at ASC, id ASC").
-			Limit(limit).
-			Find(&runs).Error; err != nil {
-			return err
+			Limit(limit)
+		result := tx.Where("id IN (?)", expiredIDs).Delete(model)
+		if result.Error != nil {
+			return result.Error
 		}
-		if len(runs) == 0 {
-			return nil
-		}
-
-		if err := tx.Table(siteQualityRunArchiveTable).
-			Clauses(clause.OnConflict{DoNothing: true}).
-			Create(&runs).Error; err != nil {
-			return err
-		}
-		ids := make([]uint, 0, len(runs))
-		for _, run := range runs {
-			ids = append(ids, run.ID)
-		}
-		if err := tx.Where("id IN ?", ids).Delete(&sitequalitydomain.SiteQualityRun{}).Error; err != nil {
-			return err
-		}
-		archived = len(runs)
+		deleted = result.RowsAffected
 		return nil
 	})
-	return archived, err
+	return int(deleted), err
 }
 
 func (r *HotDataArchiveRepository) ArchiveTerminalAfterSalesEvents(

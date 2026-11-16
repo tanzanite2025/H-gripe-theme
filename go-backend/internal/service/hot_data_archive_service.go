@@ -9,14 +9,17 @@ import (
 )
 
 const (
-	HotDataArchiveRetention    = 90 * 24 * time.Hour
-	defaultHotDataArchiveBatch = 500
+	SiteQualityRunRetention         = 7 * 24 * time.Hour
+	AfterSalesEventArchiveRetention = 90 * 24 * time.Hour
+	defaultHotDataArchiveBatch      = 500
 )
 
-type HotDataArchiveResult struct {
-	Cutoff                   time.Time `json:"cutoff"`
-	SiteQualityRunsArchived  int       `json:"site_quality_runs_archived"`
-	AfterSalesEventsArchived int       `json:"after_sales_events_archived"`
+type HotDataRetentionAndArchiveResult struct {
+	SiteQualityRunCutoff          time.Time `json:"site_quality_run_cutoff"`
+	AfterSalesEventArchiveCutoff  time.Time `json:"after_sales_event_archive_cutoff"`
+	SiteQualityRunsPurged         int       `json:"site_quality_runs_purged"`
+	ArchivedSiteQualityRunsPurged int       `json:"archived_site_quality_runs_purged"`
+	AfterSalesEventsArchived      int       `json:"after_sales_events_archived"`
 }
 
 type HotDataArchiveService struct {
@@ -37,12 +40,12 @@ func NewHotDataArchiveService(
 	}
 }
 
-func (s *HotDataArchiveService) ArchiveExpiredTerminalData(
+func (s *HotDataArchiveService) ProcessExpiredTerminalData(
 	ctx context.Context,
 	now time.Time,
-) (HotDataArchiveResult, error) {
+) (HotDataRetentionAndArchiveResult, error) {
 	if s == nil || s.repository == nil {
-		return HotDataArchiveResult{}, errors.New("hot data archive service is not configured")
+		return HotDataRetentionAndArchiveResult{}, errors.New("hot data archive service is not configured")
 	}
 	if ctx == nil {
 		ctx = context.Background()
@@ -53,18 +56,19 @@ func (s *HotDataArchiveService) ArchiveExpiredTerminalData(
 		now = now.UTC()
 	}
 
-	result := HotDataArchiveResult{
-		Cutoff: now.Add(-HotDataArchiveRetention),
+	result := HotDataRetentionAndArchiveResult{
+		SiteQualityRunCutoff:         now.Add(-SiteQualityRunRetention),
+		AfterSalesEventArchiveCutoff: now.Add(-AfterSalesEventArchiveRetention),
 	}
 	for {
 		if err := ctx.Err(); err != nil {
 			return result, err
 		}
-		count, err := s.repository.ArchiveTerminalSiteQualityRuns(ctx, result.Cutoff, s.batchLimit)
+		count, err := s.repository.PurgeExpiredTerminalSiteQualityRuns(ctx, result.SiteQualityRunCutoff, s.batchLimit)
 		if err != nil {
 			return result, err
 		}
-		result.SiteQualityRunsArchived += count
+		result.SiteQualityRunsPurged += count
 		if count == 0 {
 			break
 		}
@@ -73,7 +77,20 @@ func (s *HotDataArchiveService) ArchiveExpiredTerminalData(
 		if err := ctx.Err(); err != nil {
 			return result, err
 		}
-		count, err := s.repository.ArchiveTerminalAfterSalesEvents(ctx, result.Cutoff, s.batchLimit)
+		count, err := s.repository.PurgeExpiredArchivedSiteQualityRuns(ctx, result.SiteQualityRunCutoff, s.batchLimit)
+		if err != nil {
+			return result, err
+		}
+		result.ArchivedSiteQualityRunsPurged += count
+		if count == 0 {
+			break
+		}
+	}
+	for {
+		if err := ctx.Err(); err != nil {
+			return result, err
+		}
+		count, err := s.repository.ArchiveTerminalAfterSalesEvents(ctx, result.AfterSalesEventArchiveCutoff, s.batchLimit)
 		if err != nil {
 			return result, err
 		}

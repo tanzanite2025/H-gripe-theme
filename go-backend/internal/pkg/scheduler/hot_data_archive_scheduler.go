@@ -44,11 +44,12 @@ func (s *HotDataArchiveScheduler) Start(ctx context.Context) {
 
 	go func() {
 		defer close(s.done)
-		logger.Info("hot data archive scheduler started",
+		logger.Info("hot data retention and archival scheduler started",
 			zap.Duration("interval", s.interval),
-			zap.Duration("retention", service.HotDataArchiveRetention),
+			zap.Duration("site_quality_run_retention", service.SiteQualityRunRetention),
+			zap.Duration("after_sales_event_archive_retention", service.AfterSalesEventArchiveRetention),
 		)
-		s.archiveOnce(runCtx)
+		s.processExpiredDataOnce(runCtx)
 
 		ticker := time.NewTicker(s.interval)
 		defer ticker.Stop()
@@ -58,7 +59,7 @@ func (s *HotDataArchiveScheduler) Start(ctx context.Context) {
 				logger.Info("hot data archive scheduler stopped")
 				return
 			case <-ticker.C:
-				s.archiveOnce(runCtx)
+				s.processExpiredDataOnce(runCtx)
 			}
 		}
 	}()
@@ -78,18 +79,22 @@ func (s *HotDataArchiveScheduler) Stop() {
 	})
 }
 
-func (s *HotDataArchiveScheduler) archiveOnce(ctx context.Context) {
-	result, err := s.archiveService.ArchiveExpiredTerminalData(ctx, time.Now().UTC())
+func (s *HotDataArchiveScheduler) processExpiredDataOnce(ctx context.Context) {
+	result, err := s.archiveService.ProcessExpiredTerminalData(ctx, time.Now().UTC())
 	if err != nil {
-		logger.Error("hot data archive failed", zap.Error(err))
+		logger.Error("hot data retention and archival failed", zap.Error(err))
 		return
 	}
-	if result.SiteQualityRunsArchived == 0 && result.AfterSalesEventsArchived == 0 {
+	if result.SiteQualityRunsPurged == 0 &&
+		result.ArchivedSiteQualityRunsPurged == 0 &&
+		result.AfterSalesEventsArchived == 0 {
 		return
 	}
-	logger.Info("hot data archive completed",
-		zap.Int("site_quality_runs_archived", result.SiteQualityRunsArchived),
+	logger.Info("hot data retention and archival completed",
+		zap.Time("site_quality_run_cutoff", result.SiteQualityRunCutoff),
+		zap.Int("site_quality_runs_purged", result.SiteQualityRunsPurged),
+		zap.Int("archived_site_quality_runs_purged", result.ArchivedSiteQualityRunsPurged),
+		zap.Time("after_sales_event_archive_cutoff", result.AfterSalesEventArchiveCutoff),
 		zap.Int("after_sales_events_archived", result.AfterSalesEventsArchived),
-		zap.Time("cutoff", result.Cutoff),
 	)
 }

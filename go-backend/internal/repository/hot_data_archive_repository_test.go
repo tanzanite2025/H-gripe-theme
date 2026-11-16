@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,50 +15,100 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func TestArchiveTerminalSiteQualityRunsRetainsArchiveAwareHistory(t *testing.T) {
+func TestPurgeExpiredTerminalSiteQualityRunsDeletesReportsInBoundedBatches(t *testing.T) {
 	db := newHotDataArchiveTestDB(t)
 	now := time.Date(2026, time.August, 19, 12, 0, 0, 0, time.UTC)
 	oldRun := sitequalitydomain.SiteQualityRun{
-		TargetURL: "https://example.com/old",
-		Strategy:  sitequalitydomain.SiteQualityStrategyMobile,
-		Status:    sitequalitydomain.SiteQualityRunStatusSuccess,
-		CreatedAt: now.Add(-91 * 24 * time.Hour),
-		UpdatedAt: now.Add(-91 * 24 * time.Hour),
+		TargetURL:       "https://example.com/old",
+		Strategy:        sitequalitydomain.SiteQualityStrategyMobile,
+		Status:          sitequalitydomain.SiteQualityRunStatusSuccess,
+		RawResponseJSON: strings.Repeat("x", 512*1024),
+		CreatedAt:       now.Add(-8 * 24 * time.Hour),
+		UpdatedAt:       now.Add(-8 * 24 * time.Hour),
 	}
-	hotRun := sitequalitydomain.SiteQualityRun{
-		TargetURL: "https://example.com/hot",
+	secondExpiredRun := sitequalitydomain.SiteQualityRun{
+		TargetURL: "https://example.com/second-old",
 		Strategy:  sitequalitydomain.SiteQualityStrategyDesktop,
 		Status:    sitequalitydomain.SiteQualityRunStatusFailed,
+		CreatedAt: now.Add(-9 * 24 * time.Hour),
+		UpdatedAt: now.Add(-9 * 24 * time.Hour),
+	}
+	recentRun := sitequalitydomain.SiteQualityRun{
+		TargetURL: "https://example.com/recent",
+		Strategy:  sitequalitydomain.SiteQualityStrategyMobile,
+		Status:    sitequalitydomain.SiteQualityRunStatusSuccess,
 		CreatedAt: now.Add(-time.Hour),
 		UpdatedAt: now.Add(-time.Hour),
 	}
 	require.NoError(t, db.Create(&oldRun).Error)
-	require.NoError(t, db.Create(&hotRun).Error)
+	require.NoError(t, db.Create(&secondExpiredRun).Error)
+	require.NoError(t, db.Create(&recentRun).Error)
 
-	archiveRepo := NewHotDataArchiveRepository(db)
-	archived, err := archiveRepo.ArchiveTerminalSiteQualityRuns(context.Background(), now.Add(-90*24*time.Hour), 10)
+	repository := NewHotDataArchiveRepository(db)
+	cutoff := now.Add(-7 * 24 * time.Hour)
+	purged, err := repository.PurgeExpiredTerminalSiteQualityRuns(context.Background(), cutoff, 1)
 	require.NoError(t, err)
-	require.Equal(t, 1, archived)
+	require.Equal(t, 1, purged)
 
 	var hotCount int64
 	require.NoError(t, db.Model(&sitequalitydomain.SiteQualityRun{}).Count(&hotCount).Error)
-	require.Equal(t, int64(1), hotCount)
+	require.Equal(t, int64(2), hotCount)
+
 	var archiveCount int64
 	require.NoError(t, db.Model(&sitequalitydomain.SiteQualityRunArchive{}).Count(&archiveCount).Error)
-	require.Equal(t, int64(1), archiveCount)
+	require.Zero(t, archiveCount)
+
+	purged, err = repository.PurgeExpiredTerminalSiteQualityRuns(context.Background(), cutoff, 10)
+	require.NoError(t, err)
+	require.Equal(t, 1, purged)
+	require.NoError(t, db.Model(&sitequalitydomain.SiteQualityRun{}).Count(&hotCount).Error)
+	require.Equal(t, int64(1), hotCount)
 
 	runRepo := NewSiteQualityRunRepository(db)
 	runs, total, err := runRepo.List(SiteQualityRunListFilter{Page: 1, PageSize: 10})
 	require.NoError(t, err)
-	require.Equal(t, int64(2), total)
-	require.Len(t, runs, 2)
-	require.Equal(t, hotRun.ID, runs[0].ID)
-	require.Equal(t, oldRun.ID, runs[1].ID)
+	require.Equal(t, int64(1), total)
+	require.Len(t, runs, 1)
+	require.Equal(t, recentRun.ID, runs[0].ID)
 
 	latestSuccessAt, err := runRepo.LatestSuccessfulAt()
 	require.NoError(t, err)
 	require.NotNil(t, latestSuccessAt)
-	require.True(t, latestSuccessAt.Equal(oldRun.CreatedAt))
+	require.True(t, latestSuccessAt.Equal(recentRun.CreatedAt))
+}
+
+func TestPurgeExpiredArchivedSiteQualityRunsDeletesReportsAfterRetentionCutoff(t *testing.T) {
+	db := newHotDataArchiveTestDB(t)
+	now := time.Date(2026, time.August, 19, 12, 0, 0, 0, time.UTC)
+	expiredRun := sitequalitydomain.SiteQualityRunArchive{SiteQualityRun: sitequalitydomain.SiteQualityRun{
+		TargetURL: "https://example.com/expired-archive",
+		Strategy:  sitequalitydomain.SiteQualityStrategyMobile,
+		Status:    sitequalitydomain.SiteQualityRunStatusSuccess,
+		CreatedAt: now.Add(-8 * 24 * time.Hour),
+		UpdatedAt: now.Add(-8 * 24 * time.Hour),
+	}}
+	recentRun := sitequalitydomain.SiteQualityRunArchive{SiteQualityRun: sitequalitydomain.SiteQualityRun{
+		TargetURL: "https://example.com/recent-archive",
+		Strategy:  sitequalitydomain.SiteQualityStrategyDesktop,
+		Status:    sitequalitydomain.SiteQualityRunStatusSuccess,
+		CreatedAt: now.Add(-time.Hour),
+		UpdatedAt: now.Add(-time.Hour),
+	}}
+	require.NoError(t, db.Create(&expiredRun).Error)
+	require.NoError(t, db.Create(&recentRun).Error)
+
+	repository := NewHotDataArchiveRepository(db)
+	purged, err := repository.PurgeExpiredArchivedSiteQualityRuns(
+		context.Background(),
+		now.Add(-7*24*time.Hour),
+		10,
+	)
+	require.NoError(t, err)
+	require.Equal(t, 1, purged)
+
+	var remaining int64
+	require.NoError(t, db.Model(&sitequalitydomain.SiteQualityRunArchive{}).Count(&remaining).Error)
+	require.Equal(t, int64(1), remaining)
 }
 
 func TestArchiveTerminalAfterSalesEventsKeepsCaseTimeline(t *testing.T) {
