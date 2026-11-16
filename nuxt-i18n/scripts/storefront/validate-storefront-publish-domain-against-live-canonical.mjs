@@ -3,6 +3,7 @@ import { pathToFileURL } from "node:url";
 
 const storefrontDomainCheckTimeoutMilliseconds = 15000;
 const storefrontCanonicalProbeRetryDelaysMilliseconds = [500, 1500];
+const storefrontPublishProbeHeaderName = "x-storefront-publish-domain-probe";
 
 const pauseBeforeStorefrontCanonicalProbeRetry = (delayMilliseconds) =>
   new Promise((resolve) => setTimeout(resolve, delayMilliseconds));
@@ -122,6 +123,7 @@ export const readStorefrontCanonicalOriginFromHtml = (html, pageUrl) => {
 
 const fetchStorefrontHomepageForCanonicalProbe = async ({
   configuredOrigin,
+  publishProbeToken,
   fetchImplementation,
   pauseImplementation,
 }) => {
@@ -138,6 +140,9 @@ const fetchStorefrontHomepageForCanonicalProbe = async ({
         headers: {
           accept: "text/html",
           "user-agent": "storefront-publish-domain-guard/1.0",
+          ...(publishProbeToken
+            ? { [storefrontPublishProbeHeaderName]: publishProbeToken }
+            : {}),
         },
         signal: AbortSignal.timeout(storefrontDomainCheckTimeoutMilliseconds),
       });
@@ -184,6 +189,7 @@ export const validateStorefrontPublishDomainAgainstLiveCanonical = async ({
   configuredSiteUrl,
   allowPlannedDomainMigration = false,
   currentConfiguredSiteUrl = "",
+  publishProbeToken = "",
   fetchImplementation = fetch,
   pauseImplementation = pauseBeforeStorefrontCanonicalProbeRetry,
 }) => {
@@ -212,6 +218,7 @@ export const validateStorefrontPublishDomainAgainstLiveCanonical = async ({
   try {
     ({ response, html } = await fetchStorefrontHomepageForCanonicalProbe({
       configuredOrigin,
+      publishProbeToken,
       fetchImplementation,
       pauseImplementation,
     }));
@@ -263,6 +270,7 @@ const runStorefrontPublishDomainGuard = async () => {
     configuredSiteUrl: process.env.STOREFRONT_SITE_URL,
     allowPlannedDomainMigration,
     currentConfiguredSiteUrl: process.env.STOREFRONT_CURRENT_SITE_URL,
+    publishProbeToken: process.env.STOREFRONT_PUBLISH_DOMAIN_PROBE_TOKEN,
   });
 
   if (result.migrationCheckSkipped) {

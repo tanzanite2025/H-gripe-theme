@@ -80,9 +80,11 @@ jobs:
           STOREFRONT_SITE_URL: ${{ inputs.storefront_site_url || vars.STOREFRONT_SITE_URL }}
           STOREFRONT_DOMAIN_MIGRATION: ${{ inputs.storefront_site_url != '' }}
           STOREFRONT_CURRENT_SITE_URL: ${{ vars.STOREFRONT_SITE_URL }}
+          STOREFRONT_PUBLISH_DOMAIN_PROBE_TOKEN: ${{ secrets.STOREFRONT_PUBLISH_DOMAIN_PROBE_TOKEN }}
         run: |
           npm ci
           npm run test:storefront-publish-domain-guard
+          test -n "$STOREFRONT_PUBLISH_DOMAIN_PROBE_TOKEN"
           npm run check:storefront-publish-domain
           npm run build
           npm run check:production-artifacts

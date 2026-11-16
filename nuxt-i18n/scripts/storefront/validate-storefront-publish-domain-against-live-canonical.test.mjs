@@ -68,6 +68,25 @@ test("accepts a live homepage whose response and canonical origins match the con
   assert.equal(result.migrationCheckSkipped, false);
 });
 
+test("sends the dedicated publish probe header when a token is configured", async () => {
+  let requestHeaders;
+  const probeToken = "test-only-publish-probe-token";
+
+  await validateStorefrontPublishDomainAgainstLiveCanonical({
+    configuredSiteUrl: "https://shop.example.test",
+    publishProbeToken: probeToken,
+    fetchImplementation: async (_url, options) => {
+      requestHeaders = options.headers;
+      return createHtmlResponse();
+    },
+  });
+
+  assert.equal(
+    requestHeaders["x-storefront-publish-domain-probe"],
+    probeToken,
+  );
+});
+
 test("retries a transient connection failure before accepting the live canonical", async () => {
   let attempts = 0;
   let pauses = 0;
