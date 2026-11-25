@@ -748,7 +748,7 @@ func (r *ProductRepository) HasBicycleTireArticleNumber(brandID uint, articleNum
 	}
 	query := r.db.Model(&product.Product{}).
 		Where("product_type = ? AND brand_id = ? AND parent_id IS NULL AND deleted_at IS NULL", product.ProductTypeBicycleTire, brandID)
-	switch r.db.Dialector.Name() {
+	switch r.db.Name() {
 	case "postgres":
 		query = query.Where("LOWER(BTRIM(bicycle_tire_specification->>'article_no')) = LOWER(BTRIM(?))", articleNumber)
 	case "sqlite":

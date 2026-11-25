@@ -2,17 +2,16 @@ package migrations
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestIsolateBicycleTireProductConstraintsAndProtectCategoryContract(t *testing.T) {
-	upSQL, err := os.ReadFile(filepath.Join("440_isolate_bicycle_tire_product_constraints_and_protect_category.up.sql"))
+	upSQL, err := os.ReadFile("440_isolate_bicycle_tire_product_constraints_and_protect_category.up.sql")
 	if err != nil {
 		t.Fatalf("read up migration: %v", err)
 	}
-	downSQL, err := os.ReadFile(filepath.Join("440_isolate_bicycle_tire_product_constraints_and_protect_category.down.sql"))
+	downSQL, err := os.ReadFile("440_isolate_bicycle_tire_product_constraints_and_protect_category.down.sql")
 	if err != nil {
 		t.Fatalf("read down migration: %v", err)
 	}

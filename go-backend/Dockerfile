@@ -36,7 +36,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # Runtime image is pinned to avoid an unreviewed latest tag.
 # The maintenance executor uses a separate image target with PostgreSQL 15
 # tools. The ordinary API image receives neither tools nor management sockets.
-FROM postgres:15-alpine AS local-backup-maintenance
+FROM postgres:15-alpine3.24 AS local-backup-maintenance
+RUN apk upgrade --no-cache
 RUN rm -f /usr/local/bin/gosu
 RUN addgroup -g 1000 app && adduser -D -u 1000 -G app app
 RUN mkdir -p /app/product-static-assets/company

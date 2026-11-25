@@ -90,11 +90,12 @@ func TestDedicatedBicycleTireCreationRejectsTemplateGenericOptionsAndCarbonRimSp
 			}
 
 			_, err := productService.CreateAdminProduct(input)
-			if scenario == "article-number-without-brand" {
+			switch scenario {
+			case "article-number-without-brand":
 				require.ErrorIs(t, err, ErrProductBrandInvalid)
-			} else if scenario == "carbon-rim-variant-specification" || scenario == "generic-variant-option" {
+			case "carbon-rim-variant-specification", "generic-variant-option":
 				require.ErrorIs(t, err, ErrProductVariantInvalid)
-			} else {
+			default:
 				require.ErrorIs(t, err, ErrProductSpecInvalid)
 			}
 		})

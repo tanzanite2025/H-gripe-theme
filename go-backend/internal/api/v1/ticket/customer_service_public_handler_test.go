@@ -2,6 +2,7 @@ package ticket
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -76,7 +77,7 @@ func TestSendPublicCustomerServiceMessageRetryReturnsOriginalResponseWithoutRepe
 	router.POST("/conversations", handler.EnsurePublicCustomerServiceConversation)
 	router.POST("/messages", handler.SendPublicCustomerServiceMessage)
 	router.GET("/messages/:conversation_id", handler.GetPublicCustomerServiceMessages)
-	createRequest := httptest.NewRequest(http.MethodPost, "/conversations", bytes.NewReader([]byte(`{"agent_id":"`+itoaUint(supportUser.ID)+`","locale":"en"}`)))
+	createRequest := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/conversations", bytes.NewReader([]byte(`{"agent_id":"`+itoaUint(supportUser.ID)+`","locale":"en"}`)))
 	createRequest.Header.Set("Content-Type", "application/json")
 	createRecorder := httptest.NewRecorder()
 	router.ServeHTTP(createRecorder, createRequest)
@@ -93,7 +94,7 @@ func TestSendPublicCustomerServiceMessageRetryReturnsOriginalResponseWithoutRepe
 	send := func(message string) *httptest.ResponseRecorder {
 		recorder := httptest.NewRecorder()
 		body := []byte(`{"conversation_id":"` + conversationResponse.ConversationID + `","client_message_id":"` + clientMessageID + `","message":"` + message + `","sender_name":"Visitor","message_type":"text"}`)
-		request := httptest.NewRequest(http.MethodPost, "/messages", bytes.NewReader(body))
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/messages", bytes.NewReader(body))
 		request.Header.Set("Content-Type", "application/json")
 		for _, cookie := range cookies {
 			request.AddCookie(cookie)
@@ -125,7 +126,7 @@ func TestSendPublicCustomerServiceMessageRetryReturnsOriginalResponseWithoutRepe
 	assert.Equal(t, firstResponse.MessageID, replayResponse.MessageID)
 
 	historyRecorder := httptest.NewRecorder()
-	historyRequest := httptest.NewRequest(http.MethodGet, "/messages/"+url.PathEscape(conversationResponse.ConversationID), nil)
+	historyRequest := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/messages/"+url.PathEscape(conversationResponse.ConversationID), nil)
 	for _, cookie := range cookies {
 		historyRequest.AddCookie(cookie)
 	}
@@ -202,7 +203,7 @@ func TestGetPublicCustomerServiceMessagesSupportsLatestAndStableCursorPages(t *t
 	router.GET("/messages/:conversation_id", handler.GetPublicCustomerServiceMessages)
 
 	createRecorder := httptest.NewRecorder()
-	createRequest := httptest.NewRequest(http.MethodPost, "/conversations", bytes.NewReader([]byte(`{"agent_id":"`+itoaUint(supportUser.ID)+`","locale":"en"}`)))
+	createRequest := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/conversations", bytes.NewReader([]byte(`{"agent_id":"`+itoaUint(supportUser.ID)+`","locale":"en"}`)))
 	createRequest.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(createRecorder, createRequest)
 	require.Equal(t, http.StatusOK, createRecorder.Code)
@@ -227,7 +228,7 @@ func TestGetPublicCustomerServiceMessagesSupportsLatestAndStableCursorPages(t *t
 
 	requestWithVisitorCookies := func(path string) *httptest.ResponseRecorder {
 		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodGet, path, nil)
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil)
 		for _, cookie := range createRecorder.Result().Cookies() {
 			request.AddCookie(cookie)
 		}

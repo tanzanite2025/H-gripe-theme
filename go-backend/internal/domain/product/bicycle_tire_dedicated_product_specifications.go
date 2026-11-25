@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	ProductTypeBicycleTire          = "bicycle_tire"
+	ProductTypeBicycleTire         = "bicycle_tire"
 	BicycleTireProductCategorySlug = "tire"
 )
 

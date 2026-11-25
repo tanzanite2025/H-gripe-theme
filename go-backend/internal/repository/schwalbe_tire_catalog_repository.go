@@ -34,7 +34,7 @@ type SchwalbeTireCatalogItem struct {
 func (r *ProductRepository) ListSchwalbeTireCatalog(search string) ([]SchwalbeTireCatalogItem, error) {
 	items := make([]SchwalbeTireCatalogItem, 0)
 	tireArticleNoExpression := "LOWER(TRIM(p.bicycle_tire_specification->>'article_no'))"
-	if r.db.Dialector.Name() == "sqlite" {
+	if r.db.Name() == "sqlite" {
 		tireArticleNoExpression = "LOWER(TRIM(json_extract(p.bicycle_tire_specification, '$.article_no')))"
 	}
 	query := r.db.Table("schwalbe_tire_specifications AS catalog").

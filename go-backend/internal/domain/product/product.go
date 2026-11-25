@@ -37,25 +37,25 @@ func IsValidFulfillmentMode(value string) bool {
 }
 
 type Product struct {
-	ProductType                    string                  `gorm:"size:40;not null;default:''" json:"product_type,omitempty"`
-	CarbonRimSpecification         *CarbonRimSpecification `gorm:"serializer:json;type:jsonb" json:"carbon_rim_specification,omitempty"`
-	CarbonRimSpecificationDirty    bool                    `gorm:"-" json:"-"`
+	ProductType                    string                    `gorm:"size:40;not null;default:''" json:"product_type,omitempty"`
+	CarbonRimSpecification         *CarbonRimSpecification   `gorm:"serializer:json;type:jsonb" json:"carbon_rim_specification,omitempty"`
+	CarbonRimSpecificationDirty    bool                      `gorm:"-" json:"-"`
 	BicycleTireSpecification       *BicycleTireSpecification `gorm:"serializer:json;type:jsonb" json:"bicycle_tire_specification,omitempty"`
-	BicycleTireSpecificationDirty  bool                    `gorm:"-" json:"-"`
-	ID                             uint                    `gorm:"primarykey" json:"id"`
-	ProductSpecificationTemplateID *uint                   `gorm:"index" json:"product_specification_template_id"`
-	ProductCategoryID              *uint                   `gorm:"index" json:"product_category_id"`
-	BrandID                        *uint                   `gorm:"index" json:"brand_id,omitempty"`
-	AfterSalesTemplateID           *uint                   `gorm:"index" json:"after_sales_template_id"`
-	PackagingTemplateID            *uint                   `gorm:"index" json:"packaging_template_id"`
-	CustomsClassificationProfileID *uint                   `gorm:"index" json:"customs_classification_profile_id,omitempty"`
-	HSCode                         string                  `gorm:"column:hs_code;size:12" json:"hs_code"`
-	CNCode                         string                  `gorm:"column:cn_code;size:12" json:"cn_code"`
-	CountryOfOrigin                string                  `gorm:"column:country_of_origin;size:2" json:"country_of_origin"`
-	CustomsDescription             string                  `gorm:"column:customs_description;size:255" json:"customs_description"`
-	MerchantProductIdentifier      string                  `gorm:"size:70;not null;default:''" json:"merchant_product_identifier"`
-	ManufacturerProductIdentifier  string                  `gorm:"size:70;not null;default:''" json:"manufacturer_product_identifier"`
-	StandardProductIdentifier      string                  `gorm:"size:70;not null;default:''" json:"standard_product_identifier"`
+	BicycleTireSpecificationDirty  bool                      `gorm:"-" json:"-"`
+	ID                             uint                      `gorm:"primarykey" json:"id"`
+	ProductSpecificationTemplateID *uint                     `gorm:"index" json:"product_specification_template_id"`
+	ProductCategoryID              *uint                     `gorm:"index" json:"product_category_id"`
+	BrandID                        *uint                     `gorm:"index" json:"brand_id,omitempty"`
+	AfterSalesTemplateID           *uint                     `gorm:"index" json:"after_sales_template_id"`
+	PackagingTemplateID            *uint                     `gorm:"index" json:"packaging_template_id"`
+	CustomsClassificationProfileID *uint                     `gorm:"index" json:"customs_classification_profile_id,omitempty"`
+	HSCode                         string                    `gorm:"column:hs_code;size:12" json:"hs_code"`
+	CNCode                         string                    `gorm:"column:cn_code;size:12" json:"cn_code"`
+	CountryOfOrigin                string                    `gorm:"column:country_of_origin;size:2" json:"country_of_origin"`
+	CustomsDescription             string                    `gorm:"column:customs_description;size:255" json:"customs_description"`
+	MerchantProductIdentifier      string                    `gorm:"size:70;not null;default:''" json:"merchant_product_identifier"`
+	ManufacturerProductIdentifier  string                    `gorm:"size:70;not null;default:''" json:"manufacturer_product_identifier"`
+	StandardProductIdentifier      string                    `gorm:"size:70;not null;default:''" json:"standard_product_identifier"`
 	// Product identity belongs to product_variants.SKU. This field is a
 	// presentation-only projection kept for in-memory catalog responses.
 	SKU         string `gorm:"-" json:"-"`
