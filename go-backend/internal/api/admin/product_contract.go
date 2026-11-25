@@ -19,6 +19,7 @@ type productCreateRequest struct {
 
 	ProductType                    *string                               `json:"product_type"`
 	CarbonRimSpecification         *productdomain.CarbonRimSpecification `json:"carbon_rim_specification"`
+	BicycleTireSpecification       *productdomain.BicycleTireSpecification `json:"bicycle_tire_specification"`
 	ProductSpecificationTemplateID *uint                                 `json:"product_specification_template_id"`
 	ProductCategoryID              *uint                                 `json:"product_category_id"`
 	BrandID                        *uint                                 `json:"brand_id"`
@@ -54,6 +55,7 @@ type productUpdateRequest struct {
 
 	ProductType                    *string                               `json:"product_type"`
 	CarbonRimSpecification         *productdomain.CarbonRimSpecification `json:"carbon_rim_specification"`
+	BicycleTireSpecification       *productdomain.BicycleTireSpecification `json:"bicycle_tire_specification"`
 	ProductSpecificationTemplateID *uint                                 `json:"product_specification_template_id"`
 	ProductCategoryID              *uint                                 `json:"product_category_id"`
 	BrandID                        *uint                                 `json:"brand_id"`

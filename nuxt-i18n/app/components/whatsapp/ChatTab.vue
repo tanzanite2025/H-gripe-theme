@@ -3,8 +3,19 @@
     <!-- 消息列表区域 (Conversation History) -->
     <div 
       ref="messagesContainer"
+      @scroll="handleMessagesScroll"
       class="flex-1 overflow-y-auto space-y-3 px-1 md:px-6 md:py-7 md:space-y-4"
     >
+      <button
+        v-if="hasOlderMessages"
+        type="button"
+        class="sticky top-0 z-10 mx-auto block rounded-md border tz-border-subtle tz-surface-card px-3 py-1.5 text-xs tz-text-secondary shadow-sm disabled:cursor-wait disabled:opacity-60"
+        :disabled="isLoadingOlderMessages"
+        @click="emit('loadOlderMessages')"
+      >
+        {{ isLoadingOlderMessages ? 'Loading older messages…' : 'Load older messages' }}
+      </button>
+
       <!-- 空状态 -->
       <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full tz-text-secondary text-sm">
         <svg class="w-12 h-12 md:w-16 md:h-16 mb-2 md:mb-4 tz-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -459,6 +470,8 @@ import { uploadSpecAccept, uploadSpecHint } from '~/utils/uploadSpecs'
 
 const props = defineProps<{
   messages: any[]
+  hasOlderMessages: boolean
+  isLoadingOlderMessages: boolean
   newMessage: string
   visitorEmail: string
   showVisitorEmailCapture: boolean
@@ -473,6 +486,7 @@ const emit = defineEmits<{
   'update:newMessage': [value: string]
   'update:visitorEmail': [value: string]
   'sendMessage': []
+  'loadOlderMessages': []
   'uploadImage': [event: Event, source: 'library' | 'camera']
   'openOrderPicker': []
   'openCustomerServiceProductSearchModal': []
@@ -568,8 +582,42 @@ const scrollToBottom = () => {
   })
 }
 
+let olderHistoryScrollSnapshot: { scrollHeight: number; scrollTop: number } | null = null
+
+const handleMessagesScroll = () => {
+  const container = messagesContainer.value
+  if (!container || !props.hasOlderMessages || props.isLoadingOlderMessages) return
+  if (container.scrollTop <= 48) {
+    emit('loadOlderMessages')
+  }
+}
+
+watch(() => props.isLoadingOlderMessages, (isLoading, wasLoading) => {
+  if (isLoading && !wasLoading) {
+    const container = messagesContainer.value
+    olderHistoryScrollSnapshot = container
+      ? { scrollHeight: container.scrollHeight, scrollTop: container.scrollTop }
+      : null
+    return
+  }
+
+  if (isLoading || !wasLoading || !olderHistoryScrollSnapshot) return
+  nextTick(() => {
+    const container = messagesContainer.value
+    if (container) {
+      container.scrollTop = olderHistoryScrollSnapshot!.scrollTop
+        + container.scrollHeight
+        - olderHistoryScrollSnapshot!.scrollHeight
+    }
+    olderHistoryScrollSnapshot = null
+  })
+})
+
 watch(() => props.messages, () => {
-  scrollToBottom()
+  if (props.isLoadingOlderMessages) return
+  const container = messagesContainer.value
+  const wasNearBottom = !container || container.scrollHeight - container.clientHeight - container.scrollTop <= 120
+  if (wasNearBottom) scrollToBottom()
 }, { deep: true })
 
 watch(() => props.pendingProductReference, (value) => {

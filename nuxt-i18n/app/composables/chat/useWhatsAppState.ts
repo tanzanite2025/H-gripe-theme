@@ -14,11 +14,22 @@ import { validateStorefrontUploadFiles } from '~/utils/uploadSpecs'
 import { majorToMinor } from '~/utils/money'
 import {
   CHAT_STORAGE_EXPIRY_DAYS,
+  clearStoredChatConversationId,
   createEmptyChatRoom,
+  getChatDraftStorageKey,
+  getChatOwnerStorageScope,
   getChatStorageKey,
+  getOrCreateAnonymousChatOwnerId,
   getLastSelectedAgentId,
   hasLocalChatHistory,
+  loadChatConversationIdFromStorage,
+  loadChatDraftFromStorage,
   loadChatRoomFromStorage,
+  migrateChatDraftStorage,
+  migrateChatRoomStorage,
+  restoreChatRoomDraftFromStoredSources,
+  saveChatConversationIdToStorage,
+  saveChatDraftToStorage,
   saveChatRoomToStorage,
   saveLastSelectedAgentId
 } from '~/composables/chat/useChatStorage'
@@ -58,7 +69,7 @@ export const useWhatsAppState = (
   const checkLocalHistoryChat = (): boolean => {
     if (typeof window === 'undefined') return false
     try {
-      return hasLocalChatHistory()
+      return hasLocalChatHistory(chatOwnerStorageScope.value)
     } catch (error) {
       console.error('检查本地历史对话失败:', error)
     }
@@ -154,6 +165,7 @@ export const useWhatsAppState = (
   })
   
   const chatRooms = ref<Record<number, ChatRoomState>>({})
+  let isRestoringChatRoomFromStorage = false
   
   const isSending = ref(false)
   
@@ -261,12 +273,40 @@ export const useWhatsAppState = (
   // 图片上传
   const isUploadingImage = ref(false)
   
-  // 生成会话ID（基于访客标识）
+  // 会话 ID 按当前登录用户或本浏览器访客身份持久恢复。
   const conversationId = ref('')
+  const anonymousChatOwnerId = ref(import.meta.client ? getOrCreateAnonymousChatOwnerId() : '')
+  const chatOwnerStorageScope = computed(() => {
+    return getChatOwnerStorageScope(user.value?.id, anonymousChatOwnerId.value)
+  })
   const STORAGE_KEY = computed(() => {
-    return getChatStorageKey(conversationId.value, selectedAgent.value?.id)
+    return getChatStorageKey(conversationId.value, selectedAgent.value?.id, chatOwnerStorageScope.value)
   })
   const STORAGE_EXPIRY_DAYS = CHAT_STORAGE_EXPIRY_DAYS
+
+  const migratePendingChatStorageForSelectedAgent = () => {
+    const agentId = selectedAgent.value?.id
+    if (!agentId || !conversationId.value) return
+
+    const ownerStorageScope = chatOwnerStorageScope.value
+    const pendingRoomStorageKey = getChatStorageKey('', agentId, ownerStorageScope)
+    const currentRoomStorageKey = STORAGE_KEY.value
+    const pendingDraftStorageKey = getChatDraftStorageKey('', agentId, ownerStorageScope)
+    const currentDraftStorageKey = getChatDraftStorageKey(conversationId.value, agentId, ownerStorageScope)
+    const legacyRoomStorageKey = getChatStorageKey(conversationId.value, agentId)
+    const legacyDraftStorageKey = getChatDraftStorageKey(conversationId.value, agentId)
+
+    try {
+      if (legacyRoomStorageKey !== currentRoomStorageKey) {
+        migrateChatRoomStorage(legacyRoomStorageKey, currentRoomStorageKey, STORAGE_EXPIRY_DAYS)
+        migrateChatDraftStorage(legacyDraftStorageKey, currentDraftStorageKey)
+      }
+      migrateChatRoomStorage(pendingRoomStorageKey, currentRoomStorageKey, STORAGE_EXPIRY_DAYS)
+      migrateChatDraftStorage(pendingDraftStorageKey, currentDraftStorageKey)
+    } catch (error) {
+      console.error('迁移客服聊天本地记录失败:', error)
+    }
+  }
   // Toast 提示
   const showToast = ref(false)
   const toastMessage = ref('')
@@ -326,6 +366,17 @@ export const useWhatsAppState = (
   }
 
   const closeCustomerServiceProductSearchModal = () => {
+    void overlayBackStack.close(customerProductSearchOverlayId)
+  }
+
+  const dismissDetachedChatOverlays = () => {
+    productDrawerVisible.value = false
+    customerServiceProductSearchModalVisible.value = false
+    historyDrawerVisible.value = false
+    wishlistDrawerVisible.value = false
+    showAuthModal.value = false
+    showToast.value = false
+    void overlayBackStack.close(productDrawerOverlayId)
     void overlayBackStack.close(customerProductSearchOverlayId)
   }
 
@@ -451,14 +502,43 @@ export const useWhatsAppState = (
   watch(conversationId, (newId, oldId) => {
     if (!import.meta.client) return
     if (newId && newId !== oldId) {
+      try {
+        saveChatConversationIdToStorage(chatOwnerStorageScope.value, newId)
+      } catch (error) {
+        console.error('保存客服聊天会话 ID 失败:', error)
+      }
+      migratePendingChatStorageForSelectedAgent()
+      loadMessagesFromStorage()
       loadMessagesFromAPI()
       connectCustomerServiceRealtime()
       return
     }
     if (!newId) {
+      if (oldId) {
+        try {
+          clearStoredChatConversationId(chatOwnerStorageScope.value, oldId)
+        } catch (error) {
+          console.error('清除无效客服聊天会话 ID 失败:', error)
+        }
+      }
       closeCustomerServiceRealtime()
     }
-  })
+  }, { flush: 'sync' })
+
+  watch(chatOwnerStorageScope, (ownerStorageScope) => {
+    if (!import.meta.client || !selectedAgent.value) return
+
+    chatRooms.value = {}
+    ensureChatRoom(selectedAgent.value.id)
+    conversationId.value = loadChatConversationIdFromStorage(ownerStorageScope)
+    loadMessagesFromStorage()
+
+    if (!conversationId.value) {
+      void ensureCustomerServiceConversation().catch((error) => {
+        console.warn('恢复客服聊天会话失败:', error)
+      })
+    }
+  }, { flush: 'sync' })
   
   // 监听标签切换，按需加载订单
   watch(activeTab, (tab) => {
@@ -471,11 +551,25 @@ export const useWhatsAppState = (
   const loadMessagesFromStorage = () => {
     if (!selectedAgent.value) return
     const currentRoom = ensureChatRoom(selectedAgent.value.id)
+    const draftStorageKey = getChatDraftStorageKey(
+      conversationId.value,
+      selectedAgent.value.id,
+      chatOwnerStorageScope.value,
+    )
   
+    isRestoringChatRoomFromStorage = true
     try {
+      migratePendingChatStorageForSelectedAgent()
       const storedRoom = loadChatRoomFromStorage(STORAGE_KEY.value, STORAGE_EXPIRY_DAYS)
+      const storedDraft = loadChatDraftFromStorage(draftStorageKey, STORAGE_EXPIRY_DAYS)
+      const restoredDraft = restoreChatRoomDraftFromStoredSources({
+        currentDraft: currentRoom.newMessage,
+        legacyRoomDraft: storedRoom?.room.newMessage || '',
+        versionedDraft: storedDraft,
+      })
+
       if (storedRoom) {
-        Object.assign(currentRoom, storedRoom.room)
+        Object.assign(currentRoom, { ...storedRoom.room, newMessage: restoredDraft })
 
         if (storedRoom.hasExpiredMessages) {
           saveMessagesToStorage()
@@ -483,8 +577,16 @@ export const useWhatsAppState = (
       } else {
         currentRoom.messages = []
       }
+
+      currentRoom.newMessage = restoredDraft
+
+      if (storedDraft === null && restoredDraft) {
+        saveChatDraftToStorage(draftStorageKey, restoredDraft)
+      }
     } catch (error) {
       console.error('加载消息失败:', error)
+    } finally {
+      isRestoringChatRoomFromStorage = false
     }
   }
   
@@ -503,6 +605,9 @@ export const useWhatsAppState = (
     currentSenderEmail,
     ensureCustomerServiceConversation,
     loadMessagesFromAPI,
+    loadOlderMessagesFromAPI,
+    hasOlderMessages,
+    isLoadingOlderMessages,
     sendMessageToAPI,
     uploadCustomerServiceAttachment,
     sendTypingIndicator,
@@ -521,8 +626,7 @@ export const useWhatsAppState = (
     user,
     visitorEmail,
     authRequest,
-    saveMessagesToStorage,
-    scrollToBottom
+    saveMessagesToStorage
   })
 
   const {
@@ -602,7 +706,26 @@ export const useWhatsAppState = (
   }
 
   watch(newMessage, (value) => {
-    if (!import.meta.client || activeTab.value !== 'chat') return
+    if (!import.meta.client) return
+
+    if (selectedAgent.value) {
+      try {
+        // Drafts remain isolated by account identity while the conversation ID is pending.
+        saveChatDraftToStorage(
+          getChatDraftStorageKey(
+            conversationId.value,
+            selectedAgent.value.id,
+            chatOwnerStorageScope.value,
+          ),
+          String(value || ''),
+        )
+        if (value === '' && !isRestoringChatRoomFromStorage) saveMessagesToStorage()
+      } catch (error) {
+        console.error('保存客服聊天草稿失败:', error)
+      }
+    }
+
+    if (activeTab.value !== 'chat') return
 
     if (!String(value || '').trim()) {
       if (customerTypingIdleTimer) {
@@ -621,7 +744,7 @@ export const useWhatsAppState = (
       customerTypingIdleTimer = null
       notifyCustomerTyping(false)
     }, 3500)
-  })
+  }, { flush: 'sync' })
 
   // 发送消息
   const handleSendMessage = async () => {
@@ -852,10 +975,14 @@ export const useWhatsAppState = (
     if (!selectedAgent.value || selectedAgent.value.id !== defaultAgent.id) {
       selectedAgent.value = defaultAgent
       ensureChatRoom(defaultAgent.id)
+      const storedConversationId = loadChatConversationIdFromStorage(chatOwnerStorageScope.value)
+      if (storedConversationId && storedConversationId !== conversationId.value) {
+        conversationId.value = storedConversationId
+      }
       loadMessagesFromStorage()
-      await ensureCustomerServiceConversation()
-      await loadMessagesFromAPI()
-      connectCustomerServiceRealtime()
+      if (!conversationId.value) {
+        await ensureCustomerServiceConversation()
+      }
     }
   }
   
@@ -970,6 +1097,8 @@ export const useWhatsAppState = (
     showVisitorEmailCapture,
     isSending,
     messages,
+    hasOlderMessages,
+    isLoadingOlderMessages,
     activeTab,
     newMessage,
     pendingProductReference,
@@ -1001,6 +1130,7 @@ export const useWhatsAppState = (
     openOrderPicker,
     openCustomerServiceProductSearchModal,
     closeCustomerServiceProductSearchModal,
+    dismissDetachedChatOverlays,
     clearPendingProductReference,
     handleWarrantyLoginRequest,
     handleChatAuthSuccess,
@@ -1011,6 +1141,7 @@ export const useWhatsAppState = (
     handleMessageContextMenu,
     retryMessage,
     handleSendMessage,
+    loadOlderMessages: loadOlderMessagesFromAPI,
     searchProducts,
     handleAddProductToCart,
     handleProductDrawerClose,

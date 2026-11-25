@@ -1,6 +1,8 @@
 {
   "actions": {
     "close": "Close chat",
+    "collapse": "Comprimi pannello chat",
+    "expand": "Espandi pannello chat",
     "closeHistory": "Close browsing history",
     "backToWelcome": "Back to welcome",
     "switchToChat": "Switch to chat",

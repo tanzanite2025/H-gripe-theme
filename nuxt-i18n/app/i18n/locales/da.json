@@ -311,6 +311,8 @@
   "chatModal": {
     "actions": {
       "close": "Close chat",
+      "collapse": "Skjul chatpanelet",
+      "expand": "Vis chatpanelet",
       "closeHistory": "Close browsing history",
       "backToWelcome": "Back to welcome",
       "switchToChat": "Switch to chat",
@@ -898,6 +900,7 @@
     }
   },
   "dockMenu": {
+    "userCenter": "Brugercenter",
     "openSidebar": "Åbn sidepanel",
     "menu": "Menu",
     "chat": "Chat",

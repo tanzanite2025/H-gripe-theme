@@ -1,5 +1,8 @@
 export interface ProductFormRecord {
   id: number | string | null
+  product_type?: string
+  carbon_rim_specification?: import('./carbonRimDedicatedSpecificationFormValuesAndValidation').CarbonRimSpecificationForm | null
+  bicycle_tire_specification?: import('./bicycleTireDedicatedSpecificationFormValuesAndValidation').BicycleTireSpecificationForm | null
   product_specification_template_id: number | string | null
   product_category_id: number | string | null
   brand_id: number | string | null

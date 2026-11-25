@@ -53,6 +53,50 @@ func TestCustomerServiceDedicatedPathStillHandlesConversationMessages(t *testing
 	assert.True(t, messages[1].IsStaff)
 }
 
+func TestPublicCustomerServiceMessageRetryReusesPersistedMessageAndRejectsChangedPayload(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "idempotent-agent@example.test", "idempotent-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "idempotent-visitor-hash"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+	clientMessageID := "local-1732450000000-a1b2c3"
+	var outboxCountBeforeSend int64
+	require.NoError(t, db.Model(&outbox.Event{}).Count(&outboxCountBeforeSend).Error)
+
+	firstConversation, firstMessage, firstWasReplay, err := ticketService.AddPublicCustomerServiceMessageWithIdempotencyKey(
+		ticketConversationID(conversation), owner, clientMessageID, "hello", agent.ID, "text", "", "",
+	)
+	require.NoError(t, err)
+	require.NotNil(t, firstConversation)
+	require.NotNil(t, firstMessage)
+	assert.False(t, firstWasReplay)
+	assert.Equal(t, clientMessageID, *firstMessage.ClientMessageID)
+	var outboxCountAfterFirstSend int64
+	require.NoError(t, db.Model(&outbox.Event{}).Count(&outboxCountAfterFirstSend).Error)
+	assert.Greater(t, outboxCountAfterFirstSend, outboxCountBeforeSend)
+
+	_, replayedMessage, wasReplay, err := ticketService.AddPublicCustomerServiceMessageWithIdempotencyKey(
+		ticketConversationID(conversation), owner, clientMessageID, "hello", agent.ID, "text", "", "",
+	)
+	require.NoError(t, err)
+	require.NotNil(t, replayedMessage)
+	assert.True(t, wasReplay)
+	assert.Equal(t, firstMessage.ID, replayedMessage.ID)
+	var outboxCountAfterReplay int64
+	require.NoError(t, db.Model(&outbox.Event{}).Count(&outboxCountAfterReplay).Error)
+	assert.Equal(t, outboxCountAfterFirstSend, outboxCountAfterReplay)
+
+	_, _, _, err = ticketService.AddPublicCustomerServiceMessageWithIdempotencyKey(
+		ticketConversationID(conversation), owner, clientMessageID, "changed", agent.ID, "text", "", "",
+	)
+	assert.ErrorIs(t, err, ErrCustomerServiceMessageIdempotencyConflict)
+
+	messages, err := ticketService.GetPublicCustomerServiceMessages(ticketConversationID(conversation), owner, 50, 0)
+	require.NoError(t, err)
+	require.Len(t, messages, 1)
+	assert.Equal(t, "hello", messages[0].Content)
+}
+
 func TestCustomerServiceMessagePageUsesStableDatabaseOrderAndTrueTotal(t *testing.T) {
 	db, ticketService := newTestTicketBoundaryService(t)
 	agent := createTicketBoundaryUser(t, db, "page-agent@example.test", "page-agent", "support")
@@ -75,6 +119,63 @@ func TestCustomerServiceMessagePageUsesStableDatabaseOrderAndTrueTotal(t *testin
 	require.Len(t, messages, 2)
 	assert.Equal(t, "second", messages[0].Content)
 	assert.Equal(t, "third", messages[1].Content)
+}
+
+func TestCustomerServiceMessageCursorPagesStayStableAcrossConcurrentMessagesWithEqualTimestamps(t *testing.T) {
+	db, ticketService := newTestTicketBoundaryService(t)
+	agent := createTicketBoundaryUser(t, db, "cursor-agent@example.test", "cursor-agent", "support")
+	owner := CustomerServiceOwner{VisitorSessionHash: "cursor-visitor-hash"}
+	conversation, err := ticketService.GetOrCreatePublicCustomerServiceConversation(owner, agent.ID)
+	require.NoError(t, err)
+
+	createdAt := time.Date(2027, time.September, 11, 10, 0, 0, 0, time.UTC)
+	for _, content := range []string{"first", "second", "third", "fourth", "fifth"} {
+		require.NoError(t, ticketService.ticketRepo.CreateTicketMessage(&ticket.TicketMessage{
+			TicketID:  conversation.ID,
+			Content:   content,
+			CreatedAt: createdAt,
+		}))
+	}
+
+	latestPage, err := ticketService.GetPublicCustomerServiceMessagesByCursor(ticketConversationID(conversation), owner, 2, nil, nil)
+	require.NoError(t, err)
+	require.Len(t, latestPage.Messages, 2)
+	assert.Equal(t, []string{"fourth", "fifth"}, []string{latestPage.Messages[0].Content, latestPage.Messages[1].Content})
+	assert.True(t, latestPage.HasOlder)
+	assert.False(t, latestPage.HasNewer)
+
+	// A new message arrives after the latest page was read. The older cursor must
+	// still return the exact records before that page, without offset shifting.
+	require.NoError(t, ticketService.ticketRepo.CreateTicketMessage(&ticket.TicketMessage{
+		TicketID:  conversation.ID,
+		Content:   "arrived during pagination",
+		CreatedAt: createdAt,
+	}))
+	olderPage, err := ticketService.GetPublicCustomerServiceMessagesByCursor(
+		ticketConversationID(conversation),
+		owner,
+		2,
+		&CustomerServiceMessageCursor{CreatedAt: latestPage.Messages[0].CreatedAt, ID: latestPage.Messages[0].ID},
+		nil,
+	)
+	require.NoError(t, err)
+	require.Len(t, olderPage.Messages, 2)
+	assert.Equal(t, []string{"second", "third"}, []string{olderPage.Messages[0].Content, olderPage.Messages[1].Content})
+	assert.True(t, olderPage.HasOlder)
+	assert.True(t, olderPage.HasNewer)
+
+	newerPage, err := ticketService.GetPublicCustomerServiceMessagesByCursor(
+		ticketConversationID(conversation),
+		owner,
+		2,
+		nil,
+		&CustomerServiceMessageCursor{CreatedAt: latestPage.Messages[1].CreatedAt, ID: latestPage.Messages[1].ID},
+	)
+	require.NoError(t, err)
+	require.Len(t, newerPage.Messages, 1)
+	assert.Equal(t, "arrived during pagination", newerPage.Messages[0].Content)
+	assert.True(t, newerPage.HasOlder)
+	assert.False(t, newerPage.HasNewer)
 }
 
 func TestCustomerServiceAgentMessagePreservesVideoType(t *testing.T) {

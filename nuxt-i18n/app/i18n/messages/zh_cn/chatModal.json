@@ -1,6 +1,8 @@
 {
   "actions": {
     "close": "关闭聊天",
+    "collapse": "收起聊天面板",
+    "expand": "展开聊天面板",
     "closeHistory": "关闭浏览记录",
     "backToWelcome": "返回欢迎页",
     "switchToChat": "切换到聊天",

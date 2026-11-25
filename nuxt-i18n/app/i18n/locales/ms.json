@@ -311,6 +311,8 @@
   "chatModal": {
     "actions": {
       "close": "Close chat",
+      "collapse": "Runtuhkan panel sembang",
+      "expand": "Kembangkan panel sembang",
       "closeHistory": "Close browsing history",
       "backToWelcome": "Back to welcome",
       "switchToChat": "Switch to chat",
@@ -898,6 +900,7 @@
     }
   },
   "dockMenu": {
+    "userCenter": "Pusat pengguna",
     "openSidebar": "Buka bar sisi",
     "menu": "Menu",
     "chat": "Chat",

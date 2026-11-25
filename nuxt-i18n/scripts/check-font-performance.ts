@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { create, type Font } from 'fontkitten'
+import { expectedStorefrontFontFaceFiles, verifyStorefrontFontCharacterShardCoverageAndOriginalGlyphParity } from './storefront-font-character-shard-contract.ts'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const projectDir = path.resolve(scriptDir, '..')
@@ -17,16 +17,8 @@ const cjkFontFamily = 'MapleUICJK'
 const fontDisplay = 'block'
 const maximumLatinFontBytes = 160 * 1024
 const latinFontFilename = 'MapleUI-Latin.00af3fec5b34.woff2'
-const versionedFontFilenamePattern = /^MapleUI-[A-Za-z-]+\.[a-f0-9]{12}\.woff2$/
-const expectedFontFaces = [
-  { fontFamily: latinFontFamily, filename: latinFontFilename, unicodeRange: false },
-  { fontFamily: cjkFontFamily, filename: 'MapleUI-CJK.f8ce6d72e8cb.woff2', unicodeRange: true },
-  { fontFamily: 'MapleUICoverageNotoSansDevanagari', filename: 'MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2', unicodeRange: true },
-  { fontFamily: 'MapleUICoverageNotoSansLatinAccents', filename: 'MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2', unicodeRange: true },
-  { fontFamily: 'MapleUICoverageNotoSansArabic', filename: 'MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2', unicodeRange: true },
-  { fontFamily: 'MapleUICoverageNotoSansThai', filename: 'MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2', unicodeRange: true },
-] as const
-const matchingFontMetrics = ['unitsPerEm', 'ascent', 'descent', 'lineGap', 'capHeight', 'xHeight'] as const
+const versionedFontFilenamePattern = /^MapleUI-[A-Za-z0-9-]+\.[a-f0-9]{12}\.woff2$/
+const expectedFontFaces = expectedStorefrontFontFaceFiles
 
 interface FontFaceSource {
   fontFamily: string
@@ -65,16 +57,6 @@ function compareFontFaceContracts(first: FontFaceSource[], second: FontFaceSourc
       fontFace.unicodeRange === other.unicodeRange
     )
   })
-}
-
-function loadFont(fontPath: string): Font {
-  const font = create(fs.readFileSync(fontPath))
-
-  if (font.isCollection) {
-    throw new Error(`Font collections are not supported by this check: ${fontPath}`)
-  }
-
-  return font
 }
 
 const violations: string[] = []
@@ -154,7 +136,7 @@ if (fontFaces.length !== expectedFontFaces.length) {
 }
 
 for (const expectedFontFace of expectedFontFaces) {
-  const fontFace = fontFaces.find(face => face.fontFamily === expectedFontFace.fontFamily)
+  const fontFace = fontFaces.find(face => path.basename(face.sourcePath) === expectedFontFace.filename)
 
   if (!fontFace) {
     violations.push(`Missing required @font-face declaration: ${expectedFontFace.fontFamily}.`)
@@ -166,59 +148,24 @@ for (const expectedFontFace of expectedFontFaces) {
       `${expectedFontFace.fontFamily} must use ${expectedFontFace.filename}, not ${path.basename(fontFace.sourcePath)}.`,
     )
   }
+  if (fontFace.fontFamily !== expectedFontFace.fontFamily) {
+    violations.push(`${expectedFontFace.filename} must belong to ${expectedFontFace.fontFamily}.`)
+  }
 
   if (fontFace.fontDisplay !== fontDisplay) {
     violations.push(`${expectedFontFace.fontFamily} must use font-display: ${fontDisplay}.`)
   }
 
-  if (Boolean(fontFace.unicodeRange) !== expectedFontFace.unicodeRange) {
+  if (Boolean(fontFace.unicodeRange) !== Boolean(expectedFontFace.unicodeRange)) {
     const requirement = expectedFontFace.unicodeRange ? 'declare' : 'not declare'
     violations.push(`${expectedFontFace.fontFamily} must ${requirement} unicode-range.`)
   }
-}
-
-if (latinFontFace && cjkFontFace) {
-  const latinFontPath = path.join(fontDir, path.basename(latinFontFace.sourcePath))
-  const cjkFontPath = path.join(fontDir, path.basename(cjkFontFace.sourcePath))
-
-  if (fs.existsSync(latinFontPath) && fs.existsSync(cjkFontPath)) {
-    const latinFont = loadFont(latinFontPath)
-    const cjkFont = loadFont(cjkFontPath)
-
-    for (const metric of matchingFontMetrics) {
-      if (latinFont[metric] !== cjkFont[metric]) {
-        violations.push(
-          `Latin subset and complete Maple UI must share ${metric}: ${latinFont[metric]} !== ${cjkFont[metric]}.`,
-        )
-      }
-    }
-
-    for (const codePoint of latinFont.characterSet) {
-      // Font metadata uses U+FFFF as the terminal cmap sentinel, not a glyph.
-      if (codePoint === 0xFFFF) continue
-
-      if (!cjkFont.hasGlyphForCodePoint(codePoint)) {
-        violations.push(
-          `Complete Maple UI is missing Latin subset glyph U+${codePoint.toString(16).toUpperCase().padStart(4, '0')}.`,
-        )
-        continue
-      }
-
-      const latinGlyph = latinFont.glyphForCodePoint(codePoint)
-      const cjkGlyph = cjkFont.glyphForCodePoint(codePoint)
-
-      if (
-        latinGlyph.advanceWidth !== cjkGlyph.advanceWidth
-        || latinGlyph.advanceHeight !== cjkGlyph.advanceHeight
-        || latinGlyph.path.toSVG() !== cjkGlyph.path.toSVG()
-      ) {
-        violations.push(
-          `Latin subset glyph U+${codePoint.toString(16).toUpperCase().padStart(4, '0')} differs from complete Maple UI.`,
-        )
-      }
-    }
+  if ((fontFace.unicodeRange || '') !== expectedFontFace.unicodeRange) {
+    violations.push(`${expectedFontFace.filename} must retain its approved character coverage.`)
   }
 }
+
+violations.push(...verifyStorefrontFontCharacterShardCoverageAndOriginalGlyphParity())
 
 const productionFonts = fs.readdirSync(fontDir)
   .filter(file => path.extname(file).toLowerCase() === '.woff2')

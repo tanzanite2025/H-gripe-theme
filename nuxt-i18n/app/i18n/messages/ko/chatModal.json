@@ -1,6 +1,8 @@
 {
   "actions": {
     "close": "Close chat",
+    "collapse": "채팅 패널 접기",
+    "expand": "채팅 패널 펼치기",
     "closeHistory": "Close browsing history",
     "backToWelcome": "Back to welcome",
     "switchToChat": "Switch to chat",

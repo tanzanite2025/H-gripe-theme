@@ -141,6 +141,8 @@ for (const localeCode of ['en', 'zh_cn', 'fr']) {
     })
     const howTo = entities.find(entity => entity['@id'] === `${canonicalUrl}#inner-tube-fitment-how-to`)!
     assert.equal(howTo['@type'], 'HowTo')
+    const fitmentApplication = entities.find(entity => entity['@type'] === 'WebApplication' && String(entity['@id']).includes('#inner-tube-fitment-calculator'))!
+    assert.deepEqual(fitmentApplication.author, { '@type': 'Person', name: 'wangguangen' })
     assert.ok(Array.isArray(howTo.step))
     assert.equal(howTo.step.length, 6)
     for (const [index, step] of howTo.step.map(readInnerTubeContentSchemaRecord).entries()) {

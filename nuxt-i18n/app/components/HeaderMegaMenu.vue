@@ -17,24 +17,49 @@
       <div class="header-mega__shell">
         <div class="header-mega__content">
           <div v-if="section.id === 'products'" class="header-mega__products-grid">
-            <div class="header-mega__products-column header-mega__products-column--categories">
-              <ProductCategoryNavigationCards
-                class="header-mega__products-category-navigation"
-                density="compact"
-                :product-category-display-limit="4"
-                @navigate="scheduleNavigateClose"
-              />
+            <div v-if="!shopComponents" class="header-mega__shop-loading" :aria-busy="!shopComponentsLoadFailed">
+              <NuxtLink :to="localePath('/shop')" @click="scheduleNavigateClose">
+                {{ sectionLabel }}
+              </NuxtLink>
+              <p :role="shopComponentsLoadFailed ? 'alert' : 'status'">
+                {{ shopComponentsLoadFailed
+                  ? t('header.primaryNavigation.loadFailed', 'The menu could not be loaded. Please try again.')
+                  : t('header.primaryNavigation.loading', 'Loading menu…') }}
+              </p>
+              <button v-if="shopComponentsLoadFailed" type="button" @click="loadShopMenuComponents">
+                {{ t('common.retry', 'Retry') }}
+              </button>
             </div>
+            <template v-else>
+              <div class="header-mega__products-column header-mega__products-column--categories">
+                <component
+                  :is="shopComponents.productCategoryNavigationCards"
+                  class="header-mega__products-category-navigation"
+                  density="compact"
+                  :product-category-display-limit="4"
+                  @navigate="scheduleNavigateClose"
+                />
+              </div>
 
-            <div class="header-mega__products-column header-mega__products-column--main-products">
-              <HomeMainProductCategories class="header-mega__products-main-categories" />
-            </div>
+              <div class="header-mega__products-column header-mega__products-column--main-products">
+                <Suspense>
+                  <component
+                    :is="shopComponents.homeMainProductCategories"
+                    section-anchor-id="header-mega-main-product-categories"
+                    class="header-mega__products-main-categories"
+                  />
+                  <template #fallback>
+                    <p role="status">{{ t('header.primaryNavigation.loading', 'Loading menu…') }}</p>
+                  </template>
+                </Suspense>
+              </div>
 
-            <div
-              class="header-mega__products-column header-mega__products-column--empty"
-              aria-hidden="true"
-            >
-            </div>
+              <div
+                class="header-mega__products-column header-mega__products-column--empty"
+                aria-hidden="true"
+              >
+              </div>
+            </template>
           </div>
           <div
             v-else
@@ -130,10 +155,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, unref } from 'vue'
+import { computed, shallowRef, ref, unref, watch } from 'vue'
 import { useI18n, useLocalePath } from '#imports'
-import HomeMainProductCategories from '~/components/home/HomeMainProductCategories.vue'
-import ProductCategoryNavigationCards from '~/components/shop/ProductCategoryNavigationCards.vue'
+import { preloadHeaderPrimaryNavigationShopComponents } from '~/utils/headerPrimaryNavigationShopComponentPreloading'
 import type {
   PrimaryMegaNavCard,
   PrimaryMegaNavCardSize,
@@ -175,6 +199,21 @@ const separatedColumnSectionIds = new Set<PrimaryMegaNavSection['id']>([
 
 const { t, te, locales } = useI18n() as any
 const localePath = useLocalePath()
+const shopComponents = shallowRef<Awaited<ReturnType<typeof preloadHeaderPrimaryNavigationShopComponents>> | null>(null)
+const shopComponentsLoadFailed = ref(false)
+
+async function loadShopMenuComponents(): Promise<void> {
+  shopComponentsLoadFailed.value = false
+  try {
+    shopComponents.value = await preloadHeaderPrimaryNavigationShopComponents()
+  } catch {
+    shopComponentsLoadFailed.value = true
+  }
+}
+
+watch(() => props.section?.id, sectionId => {
+  if (sectionId === 'products' && !shopComponents.value) void loadShopMenuComponents()
+}, { immediate: true })
 
 const localeCodes = computed(() => {
   return (unref(locales) || [])
@@ -457,60 +496,72 @@ const childAccessibleLabel = (child: PageSubNavigationChild) => {
   min-width: 0;
 }
 
+.header-mega__shop-loading {
+  grid-column: 1 / -1;
+  min-height: 120px;
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: 12px;
+}
+
+.header-mega__shop-loading a,
+.header-mega__shop-loading button {
+  color: var(--tz-site-accent, #059669);
+  text-decoration: underline;
+}
+
 .header-mega__products-column--empty {
   min-height: 1px;
 }
 
 .header-mega__products-main-categories {
   min-width: 0;
-}
-
-.header-mega__products-main-categories :deep(#home-main-product-categories) {
   padding: 0;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories > .page-content-shell) {
+.header-mega__products-main-categories :deep(.page-content-shell) {
   padding: 0;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories > .page-content-shell > .flex) {
+.header-mega__products-main-categories :deep(.page-content-shell > .flex) {
   align-items: flex-start;
   gap: 12px;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories h2) {
+.header-mega__products-main-categories :deep(h2) {
   margin-top: 0;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories .premium-button) {
+.header-mega__products-main-categories :deep(.premium-button) {
   flex: 0 0 auto;
   width: auto;
   white-space: nowrap;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories .mt-5) {
+.header-mega__products-main-categories :deep(.mt-5) {
   margin-top: 12px;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories .grid) {
+.header-mega__products-main-categories :deep(.grid) {
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories .home-main-product-categories__card) {
+.header-mega__products-main-categories :deep(.home-main-product-categories__card) {
   min-width: 0;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories .home-main-product-categories__image-wrap) {
+.header-mega__products-main-categories :deep(.home-main-product-categories__image-wrap) {
   aspect-ratio: 16 / 7;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories .home-main-product-categories__content) {
+.header-mega__products-main-categories :deep(.home-main-product-categories__content) {
   gap: 8px;
   padding: 10px 0 0;
 }
 
-.header-mega__products-main-categories :deep(#home-main-product-categories .home-main-product-categories__title) {
+.header-mega__products-main-categories :deep(.home-main-product-categories__title) {
   font-size: 15px;
 }
 

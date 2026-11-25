@@ -1,17 +1,17 @@
 <template>
-  <div class="space-y-8">
-    <div class="rounded-2xl bg-[var(--tz-card-surface)] shadow-md p-5 md:p-6 text-center border-t-4 border-slate-500">
-      <div class="flex flex-col items-center">
-        <h2 id="freehub-cassette-fitment-section-title" class="text-lg font-bold tz-text-primary mb-2">
+  <div class="freehub-fitment-content space-y-8">
+    <section class="freehub-fitment-overview" aria-labelledby="freehub-cassette-fitment-section-title">
+      <header class="freehub-fitment-overview__heading">
+        <h2 id="freehub-cassette-fitment-section-title" class="freehub-fitment-overview__title">
           {{ t('guidesWheelsetBuyersChooseFreehub.intro.title') }}
         </h2>
-        <p class="text-sm tz-text-secondary leading-relaxed max-w-2xl mx-auto mb-4">
+        <p class="freehub-fitment-overview__description">
           {{ t('guidesWheelsetBuyersChooseFreehub.intro.body') }}
         </p>
-        <FreehubGroupsetHelper />
-        <slot name="after-helper" />
-      </div>
-    </div>
+      </header>
+      <FreehubGroupsetHelper class="freehub-fitment-overview__finder" />
+      <slot name="after-helper" />
+    </section>
 
     <article
       v-for="ecosystem in ecosystems"
@@ -22,7 +22,7 @@
         class="flex items-center gap-3 mb-6 pb-3 border-b"
         :class="ecosystem.borderClass"
       >
-        <h3 class="text-lg font-bold tz-text-primary">{{ ecosystem.title }}</h3>
+        <h3 class="tz-section-title tz-text-primary">{{ ecosystem.title }}</h3>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6" :class="ecosystem.gridClass">
@@ -39,22 +39,22 @@
             :caption="t(card.captionKey)"
             class="rounded-lg mb-2"
           />
-          <strong class="block text-sm mb-1 text-center" :class="card.accentClass">
+          <strong class="block tz-description font-semibold mb-1 text-center" :class="card.accentClass">
             {{ t(card.nameKey) }}
           </strong>
-          <p class="text-xs tz-text-muted text-center">{{ t(card.bodyKey) }}</p>
+          <p class="tz-caption tz-text-secondary text-center">{{ t(card.bodyKey) }}</p>
         </div>
       </div>
 
       <div class="tz-surface-panel rounded-xl p-4">
-        <h4 class="text-xs font-bold tz-text-muted uppercase tracking-widest mb-3">
+        <h4 class="tz-description font-semibold tz-text-primary mb-3">
           {{ t(ecosystem.cheatsheetTitleKey) }}
         </h4>
         <ul class="space-y-3">
           <li
             v-for="item in ecosystem.cheatsheet"
             :key="item.key"
-            class="flex items-start gap-3 text-xs tz-text-secondary"
+            class="flex items-start gap-3 tz-description tz-text-secondary"
           >
             <span class="mt-0.5 w-1.5 h-1.5 rounded-full shrink-0" :class="item.dotClass"></span>
             <span>{{ t(item.key) }}</span>
@@ -64,15 +64,15 @@
     </article>
 
     <div class="pt-6 border-t tz-border-subtle">
-      <p class="mb-4 px-2 text-xs tz-text-muted">
+      <p class="mb-4 px-2 tz-caption tz-text-secondary">
         {{ `Compatibility rules verified through ${knowledgeAsOf}. This is a versioned knowledge base, not a live manufacturer lookup.` }}
       </p>
-      <h3 class="text-base font-bold tz-text-primary mb-4 px-2 border-l-4 border-slate-500">
+      <h3 class="tz-section-title tz-text-primary mb-4 px-2 border-l-4 border-slate-500">
         {{ t('guidesWheelsetBuyersChooseFreehub.reference.standardsTitle') }}
       </h3>
       <div class="overflow-x-auto rounded-xl shadow-md bg-[var(--tz-card-surface)]">
-        <table class="min-w-full text-left text-xs sm:text-sm tz-text-secondary">
-          <thead class="tz-surface-panel font-bold tz-text-primary uppercase tracking-wider tz-micro-label sm:text-xs">
+        <table class="min-w-full text-left tz-description tz-text-secondary">
+          <thead class="tz-surface-panel font-semibold tz-text-primary tz-caption">
             <tr>
               <th class="px-4 py-3">{{ t('guidesWheelsetBuyersChooseFreehub.reference.standardsHeaders.type') }}</th>
               <th class="px-4 py-3">{{ t('guidesWheelsetBuyersChooseFreehub.reference.standardsHeaders.groupsets') }}</th>
@@ -93,17 +93,17 @@
         </table>
       </div>
 
-      <h3 class="text-base font-bold tz-text-primary mt-8 mb-4 px-2 border-l-4 border-slate-500">
+      <h3 class="tz-section-title tz-text-primary mt-8 mb-4 px-2 border-l-4 border-slate-500">
         {{ t('guidesWheelsetBuyersChooseFreehub.reference.matrixTitle') }}
       </h3>
       <section
         class="mb-4 rounded-xl border border-slate-200/60 bg-[var(--tz-card-surface)] p-4"
         aria-label="Direct compatibility answers"
       >
-        <h4 class="text-sm font-semibold tz-text-primary mb-2">
+        <h4 class="tz-card-title font-semibold tz-text-primary mb-2">
           Direct compatibility answers
         </h4>
-        <ul class="space-y-2 text-xs sm:text-sm tz-text-secondary">
+        <ul class="space-y-2 tz-description tz-text-secondary">
           <li v-for="row in drivetrainMatrixRows" :key="`${row.anchor}-answer`">
             <span>
               {{ row.directAnswer }}
@@ -112,8 +112,8 @@
         </ul>
       </section>
       <div class="overflow-x-auto rounded-xl shadow-md bg-[var(--tz-card-surface)]">
-        <table class="min-w-full text-left text-xs sm:text-sm tz-text-secondary">
-          <thead class="tz-surface-panel font-bold tz-text-primary uppercase tracking-wider tz-micro-label sm:text-xs">
+        <table class="min-w-full text-left tz-description tz-text-secondary">
+          <thead class="tz-surface-panel font-semibold tz-text-primary tz-caption">
             <tr>
               <th class="px-4 py-3">{{ t('guidesWheelsetBuyersChooseFreehub.reference.matrixHeaders.brand') }}</th>
               <th class="px-4 py-3">{{ t('guidesWheelsetBuyersChooseFreehub.reference.matrixHeaders.freehub') }}</th>
@@ -506,3 +506,110 @@ const spacerClass = (tone: SpacerTone) => (
   tone === 'warning' ? 'text-amber-400' : 'text-emerald-600'
 )
 </script>
+
+<style scoped>
+.freehub-fitment-content {
+  min-width: 0;
+  font-size: var(--tz-type-description);
+  line-height: 1.58;
+}
+
+.freehub-fitment-content :deep(.guide-image__caption) {
+  font-size: var(--tz-type-caption);
+  line-height: 1.5;
+}
+
+.freehub-fitment-overview {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  border-top: 3px solid #64748b;
+  border-radius: 1rem;
+  padding: clamp(1rem, 2vw, 2rem);
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+  font-size: var(--tz-type-description);
+  line-height: 1.58;
+  text-align: start;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.06);
+}
+
+.freehub-fitment-overview__heading,
+.freehub-fitment-overview__finder {
+  width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.freehub-fitment-overview__title {
+  margin: 0 0 0.5rem;
+  font-size: var(--tz-type-section-title);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.freehub-fitment-overview__description {
+  margin: 0;
+  color: var(--tz-text-secondary);
+  font-size: var(--tz-type-description);
+  line-height: 1.58;
+  text-align: start;
+}
+
+.freehub-fitment-overview__finder {
+  border: 1px solid var(--tz-border-subtle);
+  border-radius: 0.75rem;
+  padding: clamp(1rem, 1.5vw, 1.5rem);
+  font-size: var(--tz-type-description);
+  text-align: start;
+  box-shadow: none;
+}
+
+.freehub-fitment-overview__finder :deep(p) {
+  text-align: start;
+}
+
+.freehub-fitment-overview__finder :deep(> h3) {
+  margin-bottom: 0.5rem;
+  color: var(--tz-text-primary);
+  font-size: var(--tz-type-card-title);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.freehub-fitment-overview__finder :deep(> p) {
+  margin-bottom: 1rem;
+  font-size: var(--tz-type-description);
+  line-height: 1.58;
+}
+
+.freehub-fitment-overview__finder :deep(label) {
+  font-size: var(--tz-type-caption);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.freehub-fitment-overview__finder :deep(.freehub-groupset-helper__status p),
+.freehub-fitment-overview__finder :deep(.freehub-groupset-helper__result-copy .tz-caption),
+.freehub-fitment-overview__finder :deep(.freehub-groupset-helper__fact-callout),
+.freehub-fitment-overview__finder :deep(.freehub-groupset-helper__fact-copy) {
+  font-size: var(--tz-type-caption);
+  line-height: 1.5;
+}
+
+.freehub-fitment-overview__finder :deep(.freehub-groupset-helper__status .tz-text-muted),
+.freehub-fitment-overview__finder :deep(.freehub-groupset-helper__result-copy .tz-text-muted) {
+  color: var(--tz-text-secondary);
+}
+
+.freehub-fitment-overview__finder :deep(.freehub-groupset-helper__fact-heading h4) {
+  font-size: var(--tz-type-description);
+  line-height: 1.5;
+}
+
+.freehub-fitment-overview__finder :deep(.freehub-groupset-helper__fact-label) {
+  color: var(--tz-text-secondary);
+  font-size: var(--tz-type-micro-label);
+  line-height: 1.5;
+}
+</style>

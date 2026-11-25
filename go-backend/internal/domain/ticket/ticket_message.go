@@ -8,8 +8,10 @@ import (
 
 // TicketMessage 工单消息
 type TicketMessage struct {
-	ID                               uint                                                  `gorm:"primarykey" json:"id"`
-	TicketID                         uint                                                  `gorm:"not null;index" json:"ticket_id"`
+	ID                               uint                                                  `gorm:"primarykey;index:idx_ticket_messages_ticket_created_id,priority:3" json:"id"`
+	TicketID                         uint                                                  `gorm:"not null;index;index:idx_ticket_messages_ticket_created_id,priority:1" json:"ticket_id"`
+	ClientMessageID                  *string                                               `gorm:"type:varchar(64);uniqueIndex:idx_ticket_messages_ticket_client_message_id,priority:2" json:"-"`
+	ClientMessagePayloadHash         string                                                `gorm:"type:varchar(64);not null;default:''" json:"-"`
 	UserID                           *uint                                                 `gorm:"index" json:"user_id"`
 	IsStaff                          bool                                                  `gorm:"default:false" json:"is_staff"` // 是否客服回复
 	Content                          string                                                `gorm:"type:text;not null" json:"content"`
@@ -21,7 +23,7 @@ type TicketMessage struct {
 	IsInternal                       bool                                                  `gorm:"default:false" json:"is_internal"` // 是否内部备注
 	IsRead                           bool                                                  `gorm:"default:false" json:"is_read"`
 	User                             *user.User                                            `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	CreatedAt                        time.Time                                             `json:"created_at"`
+	CreatedAt                        time.Time                                             `gorm:"index:idx_ticket_messages_ticket_created_id,priority:2" json:"created_at"`
 }
 
 // TableName 指定表名

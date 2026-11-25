@@ -8,45 +8,51 @@
     </p>
 
     <div class="freehub-groupset-helper__fields">
-      <div class="freehub-groupset-helper__field">
-        <label class="block text-xs font-medium tz-text-secondary" :for="brandSelectId">
+      <div
+        class="freehub-groupset-helper__field"
+        :class="{ 'freehub-groupset-helper__field--current': !selectedBrand }"
+      >
+        <label class="freehub-groupset-helper__label text-xs font-medium tz-text-secondary" :for="brandSelectId">
+          <span class="freehub-groupset-helper__step-number" aria-hidden="true">1</span>
           {{ t('wheelsetFreehubHelper.drivetrainBrand') }}
         </label>
-        <select
+        <SpokeCalculatorSelect
           :id="brandSelectId"
-          v-model="selectedBrand"
-          class="freehub-groupset-helper__select mt-1 w-full rounded-md border tz-border-strong tz-surface-panel px-2 py-1.5 text-xs tz-text-secondary shadow-md outline-none focus:border-emerald-600 focus:ring-0"
-        >
-          <option disabled value="">
-            {{ t('wheelsetFreehubHelper.selectBrand') }}
-          </option>
-          <option v-for="brand in brands" :key="brand" :value="brand">
-            {{ brand }}
-          </option>
-        </select>
+          density="compact"
+          :model-value="selectedBrand"
+          :options="freehubBrandSelectOptions"
+          :placeholder="t('wheelsetFreehubHelper.selectBrand')"
+          :aria-label="t('wheelsetFreehubHelper.drivetrainBrand')"
+          :keep-menu-within-viewport="true"
+          class="freehub-groupset-helper__select mt-1"
+          @update:model-value="updateSelectedFreehubBrand"
+        />
       </div>
 
-      <div class="freehub-groupset-helper__field">
-        <label class="block text-xs font-medium tz-text-secondary" :for="groupsetSelectId">
+      <div
+        class="freehub-groupset-helper__field"
+        :class="{ 'freehub-groupset-helper__field--current': selectedBrand && !selectedCassetteSpec }"
+      >
+        <label class="freehub-groupset-helper__label text-xs font-medium tz-text-secondary" :for="groupsetSelectId">
+          <span class="freehub-groupset-helper__step-number" aria-hidden="true">2</span>
           {{ t('wheelsetFreehubHelper.groupset') }}
         </label>
-        <select
+        <SpokeCalculatorSelect
           :id="groupsetSelectId"
-          v-model="selectedCassetteSpec"
+          density="compact"
+          :model-value="selectedCassetteSpec"
+          :options="freehubCassetteSelectOptions"
           :disabled="!selectedBrand || isLoading"
-          class="freehub-groupset-helper__select mt-1 w-full rounded-md border tz-border-strong tz-surface-panel px-2 py-1.5 text-xs tz-text-secondary shadow-md outline-none focus:border-emerald-600 focus:ring-0 disabled:cursor-not-allowed disabled:border-[var(--tz-border-subtle)] disabled:tz-text-muted"
-        >
-          <option disabled value="">
-            {{ isLoading
-              ? t('wheelsetFreehubHelper.loading')
-              : selectedBrand
-                ? t('wheelsetFreehubHelper.selectGroupset')
-                : t('wheelsetFreehubHelper.chooseBrandFirst') }}
-          </option>
-          <option v-for="rule in filteredRules" :key="rule.cassette_spec" :value="rule.cassette_spec">
-            {{ optionLabel(rule) }}
-          </option>
-        </select>
+          :placeholder="isLoading
+            ? t('wheelsetFreehubHelper.loading')
+            : selectedBrand
+              ? t('wheelsetFreehubHelper.selectGroupset')
+              : t('wheelsetFreehubHelper.chooseBrandFirst')"
+          :aria-label="t('wheelsetFreehubHelper.groupset')"
+          :keep-menu-within-viewport="true"
+          class="freehub-groupset-helper__select mt-1"
+          @update:model-value="updateSelectedFreehubCassetteSpecification"
+        />
       </div>
     </div>
 
@@ -163,6 +169,7 @@
 import { computed, nextTick, ref, useId, watch } from 'vue'
 import { useAsyncData, useI18n } from '#imports'
 import GuideImage from '~/components/GuideImage.vue'
+import SpokeCalculatorSelect from '~/components/SpokeCalculatorSelect.vue'
 import { useDrivetrainFitmentApi } from '~/composables/useDrivetrainFitmentApi'
 import { usePageMessages } from '~/composables/usePageMessages'
 import type { DrivetrainCassetteRule, DrivetrainSpacerRequirement } from '~/types/drivetrainFitment'
@@ -231,6 +238,24 @@ const optionLabel = (rule: DrivetrainCassetteRule) => (
   rule.hint_groupsets ? `${ruleDisplayName(rule)} (${ruleHintGroupsets(rule)})` : ruleDisplayName(rule)
 )
 
+const freehubBrandSelectOptions = computed(() => brands.value.map(brand => ({
+  label: brand,
+  value: brand,
+})))
+
+const freehubCassetteSelectOptions = computed(() => filteredRules.value.map(rule => ({
+  label: optionLabel(rule),
+  value: rule.cassette_spec,
+})))
+
+const updateSelectedFreehubBrand = (brand: string | number | null) => {
+  selectedBrand.value = typeof brand === 'string' ? brand : ''
+}
+
+const updateSelectedFreehubCassetteSpecification = (cassetteSpecification: string | number | null) => {
+  selectedCassetteSpec.value = typeof cassetteSpecification === 'string' ? cassetteSpecification : ''
+}
+
 const ruleDisplayName = (rule: DrivetrainCassetteRule) => localizedRuleDisplayName(rule, locale.value)
 const ruleHintGroupsets = (rule: DrivetrainCassetteRule) => localizedRuleHintGroupsets(rule, locale.value)
 const optionDisplayName = (option: DrivetrainCassetteRule['fitment_options'][number]) => localizedFreehubName(option, locale.value)
@@ -282,7 +307,27 @@ const updateActiveFact = () => {
 
 <style scoped>
 .freehub-groupset-helper__fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; align-items: end; }
-.freehub-groupset-helper__field, .freehub-groupset-helper__select { min-width: 0; }
+.freehub-groupset-helper__field {
+  min-width: 0;
+  --spoke-border: color-mix(in srgb, var(--tz-text-secondary) 55%, var(--tz-border-strong));
+  --spoke-border-strong: var(--tz-site-accent-hover);
+  --spoke-focus-ring: var(--tz-site-accent);
+}
+.freehub-groupset-helper__select { min-width: 0; }
+.freehub-groupset-helper__label { display: flex; align-items: center; gap: 0.375rem; }
+.freehub-groupset-helper__step-number { display: inline-flex; width: 1.125rem; height: 1.125rem; flex-shrink: 0; align-items: center; justify-content: center; border: 1px solid var(--tz-border-strong); border-radius: 50%; background: var(--tz-surface-muted); color: var(--tz-text-secondary); font-size: 0.6875rem; line-height: 1; }
+.freehub-groupset-helper__field--current {
+  --spoke-border: var(--tz-site-accent-hover);
+  --spoke-border-strong: var(--tz-text-accent-hover);
+  --spoke-control-surface: var(--tz-site-accent-hover);
+  --spoke-result-surface: var(--tz-text-accent-hover);
+}
+.freehub-groupset-helper__field--current .freehub-groupset-helper__step-number { border-color: var(--tz-site-accent-hover); background: var(--tz-site-accent-hover); color: #fff; }
+.freehub-groupset-helper__field :deep(.spoke-calculator-select__chevron) { color: var(--tz-text-secondary); }
+.freehub-groupset-helper__field--current :deep(.spoke-calculator-select__button),
+.freehub-groupset-helper__field--current :deep(.spoke-calculator-select__chevron) { color: #fff; }
+.freehub-groupset-helper__field--current :deep(.spoke-calculator-select__menu) { background: var(--tz-input-surface); }
+.freehub-groupset-helper__field :deep(.spoke-calculator-select__button:focus-visible) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--tz-site-accent) 25%, transparent); }
 .freehub-groupset-helper__status { margin-top: 0.75rem; }
 .freehub-groupset-helper__results { display: grid; gap: 0.625rem; margin-top: 0.875rem; }
 .freehub-groupset-helper__result { display: grid; grid-template-columns: minmax(5rem, 7rem) minmax(0, 1fr); gap: 0.75rem; padding: 0.75rem; border: 1px solid var(--tz-border-subtle); border-radius: 0.5rem; background: var(--tz-surface-panel); }
@@ -302,12 +347,11 @@ const updateActiveFact = () => {
 .freehub-groupset-helper__fact--shimano-road-12-speed .freehub-groupset-helper__fact-callout { color: #047857; }
 .freehub-groupset-helper__fact-copy { margin-top: 0.25rem; color: var(--tz-text-secondary); font-size: 0.675rem; line-height: 1.5; }
 .freehub-groupset-helper__pagination { margin-top: 0.5rem; }
+@media (min-width: 640px) {
+  .freehub-groupset-helper__fields { width: min(100%, 37rem); grid-template-columns: 10rem minmax(0, 1fr); }
+}
 @media (min-width: 768px) {
-  .freehub-groupset-helper__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .freehub-groupset-helper__fact-rail { grid-auto-columns: minmax(0, 1fr); grid-auto-flow: initial; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); overflow: visible; }
   .freehub-groupset-helper__pagination { display: none; }
 }
-.freehub-groupset-helper select { color-scheme: light; }
-.freehub-groupset-helper select option { background-color: var(--tz-form-control-surface); color: var(--tz-text-primary); }
-.freehub-groupset-helper select option:disabled { color: var(--tz-text-muted); }
 </style>

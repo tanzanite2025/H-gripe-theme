@@ -99,7 +99,10 @@ for (const { code, iso } of locales) {
     // WebApplication metadata. The migration must not replace either schema.
     const calculatorSchema = schemas.find(schema => schema['@type'] === 'WebApplication' || schema['@type'] === 'TechArticle')
     assert.ok(calculatorSchema)
-    if (calculatorSchema['@type'] === 'WebApplication') assert.equal(calculatorSchema.url, canonical.href)
+    if (calculatorSchema['@type'] === 'WebApplication') {
+      assert.equal(calculatorSchema.url, canonical.href)
+      assert.deepEqual(calculatorSchema.author, { '@type': 'Person', name: 'wangguangen' })
+    }
     assert.ok(!JSON.stringify(schemas).includes(retiredGuidePath))
     assert.ok(!html.includes(`href="${prefix}${retiredGuidePath}`), 'No internal navigation points to the retired guide')
   }

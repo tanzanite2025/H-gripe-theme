@@ -1,4 +1,8 @@
 {
+  "primaryNavigation": {
+    "loading": "Loading menu…",
+    "loadFailed": "The menu could not be loaded. Please try again."
+  },
   "searchHint": {
     "title": "Search products and FAQ",
     "body": "Click to search products, FAQ, and more."

@@ -1,6 +1,8 @@
 {
   "actions": {
     "close": "Close chat",
+    "collapse": "ยุบแผงแชต",
+    "expand": "ขยายแผงแชต",
     "closeHistory": "Close browsing history",
     "backToWelcome": "Back to welcome",
     "switchToChat": "Switch to chat",

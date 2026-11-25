@@ -311,6 +311,8 @@
   "chatModal": {
     "actions": {
       "close": "Close chat",
+      "collapse": "チャットパネルを折りたたむ",
+      "expand": "チャットパネルを展開",
       "closeHistory": "Close browsing history",
       "backToWelcome": "Back to welcome",
       "switchToChat": "Switch to chat",
@@ -898,6 +900,7 @@
     }
   },
   "dockMenu": {
+    "userCenter": "ユーザーセンター",
     "openSidebar": "サイドバーを開く",
     "menu": "メニュー",
     "chat": "チャット",

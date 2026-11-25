@@ -1,6 +1,6 @@
 <template>
 	<div
-		ref="headerRootRef"
+		:ref="setHeaderRootElementAndInitializeClientNavigation"
 		class="fixed top-0 left-0 w-full z-[900] site-header-root"
 	>
 		<div
@@ -41,6 +41,8 @@
 							:aria-controls="megaPanelId"
 							:aria-expanded="activeMegaNavId === section.id"
 							aria-haspopup="dialog"
+							@pointerenter="warmPrimaryNavigationSectionOnIntent(section.id)"
+							@focus="warmPrimaryNavigationSectionOnIntent(section.id)"
 							@click.stop="toggleMegaNav(section.id)"
 							@keydown.enter.prevent="toggleMegaNav(section.id)"
 							@keydown.space.prevent="toggleMegaNav(section.id)"
@@ -196,6 +198,8 @@
 							aria-haspopup="dialog"
 							:aria-label="mobileShopLabel"
 							:title="mobileShopLabel"
+							@pointerenter="warmPrimaryNavigationSectionOnIntent(mobileShopSection.id)"
+							@focus="warmPrimaryNavigationSectionOnIntent(mobileShopSection.id)"
 							@click.prevent.stop="toggleMegaNav(mobileShopSection.id)"
 						>
 							<Icon name="lucide:shopping-bag" class="h-5 w-5" aria-hidden="true" />
@@ -210,6 +214,8 @@
 							aria-haspopup="dialog"
 							:aria-label="mobileToolsLabel"
 							:title="mobileToolsLabel"
+							@pointerenter="warmPrimaryNavigationSectionOnIntent(mobileToolsSection.id)"
+							@focus="warmPrimaryNavigationSectionOnIntent(mobileToolsSection.id)"
 							@click.prevent.stop="toggleMegaNav(mobileToolsSection.id)"
 							@keydown.down.prevent="openMegaNav(mobileToolsSection.id)"
 						>
@@ -225,6 +231,8 @@
 							aria-haspopup="dialog"
 							:aria-label="mobileGuidesLabel"
 							:title="mobileGuidesLabel"
+							@pointerenter="warmPrimaryNavigationSectionOnIntent(mobileGuidesSection.id)"
+							@focus="warmPrimaryNavigationSectionOnIntent(mobileGuidesSection.id)"
 							@click.prevent.stop="toggleMegaNav(mobileGuidesSection.id)"
 							@keydown.down.prevent="openMegaNav(mobileGuidesSection.id)"
 						>
@@ -305,6 +313,8 @@
 						:aria-controls="megaPanelId"
 						:aria-expanded="activeMegaNavId === section.id"
 						aria-haspopup="dialog"
+						@pointerenter="warmPrimaryNavigationSectionOnIntent(section.id)"
+						@focus="warmPrimaryNavigationSectionOnIntent(section.id)"
 						@click.stop="toggleMegaNav(section.id)"
 					>
 						<span class="min-w-0 truncate">{{ t(section.labelKey, section.labelFallback) }}</span>
@@ -391,7 +401,7 @@
 		</div>
 
 		<teleport to="body" :disabled="!isMobileViewport">
-			<LazyHeaderMegaMenu
+			<HeaderMegaMenu
 				v-if="activeMegaNavSection"
 				:section="activeMegaNavSection"
 				:panel-id="megaPanelId"
@@ -513,13 +523,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, unref, watch, type ComponentPublicInstance } from 'vue'
+import { ref, computed, onBeforeUnmount, onServerPrefetch, nextTick, unref, watch, type ComponentPublicInstance } from 'vue'
 import { useThrottleFn } from '@vueuse/core'
 import { useI18n, useLocalePath, useRequestHeaders, useRoute, useRouter, useState } from '#imports'
 import { useSiteSettings } from '~/composables/usePublicSettings'
 import { useOverlayBackStack, type OverlayCloseReason } from '~/composables/useOverlayBackStack'
 import { usePagesSearchOverlayState } from '~/composables/usePagesSearchOverlayState'
 import GlobalContentNavigationTransitionOverlay from '~/components/GlobalContentNavigationTransitionOverlay.vue'
+import HeaderMegaMenu from '~/components/HeaderMegaMenu.vue'
+import { preloadHeaderPrimaryNavigationShopComponents } from '~/utils/headerPrimaryNavigationShopComponentPreloading'
+import { scheduleStorefrontPrimaryNavigationResourceWarmup } from '~/utils/scheduleStorefrontPrimaryNavigationResourceWarmup'
+import { warmStorefrontPrimaryNavigationMessagesWithBoundedNamespaceWait } from '~/utils/warmStorefrontPrimaryNavigationMessagesWithBoundedNamespaceWait'
 import {
   findPrimaryMegaNavSectionByPath,
   normalizePrimaryMegaNavPath,
@@ -582,6 +596,11 @@ const isCompactViewport = ref(isMobileViewport.value)
 let headerResizeObserver: ResizeObserver | null = null
 let headerMetricsFrame: number | null = null
 const appliedHeaderMetrics = new Map<string, string>()
+let cancelPrimaryNavigationResourceWarmup: (() => void) | null = null
+let primaryNavigationBackgroundWarmupStarted = false
+let primaryNavigationBackgroundWarmupGeneration = 0
+let primaryNavigationResourcesDisposed = false
+let headerClientNavigationInitialized = false
 
 const megaPanelId = 'header-primary-mega-menu'
 const activeMegaNavId = ref<PrimaryMegaNavId | null>(null)
@@ -642,7 +661,7 @@ const mobileGuidesLabel = computed(() => (
 const openMegaNav = (id: PrimaryMegaNavId) => {
   scheduleHeaderOffsetUpdate()
   activeMegaNavId.value = id
-  void loadPageNavigationMessages(getPageNavigationMessageNamespacesForSection(id))
+  warmPrimaryNavigationSectionOnIntent(id)
   isOpen.value = false
   nextTick(scheduleHeaderOffsetUpdate)
   overlayBackStack.open('header-mega-nav', closeMegaNavState)
@@ -666,7 +685,8 @@ const updateHeaderOffset = () => {
   // Read all geometry before changing root styles, keeping this work to one frame.
   const rect = el.getBoundingClientRect()
   const offset = Math.max(0, Math.ceil(rect.bottom))
-  const mobileTopbarRect = mobileTopbarRef.value?.getBoundingClientRect()
+  const mobileTopbarElement = mobileTopbarRef.value || el.querySelector<HTMLElement>('.site-header-mobile-topbar')
+  const mobileTopbarRect = mobileTopbarElement?.getBoundingClientRect()
   const mobileLanguageTop = Math.max(0, Math.ceil(mobileTopbarRect?.bottom ?? rect.bottom))
 
   isCompactViewport.value = window.innerWidth < 1280
@@ -775,18 +795,26 @@ const localePath = useLocalePath()
 const router = useRouter()
 const route = useRoute()
 
-const pageNavigationMessageNamespaces = Array.from(new Set(
+const pageNavigationLabelKeys = Array.from(new Set(
   [
     ...pageSubNavigationEntries.flatMap(entry => entry.tabs).map(tab => tab.labelKey),
     ...primaryMegaNavSections.flatMap(section => section.cards).map(card => card.labelKey),
   ]
-    .map(labelKey => labelKey?.split('.')[0] || '')
-    .filter(namespace => pageMessageNamespaces.includes(namespace)),
+    .filter((labelKey): labelKey is string => Boolean(labelKey))
+    .filter(labelKey => pageMessageNamespaces.includes(labelKey.split('.')[0] || '')),
+))
+const pageNavigationMessageNamespaces = Array.from(new Set(
+  pageNavigationLabelKeys.map(labelKey => labelKey.split('.')[0] || ''),
 ))
 const pageNavigationMessageHandles = new Map(
   pageNavigationMessageNamespaces.map(namespace => [namespace, usePageMessages(namespace)]),
 )
 const pageNavigationMessagesVersion = ref(0)
+// Serialize only navigation labels here. Header hydration does not wait for
+// async page dictionaries or duplicate them in its payload snapshot.
+const serverRenderedPageNavigationLabels = useState<{ locale: string; labels: Record<string, string> }>(
+  'site-header-server-rendered-page-navigation-labels', () => ({ locale: '', labels: {} }),
+)
 
 const contentNavigationTriggerLabel = computed(() => (
 	t(
@@ -887,6 +915,25 @@ const loadPageNavigationMessages = async (namespaces: string[]) => {
   pageNavigationMessagesVersion.value += 1
 }
 
+function warmPrimaryNavigationSectionOnIntent(sectionId: PrimaryMegaNavId): void {
+  // A failed translation must never prevent the synchronous menu shell/links.
+  void loadPageNavigationMessages(getPageNavigationMessageNamespacesForSection(sectionId)).catch(() => {})
+  if (sectionId === 'products') void preloadHeaderPrimaryNavigationShopComponents().catch(() => {})
+}
+
+async function warmPrimaryNavigationResourcesInBackground(): Promise<void> {
+  primaryNavigationBackgroundWarmupStarted = true
+  const warmupGeneration = ++primaryNavigationBackgroundWarmupGeneration
+  // A stalled download must not hold every later menu's translations hostage.
+  // A superseded locale generation cannot resume, even after A -> B -> A.
+  void preloadHeaderPrimaryNavigationShopComponents().catch(() => {})
+  await warmStorefrontPrimaryNavigationMessagesWithBoundedNamespaceWait(
+    pageNavigationMessageNamespaces,
+    namespace => loadPageNavigationMessages([namespace]),
+    () => !primaryNavigationResourcesDisposed && warmupGeneration === primaryNavigationBackgroundWarmupGeneration,
+  )
+}
+
 const loadCurrentPageNavigationMessages = async () => {
   const entry = getPageSubNavigationForPath(route.path || '/', getAllLocaleCodes())
   const section = findPrimaryMegaNavSectionByPath(route.path || '/', primaryMegaNavSections, getAllLocaleCodes())
@@ -899,14 +946,25 @@ const loadCurrentPageNavigationMessages = async () => {
   ])))
 }
 
-await loadCurrentPageNavigationMessages()
+onServerPrefetch(async () => {
+  await loadCurrentPageNavigationMessages().catch(() => {})
+  serverRenderedPageNavigationLabels.value = {
+    locale: String(unref(locale) || 'en'),
+    labels: Object.fromEntries(pageNavigationLabelKeys.filter(labelKey => te(labelKey))
+      .map(labelKey => [labelKey, t(labelKey) as string])),
+  }
+})
 
 watch(
   [() => route.path, locale],
   () => {
-    void loadCurrentPageNavigationMessages()
+    void loadCurrentPageNavigationMessages().catch(() => {})
   },
 )
+
+watch(locale, () => {
+  if (primaryNavigationBackgroundWarmupStarted) void warmPrimaryNavigationResourcesInBackground()
+})
 
 const currentMegaNavId = computed<PrimaryMegaNavId | null>(() => {
   const section = findPrimaryMegaNavSectionByPath(route.path || '/', primaryMegaNavSections, getAllLocaleCodes())
@@ -943,8 +1001,12 @@ const routePathFromTo = (to: string) => {
 }
 
 const translateNavigationLabelWhenAvailable = (key: string | undefined, fallback: string) => {
-  if (!key || !te(key)) return fallback
-  return t(key) as string
+  if (!key) return fallback
+  if (te(key)) return t(key) as string
+  const snapshot = serverRenderedPageNavigationLabels.value
+  return snapshot.locale === String(unref(locale) || 'en')
+    ? snapshot.labels[key] || fallback
+    : fallback
 }
 
 const cardDisplayLabel = (card: PrimaryMegaNavCard) => {
@@ -1468,9 +1530,7 @@ const getRouteFamilyBreadcrumbSubNavigation = (
 const pageSubNavigationTabLabel = (tab: PageSubNavigationTab) => {
   if (tab.labelKey) {
     const fallback = tab.fallback || tab.label || fallbackBreadcrumbRouteFamilyLabel(tab.id)
-    return te(tab.labelKey)
-      ? t(tab.labelKey) as string
-      : fallback
+    return translateNavigationLabelWhenAvailable(tab.labelKey, fallback)
   }
   return tab.label || tab.fallback || fallbackBreadcrumbRouteFamilyLabel(tab.id)
 }
@@ -2065,7 +2125,20 @@ watch(
   },
 )
 
-onMounted(() => {
+// Function refs run when this DOM has hydrated. mounted hooks can remain
+// queued behind Nuxt's root Suspense while an unrelated page awaits data.
+function setHeaderRootElementAndInitializeClientNavigation(element: Element | ComponentPublicInstance | null): void {
+  headerRootRef.value = element instanceof HTMLElement ? element : null
+  if (headerRootRef.value) void nextTick(initializeHydratedHeaderClientNavigation)
+}
+
+function initializeHydratedHeaderClientNavigation(): void {
+  if (headerClientNavigationInitialized || primaryNavigationResourcesDisposed) return
+  headerClientNavigationInitialized = true
+  void loadCurrentPageNavigationMessages().catch(() => {})
+  cancelPrimaryNavigationResourceWarmup = scheduleStorefrontPrimaryNavigationResourceWarmup(() => {
+    void warmPrimaryNavigationResourcesInBackground()
+  })
   document.addEventListener('pointerdown', handlePointerDownOutside, true)
   document.addEventListener('click', handleClickOutside, true)
   document.addEventListener('keydown', handleHeaderKeydown)
@@ -2075,6 +2148,7 @@ onMounted(() => {
   window.addEventListener('scroll', handleLanguageDropdownViewportChange, true)
 
   nextTick(() => {
+    if (primaryNavigationResourcesDisposed) return
     scheduleHeaderOffsetUpdate()
     window.addEventListener('resize', throttledUpdateHeaderOffset)
     if ('ResizeObserver' in window) {
@@ -2085,9 +2159,12 @@ onMounted(() => {
     }
   })
 
-})
+}
 
 onBeforeUnmount(() => {
+  primaryNavigationResourcesDisposed = true
+  cancelPrimaryNavigationResourceWarmup?.()
+  cancelPrimaryNavigationResourceWarmup = null
   document.removeEventListener('pointerdown', handlePointerDownOutside, true)
   document.removeEventListener('click', handleClickOutside, true)
   document.removeEventListener('keydown', handleHeaderKeydown)

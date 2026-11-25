@@ -1,6 +1,9 @@
 package service
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"sort"
 	"strings"
@@ -16,14 +19,15 @@ import (
 )
 
 var (
-	ErrCustomerServiceConversationAccessDenied = errors.New("conversation access denied")
-	ErrCustomerServiceOwnerRequired            = errors.New("conversation owner is required")
-	ErrCustomerServiceAgentAccessDenied        = errors.New("agent conversation access denied")
-	ErrCustomerServiceInvalidStatus            = errors.New("invalid customer-service conversation status")
-	ErrCustomerServiceInvalidStatusTransition  = errors.New("invalid customer-service conversation status transition")
-	ErrCustomerServiceStatusVersionRequired    = errors.New("expected status version is required")
-	ErrCustomerServiceStatusReasonTooLong      = errors.New("customer-service status reason is too long")
-	ErrCustomerServiceBulkArchiveLimitExceeded = errors.New("customer-service bulk archive is limited to 100 conversations")
+	ErrCustomerServiceConversationAccessDenied   = errors.New("conversation access denied")
+	ErrCustomerServiceOwnerRequired              = errors.New("conversation owner is required")
+	ErrCustomerServiceAgentAccessDenied          = errors.New("agent conversation access denied")
+	ErrCustomerServiceInvalidStatus              = errors.New("invalid customer-service conversation status")
+	ErrCustomerServiceInvalidStatusTransition    = errors.New("invalid customer-service conversation status transition")
+	ErrCustomerServiceStatusVersionRequired      = errors.New("expected status version is required")
+	ErrCustomerServiceMessageIdempotencyConflict = errors.New("customer-service client message ID was reused with different content")
+	ErrCustomerServiceStatusReasonTooLong        = errors.New("customer-service status reason is too long")
+	ErrCustomerServiceBulkArchiveLimitExceeded   = errors.New("customer-service bulk archive is limited to 100 conversations")
 )
 
 const (
@@ -70,6 +74,19 @@ type CustomerServiceBulkArchiveResult struct {
 type CustomerServiceRealtimeMutation struct {
 	Event  CustomerServiceRealtimeEvent
 	Events []CustomerServiceRealtimeEvent
+}
+
+type CustomerServiceMessageCursor struct {
+	CreatedAt time.Time
+	ID        uint
+}
+
+type CustomerServiceMessageCursorPage struct {
+	Messages []ticket.TicketMessage
+	Total    int64
+	HasMore  bool
+	HasOlder bool
+	HasNewer bool
 }
 
 func newCustomerServiceRealtimeMutation(events ...CustomerServiceRealtimeEvent) *CustomerServiceRealtimeMutation {
@@ -733,13 +750,36 @@ func (s *TicketService) GetOrCreatePublicCustomerServiceConversation(owner Custo
 }
 
 func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, owner CustomerServiceOwner, message string, agentID uint, messageType string, metadata string, attachments string, mediaBindings ...ticket.CustomerServiceMessageMediaAttachmentBindingRequest) (*ticket.Ticket, *ticket.TicketMessage, error) {
+	conversation, persistedMessage, _, err := s.AddPublicCustomerServiceMessageWithIdempotencyKey(
+		conversationID, owner, "", message, agentID, messageType, metadata, attachments, mediaBindings...,
+	)
+	return conversation, persistedMessage, err
+}
+
+func (s *TicketService) AddPublicCustomerServiceMessageWithIdempotencyKey(
+	conversationID string,
+	owner CustomerServiceOwner,
+	clientMessageID string,
+	message string,
+	agentID uint,
+	messageType string,
+	metadata string,
+	attachments string,
+	mediaBindings ...ticket.CustomerServiceMessageMediaAttachmentBindingRequest,
+) (*ticket.Ticket, *ticket.TicketMessage, bool, error) {
 	t, err := s.getOrCreateAccessibleCustomerServiceConversation(conversationID, owner, agentID)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
+	}
+	clientMessageID = strings.TrimSpace(clientMessageID)
+	payloadHash, err := customerServiceMessagePayloadHash(message, messageType, metadata, attachments, mediaBindings)
+	if err != nil {
+		return nil, nil, false, err
 	}
 
 	msg := &ticket.TicketMessage{
 		TicketID:                         t.ID,
+		ClientMessagePayloadHash:         payloadHash,
 		UserID:                           owner.UserID,
 		IsStaff:                          false,
 		Content:                          message,
@@ -750,16 +790,32 @@ func (s *TicketService) AddPublicCustomerServiceMessage(conversationID string, o
 		IsInternal:                       false,
 		RequestedMediaAttachmentBindings: mediaBindings,
 	}
+	if clientMessageID != "" {
+		msg.ClientMessageID = &clientMessageID
+	}
 	actor := CustomerServiceRealtimeActor{
 		Kind:      "customer",
 		UserID:    owner.UserID,
 		Anonymous: owner.UserID == nil,
 	}
-	if err := s.persistCustomerServiceMessage(t, msg, actor); err != nil {
-		return nil, nil, err
+	replayed, err := s.persistCustomerServiceMessageWithReplay(t, msg, actor)
+	if err != nil && clientMessageID != "" {
+		// A unique-key conflict can occur if a retry reaches a replica before it
+		// observes the first transaction's ticket lock. Resolve it from the row
+		// committed by that request after the failed transaction has rolled back.
+		existing, lookupErr := s.ticketRepo.FindCustomerServiceMessageByClientMessageID(t.ID, clientMessageID)
+		if lookupErr == nil {
+			if existing.ClientMessagePayloadHash != payloadHash {
+				return nil, nil, false, ErrCustomerServiceMessageIdempotencyConflict
+			}
+			return t, existing, true, nil
+		}
+	}
+	if err != nil {
+		return nil, nil, false, err
 	}
 
-	return t, msg, nil
+	return t, msg, replayed, nil
 }
 
 func (s *TicketService) persistCustomerServiceMessage(
@@ -768,18 +824,29 @@ func (s *TicketService) persistCustomerServiceMessage(
 	actor CustomerServiceRealtimeActor,
 	agentViewAllScopes ...bool,
 ) error {
+	_, err := s.persistCustomerServiceMessageWithReplay(conversation, message, actor, agentViewAllScopes...)
+	return err
+}
+
+func (s *TicketService) persistCustomerServiceMessageWithReplay(
+	conversation *ticket.Ticket,
+	message *ticket.TicketMessage,
+	actor CustomerServiceRealtimeActor,
+	agentViewAllScopes ...bool,
+) (bool, error) {
 	if s == nil || s.ticketRepo == nil {
-		return errors.New("customer-service ticket repository is unavailable")
+		return false, errors.New("customer-service ticket repository is unavailable")
 	}
 	if conversation == nil || conversation.ID == 0 || message == nil {
-		return errors.New("customer-service message and conversation are required")
+		return false, errors.New("customer-service message and conversation are required")
 	}
 
 	if s.customerServiceRealtimeOutbox == nil {
-		return errors.New("customer-service realtime outbox is unavailable")
+		return false, errors.New("customer-service realtime outbox is unavailable")
 	}
 
-	return s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
+	replayed := false
+	err := s.ticketRepo.WithinTx(func(ticketRepo *repository.TicketRepository, tx *gorm.DB) error {
 		current, err := ticketRepo.FindTicketByIDForUpdate(conversation.ID)
 		if err != nil {
 			return err
@@ -798,6 +865,20 @@ func (s *TicketService) persistCustomerServiceMessage(
 		}
 		if actor.Kind == "customer" && !customerServiceOwnerMatches(current, CustomerServiceOwner{UserID: actor.UserID, VisitorSessionHash: conversation.VisitorSessionHash}) {
 			return ErrCustomerServiceConversationAccessDenied
+		}
+		if message.ClientMessageID != nil {
+			existing, lookupErr := ticketRepo.FindCustomerServiceMessageByClientMessageID(current.ID, *message.ClientMessageID)
+			if lookupErr == nil {
+				if existing.ClientMessagePayloadHash != message.ClientMessagePayloadHash {
+					return ErrCustomerServiceMessageIdempotencyConflict
+				}
+				*message = *existing
+				replayed = true
+				return nil
+			}
+			if !repository.IsRecordNotFound(lookupErr) {
+				return lookupErr
+			}
 		}
 		if len(message.RequestedMediaAttachmentBindings) > 0 {
 			if len(parseCustomerServiceMessageAttachmentReferences(message.Attachments)) > 0 {
@@ -894,6 +975,37 @@ func (s *TicketService) persistCustomerServiceMessage(
 		}
 		return nil
 	})
+	if err != nil {
+		return false, err
+	}
+	return replayed, nil
+}
+
+func customerServiceMessagePayloadHash(
+	message string,
+	messageType string,
+	metadata string,
+	attachments string,
+	mediaBindings []ticket.CustomerServiceMessageMediaAttachmentBindingRequest,
+) (string, error) {
+	requestPayload, err := json.Marshal(struct {
+		Message       string                                                       `json:"message"`
+		MessageType   string                                                       `json:"message_type"`
+		Metadata      string                                                       `json:"metadata"`
+		Attachments   string                                                       `json:"attachments"`
+		MediaBindings []ticket.CustomerServiceMessageMediaAttachmentBindingRequest `json:"media_bindings"`
+	}{
+		Message:       message,
+		MessageType:   normalizeCustomerServiceMessageType(messageType),
+		Metadata:      metadata,
+		Attachments:   attachments,
+		MediaBindings: mediaBindings,
+	})
+	if err != nil {
+		return "", err
+	}
+	payloadHash := sha256.Sum256(requestPayload)
+	return hex.EncodeToString(payloadHash[:]), nil
 }
 
 func (s *TicketService) GetPublicCustomerServiceMessages(conversationID string, owner CustomerServiceOwner, limit, offset int) ([]ticket.TicketMessage, error) {
@@ -927,6 +1039,45 @@ func (s *TicketService) GetPublicCustomerServiceMessagesPage(conversationID stri
 	}
 	messages, err := s.ticketRepo.FindMessagesByTicketID(t.ID, limit, offset)
 	return messages, total, err
+}
+
+func (s *TicketService) GetPublicCustomerServiceMessagesByCursor(
+	conversationID string,
+	owner CustomerServiceOwner,
+	limit int,
+	before, after *CustomerServiceMessageCursor,
+) (CustomerServiceMessageCursorPage, error) {
+	conversation, err := s.getAccessibleCustomerServiceConversation(conversationID, owner)
+	if err != nil {
+		return CustomerServiceMessageCursorPage{}, err
+	}
+	if before != nil && after != nil {
+		return CustomerServiceMessageCursorPage{}, gorm.ErrInvalidData
+	}
+
+	var beforeCursor *repository.TicketMessageCursor
+	if before != nil {
+		beforeCursor = &repository.TicketMessageCursor{CreatedAt: before.CreatedAt, ID: before.ID}
+	}
+	var afterCursor *repository.TicketMessageCursor
+	if after != nil {
+		afterCursor = &repository.TicketMessageCursor{CreatedAt: after.CreatedAt, ID: after.ID}
+	}
+	page, err := s.ticketRepo.FindMessagesByTicketIDCursor(conversation.ID, limit, beforeCursor, afterCursor)
+	if err != nil {
+		return CustomerServiceMessageCursorPage{}, err
+	}
+	total, err := s.ticketRepo.CountMessagesByTicketID(conversation.ID)
+	if err != nil {
+		return CustomerServiceMessageCursorPage{}, err
+	}
+	return CustomerServiceMessageCursorPage{
+		Messages: page.Messages,
+		Total:    total,
+		HasMore:  page.HasMore,
+		HasOlder: page.HasOlder,
+		HasNewer: page.HasNewer,
+	}, nil
 }
 
 func (s *TicketService) GetPublicCustomerServiceConversation(conversationID string, owner CustomerServiceOwner) (*ticket.Ticket, error) {

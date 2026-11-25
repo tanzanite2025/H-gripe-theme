@@ -187,7 +187,7 @@ func (cfg Configuration) captureProductCatalogModuleSnapshot(ctx context.Context
 	if err := validateProductCatalogStandardTriggersAndRejectUnregisteredRewriteRules(ctx, tx); err != nil {
 		return snapshot, err
 	}
-	if _, err := inspectProductCatalogRequiredSystemCategoriesAndCarbonRimBindings(ctx, tx); err != nil {
+	if _, err := inspectProductCatalogRequiredDedicatedSystemCategoriesAndBindings(ctx, tx); err != nil {
 		return snapshot, err
 	}
 	totalRows, totalBytes := 0, 0

@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { create } from 'fontkitten'
+import { expectedStorefrontFontFaceFiles } from './storefront-font-character-shard-contract.ts'
 import {
   collectStorefrontLocaleSources,
   fontStackForStorefrontLocale,
@@ -23,14 +24,7 @@ const allowedFontFamilies = new Set([
   'MapleUICoverageNotoSansLatinAccents',
   'MapleUICoverageNotoSansThai',
 ])
-const expectedFontFamilyByFilename = new Map<string, string>([
-  ['MapleUI-Latin.00af3fec5b34.woff2', latinFontFamily],
-  ['MapleUI-CJK.f8ce6d72e8cb.woff2', baseFontFamily],
-  ['MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2', 'MapleUICoverageNotoSansArabic'],
-  ['MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2', 'MapleUICoverageNotoSansDevanagari'],
-  ['MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2', 'MapleUICoverageNotoSansLatinAccents'],
-  ['MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2', 'MapleUICoverageNotoSansThai'],
-])
+const expectedFontFamilyByFilename = new Map(expectedStorefrontFontFaceFiles.map(face => [face.filename, face.fontFamily]))
 
 interface UnicodeRange {
   start: number

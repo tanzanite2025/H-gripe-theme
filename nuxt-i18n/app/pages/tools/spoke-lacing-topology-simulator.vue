@@ -429,6 +429,10 @@ const topologySchema = () => ({
       articleSection: t('wheelsetLacingTopology.seo.articleSection'),
       keywords: t('wheelsetLacingTopology.seo.keywords'),
       isAccessibleForFree: true,
+      author: {
+        '@type': 'Person',
+        name: 'wangguangen',
+      },
       about: {
         '@type': 'Thing',
         name: t('wheelsetLacingTopology.seo.about'),

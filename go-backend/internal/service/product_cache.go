@@ -92,7 +92,7 @@ func (s *ProductService) clearProductCache(p *product.Product) {
 	if s == nil || s.productCacheInvalidator == nil {
 		return
 	}
-	if p != nil && p.ProductType == product.ProductTypeCarbonRim {
+	if p != nil && (p.ProductType == product.ProductTypeCarbonRim || p.ProductType == product.ProductTypeBicycleTire) {
 		s.productCacheInvalidator.InvalidateProductCacheByIDs([]uint{p.ID})
 		return
 	}

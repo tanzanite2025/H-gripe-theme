@@ -1221,6 +1221,7 @@ const innerTubeFitmentJsonLd = computed(() => {
         applicationSubCategory: t('guidesTireInnerTube.fitment.title'),
         operatingSystem: 'Web',
         isAccessibleForFree: true,
+        author: { '@type': 'Person', name: 'wangguangen' },
         inLanguage: innerTubeFitmentSchemaLanguage.value,
         featureList: [
           t('guidesTireInnerTube.fitment.controls.automaticMode'),

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"commerce-platform/internal/api/restrictedmediaresponse"
 	ticketdomain "commerce-platform/internal/domain/ticket"
@@ -111,6 +112,7 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	restrictedmediaresponse.SetConversationAttachmentPrivateResponseHeaders(c)
 	var req struct {
 		ConversationID   string                                                             `json:"conversation_id"`
+		ClientMessageID  string                                                             `json:"client_message_id"`
 		Message          string                                                             `json:"message" binding:"required"`
 		SenderType       string                                                             `json:"sender_type"`
 		SenderName       string                                                             `json:"sender_name" binding:"required"`
@@ -130,6 +132,11 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	}
 
 	conversationID := strings.TrimSpace(req.ConversationID)
+	clientMessageID := strings.TrimSpace(req.ClientMessageID)
+	if clientMessageID != "" && !isValidPublicCustomerServiceClientMessageID(clientMessageID) {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] invalid client_message_id"})
+		return
+	}
 	message := strings.TrimSpace(req.Message)
 	senderName := strings.TrimSpace(req.SenderName)
 	if message == "" || senderName == "" {
@@ -162,9 +169,10 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 
 	emailCaptured := strings.TrimSpace(req.SenderEmail) != ""
 
-	t, msg, err := h.ticketService.AddPublicCustomerServiceMessage(
+	t, msg, wasReplay, err := h.ticketService.AddPublicCustomerServiceMessageWithIdempotencyKey(
 		conversationID,
 		owner,
+		clientMessageID,
 		message,
 		parseCustomerServiceAgentID(req.AgentID),
 		messageType,
@@ -173,6 +181,10 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		mediaBindings...,
 	)
 	if err != nil {
+		if errors.Is(err, service.ErrCustomerServiceMessageIdempotencyConflict) {
+			c.JSON(http.StatusConflict, gin.H{"success": false, "message": "[CRITICAL] client_message_id was reused with different message content"})
+			return
+		}
 		if errors.Is(err, repository.ErrCustomerServiceAttachmentBindingUnavailable) {
 			respondPublicCustomerServiceAttachmentError(c, err)
 			return
@@ -186,8 +198,17 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 	}
 
 	conversationID = publicConversationID(t)
-	h.touchCustomerServiceVisitorProfile(c, owner, req.SenderEmail, "public_chat", req.Locale)
 	response := publicCustomerServiceMessageResponse(*msg, conversationID, senderName, h.mediaService, h.conversationAttachmentAccess)
+	if wasReplay {
+		c.JSON(http.StatusOK, gin.H{
+			"success":         true,
+			"message_id":      msg.ID,
+			"conversation_id": conversationID,
+			"data":            response,
+		})
+		return
+	}
+	h.touchCustomerServiceVisitorProfile(c, owner, req.SenderEmail, "public_chat", req.Locale)
 	h.publishPublicCustomerServiceMessageCreated(
 		t,
 		msg.ID,
@@ -236,6 +257,22 @@ func (h *Handler) SendPublicCustomerServiceMessage(c *gin.Context) {
 		"conversation_id": conversationID,
 		"data":            response,
 	})
+}
+
+func isValidPublicCustomerServiceClientMessageID(value string) bool {
+	if len(value) == 0 || len(value) > 64 {
+		return false
+	}
+	for _, character := range value {
+		if (character >= 'a' && character <= 'z') ||
+			(character >= 'A' && character <= 'Z') ||
+			(character >= '0' && character <= '9') ||
+			character == '-' || character == '_' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func (h *Handler) UploadPublicCustomerServiceAttachment(c *gin.Context) {
@@ -467,10 +504,40 @@ func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 	}
 
 	owner := h.existingPublicCustomerOwner(c)
-	messages, total, err := h.ticketService.GetPublicCustomerServiceMessagesPage(conversationID, owner, limit, offset)
+	before, after, cursorMode, err := parsePublicCustomerServiceMessageCursors(c)
 	if err != nil {
-		writePublicCustomerServiceError(c, err)
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] invalid customer-service message cursor"})
 		return
+	}
+	if cursorMode && c.Query("offset") != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "[CRITICAL] cursor pagination cannot be combined with offset"})
+		return
+	}
+
+	var messages []ticketdomain.TicketMessage
+	var total int64
+	var hasOlder, hasNewer bool
+	var hasMore bool
+	if cursorMode {
+		page, pageErr := h.ticketService.GetPublicCustomerServiceMessagesByCursor(conversationID, owner, limit, before, after)
+		if pageErr != nil {
+			writePublicCustomerServiceError(c, pageErr)
+			return
+		}
+		messages = page.Messages
+		total = page.Total
+		hasMore = page.HasMore
+		hasOlder = page.HasOlder
+		hasNewer = page.HasNewer
+	} else {
+		messages, total, err = h.ticketService.GetPublicCustomerServiceMessagesPage(conversationID, owner, limit, offset)
+		if err != nil {
+			writePublicCustomerServiceError(c, err)
+			return
+		}
+		hasOlder = offset > 0
+		hasNewer = int64(offset)+int64(len(messages)) < total
+		hasMore = hasNewer
 	}
 	if messages == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "[CRITICAL] GetPublicCustomerServiceMessages returned nil"})
@@ -492,11 +559,66 @@ func (h *Handler) GetPublicCustomerServiceMessages(c *gin.Context) {
 	for _, item := range messages {
 		items = append(items, publicCustomerServiceMessageResponse(item, conversationID, "", h.mediaService, h.conversationAttachmentAccess))
 	}
+	oldestCursor, newestCursor := publicCustomerServiceMessageResponseCursors(messages)
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"data":     items,
-		"total":    total,
-		"has_more": int64(offset)+int64(len(items)) < total,
+		"success":     true,
+		"data":        items,
+		"total":       total,
+		"has_more":    hasMore,
+		"has_older":   hasOlder,
+		"has_newer":   hasNewer,
+		"next_before": oldestCursor,
+		"next_after":  newestCursor,
 	})
+}
+
+func parsePublicCustomerServiceMessageCursors(c *gin.Context) (*service.CustomerServiceMessageCursor, *service.CustomerServiceMessageCursor, bool, error) {
+	query := c.Request.URL.Query()
+	hasBefore := query.Has("before_created_at") || query.Has("before_id")
+	hasAfter := query.Has("after_created_at") || query.Has("after_id")
+	latestRequested := query.Has("latest")
+	if latestRequested && query.Get("latest") != "true" {
+		return nil, nil, false, errors.New("latest must be true when supplied")
+	}
+	if !hasBefore && !hasAfter {
+		return nil, nil, latestRequested, nil
+	}
+	if hasBefore == hasAfter || latestRequested {
+		return nil, nil, true, errors.New("exactly one message cursor direction is required")
+	}
+
+	parseCursor := func(createdAtKey, idKey string) (*service.CustomerServiceMessageCursor, error) {
+		createdAtValue := strings.TrimSpace(c.Query(createdAtKey))
+		idValue := strings.TrimSpace(c.Query(idKey))
+		if createdAtValue == "" || idValue == "" {
+			return nil, errors.New("both cursor timestamp and id are required")
+		}
+		createdAt, err := time.Parse(time.RFC3339Nano, createdAtValue)
+		if err != nil {
+			return nil, err
+		}
+		id, err := strconv.ParseUint(idValue, 10, strconv.IntSize)
+		if err != nil || id == 0 {
+			return nil, errors.New("cursor id must be a positive integer")
+		}
+		return &service.CustomerServiceMessageCursor{CreatedAt: createdAt, ID: uint(id)}, nil
+	}
+
+	if hasBefore {
+		before, err := parseCursor("before_created_at", "before_id")
+		return before, nil, true, err
+	}
+	after, err := parseCursor("after_created_at", "after_id")
+	return nil, after, true, err
+}
+
+func publicCustomerServiceMessageResponseCursors(messages []ticketdomain.TicketMessage) (gin.H, gin.H) {
+	if len(messages) == 0 {
+		return nil, nil
+	}
+	oldest := messages[0]
+	newest := messages[len(messages)-1]
+	return gin.H{"created_at": oldest.CreatedAt, "id": strconv.FormatUint(uint64(oldest.ID), 10)},
+		gin.H{"created_at": newest.CreatedAt, "id": strconv.FormatUint(uint64(newest.ID), 10)}
 }

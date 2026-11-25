@@ -1,5 +1,9 @@
 <template>
-  <div ref="rootRef" class="spoke-calculator-select">
+  <div
+    ref="rootRef"
+    class="spoke-calculator-select"
+    :class="{ 'spoke-calculator-select--compact': density === 'compact' }"
+  >
     <button
       :id="id"
       ref="buttonRef"
@@ -65,11 +69,13 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   ariaLabel?: string
   keepMenuWithinViewport?: boolean
+  density?: 'default' | 'compact'
 }>(), {
   placeholder: 'Select',
   disabled: false,
   ariaLabel: undefined,
   keepMenuWithinViewport: false,
+  density: 'default',
 })
 
 const emit = defineEmits<{
@@ -236,6 +242,20 @@ onBeforeUnmount(() => {
 
 .spoke-calculator-select__button--placeholder {
   color: var(--tz-text-muted);
+}
+
+.spoke-calculator-select--compact .spoke-calculator-select__button {
+  min-height: var(--tz-pill-button-min-height);
+  padding: var(--tz-pill-button-padding-block) 0.75rem;
+  font-size: var(--tz-type-caption);
+  line-height: var(--tz-pill-button-line-height);
+}
+
+@media (max-width: 639px) {
+  .spoke-calculator-select--compact .spoke-calculator-select__button {
+    min-height: 2.5rem;
+    padding-block: calc((2.5rem - var(--tz-pill-button-line-height)) / 2 - 1px);
+  }
 }
 
 .spoke-calculator-select__label {

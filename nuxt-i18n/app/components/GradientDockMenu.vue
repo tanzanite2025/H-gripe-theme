@@ -1,14 +1,21 @@
 <template>
   <div
     v-show="!isWheelsetSelectionAssistantOpen"
+    ref="dockRootElement"
     class="dock-bar fixed inset-x-0 bottom-0 w-full z-[101] pointer-events-auto"
+    :class="{ 'dock-bar--mobile-collapsed': !mobileDockActionsExpanded }"
   >
-    <div class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 items-center">
-      <!-- 1. Menu (Sidebar) -->
+    <div
+      id="storefront-dock-actions"
+      class="dock-surface mx-auto w-full md:max-w-[500px] rounded-none px-1 py-2.5 md:px-4 md:py-3 items-center"
+      role="group"
+      :aria-label="$t('dockMenu.menu')"
+    >
+      <!-- 1. User center -->
       <button
         class="dock-icon-button h-11 md:h-12 tz-text-secondary hover:tz-text-primary"
-        @click="openSidebarLeft"
-        :aria-label="$t('dockMenu.openSidebar')"
+        @click="openUserCenterFromDock"
+        :aria-label="$t('dockMenu.userCenter')"
       >
         <span class="dock-icon-slot">
           <Icon name="lucide:user-round-check" class="w-full h-full" />
@@ -125,27 +132,57 @@
         </span>
       </button>
     </div>
+    <GradientDockMenuShell
+      class="dock-mobile-toggle"
+      :expanded="mobileDockActionsExpanded"
+      @expand="toggleMobileDockActionPanel"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from '#imports'
+import GradientDockMenuShell from '~/components/GradientDockMenuShell.vue'
 import { useChatWidget } from '~/composables/useChatWidget'
 import { useSidePanelState } from '~/composables/useSidePanelState'
 import { useQuickBuyOpenRequestState } from '~/composables/useQuickBuyOpenRequestState'
 import { useWheelsetSelectionAssistantModalState } from '~/composables/useWheelsetSelectionAssistantModalState'
+import { useAuth } from '~/composables/useAuth'
+import {
+  countUnreadCustomerServiceMessagesForOwner,
+  getChatOwnerStorageScope,
+  getOrCreateAnonymousChatOwnerId,
+} from '~/composables/chat/useChatStorage'
 import { scheduleDeferredClientWork } from '~/utils/clientDeferredWork'
 import { STOREFRONT_READ_COUNT_WARMUP } from '~/utils/storefrontLoadingPolicy'
 
 const isOpen = ref(false)
+const dockRootElement = ref<HTMLElement | null>(null)
+const mobileDockActionsExpanded = ref(true)
 const quickBuyDockMounted = ref(false)
 const { openRequestCount, requestOpen: requestQuickBuyOpen } = useQuickBuyOpenRequestState()
-const { isChatOpen, openChat, closeChat } = useChatWidget()
+const { isChatOpen, openChat, toggleChat } = useChatWidget()
+const { user } = useAuth()
 const { openLeft } = useSidePanelState()
 const { isOpen: isWheelsetSelectionAssistantOpen } = useWheelsetSelectionAssistantModalState()
 const { t: $t } = useI18n()
 const totalUnreadCount = ref(0)
+
+function toggleMobileDockActionPanel(): void {
+  mobileDockActionsExpanded.value = !mobileDockActionsExpanded.value
+}
+
+function closeMobileDockActionsWhenPressingEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || window.matchMedia('(min-width: 768px)').matches || !mobileDockActionsExpanded.value) return
+  // A dialog above the action panel owns its own Escape key and focus.
+  const visibleDialogOwnsEscape = Array.from(document.querySelectorAll<HTMLElement>(
+    '[role="dialog"], .quickbuy-entry-router-layer, .sidebar-backdrop--open',
+  )).some(element => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden')
+  if (event.defaultPrevented || visibleDialogOwnsEscape) return
+  mobileDockActionsExpanded.value = false
+  dockRootElement.value?.querySelector<HTMLButtonElement>('.dock-shell__toggle')?.focus()
+}
 
 const closeAll = () => {
   isOpen.value = false
@@ -161,12 +198,8 @@ const openDeferredQuickBuyDock = async () => {
 }
 
 const toggleChatFromDock = () => {
-  if (isChatOpen.value) {
-    closeChat()
-  } else {
-    closeAll()
-    openChat({ showAgentList: true })
-  }
+  if (!isChatOpen.value) closeAll()
+  toggleChat({ showAgentList: true })
 }
 
 const openChatFromGlobalEvent = () => {
@@ -179,29 +212,19 @@ const openQuickBuyFromGlobalEvent = () => {
   quickBuyDockMounted.value = true
 }
 
-const openSidebarLeft = () => {
+const openUserCenterFromDock = () => {
   openLeft()
 }
 
 const calculateUnreadCount = () => {
-  try {
-    let total = 0
-    const chatKeys = Object.keys(localStorage).filter(key => key.startsWith('tz_chat_'))
-
-    chatKeys.forEach(key => {
-      const data = localStorage.getItem(key)
-      if (data) {
-        const parsed = JSON.parse(data)
-        const unread = parsed.messages?.filter((msg: any) => !msg.is_read && msg.is_agent)
-        total += unread?.length || 0
-      }
-    })
-
-    totalUnreadCount.value = total
-  } catch (error) {
-    console.error('计算未读消息失败:', error)
-  }
+  const ownerStorageScope = getChatOwnerStorageScope(
+    user.value?.id,
+    getOrCreateAnonymousChatOwnerId(),
+  )
+  totalUnreadCount.value = countUnreadCustomerServiceMessagesForOwner(ownerStorageScope)
 }
+
+watch(() => user.value?.id, calculateUnreadCount)
 
 let unreadInterval: ReturnType<typeof setInterval> | null = null
 let cancelUnreadWarmup: (() => void) | null = null
@@ -274,6 +297,7 @@ watch(
 )
 
 onMounted(() => {
+  document.addEventListener('keydown', closeMobileDockActionsWhenPressingEscape)
   cancelUnreadWarmup = scheduleDeferredClientWork(calculateUnreadCount, STOREFRONT_READ_COUNT_WARMUP)
   unreadInterval = setInterval(calculateUnreadCount, 30000)
   window.addEventListener('dock:open-chat', openChatFromGlobalEvent)
@@ -282,6 +306,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  document.removeEventListener('keydown', closeMobileDockActionsWhenPressingEscape)
   cancelUnreadWarmup?.()
   cancelUnreadWarmup = null
   if (unreadInterval) {
@@ -308,6 +333,10 @@ onBeforeUnmount(() => {
   grid-template-columns: repeat(3, minmax(3rem, 1fr)) minmax(9.25rem, 1.85fr);
   column-gap: 0.25rem;
   max-width: min(100%, 500px);
+}
+
+.dock-mobile-toggle {
+  display: none;
 }
 
 .dock-icon-button {
@@ -441,9 +470,46 @@ onBeforeUnmount(() => {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .dock-bar {
+    left: 2px;
+    right: 2px;
+    bottom: 0;
+    width: calc(100% - 4px);
+    min-height: 0;
+    padding: 0;
+    border: 1px solid var(--tz-border-subtle);
+    border-bottom: 0;
+    border-radius: 1rem 1rem 0 0;
     background: var(--tz-mobile-bottom-chrome-surface);
+  }
+
+  .dock-bar .dock-mobile-toggle {
+    display: flex;
+    position: absolute;
+    top: -2rem;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: 100%;
+    padding: 0;
+  }
+
+  .dock-bar--mobile-collapsed {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
+  }
+
+  .dock-bar--mobile-collapsed .dock-mobile-toggle {
+    position: fixed;
+    top: auto;
+    bottom: calc(0.5rem + var(--tz-safe-area-bottom, 0px));
+  }
+
+  .dock-bar--mobile-collapsed .dock-surface {
+    display: none;
   }
 
   .dock-icon-slot {
@@ -454,8 +520,10 @@ onBeforeUnmount(() => {
 
   .dock-surface {
     grid-template-columns: repeat(3, minmax(2.75rem, 1fr)) minmax(9.15rem, 1.85fr);
-    column-gap: 0.25rem;
-    padding-bottom: max(0.625rem, calc(0.625rem + var(--tz-safe-area-bottom, 0px)));
+    gap: 0.25rem;
+    max-width: none;
+    min-height: calc(4.5rem + var(--tz-safe-area-bottom, 0px));
+    padding: 0.625rem 0.25rem calc(0.625rem + var(--tz-safe-area-bottom, 0px));
   }
 
   .dock-cart-button {

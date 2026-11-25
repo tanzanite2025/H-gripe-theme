@@ -2,15 +2,34 @@
   <div
     v-show="!isWheelsetSelectionAssistantOpen"
     class="dock-shell fixed inset-x-0 bottom-0 w-full z-[101]"
+    :class="{ 'dock-shell--expanded': expanded }"
   >
     <button
       class="dock-shell__toggle"
       type="button"
-      :aria-label="$t('dockMenu.menu')"
-      aria-expanded="false"
+      :aria-label="expanded ? `${$t('common.close')} ${$t('dockMenu.menu')}` : $t('dockMenu.menu')"
+      :aria-expanded="expanded"
+      :aria-controls="expanded ? 'storefront-dock-actions' : undefined"
       @click="emit('expand')"
     >
-      <svg class="dock-shell__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg
+        class="dock-shell__expanded-shoulder-contour"
+        viewBox="0 0 128 33"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M0 32.5C8.84 32.5 16 25.34 16 16.5C16 7.66 23.16 0.5 32 0.5H96C104.84 0.5 112 7.66 112 16.5C112 25.34 119.16 32.5 128 32.5"
+          vector-effect="non-scaling-stroke"
+        />
+      </svg>
+      <svg
+        class="dock-shell__icon"
+        :class="{ 'dock-shell__icon--expanded': expanded }"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
         <path
           d="m6 14 6-6 6 6M6 20l6-6 6 6"
           transform="translate(0 -2)"
@@ -30,6 +49,8 @@ import { useWheelsetSelectionAssistantModalState } from '~/composables/useWheels
 
 const { isOpen: isWheelsetSelectionAssistantOpen } = useWheelsetSelectionAssistantModalState()
 const { t: $t } = useI18n()
+
+withDefaults(defineProps<{ expanded?: boolean }>(), { expanded: false })
 
 const emit = defineEmits<{
   expand: []
@@ -75,10 +96,66 @@ const emit = defineEmits<{
   height: 1.75rem;
   margin: 0;
   transform: translate(-50%, -50%);
+  transition: transform 160ms ease;
+}
+
+.dock-shell__expanded-shoulder-contour {
+  display: none;
 }
 
 .dock-shell__toggle:hover {
   border-color: var(--tz-site-accent, #059669);
   background: var(--tz-site-accent-soft-surface);
+}
+
+.dock-shell__toggle:focus-visible {
+  outline: 3px solid var(--tz-site-accent, #059669);
+  outline-offset: 4px;
+}
+
+.dock-shell__icon--expanded {
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+@media (max-width: 767.98px) {
+  .dock-shell {
+    bottom: calc(0.5rem + var(--tz-safe-area-bottom, 0px));
+    padding: 0;
+  }
+
+  .dock-shell__toggle {
+    width: 6rem;
+    height: 2rem;
+  }
+
+  .dock-shell--expanded .dock-shell__toggle {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .dock-shell--expanded .dock-shell__toggle:hover {
+    background: transparent;
+  }
+
+  .dock-shell--expanded .dock-shell__expanded-shoulder-contour {
+    position: absolute;
+    top: 0;
+    left: -1rem;
+    display: block;
+    width: calc(100% + 2rem);
+    height: calc(100% + 1px);
+    overflow: visible;
+    fill: var(--tz-mobile-bottom-chrome-surface);
+    stroke: var(--tz-border-subtle);
+    stroke-width: 1px;
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-shell__icon {
+    transition: none;
+  }
 }
 </style>

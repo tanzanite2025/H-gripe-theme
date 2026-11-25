@@ -328,9 +328,9 @@ func TestProductServiceDeletesProductSpecificationTemplate(t *testing.T) {
 func TestProductServiceProtectsSystemManagedTemplateContract(t *testing.T) {
 	db, productService := newTestProductService(t)
 	template := product.ProductSpecificationTemplate{
-		Name:            "Schwalbe Tire",
-		Slug:            "schwalbe_tire",
-		Description:     "Schwalbe official tire facts",
+		Name:            "Managed Facts",
+		Slug:            "managed_facts",
+		Description:     "Platform-managed product facts",
 		SortOrder:       70,
 		IsEnabled:       true,
 		IsSystemManaged: true,
@@ -416,15 +416,6 @@ func TestProductServiceProtectsSystemManagedTemplateContract(t *testing.T) {
 			name: "change sort order",
 			mutate: func(input *ProductSpecificationTemplateInput) {
 				input.SpecDefinitions[0].SortOrder = 40
-			},
-		},
-		{
-			name: "add option items",
-			mutate: func(input *ProductSpecificationTemplateInput) {
-				input.SpecDefinitions[0].OptionItems = []ProductSpecOptionItemInput{{
-					ValueKey:     "40-622",
-					DefaultLabel: "40-622",
-				}}
 			},
 		},
 	}

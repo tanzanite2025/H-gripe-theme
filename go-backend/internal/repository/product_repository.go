@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"commerce-platform/internal/domain/currency"
 	"commerce-platform/internal/domain/product"
@@ -365,21 +366,6 @@ func (r *ProductRepository) ReplaceSpokeRepairKitModels(productID uint, models [
 	return r.db.Create(&models).Error
 }
 
-// HasProductSpecValue reports whether a specification value is already assigned
-// to another product. The caller supplies a product ID to exclude during edits.
-func (r *ProductRepository) HasProductSpecValue(specDefinitionID uint, value string, excludeProductID uint) (bool, error) {
-	query := r.db.Model(&product.ProductSpecValue{}).
-		Where("spec_definition_id = ? AND LOWER(TRIM(value)) = LOWER(TRIM(?))", specDefinitionID, value)
-	if excludeProductID > 0 {
-		query = query.Where("product_id <> ?", excludeProductID)
-	}
-	var count int64
-	if err := query.Count(&count).Error; err != nil {
-		return false, err
-	}
-	return count > 0, nil
-}
-
 // FindBySlug finds a product by slug. When locale is empty, it treats products
 // as a unified storefront catalog item instead of a translated content row.
 func (r *ProductRepository) FindBySlug(slug, locale string) (*product.Product, error) {
@@ -607,7 +593,7 @@ func (r *ProductRepository) FindProductCacheIdentitiesByIDs(ids []uint) ([]produ
 	if len(ids) == 0 {
 		return products, nil
 	}
-	err := r.db.Select("id", "slug", "locale").Where("id IN ? OR (product_type = ? AND parent_id IN ?)", ids, product.ProductTypeCarbonRim, ids).Find(&products).Error
+	err := r.db.Select("id", "slug", "locale").Where("id IN ? OR (product_type IN ? AND parent_id IN ?)", ids, []string{product.ProductTypeCarbonRim, product.ProductTypeBicycleTire}, ids).Find(&products).Error
 	return products, err
 }
 
@@ -749,7 +735,33 @@ func productUpdateColumns(p *product.Product) map[string]interface{} {
 		encodedSpecification, _ := json.Marshal(p.CarbonRimSpecification)
 		columns["carbon_rim_specification"] = string(encodedSpecification)
 	}
+	if p.BicycleTireSpecificationDirty {
+		encodedSpecification, _ := json.Marshal(p.BicycleTireSpecification)
+		columns["bicycle_tire_specification"] = string(encodedSpecification)
+	}
 	return columns
+}
+
+func (r *ProductRepository) HasBicycleTireArticleNumber(brandID uint, articleNumber string, excludeProductID uint) (bool, error) {
+	if brandID == 0 || strings.TrimSpace(articleNumber) == "" {
+		return false, nil
+	}
+	query := r.db.Model(&product.Product{}).
+		Where("product_type = ? AND brand_id = ? AND parent_id IS NULL AND deleted_at IS NULL", product.ProductTypeBicycleTire, brandID)
+	switch r.db.Dialector.Name() {
+	case "postgres":
+		query = query.Where("LOWER(BTRIM(bicycle_tire_specification->>'article_no')) = LOWER(BTRIM(?))", articleNumber)
+	case "sqlite":
+		query = query.Where("LOWER(TRIM(json_extract(bicycle_tire_specification, '$.article_no'))) = LOWER(TRIM(?))", articleNumber)
+	default:
+		return false, fmt.Errorf("unsupported database dialect for bicycle tire Article No. lookup")
+	}
+	if excludeProductID != 0 {
+		query = query.Where("id <> ?", excludeProductID)
+	}
+	var count int64
+	err := query.Count(&count).Error
+	return count > 0, err
 }
 
 func (r *ProductRepository) UpdateWithSpecValues(p *product.Product, specValues []product.ProductSpecValue, replaceSpecs bool) error {

@@ -1,6 +1,8 @@
 {
   "actions": {
     "close": "Close chat",
+    "collapse": "Sohbet panelini daralt",
+    "expand": "Sohbet panelini genişlet",
     "closeHistory": "Close browsing history",
     "backToWelcome": "Back to welcome",
     "switchToChat": "Switch to chat",

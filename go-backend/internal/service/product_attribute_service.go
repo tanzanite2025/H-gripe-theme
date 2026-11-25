@@ -327,9 +327,6 @@ func validateSystemManagedProductSpecificationTemplate(existing, next *product.P
 		if !ok {
 			return fmt.Errorf("%w: system product specification template fields cannot be added or removed", ErrProductSpecificationTemplateSystemManaged)
 		}
-		if existing.Slug == "schwalbe_tire" && (len(previous.OptionItems) > 0 || len(current.OptionItems) > 0) {
-			return fmt.Errorf("%w: Schwalbe official fact fields cannot define option items", ErrProductSpecificationTemplateSystemManaged)
-		}
 		if previous.Slug != current.Slug ||
 			previous.Group != current.Group ||
 			previous.Name != current.Name ||

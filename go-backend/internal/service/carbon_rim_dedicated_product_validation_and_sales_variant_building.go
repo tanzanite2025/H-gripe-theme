@@ -9,25 +9,9 @@ import (
 	"commerce-platform/internal/domain/product"
 )
 
-func dedicatedProductTypeValue(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
 func (s *ProductService) validateDedicatedCarbonRimCreation(input ProductCreateInput) error {
 	kind := dedicatedProductTypeValue(input.ProductType)
-	if kind != "" && kind != product.ProductTypeCarbonRim {
-		return fmt.Errorf("%w: unsupported product_type", ErrProductSpecInvalid)
-	}
-	if kind == "" {
-		if input.CarbonRimSpecification != nil {
-			return fmt.Errorf("%w: carbon rim specification requires carbon_rim product_type", ErrProductSpecInvalid)
-		}
-		if err := rejectCarbonRimSpecificationsOnGenericVariants(input.Variants); err != nil {
-			return err
-		}
+	if kind != product.ProductTypeCarbonRim {
 		return s.validateCarbonRimProductTypeAndSystemCategoryBinding(kind, input.ProductCategoryID)
 	}
 	if err := product.ValidateCarbonRimSpecification(input.CarbonRimSpecification); err != nil {
@@ -42,19 +26,7 @@ func (s *ProductService) validateDedicatedCarbonRimCreation(input ProductCreateI
 	return s.validateCarbonRimProductTypeAndSystemCategoryBinding(kind, input.ProductCategoryID)
 }
 
-func rejectCarbonRimSpecificationsOnGenericVariants(inputs []ProductVariantInput) error {
-	for _, input := range inputs {
-		if input.CarbonRimSpecification != nil {
-			return fmt.Errorf("%w: carbon rim SKU specification requires carbon_rim product_type", ErrProductVariantInvalid)
-		}
-	}
-	return nil
-}
-
 func (s *ProductService) validateDedicatedCarbonRimUpdate(existing *product.Product, input *ProductUpdateInput) error {
-	if input.ProductType != nil && *input.ProductType != existing.ProductType {
-		return fmt.Errorf("%w: product_type is immutable; existing template products require an explicit migration", ErrProductSpecInvalid)
-	}
 	effectiveCategoryID := existing.ProductCategoryID
 	if input.UpdateProductCategoryID {
 		effectiveCategoryID = input.ProductCategoryID
@@ -63,10 +35,7 @@ func (s *ProductService) validateDedicatedCarbonRimUpdate(existing *product.Prod
 		return err
 	}
 	if existing.ProductType != product.ProductTypeCarbonRim {
-		if input.UpdateCarbonRimSpecification || input.CarbonRimSpecification != nil {
-			return fmt.Errorf("%w: carbon rim specification requires carbon_rim product_type", ErrProductSpecInvalid)
-		}
-		return rejectCarbonRimSpecificationsOnGenericVariants(input.Variants)
+		return nil
 	}
 	if input.ProductSpecificationTemplateID != nil || len(input.SpecValues) != 0 || len(input.VariantOptionValues) != 0 || len(input.OptionValueRelations) != 0 || len(input.SpokeRepairKitModelKeys) != 0 || input.UpdateParentID {
 		return fmt.Errorf("%w: carbon rim specifications cannot be replaced by a template, generic options, repair-kit models or another translation parent", ErrProductSpecInvalid)

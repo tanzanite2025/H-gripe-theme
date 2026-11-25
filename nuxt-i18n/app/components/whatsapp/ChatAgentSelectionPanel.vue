@@ -1,11 +1,9 @@
 <template>
   <div
-    ref="rootElement"
-    class="chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[520px] max-w-full md:max-w-[calc(100vw-4rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col tz-surface-card shadow-[-12px_0_28px_rgba(15,23,42,0.16)] pointer-events-auto"
+    class="chat-modal-shell chat-drawer-panel-surface relative flex h-full w-full min-w-0 flex-col overflow-hidden tz-surface-card pointer-events-auto"
   >
     <div
-      class="chat-modal-drag-handle tz-mobile-chrome-top border-b tz-border-strong/[0.08] backdrop-blur-md"
-      @pointerdown="emit('dragStart', $event)"
+      class="chat-drawer-top-bar tz-mobile-chrome-top border-b tz-border-strong/[0.08] backdrop-blur-md"
     >
       <div class="px-3 py-2 flex items-center justify-between gap-3">
         <div class="text-[11px] font-semibold uppercase tracking-[0.18em] tz-text-primary/45 select-none">Chat</div>
@@ -26,7 +24,7 @@
       <div class="w-full">
         <div class="mb-2 md:mb-3 agent-selection-header">
           <div class="flex items-center gap-3 mb-2 agent-selection-logo-row">
-            <h1 class="text-2xl md:text-3xl font-bold tz-text-primary agent-selection-title">
+            <h1 id="chat-agent-selection-title" class="text-2xl md:text-3xl font-bold tz-text-primary agent-selection-title">
               {{ t('chatModal.welcome.title') }} <span class="inline-block animate-wave">👋</span>
             </h1>
           </div>
@@ -93,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from '#imports'
 
 const props = defineProps<{
@@ -111,14 +109,9 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'selectAgent', agent: any): void
   (e: 'enterChat'): void
-  (e: 'dragStart', event: PointerEvent): void
 }>()
 
 const { t } = useI18n()
-
-const rootElement = ref<HTMLElement | null>(null)
-
-defineExpose({ rootElement })
 
 const onlineAgentsLabel = computed(() => {
   return props.onlineAgentsCount === 1 ? t('chatModal.welcome.agentSingular') : t('chatModal.welcome.agentPlural')
@@ -135,51 +128,17 @@ const selectedAgentEmail = computed(() => {
 
 <style scoped>
 .chat-modal-shell {
-  height: var(--tz-mobile-safe-viewport-height, 100vh);
-  max-height: var(--tz-mobile-safe-viewport-height, 100vh);
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
   background: var(--tz-card-surface) !important;
-  box-shadow:
-  0 0 1px rgba(15, 23, 42, 0.16),
-  0 0 8px rgba(15, 23, 42, 0.08),
-  0 0 18px rgba(15, 23, 42, 0.04);
-}
-
-@supports (height: 100dvh) {
-  .chat-modal-shell {
-    height: var(--tz-mobile-safe-viewport-height, 100dvh);
-    max-height: var(--tz-mobile-safe-viewport-height, 100dvh);
-  }
 }
 
 @media (max-width: 767px) {
-  .chat-modal-shell {
-    height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
-    max-height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
-  }
-
   .chat-agent-selection-footer {
     border-top-color: var(--tz-mobile-chrome-edge-border);
     padding-bottom: var(--tz-mobile-modal-safe-padding-bottom, 0.75rem);
   }
 }
 
-@media (min-width: 768px) {
-  .chat-modal-shell {
-    height: min(840px, calc(100vh - 56px));
-    max-height: calc(100vh - 56px);
-  }
-
-  .chat-modal-drag-handle {
-    cursor: grab;
-    touch-action: none;
-    user-select: none;
-  }
-
-  @supports (height: 100dvh) {
-    .chat-modal-shell {
-      height: min(840px, calc(100dvh - 56px));
-      max-height: calc(100dvh - 56px);
-    }
-  }
-}
 </style>

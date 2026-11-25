@@ -189,18 +189,6 @@ func (s *SchwalbeCatalogRefreshAuditService) Review(ctx context.Context, incomin
 }
 
 func loadSchwalbeCatalogRefreshCatalog(tx *gorm.DB, rows *[]SchwalbeCatalogRefreshSnapshotRow) error {
-	var definitionSlugs []string
-	if err := tx.Table("product_spec_definitions AS definition").
-		Select("definition.slug").
-		Joins("JOIN product_specification_templates AS template ON template.id = definition.product_specification_template_id").
-		Where("template.slug = ?", "schwalbe_tire").
-		Order("definition.slug ASC").
-		Scan(&definitionSlugs).Error; err != nil {
-		return fmt.Errorf("load Schwalbe template definitions: %w", err)
-	}
-	if err := validateSchwalbeDefinitionSlugs(definitionSlugs); err != nil {
-		return err
-	}
 	query := `
 		SELECT article_no, ean, model_name, etrto, inch_designation, weight_g,
 		       version_label, compound, color, bead, e_bike_rating, epi, load_kg,
@@ -217,18 +205,34 @@ func loadSchwalbeCatalogRefreshCatalog(tx *gorm.DB, rows *[]SchwalbeCatalogRefre
 
 func loadSchwalbeActiveSalesProducts(tx *gorm.DB, products *[]schwalbeSalesProduct) error {
 	query := `
-		SELECT p.id AS product_id, p.name, definition.slug, spec_value.value AS spec_value
+		SELECT p.id AS product_id, p.name,
+		       p.bicycle_tire_specification->>'article_no' AS article_no,
+	       NULLIF(TRIM(p.standard_product_identifier), '') AS ean,
+		       p.bicycle_tire_specification->>'model_name' AS model_name,
+		       p.bicycle_tire_specification->>'etrto' AS etrto,
+		       p.bicycle_tire_specification->>'inch_designation' AS inch_designation,
+		       p.bicycle_tire_specification->>'weight_g' AS weight_g,
+		       p.bicycle_tire_specification->>'version_label' AS version_label,
+		       p.bicycle_tire_specification->>'compound' AS compound,
+		       p.bicycle_tire_specification->>'color' AS color,
+		       p.bicycle_tire_specification->>'bead' AS bead,
+		       p.bicycle_tire_specification->>'e_bike_rating' AS e_bike_rating,
+		       p.bicycle_tire_specification->>'epi' AS epi,
+		       p.bicycle_tire_specification->>'load_kg' AS load_kg,
+		       p.bicycle_tire_specification->>'seal' AS seal,
+		       p.bicycle_tire_specification->>'tread' AS tread,
+		       p.bicycle_tire_specification->>'min_pressure_bar' AS min_pressure_bar,
+		       p.bicycle_tire_specification->>'max_pressure_bar' AS max_pressure_bar,
+		       p.bicycle_tire_specification->>'min_pressure_psi' AS min_pressure_psi,
+		       p.bicycle_tire_specification->>'max_pressure_psi' AS max_pressure_psi
 		FROM products AS p
-		JOIN product_specification_templates AS template
-		  ON template.id = p.product_specification_template_id
-		 AND template.slug = ?
-	JOIN product_spec_definitions AS definition
-		  ON definition.product_specification_template_id = template.id
-		LEFT JOIN product_spec_values AS spec_value
-		  ON spec_value.product_id = p.id
-		 AND spec_value.spec_definition_id = definition.id
+		JOIN product_brands AS brand
+		  ON brand.id = p.brand_id
+		 AND brand.slug = 'schwalbe'
 		WHERE p.status = 'active'
 		  AND p.deleted_at IS NULL
+		  AND p.parent_id IS NULL
+		  AND p.product_type = 'bicycle_tire'
 		  AND EXISTS (
 		      SELECT 1
 		      FROM product_variants AS variant
@@ -236,79 +240,64 @@ func loadSchwalbeActiveSalesProducts(tx *gorm.DB, products *[]schwalbeSalesProdu
 		        AND variant.is_active IS TRUE
 		        AND variant.deleted_at IS NULL
 		  )
-		ORDER BY p.id ASC, definition.sort_order ASC, definition.slug ASC`
+		ORDER BY p.id ASC`
 	var rows []schwalbeSalesSpecRow
-	if err := tx.Raw(query, "schwalbe_tire").Scan(&rows).Error; err != nil {
+	if err := tx.Raw(query).Scan(&rows).Error; err != nil {
 		return fmt.Errorf("load active Schwalbe sales product specifications: %w", err)
 	}
 
-	byID := make(map[uint]*schwalbeSalesProduct)
+	byID := make([]schwalbeSalesProduct, 0, len(rows))
 	for _, row := range rows {
-		product := byID[row.ProductID]
-		if product == nil {
-			product = &schwalbeSalesProduct{ID: row.ProductID, Name: row.Name, Values: make(map[string]*string, 19)}
-			byID[row.ProductID] = product
+		values := map[string]sql.NullString{
+			"article_no": row.ArticleNo, "ean": row.EAN, "model_name": row.ModelName,
+			"etrto": row.ETRTO, "inch_designation": row.InchDesignation, "weight_g": row.WeightG,
+			"version_label": row.VersionLabel, "compound": row.Compound, "color": row.Color,
+			"bead": row.Bead, "e_bike_rating": row.EBikeRating, "epi": row.EPI,
+			"load_kg": row.LoadKG, "seal": row.Seal, "tread": row.Tread,
+			"min_pressure_bar": row.MinPressureBar, "max_pressure_bar": row.MaxPressureBar,
+			"min_pressure_psi": row.MinPressurePSI, "max_pressure_psi": row.MaxPressurePSI,
 		}
-		if row.SpecValue.Valid && strings.TrimSpace(row.SpecValue.String) != "" {
-			value := row.SpecValue.String
-			product.Values[row.Slug] = &value
-		} else {
-			product.Values[row.Slug] = nil
+		product := schwalbeSalesProduct{ID: row.ProductID, Name: row.Name, Values: make(map[string]*string, len(values))}
+		for slug, nullableValue := range values {
+			if nullableValue.Valid && strings.TrimSpace(nullableValue.String) != "" {
+				value := nullableValue.String
+				product.Values[slug] = &value
+			}
 		}
+		byID = append(byID, product)
 	}
-	ordered := make([]schwalbeSalesProduct, 0, len(byID))
-	for _, product := range byID {
-		ordered = append(ordered, *product)
-	}
-	sort.Slice(ordered, func(i, j int) bool { return ordered[i].ID < ordered[j].ID })
-	*products = ordered
+	*products = byID
 	return nil
 }
 
 type schwalbeSalesSpecRow struct {
-	ProductID uint           `gorm:"column:product_id"`
-	Name      string         `gorm:"column:name"`
-	Slug      string         `gorm:"column:slug"`
-	SpecValue sql.NullString `gorm:"column:spec_value"`
+	ProductID       uint           `gorm:"column:product_id"`
+	Name            string         `gorm:"column:name"`
+	ArticleNo       sql.NullString `gorm:"column:article_no"`
+	EAN             sql.NullString `gorm:"column:ean"`
+	ModelName       sql.NullString `gorm:"column:model_name"`
+	ETRTO           sql.NullString `gorm:"column:etrto"`
+	InchDesignation sql.NullString `gorm:"column:inch_designation"`
+	WeightG         sql.NullString `gorm:"column:weight_g"`
+	VersionLabel    sql.NullString `gorm:"column:version_label"`
+	Compound        sql.NullString `gorm:"column:compound"`
+	Color           sql.NullString `gorm:"column:color"`
+	Bead            sql.NullString `gorm:"column:bead"`
+	EBikeRating     sql.NullString `gorm:"column:e_bike_rating"`
+	EPI             sql.NullString `gorm:"column:epi"`
+	LoadKG          sql.NullString `gorm:"column:load_kg"`
+	Seal            sql.NullString `gorm:"column:seal"`
+	Tread           sql.NullString `gorm:"column:tread"`
+	MinPressureBar  sql.NullString `gorm:"column:min_pressure_bar"`
+	MaxPressureBar  sql.NullString `gorm:"column:max_pressure_bar"`
+	MinPressurePSI  sql.NullString `gorm:"column:min_pressure_psi"`
+	MaxPressurePSI  sql.NullString `gorm:"column:max_pressure_psi"`
 }
 
 type schwalbeSalesProduct struct {
 	ID     uint
 	Name   string
 	Values map[string]*string
-}
-
-func validateSchwalbeDefinitionSlugs(actual []string) error {
-	want := make(map[string]struct{}, len(schwalbeAuditFields)+1)
-	want["article_no"] = struct{}{}
-	for _, field := range schwalbeAuditFields {
-		want[field.slug] = struct{}{}
-	}
-	got := make(map[string]struct{}, len(actual))
-	for _, slug := range actual {
-		got[slug] = struct{}{}
-	}
-	missing := make([]string, 0)
-	for slug := range want {
-		if _, ok := got[slug]; !ok {
-			missing = append(missing, slug)
-		}
-	}
-	sort.Strings(missing)
-	if len(missing) > 0 {
-		return fmt.Errorf("schwalbe template is missing required specification definitions: %s", strings.Join(missing, ", "))
-	}
-	unexpected := make([]string, 0)
-	for slug := range got {
-		if _, ok := want[slug]; !ok {
-			unexpected = append(unexpected, slug)
-		}
-	}
-	sort.Strings(unexpected)
-	if len(unexpected) > 0 {
-		return fmt.Errorf("schwalbe template has specification definitions outside the 19-field contract: %s", strings.Join(unexpected, ", "))
-	}
-	return nil
 }
 
 func indexSchwalbeRefreshSnapshot(rows []SchwalbeCatalogRefreshSnapshotRow, validateIncomingContract bool) (map[string]SchwalbeCatalogRefreshSnapshotRow, error) {
@@ -358,7 +347,7 @@ func buildSchwalbeCatalogRefreshAuditReport(current, incoming map[string]Schwalb
 		GeneratedAt:  time.Now().UTC(),
 		IncomingRows: len(incoming),
 		CurrentRows:  len(current),
-		SalesScope:   "Products with status=active, not soft-deleted, and at least one active non-deleted variant; stock quantity is ignored.",
+		SalesScope:   "Root Schwalbe bicycle_tire products with status=active, not soft-deleted, and at least one active non-deleted variant; stock quantity is ignored.",
 		Catalog: SchwalbeCatalogRefreshCatalog{
 			Added:                 make([]string, 0),
 			NotInIncomingSnapshot: make([]string, 0),

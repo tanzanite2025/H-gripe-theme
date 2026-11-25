@@ -289,10 +289,8 @@ func newSchwalbeTireCatalogHandlerTestDB(t *testing.T) *gorm.DB {
 	}
 	statements := []string{
 		`CREATE TABLE schwalbe_tire_specifications (article_no TEXT PRIMARY KEY, ean TEXT, model_name TEXT, etrto TEXT, inch_designation TEXT, weight_g REAL, version_label TEXT, compound TEXT, color TEXT, bead TEXT, e_bike_rating TEXT, epi INTEGER, load_kg REAL, seal TEXT, tread TEXT, min_pressure_bar REAL, max_pressure_bar REAL, min_pressure_psi REAL, max_pressure_psi REAL, source_url TEXT, source_checked_at DATE)`,
-		`CREATE TABLE products (id INTEGER PRIMARY KEY, product_specification_template_id INTEGER)`,
-		`CREATE TABLE product_specification_templates (id INTEGER PRIMARY KEY, slug TEXT)`,
-		`CREATE TABLE product_spec_definitions (id INTEGER PRIMARY KEY, product_specification_template_id INTEGER, slug TEXT)`,
-		`CREATE TABLE product_spec_values (product_id INTEGER, spec_definition_id INTEGER, value TEXT)`,
+		`CREATE TABLE products (id INTEGER PRIMARY KEY, product_type TEXT, brand_id INTEGER, bicycle_tire_specification TEXT, parent_id INTEGER, deleted_at DATETIME)`,
+		`CREATE TABLE product_brands (id INTEGER PRIMARY KEY, slug TEXT)`,
 	}
 	for _, statement := range statements {
 		if err := db.Exec(statement).Error; err != nil {

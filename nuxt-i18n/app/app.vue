@@ -46,7 +46,10 @@ import {
   STOREFRONT_SESSION_WARMUP,
   splitStorefrontConfiguredOrigins,
 } from '~/utils/storefrontLoadingPolicy'
-import { storefrontAdditionalFontPreloadLinkForLocale } from '~/utils/storefrontFonts'
+import {
+  storefrontAdditionalFontPreloadLinkForLocale,
+  storefrontFirstViewportCjkFontPreloadLinksForLocale,
+} from '~/utils/storefrontFonts'
 
 const auth = useAuth()
 const runtimeConfig = useRuntimeConfig()
@@ -73,7 +76,14 @@ const htmlLanguage = computed(() => (
 ))
 const htmlDirection = computed(() => activeLocaleEntry.value?.dir || 'ltr')
 const htmlFontFamily = computed(() => activeLocaleEntry.value?.fontFamily || 'latin')
-const htmlAdditionalFontPreloadLink = computed(() => storefrontAdditionalFontPreloadLinkForLocale(locale.value))
+const htmlAdditionalFontPreloadLinks = computed(() => {
+  const additionalFontPreloadLink = storefrontAdditionalFontPreloadLinkForLocale(locale.value)
+
+  return [
+    ...(additionalFontPreloadLink ? [additionalFontPreloadLink] : []),
+    ...storefrontFirstViewportCjkFontPreloadLinksForLocale(locale.value),
+  ]
+})
 
 const preconnectLinks = computed(() => {
   const currentOrigin = requestUrl.origin
@@ -125,7 +135,7 @@ useHead(() => ({
   },
   link: [
     ...preconnectLinks.value,
-    ...(htmlAdditionalFontPreloadLink.value ? [htmlAdditionalFontPreloadLink.value] : []),
+    ...htmlAdditionalFontPreloadLinks.value,
     { rel: 'icon', href: siteFavicon.value },
     { rel: 'shortcut icon', href: siteFavicon.value },
   ],

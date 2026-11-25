@@ -61,6 +61,30 @@ func TestFontPreflightHandlerRejectsInvalidManifest(t *testing.T) {
 	require.Equal(t, "no-store, max-age=0", recorder.Header().Get("Cache-Control"))
 }
 
+func TestFontPreflightReportAcceptsDistinctCJKCharacterShardsAndRejectsDuplicateFiles(t *testing.T) {
+	var report FontPreflightReport
+	require.NoError(t, json.Unmarshal([]byte(validFontPreflightManifest), &report))
+	characterShard := report.Faces[1]
+	characterShard.Filename = "MapleUI-CJK-Korean-Hangul-Character-Group-001.0123456789ab.woff2"
+	characterShard.UnicodeRange = "U+AC00-D7AF"
+	report.Faces = append(report.Faces, characterShard)
+	require.NoError(t, validateFontPreflightReport(&report))
+	report.Faces = append(report.Faces, characterShard)
+	require.ErrorContains(t, validateFontPreflightReport(&report), "duplicate font file")
+}
+
+func TestFontPreflightReportRejectsMissingCharacterShardRangesAndOtherDuplicateFamilies(t *testing.T) {
+	var report FontPreflightReport
+	require.NoError(t, json.Unmarshal([]byte(validFontPreflightManifest), &report))
+	report.Faces[1].UnicodeRange = ""
+	require.ErrorContains(t, validateFontPreflightReport(&report), "must declare unicode ranges")
+	require.NoError(t, json.Unmarshal([]byte(validFontPreflightManifest), &report))
+	duplicateLatin := report.Faces[0]
+	duplicateLatin.Filename = "MapleUI-Latin-Unapproved-Second-File.0123456789ab.woff2"
+	report.Faces = append(report.Faces, duplicateLatin)
+	require.ErrorContains(t, validateFontPreflightReport(&report), "duplicate font face")
+}
+
 func TestFontPreflightURLOnlyUsesConfiguredStorefrontOrigin(t *testing.T) {
 	resolved, err := fontPreflightURL("https://storefront.example.test/a/path?ignored=1")
 

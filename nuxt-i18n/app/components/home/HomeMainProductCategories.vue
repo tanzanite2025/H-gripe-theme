@@ -1,5 +1,5 @@
 <template>
-  <section id="home-main-product-categories" class="bg-transparent py-8 tz-text-primary sm:py-10 lg:py-14">
+  <section :id="sectionAnchorId" class="bg-transparent py-8 tz-text-primary sm:py-10 lg:py-14">
     <div class="page-content-shell px-0 md:px-6">
       <div class="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div class="max-w-3xl">
@@ -108,6 +108,10 @@ import { useI18n, useLocalePath } from '#imports'
 import StorefrontDataNotice from '~/components/StorefrontDataNotice.vue'
 import type { HomeMainProductCategoryItem } from '~/types/homeMainProductCategories'
 import { useHomeMainProductCategories } from '~/composables/useHomeMainProductCategories'
+
+withDefaults(defineProps<{ sectionAnchorId?: string }>(), {
+  sectionAnchorId: 'home-main-product-categories',
+})
 
 const { t } = useI18n()
 const localePath = useLocalePath()

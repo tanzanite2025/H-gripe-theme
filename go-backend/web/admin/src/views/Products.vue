@@ -82,16 +82,13 @@
     />
 
     <ProductEditorDialog
+      v-if="activeProductEditorKind === 'generic'"
       v-model:open="dialogVisible"
       :mode="dialogMode"
       :submitting="submitting"
       :form="productForm"
       :errors="formErrors"
       :product-spec-templates="productSpecTemplates"
-      :schwalbe-tire-catalog-items="schwalbeTireCatalogItems"
-      :schwalbe-tire-catalog-loading="schwalbeTireCatalogLoading"
-      :schwalbe-tire-catalog-error="schwalbeTireCatalogError"
-      :selected-schwalbe-tire-article-no="selectedSchwalbeTireArticleNo"
       :brands="brands"
       :product-categories="standardProductCategories"
       :carbon-rim-system-category-display-path="carbonRimSystemCategoryDisplayPath"
@@ -128,8 +125,6 @@
       @submit="submitForm"
       @clear-error="clearFieldError"
       @product-spec-template-select="handleProductSpecTemplateSelect"
-      @schwalbe-tire-model-select="setSchwalbeTireCatalogModel"
-      @retry-schwalbe-tire-catalog="fetchSchwalbeTireCatalog"
       @preview-template-sync="previewTemplateSync"
       @update-template-sync-open="setTemplateSyncDialogOpen"
       @confirm-template-sync="confirmTemplateSync"
@@ -139,6 +134,55 @@
       @customs-classification-select="handleCustomsClassificationSelect"
       @customs-classification-manual-edit="clearCustomsClassification"
       @set-spec-select-value="setSpecSelectValue"
+      @add-variant="addVariant"
+      @remove-variant="removeVariant"
+      @set-default-variant="setDefaultVariant"
+      @set-variant-active="setVariantActive"
+      @upload-media="handleMediaUpload"
+      @add-media-url="addMediaUrl"
+      @set-primary-media="setPrimaryMedia"
+      @move-media="moveMedia"
+      @remove-media="removeMedia"
+      @retry-supplier-cost="retrySupplierCost"
+    />
+
+    <BicycleTireDedicatedProductEditorDialog
+      v-if="activeProductEditorKind === 'bicycle-tire'"
+      v-model:open="dialogVisible"
+      :mode="dialogMode"
+      :submitting="submitting"
+      :form="productForm"
+      :errors="formErrors"
+      :bicycle-tire-system-category-display-path="bicycleTireSystemCategoryDisplayPath"
+      :brand-select-value="brandSelectValue"
+      :brands="brands"
+      :schwalbe-tire-catalog-items="schwalbeTireCatalogItems"
+      :schwalbe-tire-catalog-loading="schwalbeTireCatalogLoading"
+      :schwalbe-tire-catalog-error="schwalbeTireCatalogError"
+      :selected-schwalbe-tire-article-no="selectedSchwalbeTireArticleNo"
+      :shipping-templates="shippingTemplates"
+      :after-sales-templates="afterSalesTemplates"
+      :packaging-templates="packagingTemplates"
+      :customs-classifications="availableCustomsClassifications"
+      :language-options="languageOptions"
+      :default-variant-index="defaultVariantIndex"
+      :uploading-media="uploadingMedia"
+      :supplier-cost-visible="canViewSupplierCost"
+      :supplier-cost-can-edit="canEditSupplierCost"
+      :supplier-cost-loading="supplierCostLoading"
+      :supplier-cost-saving="supplierCostSaving"
+      :supplier-cost-pending="supplierCostPending"
+      :supplier-cost-error="supplierCostError"
+      :supplier-cost-last-saved-at="supplierCostLastSavedAt"
+      :supplier-cost-drafts="supplierCostDraftRows"
+      @submit="submitForm"
+      @clear-error="clearFieldError"
+      @product-brand-select="setProductBrand"
+      @product-information-template-select="setProductInformationTemplate"
+      @customs-classification-select="handleCustomsClassificationSelect"
+      @customs-classification-manual-edit="clearCustomsClassification"
+      @schwalbe-tire-model-select="setSchwalbeTireCatalogModel"
+      @retry-schwalbe-tire-catalog="fetchSchwalbeTireCatalog"
       @add-variant="addVariant"
       @remove-variant="removeVariant"
       @set-default-variant="setDefaultVariant"
@@ -198,6 +242,7 @@ import AdminPageHeader from '@/components/admin/AdminPageHeader.vue'
 import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import ProductCreationTypeDialog, { type ProductCreationType } from '@/components/admin/product/ProductCreationTypeDialog.vue'
 import ProductEditorDialog from '@/components/admin/product/ProductEditorDialog.vue'
+import BicycleTireDedicatedProductEditorDialog from '@/components/admin/product/BicycleTireDedicatedProductEditorDialog.vue'
 import ProductFilterPanel from '@/components/admin/product/ProductFilterPanel.vue'
 import ProductTablePanel from '@/components/admin/product/ProductTablePanel.vue'
 import ProductTranslationGroupDialog from '@/components/admin/product/ProductTranslationGroupDialog.vue'
@@ -319,6 +364,7 @@ const {
   productSpecTemplateSelectValue,
   productCategorySelectValue,
   carbonRimSystemCategoryDisplayPath,
+  bicycleTireSystemCategoryDisplayPath,
   brandSelectValue,
   templateScopedValuesTouched,
   templateSyncDialogVisible,
@@ -382,6 +428,7 @@ const {
 })
 
 const creationTypeDialogVisible = ref(false)
+const activeProductEditorKind = ref<'generic' | 'bicycle-tire'>('generic')
 const spokeRepairKitDialogVisible = ref(false)
 const spokeRepairKitDialogMode = ref<'create' | 'edit'>('create')
 const spokeRepairKitEditingProduct = ref<AdminProductRecord | null>(null)
@@ -440,6 +487,12 @@ const handleCreationTypeContinue = async (type: ProductCreationType): Promise<vo
     await openSpokeRepairKitCreateDialog()
     return
   }
+  if (type === 'bicycle-tire') {
+    activeProductEditorKind.value = 'bicycle-tire'
+    await showGenericCreateDialog('bicycle_tire')
+    return
+  }
+  activeProductEditorKind.value = 'generic'
   await showGenericCreateDialog(type === 'carbon-rim' ? 'carbon_rim' : '')
 }
 
@@ -448,6 +501,7 @@ const openProductEditDialog = async (product: AdminProductRecord): Promise<void>
     await openSpokeRepairKitEditDialog(product)
     return
   }
+  activeProductEditorKind.value = product.product_type === 'bicycle_tire' ? 'bicycle-tire' : 'generic'
   await showGenericEditDialog(product)
 }
 

@@ -311,6 +311,8 @@
   "chatModal": {
     "actions": {
       "close": "Close chat",
+      "collapse": "Contraer panel de chat",
+      "expand": "Expandir panel de chat",
       "closeHistory": "Close browsing history",
       "backToWelcome": "Back to welcome",
       "switchToChat": "Switch to chat",
@@ -898,6 +900,7 @@
     }
   },
   "dockMenu": {
+    "userCenter": "Área de usuario",
     "openSidebar": "Abrir barra lateral",
     "menu": "Menú",
     "chat": "Chat",

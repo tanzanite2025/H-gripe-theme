@@ -203,7 +203,7 @@ onMounted(() => {
               </tr>
             </thead>
             <tbody class="divide-y">
-              <tr v-for="face in report.faces" :key="face.family">
+              <tr v-for="face in report.faces" :key="face.filename">
                 <td class="px-4 py-3 font-mono text-xs font-bold">{{ face.family }}</td>
                 <td class="px-4 py-3">
                   <p class="font-bold">{{ face.script }}</p>

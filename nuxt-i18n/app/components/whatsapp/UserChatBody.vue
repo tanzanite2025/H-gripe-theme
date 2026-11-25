@@ -30,6 +30,8 @@
         <ChatTab
           v-if="activeTab === 'chat'"
           :messages="messages"
+          :has-older-messages="hasOlderMessages"
+          :is-loading-older-messages="isLoadingOlderMessages"
           :new-message="newMessage"
           :visitor-email="visitorEmail"
           :show-visitor-email-capture="showVisitorEmailCapture"
@@ -41,6 +43,7 @@
           @update:new-message="$emit('update:newMessage', $event)"
           @update:visitor-email="$emit('update:visitorEmail', $event)"
           @send-message="$emit('sendMessage')"
+          @load-older-messages="$emit('loadOlderMessages')"
           @upload-image="handleUploadImage"
           @open-order-picker="$emit('openOrderPicker')"
           @open-customer-service-product-search-modal="$emit('openCustomerServiceProductSearchModal')"
@@ -100,6 +103,8 @@ const props = defineProps<{
   currentThemeColor: string
   // Chat Props
   messages: any[]
+  hasOlderMessages: boolean
+  isLoadingOlderMessages: boolean
   newMessage: string
   visitorEmail: string
   showVisitorEmailCapture: boolean
@@ -126,6 +131,7 @@ const emit = defineEmits<{
   'update:newMessage': [value: string]
   'update:visitorEmail': [value: string]
   'sendMessage': []
+  'loadOlderMessages': []
   'uploadImage': [event: Event, source: 'library' | 'camera']
   'openOrderPicker': []
   'openCustomerServiceProductSearchModal': []

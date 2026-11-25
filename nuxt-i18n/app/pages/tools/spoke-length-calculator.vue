@@ -392,8 +392,8 @@ useHead(() => ({
         t('resourcesSpokeCalculator.calculator.physicalCorrections.interlaceCompensation'),
       ],
       author: {
-        '@type': 'Organization',
-        name: 'Guangengwang Engineering Lab',
+        '@type': 'Person',
+        name: 'wangguangen',
       },
       inLanguage: spokeCalculatorLanguage.value,
       ...(spokeCalculatorEngineeringMetadata.value?.model_version

@@ -102,6 +102,9 @@ for (const locale of ['en', 'zh_cn']) {
         const schema = JSON.parse(readFreehubFaqServerRenderedText(element))
         return schema['@graph'] || [schema]
       })
+    const fitmentApplication = structuredData.find(schema => schema['@type'] === 'WebApplication')
+    assert.ok(fitmentApplication, 'Render the freehub compatibility application schema')
+    assert.deepEqual(fitmentApplication.author, { '@type': 'Person', name: 'wangguangen' })
     const faqStructuredData = structuredData.filter(schema => schema['@type'] === 'FAQPage')
     assert.equal(faqStructuredData.length, 1, 'Emit a single FAQPage schema from the published backend data')
     const faqSchema = faqStructuredData[0]

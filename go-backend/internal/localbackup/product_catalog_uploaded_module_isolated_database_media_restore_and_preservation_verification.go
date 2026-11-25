@@ -232,7 +232,7 @@ func (cfg Configuration) applyProductCatalogRowsOnlyToIsolatedDatabase(ctx conte
 	if err := validateProductCatalogSelectedAndRetainedSharedInventoryOwners(ctx, tx, snapshot); err != nil {
 		return 0, 0, nil, err
 	}
-	actualCategoryIdentities, err := inspectProductCatalogRequiredSystemCategoriesAndCarbonRimBindings(ctx, tx)
+	actualCategoryIdentities, err := inspectProductCatalogRequiredDedicatedSystemCategoriesAndBindings(ctx, tx)
 	if err != nil {
 		return 0, 0, nil, err
 	}
@@ -394,7 +394,7 @@ func (manager *Manager) restoreProductCatalogIntoIsolatedTargetCloneWithHeldMain
 		_ = current.Close()
 		return err
 	}
-	if _, err := inspectProductCatalogRequiredSystemCategoriesAndCarbonRimBindings(ctx, contractTx); err != nil {
+	if _, err := inspectProductCatalogRequiredDedicatedSystemCategoriesAndBindings(ctx, contractTx); err != nil {
 		_ = contractTx.Rollback()
 		_ = current.Close()
 		return err

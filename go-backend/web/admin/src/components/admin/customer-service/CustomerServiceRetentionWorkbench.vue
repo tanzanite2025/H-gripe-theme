@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-3 overflow-auto">
+  <div class="flex h-full min-h-0 flex-col gap-3 overflow-y-auto overflow-x-hidden">
     <AdminPageHeader
       title="客服会话保留运维"
       description="仅管理员可执行；所有操作都需要显式会话 ID 和运维原因"
@@ -12,14 +12,14 @@
       </template>
     </AdminPageHeader>
 
-    <Card v-if="!isAdmin" class="border-destructive/30 bg-destructive/5 shadow-none">
+    <Card v-if="!isAdmin" class="shrink-0 border-destructive/30 bg-destructive/5 shadow-none">
       <CardContent class="flex items-start gap-3 p-4 text-sm font-bold text-destructive">
         <ShieldAlert class="mt-0.5 size-4 shrink-0" />
         当前账号不是管理员，后端不会接受 retention 运维命令。
       </CardContent>
     </Card>
 
-    <Card v-else class="shadow-none">
+    <Card v-else class="shrink-0 shadow-none">
       <CardHeader class="pb-3">
         <CardTitle class="text-sm font-black uppercase tracking-tight">运维目标</CardTitle>
         <CardDescription class="text-xs">先预览资格，再确认软删除或恢复期结束后的 purge。</CardDescription>
@@ -78,7 +78,7 @@
       </div>
     </Card>
 
-    <Card v-if="isAdmin" class="shadow-none">
+    <Card v-if="isAdmin" class="shrink-0 shadow-none">
       <CardHeader class="pb-3">
         <CardTitle class="text-sm font-black uppercase tracking-tight">自动清理策略</CardTitle>
         <CardDescription class="text-xs">修改后无需重启服务；关闭时保留数据，不会自动 purge。</CardDescription>
@@ -99,7 +99,7 @@
       </CardContent>
     </Card>
 
-    <Card v-if="isAdmin" class="shadow-none">
+    <Card v-if="isAdmin" class="shrink-0 shadow-none">
       <CardHeader class="flex-row items-start justify-between gap-3 pb-3">
         <div>
           <CardTitle class="text-sm font-black uppercase tracking-tight">历史会话检索与附件检查</CardTitle>
@@ -205,7 +205,7 @@
       </CardContent>
     </Card>
 
-    <Card class="min-h-0 flex-1 shadow-none">
+    <Card class="shrink-0 shadow-none">
       <CardHeader class="flex-row items-center justify-between gap-3 pb-3">
         <div>
           <CardTitle class="text-sm font-black uppercase tracking-tight">资格结果</CardTitle>

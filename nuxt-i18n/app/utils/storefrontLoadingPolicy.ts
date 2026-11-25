@@ -3,6 +3,7 @@ export const MAX_STOREFRONT_PRECONNECT_ORIGINS = 4
 export const STOREFRONT_LOADING_TIERS = {
   criticalSsr: [
     'SiteHeader',
+    'HeaderMegaMenu',
     'HomeHero',
     'GradientDockMenuShell',
   ],
@@ -21,6 +22,10 @@ export const STOREFRONT_LOADING_TIERS = {
     'HomeFaqPreview',
     'HomeFinalCta',
     'AppFooter',
+  ],
+  navigationResourceWarmup: [
+    'HeaderPrimaryNavigationMessages',
+    'HeaderPrimaryNavigationShopComponents',
   ],
   intentOnly: [
     'SidePanel',
@@ -44,10 +49,17 @@ export const STOREFRONT_LOADING_TIERS = {
 } as const
 
 // Storefront loading contract:
-// 1. SSR immediately: hero, header shell, dock shell.
+// 1. SSR immediately: hero, header and primary menu shell/links, dock shell.
 // 2. Near-fold hydration: sections that are likely to become visible next.
-// 3. Intent-only: drawers, overlays, chat, cart, quick-buy.
-// 4. Idle/background: analytics, fingerprinting, attribution, consent shell.
+// 3. Primary navigation: stable-paint idle warmup, intent accelerates it.
+// 4. Intent-only: other drawers, overlays, chat, cart, quick-buy.
+// 5. Idle/background: analytics, fingerprinting, attribution, consent shell.
+export const STOREFRONT_PRIMARY_NAVIGATION_RESOURCE_WARMUP = {
+  minimumDelayMs: 2500,
+  paintQuietWindowMs: 800,
+  maximumStartDelayMs: 10000,
+  maximumNamespaceWaitMs: 1500,
+} as const
 export const STOREFRONT_NEAR_FOLD_HYDRATION_OPTIONS = {
   rootMargin: '0px 0px 96px 0px',
 } as const

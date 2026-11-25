@@ -311,6 +311,8 @@
   "chatModal": {
     "actions": {
       "close": "Close chat",
+      "collapse": "채팅 패널 접기",
+      "expand": "채팅 패널 펼치기",
       "closeHistory": "Close browsing history",
       "backToWelcome": "Back to welcome",
       "switchToChat": "Switch to chat",
@@ -898,6 +900,7 @@
     }
   },
   "dockMenu": {
+    "userCenter": "사용자 센터",
     "openSidebar": "사이드바 열기",
     "menu": "메뉴",
     "chat": "채팅",

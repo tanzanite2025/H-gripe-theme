@@ -1,14 +1,9 @@
 import { basename } from 'node:path'
+import { expectedStorefrontFontFaceFiles, parseStorefrontFontUnicodeRangeCodePoints } from '../storefront-font-character-shard-contract.ts'
 
-const unversionedStorefrontFontReferencePattern = /\bMapleUI-[A-Za-z-]+\.woff2\b/g
-const expectedStorefrontFontFaces: ReadonlyMap<string, { filename: string; unicodeRange: boolean }> = new Map([
-  ['MapleUILatin', { filename: 'MapleUI-Latin.00af3fec5b34.woff2', unicodeRange: false }],
-  ['MapleUICJK', { filename: 'MapleUI-CJK.f8ce6d72e8cb.woff2', unicodeRange: true }],
-  ['MapleUICoverageNotoSansDevanagari', { filename: 'MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2', unicodeRange: true }],
-  ['MapleUICoverageNotoSansLatinAccents', { filename: 'MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2', unicodeRange: true }],
-  ['MapleUICoverageNotoSansArabic', { filename: 'MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2', unicodeRange: true }],
-  ['MapleUICoverageNotoSansThai', { filename: 'MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2', unicodeRange: true }],
-] as const)
+const unversionedStorefrontFontReferencePattern = /\bMapleUI-[A-Za-z0-9-]+\.woff2\b/g
+const expectedStorefrontFontFacesByFilename = new Map(expectedStorefrontFontFaceFiles.map(face => [face.filename, face]))
+const approvedStorefrontFontFamilies = new Set(expectedStorefrontFontFaceFiles.map(face => face.fontFamily))
 
 interface BuiltFontFace {
   line: number
@@ -68,10 +63,10 @@ export const storefrontFontArtifactViolations = (css: string): StorefrontFontArt
   for (const fontFace of fontFaceSources(css)) {
     if (!fontFace.fontFamily.startsWith('MapleUI')) continue
 
-    const expectedFontFace = expectedStorefrontFontFaces.get(fontFace.fontFamily)
     const filename = basename(fontFace.sourcePath)
+    const expectedFontFace = expectedStorefrontFontFacesByFilename.get(filename)
 
-    if (!expectedFontFace) {
+    if (!approvedStorefrontFontFamilies.has(fontFace.fontFamily)) {
       violations.push({
         line: fontFace.line,
         violation: `unapproved Maple UI @font-face family "${fontFace.fontFamily}"`,
@@ -79,10 +74,10 @@ export const storefrontFontArtifactViolations = (css: string): StorefrontFontArt
       continue
     }
 
-    if (filename !== expectedFontFace.filename) {
+    if (!expectedFontFace || expectedFontFace.fontFamily !== fontFace.fontFamily) {
       violations.push({
         line: fontFace.line,
-        violation: `${fontFace.fontFamily} must use ${expectedFontFace.filename}, not ${filename}`,
+        violation: `${fontFace.fontFamily} must use an approved character-shard inventory file, not ${filename}`,
       })
     }
 
@@ -93,18 +88,29 @@ export const storefrontFontArtifactViolations = (css: string): StorefrontFontArt
       })
     }
 
-    if (expectedFontFace.unicodeRange && !fontFace.unicodeRange) {
+    if (fontFace.fontFamily !== 'MapleUILatin' && !fontFace.unicodeRange) {
       violations.push({
         line: fontFace.line,
         violation: `${fontFace.fontFamily} must declare unicode-range in built CSS`,
       })
     }
 
-    if (!expectedFontFace.unicodeRange && fontFace.unicodeRange) {
+    if (fontFace.fontFamily === 'MapleUILatin' && fontFace.unicodeRange) {
       violations.push({
         line: fontFace.line,
         violation: `${fontFace.fontFamily} must not declare unicode-range in built CSS`,
       })
+    }
+    if (expectedFontFace?.unicodeRange && fontFace.unicodeRange) {
+      try {
+        const expectedCodePoints = parseStorefrontFontUnicodeRangeCodePoints(expectedFontFace.unicodeRange)
+        const actualCodePoints = parseStorefrontFontUnicodeRangeCodePoints(fontFace.unicodeRange)
+        if (actualCodePoints.size !== expectedCodePoints.size || [...actualCodePoints].some(codePoint => !expectedCodePoints.has(codePoint))) {
+          violations.push({ line: fontFace.line, violation: `${filename} changed its approved character coverage in built CSS` })
+        }
+      } catch {
+        violations.push({ line: fontFace.line, violation: `${filename} has invalid unicode-range in built CSS` })
+      }
     }
   }
 

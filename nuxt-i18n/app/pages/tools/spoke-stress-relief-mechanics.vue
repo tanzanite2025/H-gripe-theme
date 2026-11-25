@@ -646,6 +646,7 @@ useHead(() => {
         calculatorDescription: t('guidesSpokeDislocationMechanics.calculator.intro'),
         calculatorSoftwareVersion: stainlessSteelSpokeDislocationMechanicsMetadata.value?.model_version,
         inLanguage: stainlessSteelSpokeTechnicalArticleLanguage.value,
+        authorName: 'wangguangen',
         publisherName: siteTitle.value,
         articleSections: [
           t('guidesSpokeDislocationMechanics.materialLadder.title'),

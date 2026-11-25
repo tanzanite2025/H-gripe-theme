@@ -7,12 +7,26 @@ export type ChatWidgetConversation = any
 
 // 全局单例状态：是否打开聊天窗口 & 当前会话配置
 const currentConversation = ref<ChatWidgetConversation | null>(null)
+const isChatCollapsed = ref(false)
 const overlayBackStack = useOverlayBackStack()
 
 const isChatOpen = computed(() => !!currentConversation.value)
 
 const closeChatState = () => {
+  isChatCollapsed.value = false
   currentConversation.value = null
+}
+
+const expandChat = () => {
+  if (currentConversation.value) {
+    isChatCollapsed.value = false
+  }
+}
+
+const toggleChatCollapse = () => {
+  if (currentConversation.value) {
+    isChatCollapsed.value = !isChatCollapsed.value
+  }
 }
 
 /**
@@ -21,6 +35,7 @@ const closeChatState = () => {
  */
 const openChat = (conversation: ChatWidgetConversation = { showAgentList: true }) => {
   activateStorefrontClientOverlays()
+  isChatCollapsed.value = false
   currentConversation.value = conversation
   overlayBackStack.open('whatsapp-chat', closeChatState)
 }
@@ -34,6 +49,11 @@ const closeChat = () => {
 /** 切换聊天窗口打开 / 关闭 */
 const toggleChat = (conversation?: ChatWidgetConversation) => {
   if (isChatOpen.value) {
+    if (isChatCollapsed.value) {
+      expandChat()
+      return
+    }
+
     closeChat()
   } else {
     openChat(conversation)
@@ -45,9 +65,12 @@ export const useChatWidget = () => {
     // 状态
     currentConversation,
     isChatOpen,
+    isChatCollapsed,
     // 操作方法
     openChat,
     closeChat,
+    expandChat,
+    toggleChatCollapse,
     toggleChat,
   }
 }

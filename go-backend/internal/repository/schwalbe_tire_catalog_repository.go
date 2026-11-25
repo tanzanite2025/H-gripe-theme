@@ -6,8 +6,7 @@ import (
 )
 
 // SchwalbeTireCatalogItem is a sourced candidate record. ProductExists is
-// derived from actual products using the schwalbe_tire template and is not a
-// property of the catalog row itself.
+// derived from matching dedicated tire products.
 type SchwalbeTireCatalogItem struct {
 	ArticleNo       string    `json:"article_no"`
 	EAN             *string   `json:"ean,omitempty"`
@@ -34,6 +33,10 @@ type SchwalbeTireCatalogItem struct {
 
 func (r *ProductRepository) ListSchwalbeTireCatalog(search string) ([]SchwalbeTireCatalogItem, error) {
 	items := make([]SchwalbeTireCatalogItem, 0)
+	tireArticleNoExpression := "LOWER(TRIM(p.bicycle_tire_specification->>'article_no'))"
+	if r.db.Dialector.Name() == "sqlite" {
+		tireArticleNoExpression = "LOWER(TRIM(json_extract(p.bicycle_tire_specification, '$.article_no')))"
+	}
 	query := r.db.Table("schwalbe_tire_specifications AS catalog").
 		Select(`
 			catalog.article_no,
@@ -59,16 +62,11 @@ func (r *ProductRepository) ListSchwalbeTireCatalog(search string) ([]SchwalbeTi
 			EXISTS (
 				SELECT 1
 				FROM products p
-				JOIN product_specification_templates t
-				  ON t.id = p.product_specification_template_id
-				 AND t.slug = 'schwalbe_tire'
-				JOIN product_spec_definitions d
-				  ON d.product_specification_template_id = t.id
-				 AND d.slug = 'article_no'
-				JOIN product_spec_values v
-				  ON v.product_id = p.id
-				 AND v.spec_definition_id = d.id
-				WHERE LOWER(TRIM(v.value)) = LOWER(TRIM(catalog.article_no))
+				JOIN product_brands b ON b.id = p.brand_id AND b.slug = 'schwalbe'
+				WHERE p.product_type = 'bicycle_tire'
+				  AND p.parent_id IS NULL
+				  AND p.deleted_at IS NULL
+				  AND ` + tireArticleNoExpression + ` = LOWER(TRIM(catalog.article_no))
 			) AS product_exists`)
 
 	if normalizedSearch := strings.TrimSpace(search); normalizedSearch != "" {

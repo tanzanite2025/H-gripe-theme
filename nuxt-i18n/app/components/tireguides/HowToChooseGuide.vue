@@ -345,7 +345,7 @@ const tireRimReferenceSchema = computed(() => {
         proficiencyLevel: 'Expert',
         author: {
           '@type': 'Person',
-          name: locale.value === 'zh_cn' ? '王关根' : 'wangguangen',
+          name: 'wangguangen',
         },
         inLanguage: language,
         version: metadata.model_version,

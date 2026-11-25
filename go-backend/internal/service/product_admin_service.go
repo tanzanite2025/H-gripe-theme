@@ -70,7 +70,7 @@ type ProductCreateInput struct {
 
 	ProductType                    *string
 	CarbonRimSpecification         *product.CarbonRimSpecification
-	UpdateCarbonRimSpecification   bool
+	BicycleTireSpecification       *product.BicycleTireSpecification
 	ProductSpecificationTemplateID *uint
 	ProductCategoryID              *uint
 	BrandID                        *uint
@@ -110,6 +110,8 @@ type ProductUpdateInput struct {
 	ProductType                          *string
 	CarbonRimSpecification               *product.CarbonRimSpecification
 	UpdateCarbonRimSpecification         bool
+	BicycleTireSpecification             *product.BicycleTireSpecification
+	UpdateBicycleTireSpecification       bool
 	ProductSpecificationTemplateID       *uint
 	UpdateProductSpecificationTemplateID bool
 	ProductCategoryID                    *uint
@@ -192,6 +194,12 @@ func (s *ProductService) ListFilterableSpecificationsWithDynamicValuesForCategor
 }
 
 func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.Product, error) {
+	if err := validateDedicatedProductTypeCreation(input); err != nil {
+		return nil, err
+	}
+	if err := s.validateDedicatedBicycleTireCreation(input); err != nil {
+		return nil, err
+	}
 	if err := s.validateDedicatedCarbonRimCreation(input); err != nil {
 		return nil, err
 	}
@@ -233,7 +241,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	if err := s.rejectNewBindingToRetiredCarbonRimTemplate(input.ProductSpecificationTemplateID, nil); err != nil {
 		return nil, err
 	}
-	specValues, err := s.buildSpecValues(input.ProductSpecificationTemplateID, input.SpecValues, 0)
+	specValues, err := s.buildSpecValues(input.ProductSpecificationTemplateID, input.SpecValues)
 	if err != nil {
 		return nil, err
 	}
@@ -303,6 +311,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 
 		ProductType:                    dedicatedProductTypeValue(input.ProductType),
 		CarbonRimSpecification:         input.CarbonRimSpecification,
+		BicycleTireSpecification:       input.BicycleTireSpecification,
 		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
 		ProductCategoryID:              input.ProductCategoryID,
 		BrandID:                        input.BrandID,
@@ -402,6 +411,12 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if err := s.validateSpokeRepairKitProductUpdateType(existingProduct, input); err != nil {
 		return nil, err
 	}
+	if err := validateDedicatedProductTypeUpdate(existingProduct, &input); err != nil {
+		return nil, err
+	}
+	if err := s.validateDedicatedBicycleTireUpdate(existingProduct, &input); err != nil {
+		return nil, err
+	}
 	if err := s.validateDedicatedCarbonRimUpdate(existingProduct, &input); err != nil {
 		return nil, err
 	}
@@ -411,6 +426,10 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if input.UpdateCarbonRimSpecification {
 		existingProduct.CarbonRimSpecification = input.CarbonRimSpecification
 		existingProduct.CarbonRimSpecificationDirty = true
+	}
+	if input.UpdateBicycleTireSpecification {
+		existingProduct.BicycleTireSpecification = input.BicycleTireSpecification
+		existingProduct.BicycleTireSpecificationDirty = true
 	}
 	previousProduct := *existingProduct
 	previousAfterSalesTemplateID := existingProduct.AfterSalesTemplateID
@@ -586,7 +605,7 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	}
 	var specValues []product.ProductSpecValue
 	if input.UpdateSpecValues {
-		specValues, err = s.buildSpecValues(existingProduct.ProductSpecificationTemplateID, input.SpecValues, existingProduct.ID)
+		specValues, err = s.buildSpecValues(existingProduct.ProductSpecificationTemplateID, input.SpecValues)
 		if err != nil {
 			return nil, err
 		}

@@ -311,6 +311,8 @@
   "chatModal": {
     "actions": {
       "close": "Close chat",
+      "collapse": "تصغير لوحة الدردشة",
+      "expand": "توسيع لوحة الدردشة",
       "closeHistory": "Close browsing history",
       "backToWelcome": "Back to welcome",
       "switchToChat": "Switch to chat",
@@ -898,6 +900,7 @@
     }
   },
   "dockMenu": {
+    "userCenter": "مركز المستخدم",
     "openSidebar": "فتح الشريط الجانبي",
     "menu": "القائمة",
     "chat": "الدردشة",

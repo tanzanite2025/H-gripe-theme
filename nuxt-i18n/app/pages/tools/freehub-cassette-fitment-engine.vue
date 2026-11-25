@@ -7,7 +7,10 @@ import { watch } from 'vue'
 import { useHead, useI18n } from '#imports'
 import FreehubCassetteFitmentWholePage from '~/components/FreehubCassetteFitmentWholePage.vue'
 import { usePageMessages } from '~/composables/usePageMessages'
+import { useSiteTitle } from '~/composables/useSiteTitle'
 import { useStorefrontSeoLinks } from '~/composables/seo/useStorefrontSeoLinks'
+import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
+import localeManifest from '~/i18n/locales.manifest'
 
 definePageMeta({
   path: '/tools/freehub-cassette-fitment-engine',
@@ -24,6 +27,7 @@ definePageMeta({
 })
 
 const { locale, t } = useI18n()
+const { siteTitle } = useSiteTitle()
 const { canonicalUrl } = useStorefrontSeoLinks()
 const { loadPageMessages: loadFreehubMessages } = usePageMessages('guidesWheelsetBuyersChooseFreehub')
 const { loadPageMessages: loadWheelsetMessages } = usePageMessages('guidesWheelsetBuyers')
@@ -55,5 +59,26 @@ useHead(() => ({
     { key: 'twitter:title', name: 'twitter:title', content: t('guidesWheelsetBuyersChooseFreehub.seo.title') },
     { key: 'twitter:description', name: 'twitter:description', content: t('guidesWheelsetBuyersChooseFreehub.seo.description') },
   ],
+  script: [{
+    key: 'freehub-cassette-fitment-web-application-schema',
+    id: 'freehub-cassette-fitment-web-application-schema',
+    ...createSeoJsonLdScript({
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      '@id': `${canonicalUrl.value}#freehub-cassette-fitment-engine`,
+      url: canonicalUrl.value,
+      mainEntityOfPage: canonicalUrl.value,
+      name: t('guidesWheelsetBuyersChooseFreehub.seo.title'),
+      description: t('guidesWheelsetBuyersChooseFreehub.seo.description'),
+      inLanguage: localeManifest.find(entry => entry.code === locale.value)?.iso || locale.value,
+      applicationCategory: 'EngineeringApplication',
+      operatingSystem: 'Web',
+      isAccessibleForFree: true,
+      author: { '@type': 'Person', name: 'wangguangen' },
+      ...(siteTitle.value.trim() ? {
+        publisher: { '@type': 'Organization', name: siteTitle.value.trim() },
+      } : {}),
+    }),
+  }],
 }))
 </script>

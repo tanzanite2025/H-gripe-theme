@@ -1,6 +1,13 @@
 import { ref } from 'vue'
 import type { ComputedRef, Ref, WritableComputedRef } from 'vue'
-import { normalizeStoredChatMessage } from '~/composables/chat/useChatStorage'
+import {
+  compareCustomerServiceMessageIDs,
+  reconcileCustomerServiceMessagesByStableServerAndClientIds,
+} from '~/composables/chat/reconcileCustomerServiceMessagesByStableServerAndClientIds'
+import {
+  getCustomerServiceMessageCatchupPageParameters,
+  type CustomerServiceMessageCatchupCursor,
+} from '~/composables/chat/getCustomerServiceMessageCatchupPageParameters'
 import { validateStorefrontUploadFile } from '~/utils/uploadSpecs'
 
 type AuthRequest = <T = any>(path: string, options?: any, errorMessage?: string) => Promise<T>
@@ -15,8 +22,9 @@ interface CustomerServiceChatSyncOptions {
   visitorEmail: Ref<string>
   authRequest: AuthRequest
   saveMessagesToStorage: () => void
-  scrollToBottom: () => void
 }
+
+const customerServiceMessagePageSize = 100
 
 export const useCustomerServiceChatSync = ({
   apiBase,
@@ -27,13 +35,14 @@ export const useCustomerServiceChatSync = ({
   user,
   visitorEmail,
   authRequest,
-  saveMessagesToStorage,
-  scrollToBottom
+  saveMessagesToStorage
 }: CustomerServiceChatSyncOptions) => {
   const realtimeSocket = ref<WebSocket | null>(null)
   const realtimeConversationId = ref('')
   const realtimeCursorConversationId = ref('')
   const agentTyping = ref<{ active: boolean; displayName: string }>({ active: false, displayName: '' })
+  const hasOlderMessages = ref(false)
+  const isLoadingOlderMessages = ref(false)
   let realtimeReconnectTimer: number | null = null
   let realtimeSyncTimer: number | null = null
   let remoteTypingTimer: number | null = null
@@ -41,6 +50,15 @@ export const useCustomerServiceChatSync = ({
   let realtimeReconnectEnabled = false
   let realtimeReconnectAttempt = 0
   let browserRecoveryListenersAttached = false
+  let messageCursorConversationId = ''
+  let oldestServerMessageCursor: CustomerServiceMessageCatchupCursor | null = null
+  let latestServerMessageCursor: CustomerServiceMessageCatchupCursor | null = null
+  let initialMessagePageLoaded = false
+  let initialMessageLoadConversationId = ''
+  let initialMessageLoadPromise: Promise<void> | null = null
+  let newerMessageSyncConversationId = ''
+  let newerMessageSyncPromise: Promise<void> | null = null
+  let newerMessageSyncRequested = false
   const seenRealtimeEventIds = new Set<string>()
 
   const customerServiceTimezoneHeaders = (): Record<string, string> => {
@@ -87,7 +105,24 @@ export const useCustomerServiceChatSync = ({
     realtimeCursorConversationId.value = ''
     realtimeLastEventId = ''
     seenRealtimeEventIds.clear()
+    resetCustomerServiceMessageCursors('')
     conversationId.value = ''
+  }
+
+  const resetCustomerServiceMessageCursors = (currentConversationId: string) => {
+    messageCursorConversationId = currentConversationId
+    oldestServerMessageCursor = null
+    latestServerMessageCursor = null
+    hasOlderMessages.value = false
+    isLoadingOlderMessages.value = false
+    initialMessagePageLoaded = false
+    newerMessageSyncRequested = false
+  }
+
+  const ensureCustomerServiceMessageCursorConversation = (currentConversationId: string) => {
+    if (messageCursorConversationId !== currentConversationId) {
+      resetCustomerServiceMessageCursors(currentConversationId)
+    }
   }
 
   const postCustomerServiceMessage = async (currentConversationId: string, messageData: any) => {
@@ -102,6 +137,7 @@ export const useCustomerServiceChatSync = ({
         },
         body: JSON.stringify({
           conversation_id: currentConversationId,
+          client_message_id: messageData.client_message_id || '',
           message: messageData.message,
           sender_type: user.value ? 'user' : 'visitor',
           sender_name: user.value?.display_name || '访客',
@@ -138,7 +174,7 @@ export const useCustomerServiceChatSync = ({
     if (!message || typeof message !== 'object') return null
     const normalized = {
       ...message,
-      id: message.id,
+      id: message.cursor_id || message.id,
       conversation_id: message.conversation_id || conversationId.value,
       sender_id: message.sender_id || 0,
       sender_name: message.sender_name || (message.is_agent ? 'Agent' : (user.value?.display_name || '访客')),
@@ -199,55 +235,62 @@ export const useCustomerServiceChatSync = ({
   }
 
   const mergePersistedMessages = (serverMessages: any[]) => {
-    const localById = new Map(messages.value.map((message) => [String(message.id), message]))
-    const persisted = serverMessages
-      .map((message) => {
-        const normalized = normalizeServerMessage(message)
-        if (!normalized) return null
-
-        const local = localById.get(String(normalized.id))
-        if (!local) return normalized
-
-        return {
-          ...normalized,
-          metadata: normalized.metadata || local.metadata || null,
-          message_type: normalized.message_type || local.message_type || 'text',
-          attachment_url: normalized.attachment_url || local.attachment_url || '',
-          attachments: normalized.attachments?.length ? normalized.attachments : (local.attachments || []),
-          source: normalized.source || local.source || '',
-          type: local.type || normalized.type,
-          title: local.title || normalized.title,
-          url: local.url || normalized.url,
-          thumbnail: local.thumbnail || normalized.thumbnail
-        }
-      })
-      .filter(Boolean)
-
-    const now = Date.now()
-    const localOnly = messages.value
-      .map((message) => normalizeStoredChatMessage(message, now))
-      .filter((message) => message && ['sending', 'failed'].includes(message.sync_state))
-    const merged = [...persisted, ...localOnly]
-    const uniqueById = new Map<string, any>()
-    merged.forEach((message) => {
-      uniqueById.set(String(message.id), message)
-    })
-
-    messages.value = Array.from(uniqueById.values()).sort((left, right) => {
-      return new Date(left.created_at || 0).getTime() - new Date(right.created_at || 0).getTime()
-    })
+    messages.value = reconcileCustomerServiceMessagesByStableServerAndClientIds(
+      messages.value,
+      serverMessages,
+      normalizeServerMessage,
+    )
     saveMessagesToStorage()
+  }
+
+  const cursorFromCustomerServiceMessage = (message: any): CustomerServiceMessageCatchupCursor | null => {
+    const id = message?.cursor_id ?? message?.id
+    if (!message || id == null || !message.created_at) return null
+    const createdAt = new Date(message.created_at)
+    if (!Number.isFinite(createdAt.getTime())) return null
+    return { created_at: createdAt.toISOString(), id }
+  }
+
+  const compareCustomerServiceMessageCursors = (
+    left: CustomerServiceMessageCatchupCursor,
+    right: CustomerServiceMessageCatchupCursor,
+  ) => {
+    const timeDifference = Date.parse(left.created_at) - Date.parse(right.created_at)
+    if (timeDifference !== 0) return timeDifference
+    return compareCustomerServiceMessageIDs(left.id, right.id)
+  }
+
+  const updateCustomerServiceMessageCursors = (serverMessages: any[]) => {
+    const cursors = serverMessages
+      .map(cursorFromCustomerServiceMessage)
+      .filter((cursor): cursor is CustomerServiceMessageCatchupCursor => cursor !== null)
+      .sort(compareCustomerServiceMessageCursors)
+    if (!cursors.length) return
+    const first = cursors[0] as CustomerServiceMessageCatchupCursor
+    const last = cursors[cursors.length - 1] as CustomerServiceMessageCatchupCursor
+    if (!first || !last) return
+    if (!oldestServerMessageCursor || compareCustomerServiceMessageCursors(first, oldestServerMessageCursor) < 0) {
+      oldestServerMessageCursor = first
+    }
+    if (!latestServerMessageCursor || compareCustomerServiceMessageCursors(last, latestServerMessageCursor) > 0) {
+      latestServerMessageCursor = last
+    }
+  }
+
+  const updateCustomerServiceMessageCursorsFromLoadedHistory = () => {
+    updateCustomerServiceMessageCursors(messages.value.filter((message) => message?.sync_state === 'persisted'))
   }
 
   const replaceLocalMessageWithServerMessage = (localId: number | string, payload: any) => {
     const persisted = normalizeServerMessage(payload?.data || payload?.message || payload)
     if (!persisted) return
+    updateCustomerServiceMessageCursors([persisted])
 
     const index = messages.value.findIndex((message) => String(message.id) === String(localId))
     if (index < 0) return
 
     const local = messages.value[index]
-    messages.value[index] = {
+    const mergedMessage = {
       ...persisted,
       metadata: persisted.metadata || local.metadata || null,
       message_type: persisted.message_type || local.message_type || 'text',
@@ -259,7 +302,8 @@ export const useCustomerServiceChatSync = ({
       url: local.url || persisted.url,
       thumbnail: local.thumbnail || persisted.thumbnail
     }
-    saveMessagesToStorage()
+    messages.value.splice(index, 1)
+    mergePersistedMessages([mergedMessage])
   }
 
   const markLocalMessageFailed = (localId: number | string) => {
@@ -294,25 +338,133 @@ export const useCustomerServiceChatSync = ({
     return id
   }
 
-  const loadMessagesFromAPI = async () => {
-    if (!conversationId.value) return
-    try {
-      const response = await authRequest<any>(`/customer-service/messages/${encodeURIComponent(conversationId.value)}`, {
-        credentials: 'include',
-        headers: customerServiceTimezoneHeaders(),
-        params: {
-          limit: 100,
-          offset: 0
+  const requestCustomerServiceMessagePage = (currentConversationId: string, params: Record<string, string | number>) => {
+    return authRequest<any>(`/customer-service/messages/${encodeURIComponent(currentConversationId)}`, {
+      credentials: 'include',
+      headers: customerServiceTimezoneHeaders(),
+      params
+    }, 'Failed to sync customer-service messages')
+  }
+
+  const loadMessagesFromAPI = (): Promise<void> => {
+    const currentConversationId = conversationId.value
+    if (!currentConversationId) return Promise.resolve()
+    ensureCustomerServiceMessageCursorConversation(currentConversationId)
+    if (initialMessagePageLoaded) return Promise.resolve()
+    if (initialMessageLoadPromise && initialMessageLoadConversationId === currentConversationId) {
+      return initialMessageLoadPromise
+    }
+
+    initialMessageLoadConversationId = currentConversationId
+    const request = (async () => {
+      try {
+        const response = await requestCustomerServiceMessagePage(currentConversationId, {
+          limit: customerServiceMessagePageSize,
+          latest: 'true'
+        })
+        if (conversationId.value !== currentConversationId) return
+
+        const serverMessages = extractMessageItems(response)
+        mergePersistedMessages(serverMessages)
+        updateCustomerServiceMessageCursorsFromLoadedHistory()
+        hasOlderMessages.value = Boolean(response?.has_older ?? response?.has_more)
+        initialMessagePageLoaded = true
+      } catch (error) {
+        if (conversationId.value === currentConversationId && isAccessDeniedError(error)) {
+          clearCustomerServiceConversationState()
+          return
         }
-      }, 'Failed to sync customer-service messages')
-      mergePersistedMessages(extractMessageItems(response))
-      scrollToBottom()
+        console.warn('同步客服消息失败:', error)
+      }
+    })()
+    initialMessageLoadPromise = request
+    void request.finally(() => {
+      if (initialMessageLoadPromise === request) {
+        initialMessageLoadPromise = null
+        initialMessageLoadConversationId = ''
+      }
+    })
+    return request
+  }
+
+  const loadOlderMessagesFromAPI = async () => {
+    const currentConversationId = conversationId.value
+    const before = oldestServerMessageCursor
+    if (!currentConversationId || !before || !hasOlderMessages.value || isLoadingOlderMessages.value) return
+
+    isLoadingOlderMessages.value = true
+    try {
+      const response = await requestCustomerServiceMessagePage(currentConversationId, {
+        limit: customerServiceMessagePageSize,
+        before_created_at: before.created_at,
+        before_id: before.id
+      })
+      if (conversationId.value !== currentConversationId) return
+
+      const serverMessages = extractMessageItems(response)
+      mergePersistedMessages(serverMessages)
+      updateCustomerServiceMessageCursorsFromLoadedHistory()
+      hasOlderMessages.value = Boolean(response?.has_older ?? response?.has_more)
     } catch (error) {
-      if (isAccessDeniedError(error)) {
+      if (conversationId.value === currentConversationId && isAccessDeniedError(error)) {
         clearCustomerServiceConversationState()
         return
       }
-      console.warn('同步客服消息失败:', error)
+      console.warn('加载更早的客服消息失败:', error)
+    } finally {
+      isLoadingOlderMessages.value = false
+    }
+  }
+
+  const syncNewerMessagesFromAPI = async () => {
+    const currentConversationId = conversationId.value
+    if (!currentConversationId) return
+    await loadMessagesFromAPI()
+    if (conversationId.value !== currentConversationId || !initialMessagePageLoaded) return
+    if (newerMessageSyncPromise && newerMessageSyncConversationId === currentConversationId) {
+      newerMessageSyncRequested = true
+      return newerMessageSyncPromise
+    }
+
+    newerMessageSyncConversationId = currentConversationId
+    const request = (async () => {
+      try {
+        do {
+          newerMessageSyncRequested = false
+          while (conversationId.value === currentConversationId) {
+            const after = latestServerMessageCursor
+            const response = await requestCustomerServiceMessagePage(
+              currentConversationId,
+              getCustomerServiceMessageCatchupPageParameters(customerServiceMessagePageSize, after),
+            )
+            if (conversationId.value !== currentConversationId) return
+
+            const serverMessages = extractMessageItems(response)
+            if (serverMessages.length) {
+              mergePersistedMessages(serverMessages)
+              updateCustomerServiceMessageCursorsFromLoadedHistory()
+            }
+
+            const hasMoreNewerMessages = Boolean(response?.has_newer ?? (after ? response?.has_more : false))
+            if (!hasMoreNewerMessages || !serverMessages.length) break
+          }
+        } while (newerMessageSyncRequested && conversationId.value === currentConversationId)
+      } catch (error) {
+        if (conversationId.value === currentConversationId && isAccessDeniedError(error)) {
+          clearCustomerServiceConversationState()
+          return
+        }
+        console.warn('补齐最新客服消息失败:', error)
+      }
+    })()
+    newerMessageSyncPromise = request
+    try {
+      await request
+    } finally {
+      if (newerMessageSyncPromise === request) {
+        newerMessageSyncPromise = null
+        newerMessageSyncConversationId = ''
+      }
     }
   }
 
@@ -418,7 +570,7 @@ export const useCustomerServiceChatSync = ({
 
   const recoverCustomerServiceRealtime = () => {
     if (!realtimeReconnectEnabled || !conversationId.value) return
-    void loadMessagesFromAPI()
+    void syncNewerMessagesFromAPI()
     connectCustomerServiceRealtime()
   }
 
@@ -479,7 +631,7 @@ export const useCustomerServiceChatSync = ({
 
     realtimeSyncTimer = window.setTimeout(async () => {
       realtimeSyncTimer = null
-      await loadMessagesFromAPI()
+      await syncNewerMessagesFromAPI()
     }, 300)
   }
 
@@ -584,7 +736,7 @@ export const useCustomerServiceChatSync = ({
     socket.onopen = () => {
       if (realtimeSocket.value !== socket || realtimeConversationId.value !== currentConversationId) return
       realtimeReconnectAttempt = 0
-      void loadMessagesFromAPI()
+      void syncNewerMessagesFromAPI()
     }
 
     socket.onmessage = (event: MessageEvent) => {
@@ -605,6 +757,7 @@ export const useCustomerServiceChatSync = ({
     currentSenderEmail,
     ensureCustomerServiceConversation,
     loadMessagesFromAPI,
+    loadOlderMessagesFromAPI,
     sendMessageToAPI,
     uploadCustomerServiceAttachment,
     sendTypingIndicator,
@@ -613,6 +766,8 @@ export const useCustomerServiceChatSync = ({
     connectCustomerServiceRealtime,
     closeCustomerServiceRealtime,
     agentTyping,
+    hasOlderMessages,
+    isLoadingOlderMessages,
     clearAgentTyping
   }
 }

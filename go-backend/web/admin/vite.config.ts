@@ -59,6 +59,9 @@ export default defineConfig({
       '@': resolve(projectRoot, 'src')
     }
   },
+  optimizeDeps: {
+    entries: ['index.html']
+  },
   server: {
     host: '127.0.0.1',
     port: adminPort,

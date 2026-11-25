@@ -56,10 +56,10 @@ go build ./cmd/adminctl
 
 ## Schwalbe Catalog Migrations 357-370 Preflight
 
-Migration 357 may remove only an empty legacy catalog; migration 358 recreates the standalone candidate catalog for the all-spectrum selector and template autofill; migration 359 seeds the official Schwalbe sitemap snapshot; migration 360 adds the database uniqueness boundary for Article No. on sales products; migration 361 creates the route-bound, backend-editable FAQ page for the Schwalbe selector and seeds the English/Chinese bead-label explanations. Migration 362 retires the old Schwalbe tire-width/inner-rim-width guidance table, migration 369 adds reviewed Hookless facts, and migration 370 removes any stale table left by the superseded 362 migration. The selector has no broad tire-width compatibility endpoint. Inspect each environment before applying 357. First check whether the table exists:
+These are historical bootstrap migrations for the still-active Schwalbe candidate catalog and selector. Migration 357 may remove only an empty legacy catalog; migration 358 recreates the standalone candidate catalog for the all-spectrum selector and optional field import in the dedicated bicycle-tire product form. It does not create or populate a product specification template. Migration 359 seeds the official Schwalbe sitemap snapshot; migration 360 adds the former Article No. uniqueness index on template values, which migration 441 retires after the legacy template has no references. Migration 361 creates the route-bound, backend-editable FAQ page for the selector and seeds the English/Chinese bead-label explanations. Migration 362 retires the old tire-width/inner-rim-width guidance table, migration 369 adds reviewed Hookless facts, and migration 370 removes any stale table left by the superseded 362 migration. The selector has no broad tire-width compatibility endpoint. Inspect each environment before applying 357. First check whether the table exists:
 
 ```sql
-SELECT to_regclass('public.schwalbe_tire_specifications') AS legacy_table;
+SELECT to_regclass('public.schwalbe_tire_specifications') AS candidate_catalog_table;
 ```
 
 If it exists, check its row count:
@@ -68,7 +68,7 @@ If it exists, check its row count:
 SELECT count(*) FROM public.schwalbe_tire_specifications;
 ```
 
-Migration 357 stops if the table contains any rows; it does not clear or convert them. If the count is nonzero, stop the deployment and preserve/inspect those catalog rows before deciding how to proceed. Do not map candidate rows to sales Products merely to satisfy the migration. After 357 succeeds, migration 358 recreates the candidate table without review or approval fields. Migration 359 applies the checked-in official snapshot as an upsert seed and must run after 358. Migration 360 fails closed if existing sales Products already contain duplicate Article No. values; resolve those duplicates before retrying and do not delete catalog or product data to bypass the check. Allow the migration runner enough statement and lock timeout for the seed transaction.
+Migration 357 stops if the table contains any rows; it does not clear or convert them. If the count is nonzero, stop the deployment and preserve/inspect those catalog rows before deciding how to proceed. Do not map candidate rows to sales Products merely to satisfy the migration. After 357 succeeds, migration 358 recreates the candidate table without review or approval fields. Migration 359 applies the checked-in official snapshot as an upsert seed and must run after 358. Migration 360 fails closed if existing template-backed sales Products contain duplicate Article No. values; resolve those duplicates before retrying and do not delete catalog or product data to bypass the check. Migration 441 later removes that legacy index and template only after checking for remaining references. Allow the migration runner enough statement and lock timeout for the seed transaction.
 
 In release mode keep `DB_AUTO_MIGRATE=false`, run the migration command before starting or rolling the API, then deploy the API after the migration succeeds. From `go-backend`, run `go run ./cmd/server migrate`; it applies all pending migrations rather than only one numbered migration. After the migration and API rollout, the API startup sync and the Admin FAQ “同步前台路由” action reconcile the current Nuxt route manifest. Purge storefront HTML cache once after the rollout if old cached pages are still serving.
 
@@ -77,7 +77,9 @@ After the migration completes, verify:
 ```sql
 SELECT version, dirty FROM schema_migrations;
 SELECT count(*) FROM public.schwalbe_tire_specifications;
-SELECT indexname FROM pg_indexes WHERE tablename = 'product_spec_values' AND indexname = 'uq_schwalbe_product_article_no';
+SELECT indexname FROM pg_indexes WHERE tablename = 'products' AND indexname = 'uq_bicycle_tire_brand_article_no';
+SELECT to_regclass('public.uq_schwalbe_product_article_no') AS retired_legacy_article_no_index;
+SELECT count(*) FROM public.product_specification_templates WHERE lower(btrim(slug)) = 'schwalbe_tire';
 SELECT page_id, route_path, locale, status FROM faq_pages WHERE page_id = 'guides-schwalbe-tire-selector';
 SELECT locale, count(*) FROM faqs WHERE page_id = 'guides-schwalbe-tire-selector' AND status = 'published' GROUP BY locale;
 SELECT to_regclass('public.schwalbe_tire_hookless_compatibility') AS hookless_compatibility_table;

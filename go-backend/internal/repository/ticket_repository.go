@@ -20,6 +20,18 @@ type TicketRepository struct {
 	businessMediaReferenceResolver PublicBusinessMediaReferenceObjectKeyResolver
 }
 
+type TicketMessageCursor struct {
+	CreatedAt time.Time
+	ID        uint
+}
+
+type TicketMessageCursorPage struct {
+	Messages []ticket.TicketMessage
+	HasMore  bool
+	HasOlder bool
+	HasNewer bool
+}
+
 type CustomerServiceConversationFilters struct {
 	AssignedTo      *uint
 	GroupID         *uint
@@ -443,6 +455,19 @@ func (r *TicketRepository) CreateTicketMessage(m *ticket.TicketMessage) error {
 	})
 }
 
+func (r *TicketRepository) FindCustomerServiceMessageByClientMessageID(ticketID uint, clientMessageID string) (*ticket.TicketMessage, error) {
+	if ticketID == 0 || strings.TrimSpace(clientMessageID) == "" {
+		return nil, gorm.ErrInvalidData
+	}
+
+	var message ticket.TicketMessage
+	err := r.db.Where("ticket_id = ? AND client_message_id = ?", ticketID, clientMessageID).First(&message).Error
+	if err != nil {
+		return nil, err
+	}
+	return &message, nil
+}
+
 func (r *TicketRepository) TouchTicket(id uint, updatedAt time.Time) error {
 	if id == 0 {
 		return gorm.ErrInvalidData
@@ -469,6 +494,73 @@ func (r *TicketRepository) FindMessagesByTicketID(ticketID uint, limit, offset i
 		Offset(offset).
 		Find(&messages).Error
 	return messages, err
+}
+
+func (r *TicketRepository) FindMessagesByTicketIDCursor(ticketID uint, limit int, before, after *TicketMessageCursor) (TicketMessageCursorPage, error) {
+	if limit < 1 || limit > 100 {
+		limit = 50
+	}
+	if before != nil && after != nil {
+		return TicketMessageCursorPage{}, gorm.ErrInvalidData
+	}
+
+	query := r.db.Where("ticket_id = ?", ticketID).Preload("User")
+	page := TicketMessageCursorPage{Messages: make([]ticket.TicketMessage, 0, limit)}
+	switch {
+	case before != nil:
+		query = query.Where("(created_at < ? OR (created_at = ? AND id < ?))", before.CreatedAt, before.CreatedAt, before.ID)
+		query = query.Order("created_at DESC, id DESC")
+	case after != nil:
+		query = query.Where("(created_at > ? OR (created_at = ? AND id > ?))", after.CreatedAt, after.CreatedAt, after.ID)
+		query = query.Order("created_at ASC, id ASC")
+	default:
+		query = query.Order("created_at DESC, id DESC")
+	}
+
+	var messages []ticket.TicketMessage
+	if err := query.Limit(limit + 1).Find(&messages).Error; err != nil {
+		return TicketMessageCursorPage{}, err
+	}
+	if len(messages) > limit {
+		switch {
+		case before != nil:
+			page.HasMore = true
+			page.HasOlder = true
+		case after != nil:
+			page.HasMore = true
+			page.HasNewer = true
+		default:
+			page.HasMore = true
+			page.HasOlder = true
+		}
+		messages = messages[:limit]
+	}
+	if before != nil || (before == nil && after == nil) {
+		for left, right := 0, len(messages)-1; left < right; left, right = left+1, right-1 {
+			messages[left], messages[right] = messages[right], messages[left]
+		}
+	}
+	if len(messages) > 0 && (before != nil || after != nil) {
+		boundary := messages[len(messages)-1]
+		query := r.db.Model(&ticket.TicketMessage{}).Where("ticket_id = ?", ticketID)
+		if before != nil {
+			query = query.Where("(created_at > ? OR (created_at = ? AND id > ?))", boundary.CreatedAt, boundary.CreatedAt, boundary.ID)
+		} else {
+			boundary = messages[0]
+			query = query.Where("(created_at < ? OR (created_at = ? AND id < ?))", boundary.CreatedAt, boundary.CreatedAt, boundary.ID)
+		}
+		var oppositeDirectionCount int64
+		if err := query.Count(&oppositeDirectionCount).Error; err != nil {
+			return TicketMessageCursorPage{}, err
+		}
+		if before != nil {
+			page.HasNewer = oppositeDirectionCount > 0
+		} else {
+			page.HasOlder = oppositeDirectionCount > 0
+		}
+	}
+	page.Messages = messages
+	return page, nil
 }
 
 func (r *TicketRepository) CountMessagesByTicketID(ticketID uint) (int64, error) {

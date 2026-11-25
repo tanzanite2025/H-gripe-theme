@@ -267,12 +267,21 @@ func validateFontPreflightReport(report *FontPreflightReport) error {
 	}
 
 	facesByFamily := make(map[string]FontPreflightFace, len(report.Faces))
+	facesByFilename := make(map[string]struct{}, len(report.Faces))
 	for _, face := range report.Faces {
 		if strings.TrimSpace(face.Family) == "" || strings.TrimSpace(face.Filename) == "" || strings.TrimSpace(face.SourceFace) == "" || face.FontDisplay != "block" || !face.SelfHosted {
 			return errors.New("font preflight manifest contains an invalid built-in font face")
 		}
-		if _, exists := facesByFamily[face.Family]; exists {
+		if _, exists := facesByFilename[face.Filename]; exists {
+			return fmt.Errorf("font preflight manifest contains duplicate font file: %s", face.Filename)
+		}
+		facesByFilename[face.Filename] = struct{}{}
+		// A CSS family can contain multiple disjoint character subsets.
+		if _, exists := facesByFamily[face.Family]; exists && face.Family != "MapleUICJK" {
 			return fmt.Errorf("font preflight manifest contains duplicate font face: %s", face.Family)
+		}
+		if face.Family == "MapleUICJK" && strings.TrimSpace(face.UnicodeRange) == "" {
+			return errors.New("font preflight CJK character shards must declare unicode ranges")
 		}
 		facesByFamily[face.Family] = face
 	}

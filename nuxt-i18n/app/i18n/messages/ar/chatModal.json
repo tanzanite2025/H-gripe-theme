@@ -1,6 +1,8 @@
 {
   "actions": {
     "close": "Close chat",
+    "collapse": "تصغير لوحة الدردشة",
+    "expand": "توسيع لوحة الدردشة",
     "closeHistory": "Close browsing history",
     "backToWelcome": "Back to welcome",
     "switchToChat": "Switch to chat",

@@ -311,6 +311,8 @@
   "chatModal": {
     "actions": {
       "close": "Close chat",
+      "collapse": "Collapse chat panel",
+      "expand": "Expand chat panel",
       "closeHistory": "Close browsing history",
       "backToWelcome": "Back to welcome",
       "switchToChat": "Switch to chat",
@@ -898,6 +900,7 @@
     }
   },
   "dockMenu": {
+    "userCenter": "User center",
     "openSidebar": "Open sidebar",
     "menu": "Menu",
     "chat": "Chat",
@@ -1189,6 +1192,10 @@
     "securityNotice": "All pages use HTTPS with SSL encryption. Payments are processed securely; no card details are stored."
   },
   "header": {
+    "primaryNavigation": {
+      "loading": "Loading menu…",
+      "loadFailed": "The menu could not be loaded. Please try again."
+    },
     "searchHint": {
       "title": "Search products and FAQ",
       "body": "Click to search products, FAQ, and more."

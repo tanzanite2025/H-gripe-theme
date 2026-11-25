@@ -104,9 +104,13 @@ for (const { code, iso } of locales) {
       .map(element => JSON.parse((element.childNodes || []).map(child => child.value || '').join('')))
     const topologySchema = schemas.find(schema => schema['@graph']?.some((node: Record<string, unknown>) => node['@type'] === 'TechArticle'))
     assert.ok(topologySchema, 'Preserve the existing TechArticle schema')
+    const topologyArticle = topologySchema['@graph'].find((node: Record<string, unknown>) => node['@type'] === 'TechArticle')
+    assert.deepEqual(topologyArticle.author, { '@type': 'Person', name: 'wangguangen' })
     const baseline = baselineSnapshots.find(entry => entry.prefix === prefix)
     if (baseline) {
       const expectedSchema = JSON.parse(JSON.stringify(baseline.schema).replaceAll(retiredGuidePath, migratedToolPath))
+      const expectedArticle = expectedSchema['@graph'].find((node: Record<string, unknown>) => node['@type'] === 'TechArticle')
+      expectedArticle.author = { '@type': 'Person', name: 'wangguangen' }
       const snapshot: CompleteTopologyContentSnapshot = {
         prefix,
         text: workbenchElements.filter(element => element.nodeName === '#text').map(element => element.value || '').join(' ').replace(/\s+/g, ' ').trim(),

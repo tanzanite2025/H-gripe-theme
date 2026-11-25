@@ -311,6 +311,8 @@
   "chatModal": {
     "actions": {
       "close": "Close chat",
+      "collapse": "Sohbet panelini daralt",
+      "expand": "Sohbet panelini genişlet",
       "closeHistory": "Close browsing history",
       "backToWelcome": "Back to welcome",
       "switchToChat": "Switch to chat",
@@ -898,6 +900,7 @@
     }
   },
   "dockMenu": {
+    "userCenter": "Kullanıcı merkezi",
     "openSidebar": "Kenar çubuğunu aç",
     "menu": "Menü",
     "chat": "Sohbet",

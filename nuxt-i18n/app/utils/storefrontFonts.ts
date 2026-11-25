@@ -34,6 +34,23 @@ const storefrontAdditionalFontPreloadPathByShard: Partial<Record<LocaleFontFamil
   devanagari: storefrontFontPreloadPathByShard.devanagari,
   thai: storefrontFontPreloadPathByShard.thai,
 }
+const storefrontFirstViewportCjkFontPreloadPathsByLocale: Partial<Record<string, string[]>> = {
+  zh_cn: [
+    '/fonts/MapleUI-CJK-Han-Ideographs-Common-Storefront-Interface-Character-Group-001.b9c988b34e22.woff2',
+    '/fonts/MapleUI-CJK-Han-Ideographs-Common-Storefront-Interface-Character-Group-002.d78176f77521.woff2',
+    '/fonts/MapleUI-CJK-Kana-And-CJK-Punctuation-Common-Storefront-Interface-Character-Group-001.809b9143c728.woff2',
+  ],
+  ja: [
+    '/fonts/MapleUI-CJK-Han-Ideographs-Common-Storefront-Interface-Character-Group-001.b9c988b34e22.woff2',
+    '/fonts/MapleUI-CJK-Kana-And-CJK-Punctuation-Common-Storefront-Interface-Character-Group-001.809b9143c728.woff2',
+  ],
+  ko: [
+    '/fonts/MapleUI-CJK-Korean-Hangul-Common-Storefront-Interface-Character-Group-001.cb1c1a092210.woff2',
+  ],
+  ru: [
+    '/fonts/MapleUI-CJK-Greek-And-Cyrillic-Common-Storefront-Interface-Character-Group-001.c9869ab43163.woff2',
+  ],
+}
 
 export const storefrontFontFamilyByShard: Record<LocaleFontFamily, string> = {
   latin: storefrontLatinFontFamily,
@@ -62,6 +79,20 @@ export const storefrontAdditionalFontPreloadLinkForLocale = (locale: unknown): S
     href,
     crossorigin: 'anonymous',
   }
+}
+
+export const storefrontFirstViewportCjkFontPreloadLinksForLocale = (locale: unknown): StorefrontFontPreloadLink[] => {
+  const localeCode = getStorefrontLocaleEntry(locale)?.code
+  if (!localeCode) return []
+
+  return (storefrontFirstViewportCjkFontPreloadPathsByLocale[localeCode] || []).map((href, index) => ({
+    key: `storefront-font-preload-first-viewport-cjk-${localeCode}-${index + 1}`,
+    rel: 'preload',
+    as: 'font',
+    type: 'font/woff2',
+    href,
+    crossorigin: 'anonymous',
+  }))
 }
 
 export const storefrontFontStylesheetUrl = (origin?: string) => {

@@ -311,6 +311,8 @@
   "chatModal": {
     "actions": {
       "close": "Close chat",
+      "collapse": "चैट पैनल छोटा करें",
+      "expand": "चैट पैनल विस्तृत करें",
       "closeHistory": "Close browsing history",
       "backToWelcome": "Back to welcome",
       "switchToChat": "Switch to chat",
@@ -898,6 +900,7 @@
     }
   },
   "dockMenu": {
+    "userCenter": "उपयोगकर्ता केंद्र",
     "openSidebar": "साइडबार खोलें",
     "menu": "मेनू",
     "chat": "चैट",

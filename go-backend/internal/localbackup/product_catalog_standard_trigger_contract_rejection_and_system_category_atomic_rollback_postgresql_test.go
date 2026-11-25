@@ -11,11 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategoryAtomicRollback(t *testing.T, manager *Manager, stage *sql.DB, snapshot productCatalogModuleSnapshot, packageData []byte) {
+func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndDedicatedSystemCategoryAtomicRollback(t *testing.T, manager *Manager, stage *sql.DB, snapshot productCatalogModuleSnapshot, packageData []byte) {
 	t.Helper()
 	ctx, cfg := context.Background(), manager.Configuration
 	const categoryTrigger = "protect_carbon_rim_system_category_identity_and_tree_position"
 	const productTrigger = "require_carbon_rim_product_type_and_system_category_binding"
+	const tireCategoryTrigger = "protect_bicycle_tire_system_category_identity_and_tree_position"
+	const tireProductTrigger = "require_bicycle_tire_product_type_and_tire_category"
 	originalFunctions, originalTriggers := []string{}, []string{}
 	for _, contract := range productCatalogApprovedStandardTriggerContracts() {
 		var function, trigger string
@@ -26,11 +28,18 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 	for _, scenario := range []struct{ name, setupSQL string }{
 		{"missing_category_trigger", `DROP TRIGGER ` + categoryTrigger + ` ON product_categories`},
 		{"missing_product_trigger", `DROP TRIGGER ` + productTrigger + ` ON products`},
+		{"missing_tire_category_trigger", `DROP TRIGGER ` + tireCategoryTrigger + ` ON product_categories`},
+		{"missing_tire_product_trigger", `DROP TRIGGER ` + tireProductTrigger + ` ON products`},
 		{"disabled_category_trigger", `ALTER TABLE product_categories DISABLE TRIGGER ` + categoryTrigger},
 		{"disabled_product_trigger", `ALTER TABLE products DISABLE TRIGGER ` + productTrigger},
+		{"disabled_tire_category_trigger", `ALTER TABLE product_categories DISABLE TRIGGER ` + tireCategoryTrigger},
+		{"disabled_tire_product_trigger", `ALTER TABLE products DISABLE TRIGGER ` + tireProductTrigger},
 		{"always_category_trigger", `ALTER TABLE product_categories ENABLE ALWAYS TRIGGER ` + categoryTrigger},
 		{"replica_product_trigger", `ALTER TABLE products ENABLE REPLICA TRIGGER ` + productTrigger},
+		{"always_tire_category_trigger", `ALTER TABLE product_categories ENABLE ALWAYS TRIGGER ` + tireCategoryTrigger},
+		{"replica_tire_product_trigger", `ALTER TABLE products ENABLE REPLICA TRIGGER ` + tireProductTrigger},
 		{"same_name_changed_function_body", `CREATE OR REPLACE FUNCTION ` + productTrigger + `() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('products_id_seq'); RETURN NEW; END $$`},
+		{"same_name_changed_tire_function_body", `CREATE OR REPLACE FUNCTION ` + tireProductTrigger + `() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('products_id_seq'); RETURN NEW; END $$`},
 		{"security_definer_function", `ALTER FUNCTION ` + productTrigger + `() SECURITY DEFINER`},
 		{"function_local_configuration", `ALTER FUNCTION ` + categoryTrigger + `() SET search_path=public`},
 		{"stable_function", `ALTER FUNCTION ` + productTrigger + `() STABLE`},
@@ -80,26 +89,34 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 		})
 	}
 
-	var rootID, carbonID, originalProductID int64
+	var rootID, carbonID, tireID, originalProductID int64
 	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM product_categories WHERE slug='wheel-components'`).Scan(&rootID))
 	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM product_categories WHERE slug='carbon-rim'`).Scan(&carbonID))
+	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM product_categories WHERE slug='tire'`).Scan(&tireID))
 	require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT id FROM products WHERE slug='product-backup-original' AND locale='en'`).Scan(&originalProductID))
 	for _, scenario := range []struct {
 		name, table, slug, mutationJSON, currentSQL, cleanupSQL, expectedError string
 	}{
 		{name: "disabled_root", table: "product_categories", slug: "wheel-components", mutationJSON: `{"is_enabled":false}`, expectedError: "enabled wheel-components"},
 		{name: "disabled_carbon_category", table: "product_categories", slug: "carbon-rim", mutationJSON: `{"is_enabled":false}`, expectedError: "enabled wheel-components"},
+		{name: "disabled_tire_category", table: "product_categories", slug: "tire", mutationJSON: `{"is_enabled":false}`, expectedError: "enabled wheel-components"},
 		{name: "wrong_root_depth", table: "product_categories", slug: "wheel-components", mutationJSON: `{"depth":2}`, expectedError: "enabled wheel-components"},
 		{name: "wrong_root_parent", table: "product_categories", slug: "wheel-components", mutationJSON: fmt.Sprintf(`{"parent_id":%d}`, carbonID), expectedError: "enabled wheel-components"},
 		{name: "wrong_carbon_depth", table: "product_categories", slug: "carbon-rim", mutationJSON: `{"depth":3}`, expectedError: "enabled wheel-components"},
 		{name: "wrong_carbon_parent", table: "product_categories", slug: "carbon-rim", mutationJSON: `{"parent_id":null}`, expectedError: "enabled wheel-components"},
+		{name: "wrong_tire_depth", table: "product_categories", slug: "tire", mutationJSON: `{"depth":3}`, expectedError: "enabled wheel-components"},
+		{name: "wrong_tire_parent", table: "product_categories", slug: "tire", mutationJSON: `{"parent_id":null}`, expectedError: "enabled wheel-components"},
 		{name: "renamed_root_slug", table: "product_categories", slug: "wheel-components", mutationJSON: `{"slug":"renamed-system-root"}`, expectedError: "enabled wheel-components"},
 		{name: "renamed_carbon_slug", table: "product_categories", slug: "carbon-rim", mutationJSON: `{"slug":"renamed-system-carbon"}`, expectedError: "enabled wheel-components"},
+		{name: "renamed_tire_slug", table: "product_categories", slug: "tire", mutationJSON: `{"slug":"renamed-system-tire"}`, expectedError: "enabled wheel-components"},
 		{name: "existing_normal_cannot_become_carbon", table: "products", slug: "product-backup-original", mutationJSON: fmt.Sprintf(`{"product_type":"carbon_rim","product_category_id":%d}`, carbonID), expectedError: "cannot change an existing dedicated"},
+		{name: "existing_normal_cannot_become_tire", table: "products", slug: "product-backup-original", mutationJSON: fmt.Sprintf(`{"product_type":"bicycle_tire","product_category_id":%d,"carbon_rim_specification":null,"bicycle_tire_specification":{"schema_version":1}}`, tireID), expectedError: "cannot change an existing dedicated"},
 		{name: "existing_carbon_cannot_become_normal", currentSQL: fmt.Sprintf(`BEGIN; SET LOCAL session_replication_role=replica; UPDATE products SET product_type='carbon_rim',carbon_rim_specification='{"schema_version":1}',product_category_id=%d WHERE id=%d; COMMIT`, carbonID, originalProductID), cleanupSQL: fmt.Sprintf(`BEGIN; SET LOCAL session_replication_role=replica; UPDATE products SET product_type='',carbon_rim_specification=NULL,product_category_id=NULL WHERE id=%d; COMMIT`, originalProductID), expectedError: "cannot change an existing dedicated"},
+		{name: "existing_tire_cannot_become_normal", currentSQL: fmt.Sprintf(`BEGIN; SET LOCAL session_replication_role=replica; UPDATE products SET product_type='bicycle_tire',carbon_rim_specification=NULL,bicycle_tire_specification='{"schema_version":1}',product_category_id=%d WHERE id=%d; COMMIT`, tireID, originalProductID), cleanupSQL: fmt.Sprintf(`BEGIN; SET LOCAL session_replication_role=replica; UPDATE products SET product_type='',bicycle_tire_specification=NULL,product_category_id=NULL WHERE id=%d; COMMIT`, originalProductID), expectedError: "cannot change an existing dedicated"},
 		{name: "retained_product_wrong_binding", currentSQL: fmt.Sprintf(`BEGIN; SET LOCAL session_replication_role=replica; UPDATE products SET product_category_id=%d WHERE slug='target-only-product'; COMMIT`, carbonID), cleanupSQL: `BEGIN; SET LOCAL session_replication_role=replica; UPDATE products SET product_category_id=NULL WHERE slug='target-only-product'; COMMIT`, expectedError: "system category bindings"},
 		{name: "retained_carbon_without_category", currentSQL: `BEGIN; SET LOCAL session_replication_role=replica; UPDATE products SET product_type='carbon_rim',carbon_rim_specification='{"schema_version":1}' WHERE slug='target-only-product'; COMMIT`, cleanupSQL: `BEGIN; SET LOCAL session_replication_role=replica; UPDATE products SET product_type='',carbon_rim_specification=NULL WHERE slug='target-only-product'; COMMIT`, expectedError: "system category bindings"},
 		{name: "preexisting_invalid_system_tree", currentSQL: `BEGIN; SET LOCAL session_replication_role=replica; UPDATE product_categories SET is_enabled=false WHERE slug='carbon-rim'; COMMIT`, cleanupSQL: `BEGIN; SET LOCAL session_replication_role=replica; UPDATE product_categories SET is_enabled=true WHERE slug='carbon-rim'; COMMIT`, expectedError: "enabled wheel-components"},
+		{name: "preexisting_invalid_tire_system_tree", currentSQL: `BEGIN; SET LOCAL session_replication_role=replica; UPDATE product_categories SET is_enabled=false WHERE slug='tire'; COMMIT`, cleanupSQL: `BEGIN; SET LOCAL session_replication_role=replica; UPDATE product_categories SET is_enabled=true WHERE slug='tire'; COMMIT`, expectedError: "enabled wheel-components"},
 	} {
 		t.Run("product_system_category_"+scenario.name, func(t *testing.T) {
 			if scenario.cleanupSQL != "" {
@@ -124,11 +141,12 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 		})
 	}
 
-	for _, systemSlug := range []string{"wheel-components", "carbon-rim"} {
+	for _, systemSlug := range []string{"wheel-components", "carbon-rim", "tire"} {
 		t.Run("product_system_category_cannot_reassign_"+systemSlug, func(t *testing.T) {
 			changed := copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, snapshot, "product_categories", systemSlug, `{"slug":"synthetic-retired-system-identity"}`)
 			if systemSlug == "wheel-components" {
 				changed = copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, changed, "product_categories", "carbon-rim", `{"parent_id":900004}`)
+				changed = copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, changed, "product_categories", "tire", `{"parent_id":900005}`)
 			}
 			var replacement string
 			require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT (to_jsonb(c)||'{"id":900004}'::jsonb)::text FROM product_categories c WHERE slug=$1`, systemSlug).Scan(&replacement))
@@ -170,6 +188,40 @@ func verifyProductCatalogStandardTriggerContractsBeforeAnyWriteAndSystemCategory
 				var restoredType string
 				require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT product_type FROM products WHERE id=900003 AND product_category_id=$1`, carbonID).Scan(&restoredType))
 				require.Equal(t, "carbon_rim", restoredType)
+			} else {
+				require.ErrorContains(t, err, "system category bindings")
+				_, after, _, err := captureDatabaseInventory(ctx, stage)
+				require.NoError(t, err)
+				require.Equal(t, before, after)
+			}
+		})
+	}
+
+	for _, validBinding := range []bool{false, true} {
+		t.Run(fmt.Sprintf("product_system_category_new_tire_valid_binding_%t", validBinding), func(t *testing.T) {
+			changed := copyProductCatalogSnapshotWithMatchingRowJSONFieldsChanged(t, snapshot, "", "", "")
+			var rawRow string
+			require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT (to_jsonb(p)||jsonb_build_object('id',900005,'slug','synthetic-new-tire-product','parent_id',NULL,'product_type','bicycle_tire','carbon_rim_specification',NULL,'bicycle_tire_specification','{"schema_version":1}'::jsonb,'product_specification_template_id',NULL,'product_category_id',$1::bigint,'merchant_product_identifier','SYNTHETIC-TIRE-MERCHANT','manufacturer_product_identifier','SYNTHETIC-TIRE-MANUFACTURER','standard_product_identifier',''))::text FROM products p WHERE id=$2`, tireID, originalProductID).Scan(&rawRow))
+			row := json.RawMessage(rawRow)
+			if !validBinding {
+				row = copyProductCatalogRowWithJSONFieldsChanged(t, row, fmt.Sprintf(`{"product_category_id":%d}`, rootID))
+			}
+			table := changed.Tables["products"]
+			table.Rows = append(table.Rows, row)
+			changed.Tables["products"] = table
+			t.Cleanup(func() {
+				_, err := stage.ExecContext(context.Background(), `DELETE FROM products WHERE id=900005`)
+				require.NoError(t, err)
+			})
+			_, before, _, err := captureDatabaseInventory(ctx, stage)
+			require.NoError(t, err)
+			_, _, result, err := cfg.applyProductCatalogRowsOnlyToIsolatedDatabase(ctx, stage, changed)
+			if validBinding {
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				var restoredType string
+				require.NoError(t, stage.QueryRowContext(context.Background(), `SELECT product_type FROM products WHERE id=900005 AND product_category_id=$1`, tireID).Scan(&restoredType))
+				require.Equal(t, "bicycle_tire", restoredType)
 			} else {
 				require.ErrorContains(t, err, "system category bindings")
 				_, after, _, err := captureDatabaseInventory(ctx, stage)

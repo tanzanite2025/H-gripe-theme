@@ -71,8 +71,8 @@
         <AdminFormField label="制造商产品识别码（NSPID）" for-id="product-manufacturer-identifier" required description="填写制造商提供的真实产品编码，最多 70 个字符" :error="errors.manufacturer_product_identifier">
           <Input id="product-manufacturer-identifier" v-model="form.manufacturer_product_identifier" aria-required="true" :aria-invalid="Boolean(errors.manufacturer_product_identifier)" placeholder="填写制造商产品识别码" @input="emit('clear-error', 'manufacturer_product_identifier')" />
         </AdminFormField>
-        <AdminFormField label="国际标准商品编码（SPID）" for-id="product-standard-identifier" description="有则填写，没有可留空，最多 70 个字符" :error="errors.standard_product_identifier">
-          <Input id="product-standard-identifier" v-model="form.standard_product_identifier" :aria-invalid="Boolean(errors.standard_product_identifier)" placeholder="选填：国际标准商品编码" @input="emit('clear-error', 'standard_product_identifier')" />
+        <AdminFormField :label="standardIdentifierLabel" for-id="product-standard-identifier" :description="standardIdentifierDescription" :error="errors.standard_product_identifier">
+          <Input id="product-standard-identifier" v-model="form.standard_product_identifier" :aria-invalid="Boolean(errors.standard_product_identifier)" :placeholder="standardIdentifierPlaceholder" @input="emit('clear-error', 'standard_product_identifier')" />
         </AdminFormField>
       </div>
     </div>
@@ -118,11 +118,17 @@ const props = withDefaults(defineProps<{
   customsClassifications?: CustomsClassificationRecord[]
   description?: string
   customsDescriptionPlaceholder?: string
+  standardIdentifierLabel?: string
+  standardIdentifierDescription?: string
+  standardIdentifierPlaceholder?: string
 }>(), {
   errors: () => ({}),
   customsClassifications: () => [],
   description: '维护商品的基础清关属性；申报价值不在产品上固定，后续按订单确认。',
   customsDescriptionPlaceholder: '例如 Bicycle frame',
+  standardIdentifierLabel: '国际标准商品编码（SPID）',
+  standardIdentifierDescription: '有则填写，没有可留空，最多 70 个字符',
+  standardIdentifierPlaceholder: '选填：国际标准商品编码',
 })
 
 const emit = defineEmits<{

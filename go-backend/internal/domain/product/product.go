@@ -40,6 +40,8 @@ type Product struct {
 	ProductType                    string                  `gorm:"size:40;not null;default:''" json:"product_type,omitempty"`
 	CarbonRimSpecification         *CarbonRimSpecification `gorm:"serializer:json;type:jsonb" json:"carbon_rim_specification,omitempty"`
 	CarbonRimSpecificationDirty    bool                    `gorm:"-" json:"-"`
+	BicycleTireSpecification       *BicycleTireSpecification `gorm:"serializer:json;type:jsonb" json:"bicycle_tire_specification,omitempty"`
+	BicycleTireSpecificationDirty  bool                    `gorm:"-" json:"-"`
 	ID                             uint                    `gorm:"primarykey" json:"id"`
 	ProductSpecificationTemplateID *uint                   `gorm:"index" json:"product_specification_template_id"`
 	ProductCategoryID              *uint                   `gorm:"index" json:"product_category_id"`

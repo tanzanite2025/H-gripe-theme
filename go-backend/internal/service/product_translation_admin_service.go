@@ -80,6 +80,14 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 			return nil, nil, fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
 		}
 	}
+	if source.ProductType == product.ProductTypeBicycleTire {
+		if err := s.validateBicycleTireProductTypeAndSystemCategoryBinding(source.ProductType, source.ProductCategoryID); err != nil {
+			return nil, nil, err
+		}
+		if err := product.ValidateBicycleTireSpecification(source.BicycleTireSpecification); err != nil {
+			return nil, nil, fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
+		}
+	}
 
 	locale, err := requireSupportedLocale(targetLocale)
 	if err != nil {
@@ -125,6 +133,7 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 
 		ProductType:                    source.ProductType,
 		CarbonRimSpecification:         source.CarbonRimSpecification,
+		BicycleTireSpecification:       source.BicycleTireSpecification,
 		ProductSpecificationTemplateID: source.ProductSpecificationTemplateID,
 		ProductCategoryID:              source.ProductCategoryID,
 		BrandID:                        source.BrandID,

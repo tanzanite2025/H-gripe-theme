@@ -13,6 +13,7 @@ interface StainlessSteelSpokeTechnicalArticleAndElongationCalculatorStructuredDa
   calculatorDescription: string
   calculatorSoftwareVersion?: string
   inLanguage: string
+  authorName: string
   publisherName: string
   articleSections: readonly string[]
   topics: readonly string[]
@@ -64,6 +65,7 @@ export function createStainlessSteelSpokeTechnicalArticleAndElongationCalculator
         articleSection: [...options.articleSections],
         about: options.topics.map(name => ({ '@type': 'Thing', name })),
         isAccessibleForFree: true,
+        author: { '@type': 'Person', name: options.authorName.trim() },
         ...(options.publisherName.trim() ? {
           publisher: { '@type': 'Organization', name: options.publisherName.trim() },
         } : {}),

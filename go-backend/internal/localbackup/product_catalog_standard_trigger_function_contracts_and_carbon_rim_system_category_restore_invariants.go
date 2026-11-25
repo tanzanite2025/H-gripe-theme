@@ -11,10 +11,11 @@ import (
 	"github.com/lib/pq"
 )
 
-const productCatalogStandardWriteGuardVersion = 1
+// Version 2 adds the bicycle-tire category and product-type trigger contracts.
+const productCatalogStandardWriteGuardVersion = 2
 
-// These exact bodies come from migration 432. Only surrounding whitespace and
-// CRLF line endings are normalized; names alone never approve a function body.
+// These exact bodies come from migrations 432, 439 and 440. Only surrounding
+// whitespace and CRLF line endings are normalized; names alone never approve a function body.
 const productCatalogSystemCategoryIdentityAndTreeProtectionFunctionBody = `BEGIN
     IF TG_OP <> 'INSERT' AND OLD.slug IN ('wheel-components', 'carbon-rim') THEN
         IF TG_OP = 'DELETE' THEN
@@ -58,6 +59,58 @@ BEGIN
     RETURN NEW;
 END`
 
+const productCatalogBicycleTireSystemCategoryIdentityAndTreeProtectionFunctionBody = `BEGIN
+    IF TG_OP <> 'INSERT' AND OLD.slug = 'tire' THEN
+        IF TG_OP = 'DELETE' THEN
+            RAISE EXCEPTION 'The tire system category cannot be deleted' USING ERRCODE = '23514';
+        END IF;
+        IF NEW.id IS DISTINCT FROM OLD.id OR NEW.slug IS DISTINCT FROM OLD.slug THEN
+            RAISE EXCEPTION 'The tire system category identity cannot be changed' USING ERRCODE = '23514';
+        END IF;
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+
+    IF NEW.slug = 'tire' AND (
+        NEW.depth <> 2 OR NOT NEW.is_enabled OR NOT EXISTS (
+            SELECT 1 FROM product_categories parent
+            WHERE parent.id = NEW.parent_id
+              AND parent.slug = 'wheel-components'
+              AND parent.parent_id IS NULL
+              AND parent.depth = 1
+              AND parent.is_enabled
+        )
+    ) THEN
+        RAISE EXCEPTION 'tire must remain enabled directly under wheel-components' USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END`
+
+const productCatalogBicycleTireProductTypeAndCategoryBindingFunctionBody = `DECLARE
+    category_slug TEXT;
+BEGIN
+    IF TG_OP = 'UPDATE'
+       AND NEW.product_type IS DISTINCT FROM OLD.product_type
+       AND (NEW.product_type = 'bicycle_tire' OR OLD.product_type = 'bicycle_tire') THEN
+        RAISE EXCEPTION 'Dedicated bicycle_tire product type is immutable' USING ERRCODE = '23514';
+    END IF;
+
+    IF NEW.product_type = 'bicycle_tire' THEN
+        SELECT slug INTO category_slug
+        FROM product_categories
+        WHERE id = NEW.product_category_id;
+
+        IF category_slug IS DISTINCT FROM 'tire' THEN
+            RAISE EXCEPTION 'bicycle_tire products must belong to the tire category' USING ERRCODE = '23514';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END`
+
 type productCatalogApprovedStandardTriggerContract struct {
 	Table, Name, UpdatedColumns, FunctionBody string
 	TriggerType                               int
@@ -67,6 +120,8 @@ func productCatalogApprovedStandardTriggerContracts() []productCatalogApprovedSt
 	return []productCatalogApprovedStandardTriggerContract{
 		{"product_categories", "protect_carbon_rim_system_category_identity_and_tree_position", "", productCatalogSystemCategoryIdentityAndTreeProtectionFunctionBody, 31},
 		{"products", "require_carbon_rim_product_type_and_system_category_binding", "product_category_id,product_type", productCatalogCarbonRimProductTypeAndCategoryBindingFunctionBody, 23},
+		{"product_categories", "protect_bicycle_tire_system_category_identity_and_tree_position", "", productCatalogBicycleTireSystemCategoryIdentityAndTreeProtectionFunctionBody, 31},
+		{"products", "require_bicycle_tire_product_type_and_tire_category", "product_category_id,product_type", productCatalogBicycleTireProductTypeAndCategoryBindingFunctionBody, 23},
 	}
 }
 
@@ -116,31 +171,45 @@ WHERE t.tgrelid=to_regclass($1) AND t.tgname=$2 AND NOT t.tgisinternal`, "public
 	return nil
 }
 
-type productCatalogProtectedSystemCategoryIdentities struct {
+type productCatalogProtectedDedicatedSystemCategoryIdentities struct {
 	WheelComponentsID int64
 	CarbonRimID       int64
+	BicycleTireID     int64
 }
 
-func inspectProductCatalogRequiredSystemCategoriesAndCarbonRimBindings(ctx context.Context, tx *sql.Tx) (productCatalogProtectedSystemCategoryIdentities, error) {
-	var identities productCatalogProtectedSystemCategoryIdentities
-	if err := tx.QueryRowContext(ctx, `SELECT root.id, carbon.id FROM public.product_categories root JOIN public.product_categories carbon ON carbon.parent_id=root.id WHERE root.slug='wheel-components' AND root.parent_id IS NULL AND root.depth=1 AND root.is_enabled AND carbon.slug='carbon-rim' AND carbon.depth=2 AND carbon.is_enabled`).Scan(&identities.WheelComponentsID, &identities.CarbonRimID); err != nil {
+func inspectProductCatalogRequiredDedicatedSystemCategoriesAndBindings(ctx context.Context, tx *sql.Tx) (productCatalogProtectedDedicatedSystemCategoryIdentities, error) {
+	var identities productCatalogProtectedDedicatedSystemCategoryIdentities
+	if err := tx.QueryRowContext(ctx, `
+SELECT root.id, carbon.id, tire.id
+FROM public.product_categories root
+JOIN public.product_categories carbon ON carbon.parent_id=root.id
+JOIN public.product_categories tire ON tire.parent_id=root.id
+WHERE root.slug='wheel-components' AND root.parent_id IS NULL AND root.depth=1 AND root.is_enabled
+  AND carbon.slug='carbon-rim' AND carbon.depth=2 AND carbon.is_enabled
+  AND tire.slug='tire' AND tire.depth=2 AND tire.is_enabled`).Scan(&identities.WheelComponentsID, &identities.CarbonRimID, &identities.BicycleTireID); err != nil {
 		if err == sql.ErrNoRows {
-			return identities, errors.New("product restore requires the enabled wheel-components root and its carbon-rim system category")
+			return identities, errors.New("product restore requires the enabled wheel-components root and its carbon-rim and tire system categories")
 		}
 		return identities, err
 	}
 	var invalid bool
-	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM public.products WHERE (product_type='carbon_rim' AND product_category_id IS DISTINCT FROM $1) OR (product_type IS DISTINCT FROM 'carbon_rim' AND product_category_id=$1))`, identities.CarbonRimID).Scan(&invalid); err != nil {
+	if err := tx.QueryRowContext(ctx, `
+SELECT EXISTS(
+    SELECT 1 FROM public.products
+    WHERE (product_type='carbon_rim' AND product_category_id IS DISTINCT FROM $1)
+       OR (product_type<>'carbon_rim' AND product_category_id=$1)
+       OR (product_type='bicycle_tire' AND product_category_id IS DISTINCT FROM $2)
+)`, identities.CarbonRimID, identities.BicycleTireID).Scan(&invalid); err != nil {
 		return identities, err
 	}
 	if invalid {
-		return identities, errors.New("product restore would break carbon_rim product type and system category bindings")
+		return identities, errors.New("product restore would break dedicated product type and system category bindings")
 	}
 	return identities, nil
 }
 
-func lockProductCatalogWriteTablesAndValidateStandardBusinessContractsBeforeMerge(ctx context.Context, tx *sql.Tx, snapshot productCatalogModuleSnapshot) (productCatalogProtectedSystemCategoryIdentities, error) {
-	var identities productCatalogProtectedSystemCategoryIdentities
+func lockProductCatalogWriteTablesAndValidateStandardBusinessContractsBeforeMerge(ctx context.Context, tx *sql.Tx, snapshot productCatalogModuleSnapshot) (productCatalogProtectedDedicatedSystemCategoryIdentities, error) {
+	var identities productCatalogProtectedDedicatedSystemCategoryIdentities
 	names := []string{}
 	for table := range productCatalogAllowedTableNames() {
 		names = append(names, "public."+pq.QuoteIdentifier(table))
@@ -154,7 +223,7 @@ func lockProductCatalogWriteTablesAndValidateStandardBusinessContractsBeforeMerg
 	if err := validateProductCatalogStandardTriggersAndRejectUnregisteredRewriteRules(ctx, tx); err != nil {
 		return identities, err
 	}
-	identities, err := inspectProductCatalogRequiredSystemCategoriesAndCarbonRimBindings(ctx, tx)
+	identities, err := inspectProductCatalogRequiredDedicatedSystemCategoriesAndBindings(ctx, tx)
 	if err != nil {
 		return identities, err
 	}
@@ -175,8 +244,8 @@ func lockProductCatalogWriteTablesAndValidateStandardBusinessContractsBeforeMerg
 		if err != nil {
 			return identities, err
 		}
-		if currentType != incomingType && (currentType == "carbon_rim" || incomingType == "carbon_rim") {
-			return identities, errors.New("product restore cannot change an existing dedicated carbon_rim product type")
+		if currentType != incomingType && (currentType == "carbon_rim" || incomingType == "carbon_rim" || currentType == "bicycle_tire" || incomingType == "bicycle_tire") {
+			return identities, errors.New("product restore cannot change an existing dedicated product type")
 		}
 	}
 	return identities, nil

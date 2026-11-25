@@ -8,6 +8,7 @@ import {
   validateStorefrontLocaleSources,
 } from './font-locale-contract.ts'
 import { collectFontPolicyViolations } from './font-policy-utils.ts'
+import { expectedStorefrontFontFaceFiles, storefrontCjkCharacterShardManifest, verifyStorefrontFontCharacterShardCoverageAndOriginalGlyphParity } from './storefront-font-character-shard-contract.ts'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const projectDir = path.resolve(scriptDir, '..')
@@ -26,18 +27,10 @@ const cjkFontFamily = 'MapleUICJK'
 const fontDisplay = 'block'
 const maximumLatinFontBytes = 160 * 1024
 const latinFontFilename = 'MapleUI-Latin.00af3fec5b34.woff2'
-const versionedFontFilenamePattern = /^MapleUI-[A-Za-z-]+\.[a-f0-9]{12}\.woff2$/
+const versionedFontFilenamePattern = /^MapleUI-[A-Za-z0-9-]+\.[a-f0-9]{12}\.woff2$/
 const productionFontExtensions = new Set(['.otf', '.ttf', '.woff', '.woff2'])
 const baseFontStack = [latinFontFamily, cjkFontFamily]
-const expectedFontFaces = [
-  { fontFamily: latinFontFamily, filename: latinFontFilename, script: 'Latin', sourceFace: 'Maple UI', unicodeRange: '', role: 'Maple UI 拉丁核心分片' },
-  { fontFamily: cjkFontFamily, filename: 'MapleUI-CJK.f8ce6d72e8cb.woff2', script: 'CJK / extended', sourceFace: 'Maple UI', unicodeRange: 'U+0250-02FF, U+0370-052F, U+0530-058F, U+1F00-1FFF, U+2070-209F, U+2150-218F, U+2C00-2DFF, U+2E80-2EFF, U+3000-303F, U+3040-30FF, U+3100-31FF, U+3200-33FF, U+3400-4DBF, U+4E00-9FFF, U+AC00-D7AF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+20000-2FA1F', role: 'Maple UI CJK/扩展核心分片' },
-  { fontFamily: 'MapleUICoverageNotoSansDevanagari', filename: 'MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2', script: 'Devanagari', sourceFace: 'Noto Sans Devanagari', unicodeRange: 'U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09', role: 'Maple UI 字体系统的 Devanagari 覆盖分片' },
-  { fontFamily: 'MapleUICoverageNotoSansLatinAccents', filename: 'MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2', script: 'Latin accents', sourceFace: 'Noto Sans', unicodeRange: 'U+00C0-00C1, U+00C4-00C5, U+00C8-00C9, U+00CB, U+00CC-00CD, U+00CF, U+00D2-00D3, U+00D6, U+00D9-00DA, U+00DC, U+0116, U+0130, U+016E, U+01D7, U+01DB, U+01FA, U+0226, U+022E, U+0300-0301, U+0307-0308, U+030A, U+1E2E, U+FE00', role: 'Maple UI 字体系统的扩展拉丁覆盖分片' },
-  { fontFamily: 'MapleUICoverageNotoSansArabic', filename: 'MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2', script: 'Arabic', sourceFace: 'Noto Sans Arabic', unicodeRange: 'U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1', role: 'Maple UI 字体系统的 Arabic 覆盖分片' },
-  { fontFamily: 'MapleUICoverageNotoSansThai', filename: 'MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2', script: 'Thai', sourceFace: 'Noto Sans Thai', unicodeRange: 'U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC', role: 'Maple UI 字体系统的 Thai 覆盖分片' },
-] as const
-const matchingFontMetrics = ['unitsPerEm', 'ascent', 'descent', 'lineGap', 'capHeight', 'xHeight'] as const
+const expectedFontFaces = expectedStorefrontFontFaceFiles
 const allowedFontFamilies = new Set<string>(expectedFontFaces.map(face => face.fontFamily))
 type CheckStatus = 'pass' | 'block'
 
@@ -227,10 +220,6 @@ const check = (
   details,
 })
 
-const fontFaceRole = (fontFamily: string): string => (
-  expectedFontFaces.find(face => face.fontFamily === fontFamily)?.role || '未识别字体'
-)
-
 const main = (): void => {
   const fontCss = fs.readFileSync(fontCssPath, 'utf8')
   const stripeCss = fs.readFileSync(stripeFontCssPath, 'utf8')
@@ -271,8 +260,9 @@ const main = (): void => {
   }
 
   const fontFaceByFamily = new Map(fontFaces.map(fontFace => [fontFace.fontFamily, fontFace]))
+  const fontFaceByFilename = new Map(fontFaces.map(fontFace => [path.basename(fontFace.sourcePath), fontFace]))
   for (const expectedFontFace of expectedFontFaces) {
-    const face = fontFaceByFamily.get(expectedFontFace.fontFamily)
+    const face = fontFaceByFilename.get(expectedFontFace.filename)
     if (!face) {
       faceViolations.push(`Missing ${expectedFontFace.fontFamily}.`)
       continue
@@ -280,6 +270,9 @@ const main = (): void => {
 
     if (path.basename(face.sourcePath) !== expectedFontFace.filename) {
       faceViolations.push(`${expectedFontFace.fontFamily} must use ${expectedFontFace.filename}.`)
+    }
+    if (face.fontFamily !== expectedFontFace.fontFamily) {
+      faceViolations.push(`${expectedFontFace.filename} must belong to ${expectedFontFace.fontFamily}.`)
     }
     if (face.hasLocalSource) {
       faceViolations.push(`${expectedFontFace.fontFamily} must not declare local() font sources.`)
@@ -330,7 +323,6 @@ const main = (): void => {
   const latinFace = fontFaceByFamily.get(latinFontFamily)
   const cjkFace = fontFaceByFamily.get(cjkFontFamily)
   const latinFontPath = latinFace ? path.join(projectDir, 'public', latinFace.sourcePath.replace(/^\//, '')) : ''
-  const cjkFontPath = cjkFace ? path.join(projectDir, 'public', cjkFace.sourcePath.replace(/^\//, '')) : ''
 
   if (!cjkFace?.unicodeRange) {
     splitViolations.push('The complete Maple UI face must have unicode-range so Latin first paint does not download it.')
@@ -366,35 +358,7 @@ const main = (): void => {
     splitViolations.push('Nitro must prioritize the Maple UI Latin preload at the start of SSR <head> output.')
   }
 
-  if (!cjkFace || !fs.existsSync(cjkFontPath)) {
-    layoutViolations.push('The complete Maple UI face is missing.')
-  } else if (latinFace && fs.existsSync(latinFontPath)) {
-    const latinFont = loadFont(latinFontPath)
-    const cjkFont = loadFont(cjkFontPath)
-
-    for (const metric of matchingFontMetrics) {
-      if (latinFont[metric] !== cjkFont[metric]) {
-        layoutViolations.push(`Latin subset and complete Maple UI differ in ${metric}.`)
-      }
-    }
-
-    for (const codePoint of latinFont.characterSet) {
-      if (codePoint === 0xFFFF) continue
-      if (!cjkFont.hasGlyphForCodePoint(codePoint)) {
-        layoutViolations.push(`Complete Maple UI is missing ${formatCodePoint(codePoint)} from the Latin subset.`)
-        continue
-      }
-      const latinGlyph = latinFont.glyphForCodePoint(codePoint)
-      const cjkGlyph = cjkFont.glyphForCodePoint(codePoint)
-      if (
-        latinGlyph.advanceWidth !== cjkGlyph.advanceWidth
-        || latinGlyph.advanceHeight !== cjkGlyph.advanceHeight
-        || latinGlyph.path.toSVG() !== cjkGlyph.path.toSVG()
-      ) {
-        layoutViolations.push(`${formatCodePoint(codePoint)} differs between the Latin subset and complete Maple UI.`)
-      }
-    }
-  }
+  layoutViolations.push(...verifyStorefrontFontCharacterShardCoverageAndOriginalGlyphParity())
 
   const fontCharacterSets = new Map<string, Set<number>>()
   for (const face of storefrontFontFaces) {
@@ -463,9 +427,9 @@ const main = (): void => {
     ),
     check(
       'layout-parity',
-      'Latin 子集布局一致性',
+      '内置字体字符分片与原字库一致性',
       layoutViolations,
-      'Maple UI Latin 与 CJK 核心分片的字体度量、字宽和轮廓一致，不会因核心分片切换造成布局漂移。',
+      '所有 CJK 字符分片完整保留原字库的覆盖范围、字形、字宽和字体度量，Latin 核心保持一致。',
     ),
     check(
       'subset-completeness',
@@ -494,7 +458,7 @@ const main = (): void => {
     checks,
     strategy: {
       status: splitViolations.length === 0 && layoutViolations.length === 0 ? 'pass' : 'block',
-      label: 'Latin 首屏子集 + unicode-range 脚本分片',
+      label: 'Latin 首屏子集 + CJK/扩展字符按需分片',
       default_stack: baseFontStack,
       latin_bytes: latinFace && fs.existsSync(latinFontPath) ? fs.statSync(latinFontPath).size : 0,
       latin_budget_bytes: maximumLatinFontBytes,
@@ -502,16 +466,20 @@ const main = (): void => {
       coverage_source_faces: [...new Set(expectedFontFaces
         .filter(face => face.sourceFace !== 'Maple UI')
         .map(face => face.sourceFace))],
-      cjk_unicode_range: cjkFace?.unicodeRange || '',
+      cjk_source_code_point_count: storefrontCjkCharacterShardManifest.sourceCodePointCount,
+      cjk_latin_excluded_code_point_count: storefrontCjkCharacterShardManifest.latinExcludedCodePointCount,
+      cjk_covered_code_point_count: storefrontCjkCharacterShardManifest.coveredCodePointCount,
+      cjk_character_shard_count: storefrontCjkCharacterShardManifest.shards.length,
+      cjk_maximum_shard_bytes: storefrontCjkCharacterShardManifest.maximumFontBytesPerShard,
       layout_parity_verified: layoutViolations.length === 0,
       rationale: '所有内置语言通过 manifest 映射到项目内字体分片；浏览器只在字符命中分片 unicode-range 时下载对应字体。',
     },
     faces: expectedFontFaces.map(expected => {
-      const face = fontFaceByFamily.get(expected.fontFamily)
+      const face = fontFaceByFilename.get(expected.filename)
       const fontPath = face ? path.join(projectDir, 'public', face.sourcePath.replace(/^\//, '')) : ''
       return {
         family: expected.fontFamily,
-        role: fontFaceRole(expected.fontFamily),
+        role: expected.role,
         script: expected.script,
         source_face: expected.sourceFace,
         filename: face ? path.basename(face.sourcePath) : expected.filename,

@@ -4,46 +4,50 @@
     <Transition name="fade">
       <div
         v-if="conversation"
-        class="fixed inset-0 z-[10050] flex items-center justify-center md:items-end md:justify-end p-0 md:pr-6 md:pb-8 pointer-events-none tz-mobile-safe-modal-mask tz-mobile-dialog-mask"
+        class="chat-drawer-mask fixed inset-0 z-[10050] flex items-stretch justify-end pointer-events-none"
       >
-        <div class="absolute inset-0 bg-slate-900/20 backdrop-blur-sm md:hidden pointer-events-auto"></div>
-        <!-- 聊天窗口容器 - 右下角定位 -->
-        
-        <!-- 客户侧聊天：前台只负责访客/会员与客服 Profile 建立会话 -->
-        <Transition name="fade-scale" mode="out-in">
-          <!-- 初始客服选择面板 -->
-          <ChatAgentSelectionPanel
-            v-if="showAgentSelectionPanel"
-            key="agent-selection"
-            ref="chatModalRef"
-            class="chat-modal-draggable-shell"
-            :class="{ 'chat-modal-shell--dragging': isDraggingChatModal }"
-            :style="chatModalDragStyle"
-            :agents="agentSelectionAgents"
-            :selected-agent="selectedAgent"
-            :online-agents-count="onlineAgentsCount"
-            :has-history-chat="hasHistoryChat"
-            :email-settings="emailSettings"
-            @drag-start="handleChatModalDragStart"
-            @close="handleClose"
-            @select-agent="selectAgentFromAgentSelectionPanel"
-            @enter-chat="enterChat"
-          />
-
-          <!-- 聊天窗口 - 简化布局 -->
+        <div
+          class="chat-drawer-backdrop"
+          :class="{ 'chat-drawer-backdrop--hidden': isChatCollapsed }"
+          aria-hidden="true"
+          @click="handleClose"
+        ></div>
+        <div
+          class="chat-drawer-stage"
+          :class="{ 'chat-drawer-stage--collapsed': isChatCollapsed }"
+        >
           <div
-            v-else
-            key="chat"
-            ref="chatModalRef"
-            class="chat-modal-draggable-shell chat-modal-shell tz-mobile-dialog-surface relative w-full md:w-[520px] max-w-full md:max-w-[calc(100vw-4rem)] tz-mobile-safe-full-height rounded-none md:rounded-2xl overflow-hidden flex flex-col tz-surface-card shadow-[-12px_0_28px_rgba(15,23,42,0.16)] transition-colors duration-300 pointer-events-auto"
-            :class="{ 'chat-modal-shell--dragging': isDraggingChatModal }"
-            :style="chatModalDragStyle"
+            id="chat-drawer-dialog"
+            class="chat-drawer-panel-region"
+            role="dialog"
+            :aria-modal="!isChatCollapsed"
+            :aria-hidden="isChatCollapsed"
+            :inert="isChatCollapsed"
+            :aria-labelledby="showAgentSelectionPanel ? 'chat-agent-selection-title' : 'chat-current-agent-title'"
           >
+            <Transition name="chat-drawer-panel" mode="out-in">
+              <ChatAgentSelectionPanel
+                v-if="showAgentSelectionPanel"
+                key="agent-selection"
+                :agents="agentSelectionAgents"
+                :selected-agent="selectedAgent"
+                :online-agents-count="onlineAgentsCount"
+                :has-history-chat="hasHistoryChat"
+                :email-settings="emailSettings"
+                @close="handleClose"
+                @select-agent="selectAgentFromAgentSelectionPanel"
+                @enter-chat="enterChat"
+              />
+
+              <div
+                v-else
+                key="chat"
+                class="chat-modal-shell chat-drawer-panel-surface relative flex h-full w-full min-w-0 flex-col overflow-hidden tz-surface-card transition-colors duration-300 pointer-events-auto"
+              >
             <!-- 聊天区域 -->
             <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
               <div
-                class="chat-modal-drag-handle tz-mobile-chrome-top border-b tz-border-strong/[0.08] backdrop-blur-md"
-                @pointerdown="handleChatModalDragStart"
+                class="chat-drawer-top-bar tz-mobile-chrome-top border-b tz-border-strong/[0.08] backdrop-blur-md"
               >
                 <div class="px-3 py-2 flex items-center justify-end gap-3">
                   <button
@@ -63,7 +67,6 @@
               <div class="relative z-30 border-b tz-border-strong/[0.08] tz-mobile-chrome-bottom">
                 <div class="px-4 py-3 flex items-center gap-3">
                   <div
-                    data-no-drag
                     class="flex min-w-0 flex-1 items-center gap-2 rounded-full tz-surface-subtle px-2.5 py-2 transition-colors hover:tz-surface-muted"
                   >
                     <button
@@ -88,7 +91,7 @@
 
                       <span class="flex-1 min-w-0">
                         <span class="flex min-w-0 items-center gap-2">
-                          <span class="block min-w-0 tz-text-primary font-medium text-sm truncate">{{ selectedAgent?.name || t('chatModal.fallback.agent') }}</span>
+                          <span id="chat-current-agent-title" class="block min-w-0 tz-text-primary font-medium text-sm truncate">{{ selectedAgent?.name || t('chatModal.fallback.agent') }}</span>
                           <span
                             class="inline-flex max-w-[8.5rem] shrink-0 items-center rounded-full border border-border/60 bg-white/70 px-2 py-0.5 text-[10px] font-semibold leading-none tz-text-secondary truncate"
                             :title="selectedAgentPresentation.groupLabel"
@@ -262,6 +265,8 @@
                 v-model:newMessage="newMessage"
                 :currentThemeColor="currentThemeColor"
                 :messages="messages"
+                :hasOlderMessages="hasOlderMessages"
+                :isLoadingOlderMessages="isLoadingOlderMessages"
                 :visitorEmail="visitorEmail"
                 :showVisitorEmailCapture="showVisitorEmailCapture"
                 :isSending="isSending"
@@ -277,6 +282,7 @@
                 :levelDiscounts="levelDiscounts"
                 :isLoggedInForWarranty="isLoggedInForWarranty"
                 @sendMessage="handleSendMessage"
+                @loadOlderMessages="loadOlderMessages"
                 @update:visitorEmail="visitorEmail = $event"
                 @uploadImage="handleImageUpload"
                 @openOrderPicker="openOrderPicker"
@@ -289,8 +295,25 @@
                 @loginRequest="handleWarrantyLoginRequest"
               />
             </div>
+              </div>
+            </Transition>
           </div>
-        </Transition>
+          <button
+            type="button"
+            class="chat-drawer-handle"
+            :aria-label="t(isChatCollapsed ? 'chatModal.actions.expand' : 'chatModal.actions.collapse')"
+            :title="t(isChatCollapsed ? 'chatModal.actions.expand' : 'chatModal.actions.collapse')"
+            :aria-expanded="!isChatCollapsed"
+            aria-controls="chat-drawer-dialog"
+            @click="toggleChatDrawerCollapse"
+          >
+            <Icon
+              :name="isChatCollapsed ? 'lucide:chevron-left' : 'lucide:chevron-right'"
+              class="h-5 w-5"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
       </div>
     </Transition>
     
@@ -375,7 +398,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from '#imports'
 import { useWhatsAppState } from '~/composables/chat/useWhatsAppState'
 import { buildChatAgentPresentation, buildChatAgentPresentationList } from '~/lib/chatAgentPresentation'
@@ -385,6 +408,7 @@ import WishlistDrawer from '~/components/WishlistDrawer.vue'
 import ChatAgentSelectionPanel from '~/components/whatsapp/ChatAgentSelectionPanel.vue'
 import UserChatBody from '~/components/whatsapp/UserChatBody.vue'
 import { createDialogStackId, useDialogStack } from '~/composables/useDialogStack'
+import { useChatWidget } from '~/composables/useChatWidget'
 
 // Props - 现在不需要预先传入conversation
 const props = defineProps<{
@@ -402,154 +426,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const dialogStack = useDialogStack()
+const { isChatCollapsed, toggleChatCollapse } = useChatWidget()
 const dialogStackId = createDialogStackId('whatsapp-chat-modal')
-
-type ChatModalElementRef = HTMLElement | { rootElement?: HTMLElement | { value?: HTMLElement | null } | null }
-
-const chatModalRef = ref<ChatModalElementRef | null>(null)
-const chatModalPosition = ref<{ left: number; top: number } | null>(null)
-const isDraggingChatModal = ref(false)
 const agentPickerOpen = ref(false)
-const CHAT_MODAL_DRAG_MARGIN = 16
-
-let chatModalDragState: {
-  startX: number
-  startY: number
-  startLeft: number
-  startTop: number
-  width: number
-  height: number
-  pointerId: number
-  handleElement: HTMLElement | null
-} | null = null
 let unregisterDialogStack: (() => void) | null = null
-
-const getChatModalElement = () => {
-  const rawRef = chatModalRef.value
-  if (!rawRef) return null
-
-  if (rawRef instanceof HTMLElement) return rawRef
-
-  const exposedRoot = rawRef.rootElement
-  if (!exposedRoot) return null
-
-  return exposedRoot instanceof HTMLElement ? exposedRoot : exposedRoot.value || null
-}
-
-const chatModalDragStyle = computed(() => {
-  if (!chatModalPosition.value) return undefined
-
-  return {
-    position: 'fixed' as const,
-    left: `${Math.round(chatModalPosition.value.left)}px`,
-    top: `${Math.round(chatModalPosition.value.top)}px`,
-    right: 'auto',
-    bottom: 'auto'
-  }
-})
-
-const clampChatModalDragValue = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
-
-const removeChatModalDragListeners = () => {
-  if (typeof window === 'undefined') return
-  window.removeEventListener('pointermove', handleChatModalDragMove)
-  window.removeEventListener('pointerup', handleChatModalDragEnd)
-  window.removeEventListener('pointercancel', handleChatModalDragEnd)
-}
-
-const handleChatModalDragStart = (event: PointerEvent) => {
-  if (typeof window === 'undefined' || window.innerWidth < 768) return
-  if (event.pointerType === 'mouse' && event.button !== 0) return
-
-  const target = event.target as HTMLElement | null
-  if (target?.closest('button, a, input, textarea, select, [data-no-drag]')) return
-
-  const modalElement = getChatModalElement()
-  if (!modalElement) return
-  const rect = modalElement.getBoundingClientRect()
-  const handleElement = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
-
-  chatModalDragState = {
-    startX: event.clientX,
-    startY: event.clientY,
-    startLeft: rect.left,
-    startTop: rect.top,
-    width: rect.width,
-    height: rect.height,
-    pointerId: event.pointerId,
-    handleElement
-  }
-  chatModalPosition.value = { left: Math.round(rect.left), top: Math.round(rect.top) }
-
-  isDraggingChatModal.value = true
-  handleElement?.setPointerCapture?.(event.pointerId)
-  window.addEventListener('pointermove', handleChatModalDragMove, { passive: false })
-  window.addEventListener('pointerup', handleChatModalDragEnd)
-  window.addEventListener('pointercancel', handleChatModalDragEnd)
-  event.preventDefault()
-}
-
-const handleChatModalDragMove = (event: PointerEvent) => {
-  if (!chatModalDragState || typeof window === 'undefined') return
-
-  event.preventDefault()
-
-  const state = chatModalDragState
-  const rawLeft = state.startLeft + event.clientX - state.startX
-  const rawTop = state.startTop + event.clientY - state.startY
-  const maxLeft = Math.max(CHAT_MODAL_DRAG_MARGIN, window.innerWidth - state.width - CHAT_MODAL_DRAG_MARGIN)
-  const maxTop = Math.max(CHAT_MODAL_DRAG_MARGIN, window.innerHeight - state.height - CHAT_MODAL_DRAG_MARGIN)
-
-  chatModalPosition.value = {
-    left: Math.round(clampChatModalDragValue(rawLeft, CHAT_MODAL_DRAG_MARGIN, maxLeft)),
-    top: Math.round(clampChatModalDragValue(rawTop, CHAT_MODAL_DRAG_MARGIN, maxTop))
-  }
-}
-
-const handleChatModalDragEnd = () => {
-  const state = chatModalDragState
-  if (state?.handleElement?.hasPointerCapture?.(state.pointerId)) {
-    state.handleElement.releasePointerCapture(state.pointerId)
-  }
-  chatModalDragState = null
-  isDraggingChatModal.value = false
-  removeChatModalDragListeners()
-}
-
-const keepChatModalInsideViewport = () => {
-  if (typeof window === 'undefined') return
-  if (window.innerWidth < 768) {
-    chatModalPosition.value = null
-    handleChatModalDragEnd()
-    return
-  }
-
-  const modalElement = getChatModalElement()
-  if (!modalElement) return
-
-  const rect = modalElement.getBoundingClientRect()
-  const currentLeft = chatModalPosition.value?.left ?? rect.left
-  const currentTop = chatModalPosition.value?.top ?? rect.top
-  const maxLeft = Math.max(CHAT_MODAL_DRAG_MARGIN, window.innerWidth - rect.width - CHAT_MODAL_DRAG_MARGIN)
-  const maxTop = Math.max(CHAT_MODAL_DRAG_MARGIN, window.innerHeight - rect.height - CHAT_MODAL_DRAG_MARGIN)
-
-  chatModalPosition.value = {
-    left: Math.round(clampChatModalDragValue(currentLeft, CHAT_MODAL_DRAG_MARGIN, maxLeft)),
-    top: Math.round(clampChatModalDragValue(currentTop, CHAT_MODAL_DRAG_MARGIN, maxTop))
-  }
-}
-
-onMounted(() => {
-  if (typeof window === 'undefined') return
-  window.addEventListener('resize', keepChatModalInsideViewport)
-})
-
-onBeforeUnmount(() => {
-  removeChatModalDragListeners()
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('resize', keepChatModalInsideViewport)
-  }
-})
 
 const {
   user,
@@ -564,6 +444,8 @@ const {
   showVisitorEmailCapture,
   isSending,
   messages,
+  hasOlderMessages,
+  isLoadingOlderMessages,
   activeTab,
   newMessage,
   searchResults,
@@ -594,6 +476,7 @@ const {
   openOrderPicker,
   openCustomerServiceProductSearchModal,
   closeCustomerServiceProductSearchModal,
+  dismissDetachedChatOverlays,
   clearPendingProductReference,
   handleWarrantyLoginRequest,
   handleChatAuthSuccess,
@@ -604,6 +487,7 @@ const {
   handleMessageContextMenu,
   retryMessage,
   handleSendMessage,
+  loadOlderMessages,
   handleAddProductToCart,
   handleProductDrawerClose,
   handleHistoryDrawerClose,
@@ -712,6 +596,14 @@ const toggleAgentPicker = () => {
   agentPickerOpen.value = !agentPickerOpen.value
 }
 
+const toggleChatDrawerCollapse = () => {
+  if (!isChatCollapsed.value) {
+    agentPickerOpen.value = false
+    dismissDetachedChatOverlays()
+  }
+  toggleChatCollapse()
+}
+
 const handleAgentPickerSelect = (agent: any) => {
   selectAgent(agent)
   showAgentSelectionPanel.value = false
@@ -796,14 +688,125 @@ const handleAgentPickerSelect = (agent: any) => {
   border-radius: 9999px;
 }
 
-.chat-modal-shell {
-  height: 100vh;
-  max-height: 100vh;
+.chat-drawer-mask {
+  box-sizing: border-box;
+  isolation: isolate;
+  padding: var(--tz-safe-area-top, 0px) var(--tz-safe-area-right, 0px)
+    var(--tz-safe-area-bottom, 0px) var(--tz-safe-area-left, 0px);
+}
+
+.chat-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.24);
+  backdrop-filter: blur(2px);
+  transition: opacity 320ms ease;
+}
+
+.chat-drawer-backdrop--hidden {
+  opacity: 0;
+  pointer-events: none;
+  backdrop-filter: none;
+}
+
+.chat-drawer-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: clamp(22.5rem, 42vw, 47.5rem);
+  max-width: min(47.5rem, calc(100vw - 2.5rem));
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  pointer-events: none;
+  transition: transform 320ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.chat-drawer-stage--collapsed {
+  transform: translateX(100%);
+}
+
+.chat-drawer-panel-region {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  pointer-events: auto;
+}
+
+.chat-drawer-panel-surface {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  border: 1px solid var(--tz-border-subtle);
+  border-right: 0;
+  border-radius: 1.25rem 0 0 1.25rem;
   background: var(--tz-card-surface) !important;
-  box-shadow:
-    0 0 1px rgba(15, 23, 42, 0.16),
-    0 0 8px rgba(15, 23, 42, 0.08),
-    0 0 18px rgba(15, 23, 42, 0.04);
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.2);
+  pointer-events: auto;
+}
+
+.chat-drawer-top-bar {
+  flex: 0 0 auto;
+}
+
+.chat-drawer-handle {
+  position: absolute;
+  top: 50%;
+  left: -2rem;
+  z-index: 90;
+  display: grid;
+  width: 2rem;
+  height: 4.75rem;
+  transform: translateY(-50%);
+  place-items: center;
+  border: 1px solid var(--tz-border-subtle);
+  border-right: 0;
+  border-radius: 1.5rem 0 0 1.5rem;
+  background: var(--tz-card-surface);
+  color: var(--tz-text-primary);
+  box-shadow: none;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.chat-drawer-handle:hover {
+  background: var(--tz-surface-subtle);
+}
+
+.chat-drawer-handle:focus-visible {
+  outline: 2px solid var(--tz-form-control-focus-border);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-drawer-backdrop,
+  .chat-drawer-stage {
+    transition-duration: 0.01ms;
+  }
+}
+
+.chat-drawer-panel-enter-active,
+.chat-drawer-panel-leave-active {
+  transition: transform 320ms cubic-bezier(0.2, 0.75, 0.25, 1), opacity 180ms ease;
+}
+
+.chat-drawer-panel-enter-from,
+.chat-drawer-panel-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.chat-modal-shell {
+  height: 100%;
+  max-height: 100%;
 }
 
 .chat-history-shell {
@@ -811,16 +814,7 @@ const handleAgentPickerSelect = (agent: any) => {
   max-height: 100vh;
 }
 
-.chat-modal-drag-handle {
-  touch-action: auto;
-}
-
 @supports (height: 100dvh) {
-  .chat-modal-shell {
-    height: 100dvh;
-    max-height: 100dvh;
-  }
-
   .chat-history-shell {
     height: 100dvh;
     max-height: 100dvh;
@@ -828,7 +822,14 @@ const handleAgentPickerSelect = (agent: any) => {
 }
 
 @media (max-width: 767px) {
-  .chat-modal-shell,
+  .chat-drawer-stage {
+    width: min(100%, calc(100vw - 2.5rem));
+  }
+
+  .chat-drawer-panel-surface {
+    border-radius: 1rem 0 0 1rem;
+  }
+
   .chat-history-shell {
     height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
     max-height: calc(var(--tz-mobile-safe-viewport-height, 100dvh) - var(--tz-mobile-dialog-inset, 2px) * 2);
@@ -840,39 +841,12 @@ const handleAgentPickerSelect = (agent: any) => {
 }
 
 @media (min-width: 768px) {
-  .chat-modal-shell {
-    height: min(840px, calc(100vh - 56px));
-    max-height: calc(100vh - 56px);
-  }
-
-  .chat-modal-draggable-shell {
-    position: fixed;
-    right: 1.5rem;
-    bottom: 2rem;
-  }
-
-  .chat-modal-drag-handle {
-    cursor: grab;
-    touch-action: none;
-    user-select: none;
-  }
-
-  .chat-modal-shell--dragging,
-  .chat-modal-shell--dragging .chat-modal-drag-handle {
-    cursor: grabbing;
-  }
-
   .chat-history-shell {
     height: 850px;
     max-height: 92vh;
   }
 
   @supports (height: 100dvh) {
-    .chat-modal-shell {
-      height: min(840px, calc(100dvh - 56px));
-      max-height: calc(100dvh - 56px);
-    }
-
     .chat-history-shell {
       height: 850px;
       max-height: 92dvh;

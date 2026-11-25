@@ -118,30 +118,29 @@ const openFreehubSupportChat = () => {
 
 .wheelset-freehub-guide-intro {
   display: grid;
-  gap: 1.15rem;
+  gap: 1.25rem;
   width: 100%;
-  margin: 0 0 2rem;
+  min-width: 0;
+  margin: 0 auto;
   border: 1px solid var(--wheelset-border);
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   background: var(--tz-surface-subtle);
-  padding: clamp(1rem, 2vw, 1.5rem);
-}
-
-.wheelset-freehub-guide-intro__copy {
-  max-width: 72rem;
+  padding: clamp(1rem, 1.5vw, 1.5rem);
+  font-size: var(--tz-type-description);
+  line-height: 1.58;
+  text-align: start;
 }
 
 .wheelset-freehub-guide-intro__title {
   margin: 0 0 0.55rem;
   color: var(--tz-text-primary);
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: var(--tz-type-card-title);
+  font-weight: 600;
   line-height: 1.35;
 }
 
 .wheelset-freehub-guide-intro__copy .wheelset-guide-step__body {
-  max-width: 68rem;
-  margin-bottom: 0;
+  margin: 0;
 }
 
 .wheelset-freehub-guide-intro__steps {
@@ -151,7 +150,7 @@ const openFreehubSupportChat = () => {
 .wheelset-freehub-guide-intro__steps--desktop {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.35rem;
+  gap: 1.5rem;
 }
 
 .wheelset-freehub-guide-intro__steps--mobile {
@@ -173,18 +172,17 @@ const openFreehubSupportChat = () => {
   top: 0;
   left: 0;
   display: inline-flex;
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--tz-border-strong);
   border-radius: 999px;
-  background: var(--tz-surface-muted);
+  background: var(--tz-card-surface);
   color: var(--tz-text-secondary);
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: var(--tz-type-caption);
+  font-weight: 600;
   line-height: 1;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
 }
 
 .wheelset-guide-step__content {
@@ -195,29 +193,29 @@ const openFreehubSupportChat = () => {
 
 .wheelset-guide-step__title {
   display: flex;
-  min-height: 2rem;
+  min-height: 1.75rem;
   align-items: center;
   margin: 0 0 0.55rem;
-  padding-left: 3rem;
+  padding-left: 2.375rem;
   color: var(--tz-text-primary);
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.35;
+  font-size: var(--tz-type-description);
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .wheelset-guide-step__body {
-  margin: 0 0 1rem;
+  margin: 0;
   color: var(--tz-text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.7;
-  text-align: left;
+  font-size: var(--tz-type-description);
+  line-height: 1.58;
+  text-align: start;
 }
 
 .wheelset-guide-panel-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-top: 1rem;
+  gap: 1rem;
+  margin: 0;
 }
 
 .wheelset-guide-panel {
@@ -227,27 +225,20 @@ const openFreehubSupportChat = () => {
 }
 
 .wheelset-guide-panel strong {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  max-width: 100%;
-  margin-bottom: 0.65rem;
-  border: 1px solid var(--tz-border-subtle);
-  border-radius: 9999px;
+  display: block;
+  margin-bottom: 0.5rem;
   color: var(--tz-text-primary);
-  padding: 0.28rem 0.65rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  line-height: 1.35;
-  white-space: normal;
+  font-size: var(--tz-type-description);
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .wheelset-guide-panel p {
   margin: 0;
   color: var(--tz-text-secondary);
-  font-size: 0.8rem;
-  line-height: 1.65;
-  text-align: left;
+  font-size: var(--tz-type-description);
+  line-height: 1.58;
+  text-align: start;
 }
 
 .wheelset-guide-actions {
@@ -268,8 +259,8 @@ const openFreehubSupportChat = () => {
   background: var(--tz-action-primary);
   color: var(--tz-action-primary-foreground);
   padding: var(--tz-pill-button-padding-block) 1rem;
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: var(--tz-type-caption);
+  font-weight: 600;
   line-height: var(--tz-pill-button-line-height);
   transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
@@ -289,14 +280,10 @@ const openFreehubSupportChat = () => {
     display: block;
   }
 
-  .wheelset-guide-step__number {
-    width: 1.75rem;
-    height: 1.75rem;
-  }
-
-  .wheelset-guide-step__title {
-    min-height: 1.75rem;
-    padding-left: 2.5rem;
+  .wheelset-freehub-guide-intro__steps--mobile :deep(.accordion-header .text-base) {
+    font-size: var(--tz-type-description);
+    font-weight: 600;
+    line-height: 1.5;
   }
 
   .wheelset-guide-panel-grid {

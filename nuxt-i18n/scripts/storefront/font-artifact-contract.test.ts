@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { storefrontFontArtifactViolations } from './font-artifact-contract.ts'
+import { storefrontCjkCharacterShardManifest } from '../storefront-font-character-shard-contract.ts'
 
 const messagesFor = (css: string): string[] => (
   storefrontFontArtifactViolations(css).map(finding => finding.violation)
@@ -9,9 +10,9 @@ assert.deepEqual(
   messagesFor(`
 @font-face {
   font-family: MapleUICJK;
-  src: url(../fonts/MapleUI-CJK.f8ce6d72e8cb.woff2) format("woff2");
+  src: url(../fonts/${storefrontCjkCharacterShardManifest.shards[0].filename}) format("woff2");
   font-display: block;
-  unicode-range: U+4E00-9FFF;
+  unicode-range: ${storefrontCjkCharacterShardManifest.shards[0].unicodeRange};
 }
 `),
   [],
@@ -24,7 +25,7 @@ assert.deepEqual(
 `),
   [
     'Maple UI font file reference must be content-addressed: MapleUI-CN-Latin.woff2',
-    'MapleUICJK must use MapleUI-CJK.f8ce6d72e8cb.woff2, not MapleUI-CN-Latin.woff2',
+    'MapleUICJK must use an approved character-shard inventory file, not MapleUI-CN-Latin.woff2',
     'MapleUICJK must declare unicode-range in built CSS',
   ],
 )
@@ -50,6 +51,14 @@ assert.deepEqual(
 }
 `),
   ['unapproved Maple UI @font-face family "MapleUILegacy"'],
+)
+
+const firstCharacterShard = storefrontCjkCharacterShardManifest.shards[0]
+const minifiedCharacterShardCss = `@font-face{font-family:MapleUICJK;src:url(../fonts/${firstCharacterShard.filename}) format("woff2");font-display:block;unicode-range:${firstCharacterShard.unicodeRange.toLowerCase().replaceAll(' ', '')}}`
+assert.deepEqual(messagesFor(minifiedCharacterShardCss), [])
+assert.deepEqual(
+  messagesFor(minifiedCharacterShardCss.replace(firstCharacterShard.unicodeRange.toLowerCase().replaceAll(' ', ''), 'U+0000-FFFF')),
+  [`${firstCharacterShard.filename} changed its approved character coverage in built CSS`],
 )
 
 console.log('Font artifact contract edge-case checks passed.')

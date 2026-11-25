@@ -1,37 +1,57 @@
 import { expect, test, type Page } from '@playwright/test'
+import fs from 'node:fs'
+import { expectedStorefrontFontFaceFiles, originalStorefrontCjkFontSourcePath, parseStorefrontFontUnicodeRangeCodePoints, storefrontCjkCharacterShardManifest } from '../scripts/storefront-font-character-shard-contract'
 
 const storefrontUrl = process.env.STOREFRONT_URL || 'http://127.0.0.1:9199/'
 const latinFontPath = '/fonts/MapleUI-Latin.00af3fec5b34.woff2'
-const cjkFontPath = '/fonts/MapleUI-CJK.f8ce6d72e8cb.woff2'
+const cjkFontPaths = storefrontCjkCharacterShardManifest.shards.map(shard => `/fonts/${shard.filename}`)
+const originalFontReferenceTestRoute = '/__font-contract-original-reference.woff2'
 const latinAccentFontPath = '/fonts/MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2'
 const arabicFontPath = '/fonts/MapleUI-Coverage-NotoSans-Arabic.ce85091f0209.woff2'
 const devanagariFontPath = '/fonts/MapleUI-Coverage-NotoSans-Devanagari.3b3cae4d2600.woff2'
 const thaiFontPath = '/fonts/MapleUI-Coverage-NotoSans-Thai.1f5a173641bb.woff2'
+const firstViewportCjkFontPreloadPathsByLocale = {
+  zh_cn: [
+    '/fonts/MapleUI-CJK-Han-Ideographs-Common-Storefront-Interface-Character-Group-001.b9c988b34e22.woff2',
+    '/fonts/MapleUI-CJK-Han-Ideographs-Common-Storefront-Interface-Character-Group-002.d78176f77521.woff2',
+    '/fonts/MapleUI-CJK-Kana-And-CJK-Punctuation-Common-Storefront-Interface-Character-Group-001.809b9143c728.woff2',
+  ],
+  ja: [
+    '/fonts/MapleUI-CJK-Han-Ideographs-Common-Storefront-Interface-Character-Group-001.b9c988b34e22.woff2',
+    '/fonts/MapleUI-CJK-Kana-And-CJK-Punctuation-Common-Storefront-Interface-Character-Group-001.809b9143c728.woff2',
+  ],
+  ko: [
+    '/fonts/MapleUI-CJK-Korean-Hangul-Common-Storefront-Interface-Character-Group-001.cb1c1a092210.woff2',
+  ],
+  ru: [
+    '/fonts/MapleUI-CJK-Greek-And-Cyrillic-Common-Storefront-Interface-Character-Group-001.c9869ab43163.woff2',
+  ],
+} as const
 const approvedStorefrontFontPaths = [
   latinFontPath,
-  cjkFontPath,
+  ...cjkFontPaths,
   latinAccentFontPath,
   arabicFontPath,
   devanagariFontPath,
   thaiFontPath,
 ]
 const nonDefaultEnglishHomepageFontPaths = [
-  cjkFontPath,
-  latinAccentFontPath,
+  ...cjkFontPaths,
   arabicFontPath,
   devanagariFontPath,
   thaiFontPath,
 ]
+const completeMapleUiCjkUnicodeRanges = storefrontCjkCharacterShardManifest.shards.flatMap(shard => (
+  shard.unicodeRange.split(',').map((declaration) => {
+    const match = declaration.trim().match(/^U\+([0-9A-F]+)(?:-([0-9A-F]+))?$/i)
+    if (!match) throw new Error(`Invalid generated CJK unicode range: ${declaration}`)
+    return [Number.parseInt(match[1], 16), Number.parseInt(match[2] || match[1], 16)] as [number, number]
+  })
+))
 const optionalHomepageFontRangeSpecs = [
   {
     label: 'CJK',
-    ranges: [
-      [0x0250, 0x02ff], [0x0370, 0x052f], [0x0530, 0x058f], [0x1f00, 0x1fff],
-      [0x2070, 0x209f], [0x2150, 0x218f], [0x2c00, 0x2dff], [0x2e80, 0x2eff],
-      [0x3000, 0x303f], [0x3040, 0x30ff], [0x3100, 0x31ff], [0x3200, 0x33ff],
-      [0x3400, 0x4dbf], [0x4e00, 0x9fff], [0xac00, 0xd7af], [0xf900, 0xfaff],
-      [0xfe30, 0xfe4f], [0xff00, 0xffef], [0x20000, 0x2fa1f],
-    ],
+    ranges: completeMapleUiCjkUnicodeRanges,
   },
   { label: 'LatinAccents', ranges: [[0x00c0, 0x00c1], [0x00c4, 0x00c5], [0x00c8, 0x00c9], [0x00cb, 0x00cb], [0x00cc, 0x00cd], [0x00cf, 0x00cf], [0x00d2, 0x00d3], [0x00d6, 0x00d6], [0x00d9, 0x00da], [0x00dc, 0x00dc], [0x0116, 0x0116], [0x0130, 0x0130], [0x016e, 0x016e], [0x01d7, 0x01d7], [0x01db, 0x01db], [0x01fa, 0x01fa], [0x0226, 0x0226], [0x022e, 0x022e], [0x0300, 0x0301], [0x0307, 0x0308], [0x030a, 0x030a], [0x1e2e, 0x1e2e], [0xfe00, 0xfe00]] },
   { label: 'Arabic', ranges: [[0x0600, 0x06ff], [0x0750, 0x077f], [0x0870, 0x08ff], [0xfb50, 0xfdff], [0xfe70, 0xfefc], [0x102e0, 0x102fb], [0x10e60, 0x10e7e], [0x10ec2, 0x10eff], [0x1ee00, 0x1eef1]] },
@@ -112,7 +132,7 @@ const collectLoadedFontPaths = async (
   }, { cssHref: new URL('/fonts/maple-ui.css', storefrontUrl).toString(), sample, fontFamily })
 }
 
-test('the English storefront home page only requests the default Latin shard', async ({ page }) => {
+test('the English storefront home page only requests its approved Latin shards', async ({ page }) => {
   const requestedFontPaths: string[] = []
   page.on('request', (request) => {
     const pathname = fontPathname(request.url())
@@ -235,8 +255,8 @@ test('the English storefront home page only requests the default Latin shard', a
   const loadedFontPaths = [...new Set([...requestedFontPaths, ...report.resourceFontPaths])].sort()
 
   expect(report.htmlLang).toBe('en-US')
-  expect(report.bodyFont.replace(/\s+/g, '')).toBe('MapleUILatin,MapleUICJK')
-  expect(report.renderedOptionalShardText).toEqual([])
+  expect(report.bodyFont.replace(/\s+/g, '')).toBe('MapleUICoverageNotoSansLatinAccents,MapleUILatin,MapleUICJK')
+  expect(report.renderedOptionalShardText.filter(entry => entry.labels.some(label => label !== 'LatinAccents'))).toEqual([])
   expect(loadedFontPaths).toContain(latinFontPath)
   expect(loadedFontPaths.filter(path => !approvedStorefrontFontPaths.includes(path))).toEqual([])
   expect(loadedFontPaths.filter(path => nonDefaultEnglishHomepageFontPaths.includes(path))).toEqual([])
@@ -263,15 +283,35 @@ test('the homepage preloads the active first-paint shard', async ({ page }) => {
       type: 'font/woff2',
       crossOrigin: 'anonymous',
     },
+    { pathname: latinAccentFontPath, rel: 'preload', as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' },
   ])
 })
 
+test('CJK storefront locales preload only their first-viewport common character shards', async ({ page }) => {
+  const latinAccentFontPath = '/fonts/MapleUI-Coverage-NotoSans-Latin-Accents.e645edc952b6.woff2'
+
+  for (const [locale, expectedCjkPaths] of Object.entries(firstViewportCjkFontPreloadPathsByLocale)) {
+    await page.goto(new URL(`/${locale}`, storefrontUrl).toString(), { waitUntil: 'domcontentloaded' })
+
+    const preloadedPaths = await page.evaluate(() => (
+      [...document.querySelectorAll<HTMLLinkElement>('link[rel="preload"][as="font"]')]
+        .map(link => new URL(link.href).pathname)
+        .sort()
+    ))
+    const expectedPaths = [latinFontPath, ...expectedCjkPaths]
+    if (locale === 'zh_cn') expectedPaths.push(latinAccentFontPath)
+
+    expect(preloadedPaths, locale).toEqual(expectedPaths.sort())
+  }
+})
+
 test('the Latin subset cannot shift layout against the complete Maple UI face', async ({ page }) => {
+  await page.route(`**${originalFontReferenceTestRoute}`, route => route.fulfill({ contentType: 'font/woff2', body: fs.readFileSync(originalStorefrontCjkFontSourcePath) }))
   await page.goto(storefrontUrl)
 
   const result = await page.evaluate(async ({
     latinFontPath,
-    cjkFontPath,
+    originalFontReferenceTestRoute,
     expectedFontDisplayByFamily,
   }) => {
     const sample = 'Factory-Direct Carbon Rims & Wheelsets 2026 $99.95'
@@ -291,9 +331,9 @@ test('the Latin subset cannot shift layout against the complete Maple UI face', 
       document.fonts.add(await face.load())
     }
 
-    const measure = (family: string) => {
+    const measure = (family: string, text = sample) => {
       const element = document.createElement('span')
-      element.textContent = sample
+      element.textContent = text
       Object.assign(element.style, {
         display: 'inline-block',
         fontFamily: family,
@@ -316,11 +356,11 @@ test('the Latin subset cannot shift layout against the complete Maple UI face', 
       const context = canvas.getContext('2d')
       if (!context) throw new Error('Canvas 2D context is unavailable.')
 
-      context.font = `400 48px "${family}"`
+      context.font = `400 48px ${family}`
       context.textBaseline = 'alphabetic'
-      context.fillText(sample, 8, 72)
+      context.fillText(text, 8, 72)
 
-      const textMetrics = context.measureText(sample)
+      const textMetrics = context.measureText(text)
       const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
       let pixelHash = 2166136261
 
@@ -342,9 +382,19 @@ test('the Latin subset cannot shift layout against the complete Maple UI face', 
 
     await Promise.all([
       loadFont('StorefrontFontContractLatin', latinFontPath),
-      loadFont('StorefrontFontContractCjk', cjkFontPath),
+      loadFont('StorefrontFontContractCjk', originalFontReferenceTestRoute),
     ])
     await document.fonts.ready
+
+    const characterShardSamples = []
+    for (const text of ['碳纤维轮组，技术与售后。', '日本語ホイール・技術', '한국어 휠셋 기술', 'Русский Карбон', '齉龘', '─⿰𝔸𝛂\uE000']) {
+      await document.fonts.load('400 48px MapleUILatin, MapleUICJK', text)
+      characterShardSamples.push({
+        text,
+        original: measure('StorefrontFontContractCjk', text),
+        shards: measure('MapleUILatin, MapleUICJK', text),
+      })
+    }
 
     const fontDisplayByFamily: Record<string, string> = {}
     for (const stylesheet of document.styleSheets) {
@@ -372,12 +422,14 @@ test('the Latin subset cannot shift layout against the complete Maple UI face', 
       fontDisplayByFamily,
       latin: measure('StorefrontFontContractLatin'),
       cjk: measure('StorefrontFontContractCjk'),
+      characterShardSamples,
     }
-  }, { latinFontPath, cjkFontPath, expectedFontDisplayByFamily })
+  }, { latinFontPath, originalFontReferenceTestRoute, expectedFontDisplayByFamily })
 
-  expect(result.bodyFont).toBe('MapleUILatin, MapleUICJK')
+  expect(result.bodyFont).toBe('MapleUICoverageNotoSansLatinAccents, MapleUILatin, MapleUICJK')
   expect(result.fontDisplayByFamily).toEqual(expectedFontDisplayByFamily)
   expect(result.latin).toEqual(result.cjk)
+  for (const sample of result.characterShardSamples) expect(sample.shards, sample.text).toEqual(sample.original)
 })
 
 test('unicode-range segmentation loads only the font shards required by rendered text', async ({ page }) => {
@@ -387,15 +439,21 @@ test('unicode-range segmentation loads only the font shards required by rendered
     '"MapleUILatin", "MapleUICJK"',
   )
   expect(asciiFonts).toContain(latinFontPath)
-  expect(asciiFonts).not.toContain(cjkFontPath)
+  expect(asciiFonts.filter(fontPath => cjkFontPaths.includes(fontPath))).toEqual([])
   expect(asciiFonts).not.toContain(latinAccentFontPath)
 
-  const cjkFonts = await collectLoadedFontPaths(
-    page,
-    '碳纤维轮组',
-    '"MapleUICJK"',
-  )
-  expect(cjkFonts).toContain(cjkFontPath)
+  for (const sample of ['碳纤维轮组', '快速查看常见问题答案', '日本語ホイール', '한국어 휠셋', 'Русский', '齉龘']) {
+    const cjkFonts = await collectLoadedFontPaths(page, sample, '"MapleUICJK"')
+    const expectedPaths = storefrontCjkCharacterShardManifest.shards.filter(shard => {
+      const covered = parseStorefrontFontUnicodeRangeCodePoints(shard.unicodeRange)
+      return [...sample].some(character => covered.has(character.codePointAt(0)!))
+    }).map(shard => `/fonts/${shard.filename}`).sort()
+    expect(cjkFonts, sample).toEqual(expectedPaths)
+    if (sample === '快速查看常见问题答案') {
+      expect(cjkFonts.every(fontPath => fontPath.includes('Common-Storefront-Interface'))).toBe(true)
+    }
+    expect(cjkFonts.some(fontPath => /MapleUI-CJK\.[a-f0-9]+\.woff2$/.test(fontPath))).toBe(false)
+  }
 
   const accentFonts = await collectLoadedFontPaths(
     page,
@@ -403,7 +461,7 @@ test('unicode-range segmentation loads only the font shards required by rendered
     '"MapleUICoverageNotoSansLatinAccents"',
   )
   expect(accentFonts).toContain(latinAccentFontPath)
-  expect(accentFonts).not.toContain(cjkFontPath)
+  expect(accentFonts.filter(fontPath => cjkFontPaths.includes(fontPath))).toEqual([])
 })
 
 test('the deployed font preflight manifest enforces the built-in font shard release gate', async ({ request }) => {
@@ -438,7 +496,8 @@ test('the deployed font preflight manifest enforces the built-in font shard rele
     ['layout-parity', 'pass'],
     ['subset-completeness', 'pass'],
   ])
-  expect(report.faces).toHaveLength(6)
+  expect(report.faces).toHaveLength(expectedStorefrontFontFaceFiles.length)
+  expect(report.strategy.cjk_character_shard_count).toBe(storefrontCjkCharacterShardManifest.shards.length)
   expect(report.faces.every((face: { self_hosted: boolean; font_display: string }) => (
     face.self_hosted && face.font_display === 'block'
   ))).toBeTruthy()

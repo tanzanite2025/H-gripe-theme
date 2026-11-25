@@ -3,7 +3,50 @@ package service
 import (
 	"strings"
 	"testing"
+
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
 )
+
+func TestLoadSchwalbeActiveSalesProductsReadsDedicatedProductSchema(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	statements := []string{
+		`CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, product_type TEXT, brand_id INTEGER, status TEXT, deleted_at DATETIME, parent_id INTEGER, bicycle_tire_specification TEXT, standard_product_identifier TEXT)`,
+		`CREATE TABLE product_brands (id INTEGER PRIMARY KEY, slug TEXT)`,
+		`CREATE TABLE product_variants (id INTEGER PRIMARY KEY, product_id INTEGER, is_active BOOLEAN, deleted_at DATETIME)`,
+		`INSERT INTO product_brands VALUES (1, 'schwalbe'), (2, 'other-brand')`,
+		`INSERT INTO products VALUES
+			(1, 'Schwalbe Tire', 'bicycle_tire', 1, 'active', NULL, NULL, '{"schema_version":1,"article_no":" 11100001 ","model_name":"Example","etrto":"40-622","weight_g":650,"epi":67}', ' 4026495000000 '),
+			(2, 'Other Brand Tire', 'bicycle_tire', 2, 'active', NULL, NULL, '{"schema_version":1,"article_no":"22200002"}', '4026495000001'),
+			(3, 'Inactive Schwalbe Tire', 'bicycle_tire', 1, 'inactive', NULL, NULL, '{"schema_version":1,"article_no":"33300003"}', '')`,
+		`INSERT INTO product_variants VALUES (1, 1, TRUE, NULL), (2, 2, TRUE, NULL), (3, 3, TRUE, NULL)`,
+	}
+	for _, statement := range statements {
+		if err := db.Exec(statement).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	var products []schwalbeSalesProduct
+	if err := loadSchwalbeActiveSalesProducts(db, &products); err != nil {
+		t.Fatal(err)
+	}
+	if len(products) != 1 {
+		t.Fatalf("expected only one active root Schwalbe tire product, got %#v", products)
+	}
+	if products[0].Values["article_no"] == nil || *products[0].Values["article_no"] != " 11100001 " {
+		t.Fatalf("dedicated Article No. was not read from product JSON: %#v", products[0].Values)
+	}
+	if products[0].Values["ean"] == nil || *products[0].Values["ean"] != "4026495000000" {
+		t.Fatalf("EAN was not read from standard_product_identifier: %#v", products[0].Values)
+	}
+	if products[0].Values["weight_g"] == nil || *products[0].Values["weight_g"] != "650" {
+		t.Fatalf("numeric JSON specification was not read from the dedicated product schema: %#v", products[0].Values)
+	}
+}
 
 func TestBuildSchwalbeCatalogRefreshAuditReportSeparatesCatalogAndSalesChanges(t *testing.T) {
 	current := schwalbeAuditRow("11100001", 650, "white", "37–622", "https://old.example/1", "2026-09-28")

@@ -2,6 +2,7 @@ package ticket
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	"commerce-platform/internal/api/v1/publicmedia"
@@ -35,8 +36,9 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 	messageType := normalizeTicketMessageType(item.MessageType)
 	metadata := publicTicketMessageMetadata(parseTicketMessageMetadata(item.Metadata), resolver)
 
-	return gin.H{
+	response := gin.H{
 		"id":               item.ID,
+		"cursor_id":        strconv.FormatUint(uint64(item.ID), 10),
 		"conversation_id":  conversationID,
 		"sender_id":        item.UserID,
 		"sender_name":      senderName,
@@ -51,6 +53,10 @@ func publicCustomerServiceMessageResponse(item ticket.TicketMessage, conversatio
 		"created_at":       item.CreatedAt,
 		"is_agent":         item.IsStaff,
 	}
+	if item.ClientMessageID != nil {
+		response["client_message_id"] = *item.ClientMessageID
+	}
+	return response
 }
 
 func normalizeTicketMessageType(value string) string {

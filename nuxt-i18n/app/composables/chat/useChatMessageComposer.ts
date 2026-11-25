@@ -51,6 +51,7 @@ export const useChatMessageComposer = (options: ComposerOptions) => {
     const localId = createLocalMessageId()
     const messageData = {
       id: localId,
+      client_message_id: localId,
       conversation_id: options.conversationId.value,
       sender_id: options.user.value?.id || 0,
       sender_name: options.user.value?.display_name || options.user.value?.username || '访客',
