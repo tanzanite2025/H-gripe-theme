@@ -25,40 +25,41 @@ const (
 // shipping configuration, internal relationships, and audit timestamps are kept
 // out of this response.
 type PublicProduct struct {
-	ProductType                  string                                `json:"product_type,omitempty"`
-	MPN                          string                                `json:"mpn,omitempty"`
-	GTIN                         string                                `json:"gtin,omitempty"`
-	CarbonRimSpecification       *productdomain.CarbonRimSpecification `json:"carbon_rim_specification,omitempty"`
-	WheelsetSpecification        *productdomain.WheelsetSpecification  `json:"wheelset_specification,omitempty"`
-	ID                           uint                                  `json:"id"`
-	Name                         string                                `json:"name"`
-	Slug                         string                                `json:"slug"`
-	LocalizedRoutes              []PublicProductTranslationRoute       `json:"localized_routes,omitempty"`
-	Breadcrumb                   *service.ProductBreadcrumbView        `json:"breadcrumb,omitempty"`
-	SKU                          string                                `json:"sku,omitempty"`
-	Description                  string                                `json:"description"`
-	ShortDesc                    string                                `json:"short_description"`
-	Currency                     string                                `json:"currency"`
-	PriceDecimal                 string                                `json:"price_decimal"`
-	DisplayPrice                 *PublicDisplayPrice                   `json:"display_price,omitempty"`
-	DisplayPrices                []PublicDisplayPrice                  `json:"display_prices,omitempty"`
-	FulfillmentMode              string                                `json:"fulfillment_mode,omitempty"`
-	MetaTitle                    string                                `json:"meta_title"`
-	MetaDesc                     string                                `json:"meta_description"`
-	Brand                        *PublicProductBrand                   `json:"brand,omitempty"`
-	Category                     *PublicProductCategory                `json:"product_category,omitempty"`
-	AfterSalesTemplate           *PublicProductInformationTemplate     `json:"after_sales_template,omitempty"`
-	PackagingTemplate            *PublicProductInformationTemplate     `json:"packaging_template,omitempty"`
-	Availability                 Availability                          `json:"availability"`
-	Media                        []PublicProductMedia                  `json:"media,omitempty"`
-	ProductSpecificationTemplate *PublicProductSpecificationTemplate   `json:"product_specification_template,omitempty"`
-	SpecValues                   []PublicProductSpecValue              `json:"spec_values,omitempty"`
-	Variants                     []PublicProductVariant                `json:"variants,omitempty"`
-	VariantOptionValues          []PublicVariantOptionValue            `json:"variant_option_values,omitempty"`
-	OptionValueRelations         []PublicProductOptionValueRelation    `json:"option_value_relations,omitempty"`
-	SpokeRepairKitModels         []PublicSpokeRepairKitModel           `json:"spoke_repair_kit_models,omitempty"`
-	ReviewSummary                *PublicProductReviewSummary           `json:"review_summary,omitempty"`
-	ShippingDetails              *PublicProductShippingDetails         `json:"shipping_details,omitempty"`
+	ProductType                  string                                    `json:"product_type,omitempty"`
+	MPN                          string                                    `json:"mpn,omitempty"`
+	GTIN                         string                                    `json:"gtin,omitempty"`
+	CarbonRimSpecification       *productdomain.CarbonRimSpecification     `json:"carbon_rim_specification,omitempty"`
+	WheelsetSpecification        *productdomain.WheelsetSpecification      `json:"wheelset_specification,omitempty"`
+	SpokeSpecification           *productdomain.SpokesProductSpecification `json:"spoke_specification,omitempty"`
+	ID                           uint                                      `json:"id"`
+	Name                         string                                    `json:"name"`
+	Slug                         string                                    `json:"slug"`
+	LocalizedRoutes              []PublicProductTranslationRoute           `json:"localized_routes,omitempty"`
+	Breadcrumb                   *service.ProductBreadcrumbView            `json:"breadcrumb,omitempty"`
+	SKU                          string                                    `json:"sku,omitempty"`
+	Description                  string                                    `json:"description"`
+	ShortDesc                    string                                    `json:"short_description"`
+	Currency                     string                                    `json:"currency"`
+	PriceDecimal                 string                                    `json:"price_decimal"`
+	DisplayPrice                 *PublicDisplayPrice                       `json:"display_price,omitempty"`
+	DisplayPrices                []PublicDisplayPrice                      `json:"display_prices,omitempty"`
+	FulfillmentMode              string                                    `json:"fulfillment_mode,omitempty"`
+	MetaTitle                    string                                    `json:"meta_title"`
+	MetaDesc                     string                                    `json:"meta_description"`
+	Brand                        *PublicProductBrand                       `json:"brand,omitempty"`
+	Category                     *PublicProductCategory                    `json:"product_category,omitempty"`
+	AfterSalesTemplate           *PublicProductInformationTemplate         `json:"after_sales_template,omitempty"`
+	PackagingTemplate            *PublicProductInformationTemplate         `json:"packaging_template,omitempty"`
+	Availability                 Availability                              `json:"availability"`
+	Media                        []PublicProductMedia                      `json:"media,omitempty"`
+	ProductSpecificationTemplate *PublicProductSpecificationTemplate       `json:"product_specification_template,omitempty"`
+	SpecValues                   []PublicProductSpecValue                  `json:"spec_values,omitempty"`
+	Variants                     []PublicProductVariant                    `json:"variants,omitempty"`
+	VariantOptionValues          []PublicVariantOptionValue                `json:"variant_option_values,omitempty"`
+	OptionValueRelations         []PublicProductOptionValueRelation        `json:"option_value_relations,omitempty"`
+	SpokeRepairKitModels         []PublicSpokeRepairKitModel               `json:"spoke_repair_kit_models,omitempty"`
+	ReviewSummary                *PublicProductReviewSummary               `json:"review_summary,omitempty"`
+	ShippingDetails              *PublicProductShippingDetails             `json:"shipping_details,omitempty"`
 }
 
 // PublicSpokeRepairKitModel is the small product option contract exposed to
@@ -354,7 +355,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	}
 
 	definitionsByID := make(map[uint]productdomain.SpecDefinition)
-	if item.ProductType != productdomain.ProductTypeWheelset && item.ProductSpecificationTemplate != nil {
+	if item.ProductType != productdomain.ProductTypeWheelset && item.ProductType != productdomain.ProductTypeSpoke && item.ProductSpecificationTemplate != nil {
 		for _, definition := range item.ProductSpecificationTemplate.SpecDefinitions {
 			definitionsByID[definition.ID] = definition
 		}
@@ -420,6 +421,8 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	var specValues []PublicProductSpecValue
 	if item.ProductType == productdomain.ProductTypeWheelset {
 		specValues = publicWheelsetSpecificationValues(item.WheelsetSpecification, locale)
+	} else if item.ProductType == productdomain.ProductTypeSpoke {
+		specValues = publicSpokesProductSpecificationValues(item.SpokeSpecification, locale)
 	} else {
 		specValues = publicCarbonRimSpecificationValues(item.CarbonRimSpecification, locale)
 		for _, value := range item.SpecValues {
@@ -448,9 +451,13 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	}
 	mpn, gtin := wheelsetStructuredDataProductIdentifiers(item)
 	var wheelsetSpecification *productdomain.WheelsetSpecification
+	var spokeSpecification *productdomain.SpokesProductSpecification
 	var productSpecificationTemplate *PublicProductSpecificationTemplate
 	if item.ProductType == productdomain.ProductTypeWheelset {
 		wheelsetSpecification = item.WheelsetSpecification
+	} else if item.ProductType == productdomain.ProductTypeSpoke {
+		spokeSpecification = item.SpokeSpecification
+		mpn, gtin = spokesStructuredDataProductIdentifiers(item)
 	} else {
 		productSpecificationTemplate = publicProductSpecificationTemplateFromDomain(item.ProductSpecificationTemplate)
 	}
@@ -461,6 +468,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		GTIN:                         gtin,
 		CarbonRimSpecification:       item.CarbonRimSpecification,
 		WheelsetSpecification:        wheelsetSpecification,
+		SpokeSpecification:           spokeSpecification,
 		ID:                           item.ID,
 		Name:                         item.Name,
 		Slug:                         item.Slug,
@@ -488,6 +496,17 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		OptionValueRelations:         optionValueRelations,
 		SpokeRepairKitModels:         spokeRepairKitModels,
 	}
+}
+
+func spokesStructuredDataProductIdentifiers(item productdomain.Product) (string, string) {
+	if item.ProductType != productdomain.ProductTypeSpoke || item.SpokeSpecification == nil {
+		return "", ""
+	}
+	gtin := strings.TrimSpace(item.StandardProductIdentifier)
+	if !productdomain.IsValidGS1GlobalTradeItemNumber(gtin) {
+		gtin = ""
+	}
+	return strings.TrimSpace(item.SpokeSpecification.ManufacturerPartNumber), gtin
 }
 
 func wheelsetStructuredDataProductIdentifiers(item productdomain.Product) (string, string) {

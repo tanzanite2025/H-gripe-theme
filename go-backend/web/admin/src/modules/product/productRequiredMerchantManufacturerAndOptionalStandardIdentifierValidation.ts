@@ -3,6 +3,8 @@ export interface ProductDeclarationIdentifierFields {
   manufacturer_product_identifier?: string
   standard_product_identifier?: string
   product_type?: string
+  status?: string
+  variants?: unknown[]
 }
 
 export function isValidGS1GlobalTradeItemNumber(value: string): boolean {
@@ -21,9 +23,10 @@ export function isValidGS1GlobalTradeItemNumber(value: string): boolean {
 
 export function validateProductDeclarationIdentifiers(fields: ProductDeclarationIdentifierFields): Record<string, string> {
   const errors: Record<string, string> = {}
+  const allowUnidentifiedSpokeDraft = fields.product_type === 'spoke' && fields.status === 'inactive' && (fields.variants || []).length === 0
   const definitions = [
-    { key: 'merchant_product_identifier', label: '商家产品识别码（MPID）', required: true },
-    { key: 'manufacturer_product_identifier', label: '制造商产品识别码（NSPID）', required: true },
+    { key: 'merchant_product_identifier', label: '商家产品识别码（MPID）', required: !allowUnidentifiedSpokeDraft },
+    { key: 'manufacturer_product_identifier', label: '制造商产品识别码（NSPID）', required: !allowUnidentifiedSpokeDraft },
     { key: 'standard_product_identifier', label: '国际标准商品编码（SPID）', required: false },
   ] as const
   for (const definition of definitions) {
@@ -32,7 +35,7 @@ export function validateProductDeclarationIdentifiers(fields: ProductDeclaration
     else if (Array.from(value).length > 70) errors[definition.key] = `${definition.label}不能超过 70 个字符`
   }
   const standardProductIdentifier = (fields.standard_product_identifier || '').trim()
-  if (fields.product_type === 'wheelset' && standardProductIdentifier && !isValidGS1GlobalTradeItemNumber(standardProductIdentifier)) {
+  if (['wheelset', 'spoke'].includes(fields.product_type || '') && standardProductIdentifier && !isValidGS1GlobalTradeItemNumber(standardProductIdentifier)) {
     errors.standard_product_identifier = 'EAN/GTIN 必须是校验位正确的 8、12、13 或 14 位数字'
   }
   return errors

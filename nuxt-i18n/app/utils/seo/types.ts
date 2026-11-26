@@ -26,6 +26,8 @@ export interface ProductSeoVariantInput {
   weightGrams?: number
   id?: number | string | null
   name?: string | null
+  mpn?: string | null
+  gtin?: string | null
   sku?: string | null
   price?: string | null
   currency?: string | null
@@ -53,6 +55,8 @@ export interface ProductSeoInput {
   category?: string | null
   mpn?: string | null
   gtin?: string | null
+  model?: string | null
+  color?: string | null
   size?: string
   material?: string
   weightGrams?: number
@@ -123,6 +127,8 @@ export interface ProductSeoSchema {
   category?: string
   mpn?: string
   gtin?: string
+  model?: string
+  color?: string
   size?: string
   material?: string
   weight?: { '@type': 'QuantitativeValue'; value: number; unitCode: 'GRM' }
@@ -145,6 +151,10 @@ export interface ProductSeoSchema {
 
 export interface ProductSeoProductGroupSchema {
   category?: string
+  mpn?: string
+  gtin?: string
+  model?: string
+  color?: string
   size?: string
   material?: string
   '@id'?: string

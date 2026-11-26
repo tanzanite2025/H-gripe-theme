@@ -25,6 +25,9 @@ func validateDedicatedProductTypeCreation(input ProductCreateInput) error {
 		if input.WheelsetSpecification != nil {
 			return fmt.Errorf("%w: wheelset specification requires wheelset product_type", ErrProductSpecInvalid)
 		}
+		if input.SpokeSpecification != nil {
+			return fmt.Errorf("%w: spoke specification requires spoke product_type", ErrProductSpecInvalid)
+		}
 		return rejectCarbonRimVariantSpecificationsOutsideCarbonRimProduct(input.Variants)
 	case product.ProductTypeCarbonRim:
 		if input.BicycleTireSpecification != nil {
@@ -33,6 +36,9 @@ func validateDedicatedProductTypeCreation(input ProductCreateInput) error {
 		if input.WheelsetSpecification != nil {
 			return fmt.Errorf("%w: wheelset specification requires wheelset product_type", ErrProductSpecInvalid)
 		}
+		if input.SpokeSpecification != nil {
+			return fmt.Errorf("%w: spoke specification requires spoke product_type", ErrProductSpecInvalid)
+		}
 	case product.ProductTypeBicycleTire:
 		if input.CarbonRimSpecification != nil {
 			return fmt.Errorf("%w: carbon rim specification requires carbon_rim product_type", ErrProductSpecInvalid)
@@ -40,10 +46,21 @@ func validateDedicatedProductTypeCreation(input ProductCreateInput) error {
 		if input.WheelsetSpecification != nil {
 			return fmt.Errorf("%w: wheelset specification requires wheelset product_type", ErrProductSpecInvalid)
 		}
+		if input.SpokeSpecification != nil {
+			return fmt.Errorf("%w: spoke specification requires spoke product_type", ErrProductSpecInvalid)
+		}
 		return rejectCarbonRimVariantSpecificationsOutsideCarbonRimProduct(input.Variants)
 	case product.ProductTypeWheelset:
 		if input.CarbonRimSpecification != nil || input.BicycleTireSpecification != nil {
 			return fmt.Errorf("%w: wheelset products cannot include carbon rim or bicycle tire specifications", ErrProductSpecInvalid)
+		}
+		if input.SpokeSpecification != nil {
+			return fmt.Errorf("%w: spoke specification requires spoke product_type", ErrProductSpecInvalid)
+		}
+		return rejectCarbonRimVariantSpecificationsOutsideCarbonRimProduct(input.Variants)
+	case product.ProductTypeSpoke:
+		if input.CarbonRimSpecification != nil || input.BicycleTireSpecification != nil || input.WheelsetSpecification != nil {
+			return fmt.Errorf("%w: spoke products cannot include carbon rim, bicycle tire or wheelset specifications", ErrProductSpecInvalid)
 		}
 		return rejectCarbonRimVariantSpecificationsOutsideCarbonRimProduct(input.Variants)
 	default:
@@ -65,8 +82,14 @@ func validateDedicatedProductTypeUpdate(existing *product.Product, input *Produc
 	if existing.ProductType != product.ProductTypeWheelset && (input.UpdateWheelsetSpecification || input.WheelsetSpecification != nil) {
 		return fmt.Errorf("%w: wheelset specification requires wheelset product_type", ErrProductSpecInvalid)
 	}
+	if existing.ProductType != product.ProductTypeSpoke && (input.UpdateSpokeSpecification || input.SpokeSpecification != nil) {
+		return fmt.Errorf("%w: spoke specification requires spoke product_type", ErrProductSpecInvalid)
+	}
 	if existing.ProductType == product.ProductTypeWheelset && (input.UpdateCarbonRimSpecification || input.CarbonRimSpecification != nil || input.UpdateBicycleTireSpecification || input.BicycleTireSpecification != nil) {
 		return fmt.Errorf("%w: wheelset products cannot include carbon rim or bicycle tire specifications", ErrProductSpecInvalid)
+	}
+	if existing.ProductType == product.ProductTypeSpoke && (input.UpdateCarbonRimSpecification || input.CarbonRimSpecification != nil || input.UpdateBicycleTireSpecification || input.BicycleTireSpecification != nil || input.UpdateWheelsetSpecification || input.WheelsetSpecification != nil) {
+		return fmt.Errorf("%w: spoke products cannot include carbon rim, bicycle tire or wheelset specifications", ErrProductSpecInvalid)
 	}
 	if input.UpdateVariants && existing.ProductType != product.ProductTypeCarbonRim {
 		return rejectCarbonRimVariantSpecificationsOutsideCarbonRimProduct(input.Variants)

@@ -8,6 +8,7 @@ import (
 	"commerce-platform/internal/domain/product"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type productTranslationRouteRecord struct {
@@ -119,6 +120,22 @@ func (r *ProductRepository) CreateTranslatedCopy(source, target *product.Product
 	}
 
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		if target.ProductType == product.ProductTypeSpoke {
+			if target.ParentID == nil || *target.ParentID == 0 {
+				return fmt.Errorf("spoke translation requires a source product")
+			}
+			var canonicalSource product.Product
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+				Select("spoke_specification").
+				Where("id = ? AND product_type = ? AND (parent_id IS NULL OR parent_id = 0)", *target.ParentID, product.ProductTypeSpoke).
+				First(&canonicalSource).Error; err != nil {
+				return err
+			}
+			// A translation may have loaded its source before a concurrent fact
+			// update. Persist only the value observed while holding the root lock.
+			target.SpokeSpecification = canonicalSource.SpokeSpecification
+		}
+
 		// A translation creates new placements and must revalidate the current
 		// asset lifecycle, rather than trusting a previously loaded source copy.
 		if err := r.validateAndCanonicalizeCombinedProductMediaBindings(tx, target, &product.Product{}, source.Media, true, source.VariantOptionValues, true); err != nil {

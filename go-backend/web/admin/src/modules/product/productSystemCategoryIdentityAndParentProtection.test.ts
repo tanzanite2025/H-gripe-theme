@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { isProtectedSystemProductCategory, hasProtectedSystemProductCategoryParent } from './productSystemCategoryIdentityAndParentProtection'
 
 describe('system product category identity and parent protection', () => {
-  it.each(['wheelset', 'wheel-components', 'tire', 'spoke-repair-kits', 'carbon-rim'])('protects the %s identity', (slug) => {
+  it.each(['wheelset', 'wheel-components', 'tire', 'spokes', 'spoke-repair-kits', 'carbon-rim'])('protects the %s identity', (slug) => {
     expect(isProtectedSystemProductCategory(slug)).toBe(true)
     expect(hasProtectedSystemProductCategoryParent(slug)).toBe(slug !== 'wheelset')
   })

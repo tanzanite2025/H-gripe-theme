@@ -11,10 +11,10 @@ import (
 	"github.com/lib/pq"
 )
 
-// Version 3 adds the WHEELSET category and product-type trigger contracts.
-const productCatalogStandardWriteGuardVersion = 3
+// Version 5 replaces the temporary spokes-category rejection with the dedicated spoke product binding.
+const productCatalogStandardWriteGuardVersion = 5
 
-// These exact bodies come from migrations 432, 439, 440 and 442. Only surrounding
+// These exact bodies come from migrations 432, 439, 440, 442, 444 and 445. Only surrounding
 // whitespace and CRLF line endings are normalized; names alone never approve a function body.
 const productCatalogSystemCategoryIdentityAndTreeProtectionFunctionBody = `BEGIN
     IF TG_OP <> 'INSERT' AND OLD.slug IN ('wheel-components', 'carbon-rim') THEN
@@ -155,6 +155,75 @@ const productCatalogWheelsetSystemCategoryIdentityProtectionFunctionBody = `BEGI
     RETURN NEW;
 END`
 
+const productCatalogSpokesSystemCategoryIdentityAndTreeProtectionFunctionBody = `BEGIN
+    IF TG_OP <> 'INSERT' AND OLD.slug = 'spokes' THEN
+        IF TG_OP = 'DELETE' THEN
+            RAISE EXCEPTION 'The spokes system category cannot be deleted' USING ERRCODE = '23514';
+        END IF;
+        IF NEW.id IS DISTINCT FROM OLD.id OR NEW.slug IS DISTINCT FROM OLD.slug THEN
+            RAISE EXCEPTION 'The spokes system category identity cannot be changed' USING ERRCODE = '23514';
+        END IF;
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+
+    IF NEW.slug = 'spokes' AND (
+        NEW.depth <> 2 OR NOT NEW.is_enabled OR NOT EXISTS (
+            SELECT 1 FROM product_categories parent
+            WHERE parent.id = NEW.parent_id
+              AND parent.slug = 'wheel-components'
+              AND parent.parent_id IS NULL
+              AND parent.depth = 1
+              AND parent.is_enabled
+        )
+    ) THEN
+        RAISE EXCEPTION 'spokes must remain enabled directly under wheel-components' USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END`
+
+const productCatalogRejectProductBindingToUnimplementedSpokesCategoryFunctionBody = `DECLARE
+    category_slug TEXT;
+BEGIN
+    SELECT slug INTO category_slug
+    FROM product_categories
+    WHERE id = NEW.product_category_id;
+
+    IF category_slug = 'spokes' THEN
+        RAISE EXCEPTION 'spokes products require the dedicated spoke product type, which is not implemented yet' USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END`
+
+const productCatalogSpokeProductTypeAndCategoryBindingFunctionBody = `DECLARE
+    category_slug TEXT;
+    category_enabled BOOLEAN;
+BEGIN
+    IF TG_OP = 'UPDATE'
+       AND NEW.product_type IS DISTINCT FROM OLD.product_type
+       AND (NEW.product_type = 'spoke' OR OLD.product_type = 'spoke') THEN
+        RAISE EXCEPTION 'Dedicated spoke product type is immutable' USING ERRCODE = '23514';
+    END IF;
+
+    SELECT slug, is_enabled INTO category_slug, category_enabled
+    FROM product_categories
+    WHERE id = NEW.product_category_id;
+
+    IF NEW.product_type = 'spoke' THEN
+        IF category_slug IS DISTINCT FROM 'spokes' OR category_enabled IS DISTINCT FROM TRUE THEN
+            RAISE EXCEPTION 'spoke products must belong to the enabled spokes system category' USING ERRCODE = '23514';
+        END IF;
+    ELSIF category_slug = 'spokes' THEN
+        RAISE EXCEPTION 'spokes is reserved for dedicated spoke products' USING ERRCODE = '23514';
+    END IF;
+
+    RETURN NEW;
+END`
+
 type productCatalogApprovedStandardTriggerContract struct {
 	Table, Name, UpdatedColumns, FunctionBody string
 	TriggerType                               int
@@ -168,6 +237,8 @@ func productCatalogApprovedStandardTriggerContracts() []productCatalogApprovedSt
 		{"products", "require_bicycle_tire_product_type_and_tire_category", "product_category_id,product_type", productCatalogBicycleTireProductTypeAndCategoryBindingFunctionBody, 23},
 		{"product_categories", "protect_wheelset_system_category_identity", "", productCatalogWheelsetSystemCategoryIdentityProtectionFunctionBody, 31},
 		{"products", "require_wheelset_product_type_and_system_category_binding", "product_category_id,product_type", productCatalogWheelsetProductTypeAndCategoryBindingFunctionBody, 23},
+		{"product_categories", "protect_spokes_system_category_identity_and_tree_position", "", productCatalogSpokesSystemCategoryIdentityAndTreeProtectionFunctionBody, 31},
+		{"products", "require_spoke_product_type_and_system_category_binding", "product_category_id,product_type", productCatalogSpokeProductTypeAndCategoryBindingFunctionBody, 23},
 	}
 }
 
@@ -222,21 +293,24 @@ type productCatalogProtectedDedicatedSystemCategoryIdentities struct {
 	CarbonRimID       int64
 	BicycleTireID     int64
 	WheelsetID        int64
+	SpokesID          int64
 }
 
 func inspectProductCatalogRequiredDedicatedSystemCategoriesAndBindings(ctx context.Context, tx *sql.Tx) (productCatalogProtectedDedicatedSystemCategoryIdentities, error) {
 	var identities productCatalogProtectedDedicatedSystemCategoryIdentities
 	if err := tx.QueryRowContext(ctx, `
-SELECT root.id, carbon.id, tire.id, wheelset.id
+SELECT root.id, carbon.id, tire.id, wheelset.id, spokes.id
 FROM public.product_categories root
 JOIN public.product_categories carbon ON carbon.parent_id=root.id
 JOIN public.product_categories tire ON tire.parent_id=root.id
+JOIN public.product_categories spokes ON spokes.parent_id=root.id
 JOIN public.product_categories wheelset ON wheelset.slug='wheelset' AND wheelset.is_enabled
 WHERE root.slug='wheel-components' AND root.parent_id IS NULL AND root.depth=1 AND root.is_enabled
   AND carbon.slug='carbon-rim' AND carbon.depth=2 AND carbon.is_enabled
-  AND tire.slug='tire' AND tire.depth=2 AND tire.is_enabled`).Scan(&identities.WheelComponentsID, &identities.CarbonRimID, &identities.BicycleTireID, &identities.WheelsetID); err != nil {
+	AND tire.slug='tire' AND tire.depth=2 AND tire.is_enabled
+	AND spokes.slug='spokes' AND spokes.depth=2 AND spokes.is_enabled`).Scan(&identities.WheelComponentsID, &identities.CarbonRimID, &identities.BicycleTireID, &identities.WheelsetID, &identities.SpokesID); err != nil {
 		if err == sql.ErrNoRows {
-			return identities, errors.New("product restore requires the enabled wheel-components root, its carbon-rim and tire categories, and the enabled wheelset category")
+			return identities, errors.New("product restore requires the enabled wheel-components root, its carbon-rim, tire and spokes categories, and the enabled wheelset category")
 		}
 		return identities, err
 	}
@@ -248,7 +322,9 @@ SELECT EXISTS(
        OR (product_type<>'carbon_rim' AND product_category_id=$1)
        OR (product_type='bicycle_tire' AND product_category_id IS DISTINCT FROM $2)
        OR (product_type='wheelset' AND product_category_id IS DISTINCT FROM $3)
-)`, identities.CarbonRimID, identities.BicycleTireID, identities.WheelsetID).Scan(&invalid); err != nil {
+       OR (product_type='spoke' AND product_category_id IS DISTINCT FROM $4)
+       OR (product_type<>'spoke' AND product_category_id=$4)
+)`, identities.CarbonRimID, identities.BicycleTireID, identities.WheelsetID, identities.SpokesID).Scan(&invalid); err != nil {
 		return identities, err
 	}
 	if invalid {
@@ -293,7 +369,7 @@ func lockProductCatalogWriteTablesAndValidateStandardBusinessContractsBeforeMerg
 		if err != nil {
 			return identities, err
 		}
-		if currentType != incomingType && (currentType == "carbon_rim" || incomingType == "carbon_rim" || currentType == "bicycle_tire" || incomingType == "bicycle_tire" || currentType == "wheelset" || incomingType == "wheelset") {
+		if currentType != incomingType && (currentType == "carbon_rim" || incomingType == "carbon_rim" || currentType == "bicycle_tire" || incomingType == "bicycle_tire" || currentType == "wheelset" || incomingType == "wheelset" || currentType == "spoke" || incomingType == "spoke") {
 			return identities, errors.New("product restore cannot change an existing dedicated product type")
 		}
 	}

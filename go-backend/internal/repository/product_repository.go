@@ -686,7 +686,10 @@ func (r *ProductRepository) Update(p *product.Product) error {
 		if err := r.lockCurrentProductAndValidateMediaMutation(tx, p, nil, false, nil, false, nil); err != nil {
 			return err
 		}
-		return tx.Model(&product.Product{}).Where("id = ?", p.ID).Updates(productUpdateColumns(p)).Error
+		if err := tx.Model(&product.Product{}).Where("id = ?", p.ID).Updates(productUpdateColumns(p)).Error; err != nil {
+			return err
+		}
+		return synchronizeTranslatedSpokesProductSpecificationsInTransaction(tx, p)
 	})
 }
 
@@ -742,6 +745,10 @@ func productUpdateColumns(p *product.Product) map[string]interface{} {
 	if p.WheelsetSpecificationDirty {
 		encodedSpecification, _ := json.Marshal(p.WheelsetSpecification)
 		columns["wheelset_specification"] = string(encodedSpecification)
+	}
+	if p.SpokeSpecificationDirty {
+		encodedSpecification, _ := json.Marshal(p.SpokeSpecification)
+		columns["spoke_specification"] = string(encodedSpecification)
 	}
 	return columns
 }
@@ -801,6 +808,9 @@ func (r *ProductRepository) UpdateWithSpecValuesVariantsOptionValuesAndMedia(
 			values []product.ProductOptionValueVariantRule
 		}, len(variants))
 		if err := tx.Model(&product.Product{}).Where("id = ?", p.ID).Updates(productUpdateColumns(p)).Error; err != nil {
+			return err
+		}
+		if err := synchronizeTranslatedSpokesProductSpecificationsInTransaction(tx, p); err != nil {
 			return err
 		}
 		if p.ProductCategoryID == nil {

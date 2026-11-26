@@ -169,6 +169,8 @@ export const buildProductJsonLd = (
 
   if (cleanText(input.mpn)) schema.mpn = cleanText(input.mpn)
   if (cleanText(input.gtin)) schema.gtin = cleanText(input.gtin)
+  if (cleanText(input.model)) schema.model = cleanText(input.model)
+  if (cleanText(input.color)) schema.color = cleanText(input.color)
   if (description) schema.description = description
   if (cleanText(input.category)) schema.category = cleanText(input.category)
   if (input.additionalProperties?.length) schema.additionalProperty = input.additionalProperties
@@ -239,6 +241,10 @@ export const buildProductGroupJsonLd = (
   }
   if (description) group.description = description
   if (cleanText(input.category)) group.category = cleanText(input.category)
+  if (cleanText(input.mpn)) group.mpn = cleanText(input.mpn)
+  if (cleanText(input.gtin)) group.gtin = cleanText(input.gtin)
+  if (cleanText(input.model)) group.model = cleanText(input.model)
+  if (cleanText(input.color)) group.color = cleanText(input.color)
   if (input.additionalProperties?.length) group.additionalProperty = input.additionalProperties
   if (cleanText(input.size)) group.size = cleanText(input.size)
   if (cleanText(input.material)) group.material = cleanText(input.material)
@@ -255,6 +261,8 @@ export const buildProductGroupJsonLd = (
         {
           ...input,
           name: variantName,
+          mpn: variant.mpn,
+          gtin: variant.gtin,
           sku: variant.sku,
           additionalProperties: [...(input.additionalProperties || []), ...(variant.additionalProperties || [])],
           weightGrams: variant.weightGrams,

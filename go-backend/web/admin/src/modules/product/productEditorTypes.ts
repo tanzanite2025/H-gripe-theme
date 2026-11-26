@@ -4,6 +4,7 @@ export interface ProductFormRecord {
   carbon_rim_specification?: import('./carbonRimDedicatedSpecificationFormValuesAndValidation').CarbonRimSpecificationForm | null
   bicycle_tire_specification?: import('./bicycleTireDedicatedSpecificationFormValuesAndValidation').BicycleTireSpecificationForm | null
   wheelset_specification?: import('./wheelsetDedicatedProductSpecificationFormValuesAndValidation').WheelsetSpecificationForm | null
+  spoke_specification?: import('./spokesDedicatedProductSpecificationFormValuesAndValidation').SpokesProductSpecificationForm | null
   product_specification_template_id: number | string | null
   product_category_id: number | string | null
   brand_id: number | string | null

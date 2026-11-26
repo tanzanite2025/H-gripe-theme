@@ -18,7 +18,7 @@ describe('product declaration identifiers', () => {
     }
   })
 
-  it('validates optional WHEELSET GTIN length and GS1 check digit while preserving leading zeros', () => {
+  it('validates optional dedicated-product GTIN length and GS1 check digit while preserving leading zeros', () => {
     for (const gtin of ['96385074', '036000291452', '4006381333931', '00012345678905']) {
       expect(validateProductDeclarationIdentifiers({
         product_type: 'wheelset',
@@ -40,6 +40,18 @@ describe('product declaration identifiers', () => {
       manufacturer_product_identifier: 'FACTORY-WHEELSET-1',
       standard_product_identifier: '400-6381333931',
     }).standard_product_identifier).toContain('8、12、13 或 14 位数字')
+    expect(validateProductDeclarationIdentifiers({
+      product_type: 'spoke',
+      merchant_product_identifier: 'SHOP-SPOKE-1',
+      manufacturer_product_identifier: 'FACTORY-SPOKE-1',
+      standard_product_identifier: '4006381333931',
+    })).toEqual({})
+    expect(validateProductDeclarationIdentifiers({
+      product_type: 'spoke',
+      merchant_product_identifier: 'SHOP-SPOKE-1',
+      manufacturer_product_identifier: 'FACTORY-SPOKE-1',
+      standard_product_identifier: '4006381333932',
+    }).standard_product_identifier).toContain('校验位正确')
     expect(validateProductDeclarationIdentifiers({
       product_type: 'wheelset',
       merchant_product_identifier: 'SHOP-WHEELSET-1',

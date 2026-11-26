@@ -126,6 +126,75 @@ func TestProductServiceKeepsSpokeRepairKitProductTypeOnDedicatedChain(t *testing
 	require.ErrorIs(t, err, ErrSpokeRepairKitProductTypeImmutable)
 }
 
+func TestProductServiceCreatesIndependentSpokeProductFactsOnlyInSpokesCategory(t *testing.T) {
+	db, productService := newTestProductService(t)
+	parent := seedProductCategoryForProductServiceTest(t, db, "Wheel Components", SystemProductCategoryWheelComponentsSlug, nil)
+	spokesCategory := seedProductCategoryForProductServiceTest(t, db, "Spokes", SystemProductCategorySpokesSlug, &parent.ID)
+	otherCategory := seedProductCategoryForProductServiceTest(t, db, "Other Components", "other-components", &parent.ID)
+
+	productType := product.ProductTypeSpoke
+	spokeFacts := &product.SpokesProductSpecification{SchemaVersion: 1, ModelName: "CX-Ray"}
+	productRecord, err := productService.CreateAdminProduct(ProductCreateInput{
+		ProductType:        &productType,
+		SpokeSpecification: spokeFacts,
+		ProductCategoryID:  &spokesCategory.ID,
+		Name:               "SAPIM CX-Ray",
+		Slug:               "sapim-cx-ray",
+		Status:             "inactive",
+		Locale:             "en",
+	})
+	require.NoError(t, err)
+	require.Equal(t, product.ProductTypeSpoke, productRecord.ProductType)
+	require.Equal(t, spokeFacts, productRecord.SpokeSpecification)
+	require.Nil(t, productRecord.ProductSpecificationTemplateID)
+	require.Empty(t, productRecord.SKU)
+	require.Equal(t, "inactive", productRecord.Status)
+	var variantCount int64
+	require.NoError(t, db.Model(&product.ProductVariant{}).Where("product_id = ?", productRecord.ID).Count(&variantCount).Error)
+	require.Zero(t, variantCount)
+
+	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		ProductType:        &productType,
+		SpokeSpecification: &product.SpokesProductSpecification{SchemaVersion: 1, ModelName: "Wrong category"},
+		ProductCategoryID:  &otherCategory.ID,
+		Name:               "Invalid spoke category",
+		Slug:               "invalid-spoke-category",
+		Status:             "inactive",
+		Locale:             "en",
+	})
+	require.ErrorIs(t, err, ErrProductCategoryInvalid)
+
+	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		ProductType:        &productType,
+		SpokeSpecification: &product.SpokesProductSpecification{SchemaVersion: 1, ModelName: "Invalid active draft"},
+		ProductCategoryID:  &spokesCategory.ID,
+		Name:               "Invalid active spoke draft",
+		Slug:               "invalid-active-spoke-draft",
+		Status:             "active",
+		Locale:             "en",
+	})
+	require.ErrorIs(t, err, ErrProductSpecInvalid)
+	require.ErrorContains(t, err, "inactive draft")
+
+	err = productService.UpdateStatus(productRecord.ID, "active")
+	require.ErrorIs(t, err, ErrProductVariantInvalid)
+
+	configureSpokeProductTranslationTransactionalOutboxForTest(t, db, productService)
+	updatedFacts := &product.SpokesProductSpecification{SchemaVersion: 1, ModelName: "CX-Ray", ManufacturerFamily: "Aero spokes"}
+	updatedProduct, err := productService.UpdateAdminProduct(productRecord.ID, ProductUpdateInput{
+		SpokeSpecification:       updatedFacts,
+		UpdateSpokeSpecification: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, updatedFacts, updatedProduct.SpokeSpecification)
+
+	wrongProductType := ""
+	_, err = productService.UpdateAdminProduct(productRecord.ID, ProductUpdateInput{
+		ProductType: &wrongProductType,
+	})
+	require.ErrorIs(t, err, ErrProductSpecInvalid)
+}
+
 func TestProductServiceNormalizesAdminProductSlugOnCreateAndUpdate(t *testing.T) {
 	_, productService := newTestProductService(t)
 
@@ -265,7 +334,7 @@ func TestProductServiceListsOnlyWheelsetProductLevelDynamicFiltersForCategoryTre
 		Status:                         "active",
 		Locale:                         "en",
 		SpecValues: map[string]string{
-			"outer_width_mm": "30.5",
+			"outer_width_mm":                   "30.5",
 			product.WheelsetFilterKeyWheelSize: "650B generic-template value",
 		},
 		Variants: []ProductVariantInput{
@@ -291,7 +360,7 @@ func TestProductServiceListsOnlyWheelsetProductLevelDynamicFiltersForCategoryTre
 		Status:                         "active",
 		Locale:                         "en",
 		SpecValues: map[string]string{
-			"outer_width_mm": "45",
+			"outer_width_mm":                   "45",
 			product.WheelsetFilterKeyWheelSize: "650B generic-template value",
 		},
 		Variants: []ProductVariantInput{

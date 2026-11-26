@@ -208,6 +208,51 @@ func TestSpokeRepairKitCategoryCannotBeRenamedOrDisabled(t *testing.T) {
 	}
 }
 
+func TestSpokesSystemCategoryCannotBeRenamedDisabledMovedOrDeleted(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	if err := db.AutoMigrate(&product.ProductCategory{}, &product.ProductCategoryTranslation{}); err != nil {
+		t.Fatalf("migrate test db: %v", err)
+	}
+
+	parent := product.ProductCategory{
+		Name:      "Wheel Components",
+		Slug:      SystemProductCategoryWheelComponentsSlug,
+		Depth:     1,
+		IsEnabled: true,
+	}
+	if err := db.Create(&parent).Error; err != nil {
+		t.Fatalf("create parent category: %v", err)
+	}
+	category := product.ProductCategory{
+		ParentID:  &parent.ID,
+		Name:      "Spokes",
+		Slug:      SystemProductCategorySpokesSlug,
+		Depth:     2,
+		IsEnabled: true,
+	}
+	if err := db.Create(&category).Error; err != nil {
+		t.Fatalf("create spokes category: %v", err)
+	}
+
+	service := NewProductCategoryService(repository.NewProductCategoryRepository(db))
+	for _, input := range []ProductCategoryInput{
+		{ParentID: &parent.ID, Name: category.Name, Slug: "spokes-renamed", IsEnabled: true},
+		{ParentID: &parent.ID, Name: category.Name, Slug: category.Slug, IsEnabled: false},
+		{ParentID: nil, Name: category.Name, Slug: category.Slug, IsEnabled: true},
+	} {
+		_, err = service.Update(category.ID, input)
+		if !errors.Is(err, ErrProductCategorySystemProtected) {
+			t.Fatalf("update error = %v, want system protection", err)
+		}
+	}
+	if err = service.Delete(category.ID); !errors.Is(err, ErrProductCategorySystemProtected) {
+		t.Fatalf("delete error = %v, want system protection", err)
+	}
+}
+
 func TestProductCategorySEOUpdateDoesNotPersistDescriptionAsIntro(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {

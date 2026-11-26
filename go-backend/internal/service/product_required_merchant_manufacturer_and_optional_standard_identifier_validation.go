@@ -11,13 +11,14 @@ import (
 // Product identifiers are carrier-independent catalog data. Never manufacture
 // an identifier from a SKU or copy the merchant identifier into the factory code.
 func normalizeAndValidateRequiredProductIdentifiers(record *product.Product) error {
+	identifiersRequired := !(record.ProductType == product.ProductTypeSpoke && strings.TrimSpace(record.Status) == "inactive" && strings.TrimSpace(record.SKU) == "")
 	fields := []struct {
 		value    *string
 		label    string
 		required bool
 	}{
-		{&record.MerchantProductIdentifier, "商家产品识别码（MPID）", true},
-		{&record.ManufacturerProductIdentifier, "制造商产品识别码（NSPID）", true},
+		{&record.MerchantProductIdentifier, "商家产品识别码（MPID）", identifiersRequired},
+		{&record.ManufacturerProductIdentifier, "制造商产品识别码（NSPID）", identifiersRequired},
 		{&record.StandardProductIdentifier, "国际标准商品编码（SPID）", false},
 	}
 	for _, field := range fields {
@@ -29,8 +30,8 @@ func normalizeAndValidateRequiredProductIdentifiers(record *product.Product) err
 			return fmt.Errorf("%w: %s不能超过 70 个字符", ErrProductCustomsInfoInvalid, field.label)
 		}
 	}
-	if record.ProductType == product.ProductTypeWheelset && record.StandardProductIdentifier != "" && !product.IsValidGS1GlobalTradeItemNumber(record.StandardProductIdentifier) {
-		return fmt.Errorf("%w: WHEELSET EAN/GTIN must be a valid 8-, 12-, 13-, or 14-digit GS1 identifier with a correct check digit", ErrProductCustomsInfoInvalid)
+	if (record.ProductType == product.ProductTypeWheelset || record.ProductType == product.ProductTypeSpoke) && record.StandardProductIdentifier != "" && !product.IsValidGS1GlobalTradeItemNumber(record.StandardProductIdentifier) {
+		return fmt.Errorf("%w: EAN/GTIN must be a valid 8-, 12-, 13-, or 14-digit GS1 identifier with a correct check digit", ErrProductCustomsInfoInvalid)
 	}
 	return nil
 }

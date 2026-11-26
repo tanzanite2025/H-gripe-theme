@@ -231,7 +231,7 @@
                     >
                       <h5 v-if="productSpecificationGroups.length > 1">{{ group.name }}</h5>
                       <dl>
-                        <div v-for="item in group.items" :key="item.slug" class="global-product-detail-bottom-sheet-specification-item">
+                        <div v-for="(item, index) in group.items" :key="`${item.slug}-${index}`" class="global-product-detail-bottom-sheet-specification-item">
                           <dt>{{ item.name }}</dt>
                           <dd>{{ item.value }}</dd>
                         </div>

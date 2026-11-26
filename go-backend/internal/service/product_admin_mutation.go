@@ -2,7 +2,9 @@ package service
 
 import (
 	"errors"
+	"fmt"
 
+	"commerce-platform/internal/domain/product"
 	"commerce-platform/internal/repository"
 )
 
@@ -72,6 +74,16 @@ func (s *ProductService) updateProductStatusByID(id uint, status string, shouldI
 	existingProduct, err := s.findProduct(id)
 	if err != nil {
 		return err
+	}
+	if existingProduct.ProductType == product.ProductTypeSpoke && status == "active" {
+		if len(existingProduct.ActiveVariants()) == 0 {
+			return fmt.Errorf("%w: add a sales SKU before activating a spoke product", ErrProductVariantInvalid)
+		}
+		candidate := *existingProduct
+		candidate.Status = status
+		if err := normalizeAndValidateRequiredProductIdentifiers(&candidate); err != nil {
+			return err
+		}
 	}
 
 	if s.txManager != nil {

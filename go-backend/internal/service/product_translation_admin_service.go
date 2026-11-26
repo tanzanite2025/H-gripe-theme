@@ -96,6 +96,17 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 			return nil, nil, fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
 		}
 	}
+	if source.ProductType == product.ProductTypeSpoke {
+		if s.txManager == nil {
+			return nil, nil, ErrTransactionalOutboxNotConfigured
+		}
+		if err := s.validateSpokeProductTypeAndSystemCategoryBinding(source.ProductType, source.ProductCategoryID); err != nil {
+			return nil, nil, err
+		}
+		if err := product.ValidateSpokesProductSpecification(source.SpokeSpecification); err != nil {
+			return nil, nil, fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
+		}
+	}
 
 	locale, err := requireSupportedLocale(targetLocale)
 	if err != nil {
@@ -143,6 +154,7 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 		CarbonRimSpecification:         source.CarbonRimSpecification,
 		BicycleTireSpecification:       source.BicycleTireSpecification,
 		WheelsetSpecification:          source.WheelsetSpecification,
+		SpokeSpecification:             source.SpokeSpecification,
 		ProductSpecificationTemplateID: source.ProductSpecificationTemplateID,
 		ProductCategoryID:              source.ProductCategoryID,
 		BrandID:                        source.BrandID,
@@ -172,22 +184,51 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 		return nil, nil, err
 	}
 
-	if err := s.productRepo.CreateTranslatedCopy(source, target, variantSKUs); err != nil {
-		if errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, nil, ErrProductNotFound
+	var createdProduct *product.Product
+	if s.txManager != nil {
+		err := s.txManager.WithinTx(func(tx repository.TxRepositories) error {
+			if tx.Product == nil {
+				return errors.New("transactional product repository is not configured")
+			}
+			if err := tx.Product.CreateTranslatedCopy(source, target, variantSKUs); err != nil {
+				return mapProductRepositoryMutationError(err)
+			}
+			createdProduct, err = tx.Product.FindByID(target.ID)
+			if err != nil {
+				return err
+			}
+			_, merchantEvents, err := s.transactionalProductPublishers(tx.Outbox)
+			if err != nil {
+				return err
+			}
+			if err := enqueueMerchantProductChangeWithPublisher(merchantEvents, createdProduct, "product_translation_created"); err != nil {
+				return requireMerchantEvent(err, createdProduct, "product_translation_created")
+			}
+			return nil
+		})
+		if err != nil {
+			if errors.Is(err, repository.ErrRecordNotFound) {
+				return nil, nil, ErrProductNotFound
+			}
+			return nil, nil, mapProductRepositoryMutationError(err)
 		}
-		return nil, nil, mapProductRepositoryMutationError(err)
+	} else {
+		if err := s.productRepo.CreateTranslatedCopy(source, target, variantSKUs); err != nil {
+			if errors.Is(err, repository.ErrRecordNotFound) {
+				return nil, nil, ErrProductNotFound
+			}
+			return nil, nil, mapProductRepositoryMutationError(err)
+		}
+		createdProduct, err = s.findProduct(target.ID)
+		if err != nil {
+			return nil, nil, err
+		}
+		if err := s.enqueueMerchantProductChange(createdProduct, "product_translation_created"); err != nil {
+			return nil, nil, requireMerchantEvent(err, createdProduct, "product_translation_created")
+		}
 	}
 
 	s.invalidateStorefrontHTMLCache("admin product translation copy")
-
-	createdProduct, err := s.findProduct(target.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-	if err := s.enqueueMerchantProductChange(createdProduct, "product_translation_created"); err != nil {
-		return nil, nil, requireMerchantEvent(err, createdProduct, "product_translation_created")
-	}
 
 	group, err := s.GetAdminProductTranslationGroup(createdProduct.ID)
 	if err != nil {

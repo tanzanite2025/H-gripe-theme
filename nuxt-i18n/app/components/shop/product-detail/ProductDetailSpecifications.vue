@@ -8,7 +8,7 @@
     <div v-for="group in groups" :key="group.name" class="spec-group">
       <h3 v-if="shouldShowSpecGroupHeading(group.name, groups.length)">{{ group.name }}</h3>
       <dl>
-        <div v-for="item in group.items" :key="item.slug" class="spec-pill">
+        <div v-for="(item, index) in group.items" :key="`${item.slug}-${index}`" class="spec-pill">
           <dt>{{ item.name }}</dt>
           <dd>{{ item.displayValue }}</dd>
         </div>

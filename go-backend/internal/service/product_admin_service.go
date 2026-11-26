@@ -72,6 +72,7 @@ type ProductCreateInput struct {
 	CarbonRimSpecification         *product.CarbonRimSpecification
 	BicycleTireSpecification       *product.BicycleTireSpecification
 	WheelsetSpecification          *product.WheelsetSpecification
+	SpokeSpecification             *product.SpokesProductSpecification
 	ProductSpecificationTemplateID *uint
 	ProductCategoryID              *uint
 	BrandID                        *uint
@@ -115,6 +116,8 @@ type ProductUpdateInput struct {
 	UpdateBicycleTireSpecification       bool
 	WheelsetSpecification                *product.WheelsetSpecification
 	UpdateWheelsetSpecification          bool
+	SpokeSpecification                   *product.SpokesProductSpecification
+	UpdateSpokeSpecification             bool
 	ProductSpecificationTemplateID       *uint
 	UpdateProductSpecificationTemplateID bool
 	ProductCategoryID                    *uint
@@ -207,6 +210,9 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return nil, err
 	}
 	if err := s.validateDedicatedWheelsetCreation(input); err != nil {
+		return nil, err
+	}
+	if err := s.validateDedicatedSpokeCreation(input); err != nil {
 		return nil, err
 	}
 	if len(input.OptionValueRelations) > 0 {
@@ -319,6 +325,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		CarbonRimSpecification:         input.CarbonRimSpecification,
 		BicycleTireSpecification:       input.BicycleTireSpecification,
 		WheelsetSpecification:          input.WheelsetSpecification,
+		SpokeSpecification:             input.SpokeSpecification,
 		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
 		ProductCategoryID:              input.ProductCategoryID,
 		BrandID:                        input.BrandID,
@@ -430,6 +437,13 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if err := s.validateDedicatedWheelsetUpdate(existingProduct, &input); err != nil {
 		return nil, err
 	}
+	if err := s.validateDedicatedSpokeUpdate(existingProduct, &input); err != nil {
+		return nil, err
+	}
+	if input.UpdateSpokeSpecification && s.txManager == nil {
+		return nil, ErrTransactionalOutboxNotConfigured
+	}
+	cacheInvalidationProductIDs := []uint{existingProduct.ID}
 	if err := s.rejectRetiredProductSpecificationTemplateUse(input.ProductSpecificationTemplateID, existingProduct.ProductSpecificationTemplateID); err != nil {
 		return nil, err
 	}
@@ -444,6 +458,10 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if input.UpdateWheelsetSpecification {
 		existingProduct.WheelsetSpecification = input.WheelsetSpecification
 		existingProduct.WheelsetSpecificationDirty = true
+	}
+	if input.UpdateSpokeSpecification {
+		existingProduct.SpokeSpecification = input.SpokeSpecification
+		existingProduct.SpokeSpecificationDirty = true
 	}
 	previousProduct := *existingProduct
 	previousAfterSalesTemplateID := existingProduct.AfterSalesTemplateID
@@ -726,16 +744,35 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 			if err != nil {
 				return err
 			}
+			var spokeTranslationGroup []product.ProductTranslation
+			if input.UpdateSpokeSpecification {
+				rootID := productTranslationRootID(existingProduct)
+				membersByRootID, err := tx.Product.FindTranslationGroupMembers([]uint{rootID})
+				if err != nil {
+					return err
+				}
+				spokeTranslationGroup = membersByRootID[rootID]
+				cacheInvalidationProductIDs = cacheInvalidationProductIDs[:0]
+				for _, member := range spokeTranslationGroup {
+					cacheInvalidationProductIDs = append(cacheInvalidationProductIDs, member.ID)
+				}
+				cacheInvalidationProductIDs = uniqueUintIDs(cacheInvalidationProductIDs)
+			}
 			cacheEvents, merchantEvents, err := s.transactionalProductPublishers(tx.Outbox)
 			if err != nil {
 				return err
 			}
-			if err := enqueueProductCacheInvalidationByIDsWithPublisher(cacheEvents, []uint{previousProduct.ID, updatedProduct.ID}, "admin product update"); err != nil {
+			productIDsToInvalidate := uniqueUintIDs(append(cacheInvalidationProductIDs, previousProduct.ID, updatedProduct.ID))
+			if err := enqueueProductCacheInvalidationByIDsWithPublisher(cacheEvents, productIDsToInvalidate, "admin product update"); err != nil {
 				return err
 			}
 			if merchantProductUpdateAffectsChannel(input) {
 				reason := merchantProductSourceChangeReason(input)
-				if err := enqueueMerchantProductChangeWithPublisher(merchantEvents, updatedProduct, reason); err != nil {
+				if input.UpdateSpokeSpecification {
+					if err := enqueueMerchantProductTranslationGroupChangesWithPublisher(merchantEvents, spokeTranslationGroup, reason); err != nil {
+						return requireMerchantEvent(err, updatedProduct, reason)
+					}
+				} else if err := enqueueMerchantProductChangeWithPublisher(merchantEvents, updatedProduct, reason); err != nil {
 					return requireMerchantEvent(err, updatedProduct, reason)
 				}
 			}
@@ -746,6 +783,9 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		}
 		s.clearProductCache(&previousProduct)
 		s.clearProductCache(updatedProduct)
+		if input.UpdateSpokeSpecification {
+			s.InvalidateProductCacheByIDs(cacheInvalidationProductIDs)
+		}
 		s.invalidateStorefrontHTMLCache("admin product update")
 		return updatedProduct, nil
 	}
@@ -774,8 +814,12 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 
 	s.clearProductCache(&previousProduct)
 	s.clearProductCache(existingProduct)
-	if err := s.enqueueProductCacheInvalidationByIDs([]uint{previousProduct.ID, existingProduct.ID}, "admin product update"); err != nil {
+	productIDsToInvalidate := uniqueUintIDs(append(cacheInvalidationProductIDs, previousProduct.ID, existingProduct.ID))
+	if err := s.enqueueProductCacheInvalidationByIDs(productIDsToInvalidate, "admin product update"); err != nil {
 		return nil, err
+	}
+	if input.UpdateSpokeSpecification {
+		s.InvalidateProductCacheByIDs(cacheInvalidationProductIDs)
 	}
 	s.invalidateStorefrontHTMLCache("admin product update")
 

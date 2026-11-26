@@ -105,3 +105,44 @@ func TestProductDeclarationIdentifiersAllowMissingOptionalStandardIdentifier(t *
 	require.NoError(t, err)
 	require.Empty(t, created.StandardProductIdentifier)
 }
+
+func TestDedicatedSpokeGTINRejectsInvalidCheckDigitWithoutPartialCreateOrUpdate(t *testing.T) {
+	db, productService := newTestProductService(t)
+	parent := seedProductCategoryForProductServiceTest(t, db, "Wheel Components", SystemProductCategoryWheelComponentsSlug, nil)
+	category := seedProductCategoryForProductServiceTest(t, db, "Spokes", SystemProductCategorySpokesSlug, &parent.ID)
+	spokeType := product.ProductTypeSpoke
+	input := ProductCreateInput{
+		ProductType:               &spokeType,
+		SpokeSpecification:        &product.SpokesProductSpecification{SchemaVersion: 1, ModelName: "CX-Ray"},
+		ProductCategoryID:         &category.ID,
+		Name:                      "SAPIM CX-Ray",
+		Slug:                      "sapim-cx-ray-gtin-validation",
+		Locale:                    "en",
+		Status:                    "inactive",
+		StandardProductIdentifier: "4006381333932",
+	}
+	_, err := productService.CreateAdminProduct(input)
+	require.ErrorIs(t, err, ErrProductCustomsInfoInvalid)
+	require.ErrorContains(t, err, "correct check digit")
+	var productCount int64
+	require.NoError(t, db.Model(&product.Product{}).Count(&productCount).Error)
+	require.Zero(t, productCount)
+
+	input.StandardProductIdentifier = "4006381333931"
+	created, err := productService.CreateAdminProduct(input)
+	require.NoError(t, err)
+
+	invalidGTIN := "4006381333932"
+	changedName := "Must not persist with invalid GTIN"
+	_, err = productService.UpdateAdminProduct(created.ID, ProductUpdateInput{
+		Name:                            &changedName,
+		StandardProductIdentifier:       &invalidGTIN,
+		UpdateStandardProductIdentifier: true,
+	})
+	require.ErrorIs(t, err, ErrProductCustomsInfoInvalid)
+
+	reloaded, err := productService.GetAdminProduct(created.ID)
+	require.NoError(t, err)
+	require.Equal(t, created.Name, reloaded.Name)
+	require.Equal(t, "4006381333931", reloaded.StandardProductIdentifier)
+}

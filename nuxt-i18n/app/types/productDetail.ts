@@ -128,6 +128,44 @@ export interface WheelsetProductSpecification {
   certifications?: string[]
 }
 
+export interface SpokeWeightReference {
+  spoke_count: number
+  length_mm: number
+  total_weight_g: number
+}
+
+export interface SpokeGaugeOption {
+  gauge: string
+  diameter_mm?: number
+  hub_end_diameter_mm?: number
+  middle_diameter_mm?: number
+  middle_width_mm?: number
+  middle_thickness_mm?: number
+  thread_end_diameter_mm?: number
+  length_min_mm?: number
+  length_max_mm?: number
+  weight_reference?: SpokeWeightReference
+}
+
+export interface SpokesProductSpecification {
+  schema_version: 1
+  model_name: string
+  manufacturer_part_number?: string
+  manufacturer_family?: string
+  material?: string
+  manufacturer_description?: string
+  gauge_options?: SpokeGaugeOption[]
+  middle_strength_n_per_mm2?: {
+    minimum_n_per_mm2: number
+    maximum_n_per_mm2: number
+  }
+  color_options?: string[]
+  manufacturer_options?: string[]
+  recommended_uses?: string[]
+  manufacturer_claims?: string[]
+  source_urls?: string[]
+}
+
 export interface ProductVariant {
   carbon_rim_specification?: CarbonRimVariantSpecification
   id: number
@@ -262,6 +300,7 @@ export interface ProductBreadcrumb {
 export interface GoProduct {
   carbon_rim_specification?: CarbonRimProductSpecification
   wheelset_specification?: WheelsetProductSpecification
+  spoke_specification?: SpokesProductSpecification
   product_type?: string
   mpn?: string
   gtin?: string

@@ -22,6 +22,7 @@ import {
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { buildCarbonRimSalesVariantEngineeringProperties } from '~/utils/seo/carbonRimSalesVariantEngineeringProperties'
 import { buildWheelsetProductLevelSeoProperties } from '~/utils/seo/wheelsetProductLevelSeoProperties'
+import { buildSpokesProductLevelSeoIdentifiers, buildSpokesProductLevelSeoProperties } from '~/utils/seo/spokesProductLevelSeoProperties'
 import {
   buildProductPath,
   toAbsoluteSeoUrl,
@@ -217,26 +218,36 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
     const wheelsetSeoProperties = product.product_type === 'wheelset'
       ? buildWheelsetProductLevelSeoProperties(product.wheelset_specification)
       : null
+    const spokesSeoProperties = product.product_type === 'spoke'
+      ? buildSpokesProductLevelSeoProperties(product.spoke_specification)
+      : null
+    const spokesSeoIdentifiers = product.product_type === 'spoke'
+      ? buildSpokesProductLevelSeoIdentifiers(product.mpn, product.gtin)
+      : null
 
     return buildProductSeoDocument(
       {
         size: product.product_type === 'carbon_rim' ? product.spec_values?.find(value => value.definition?.slug === 'wheel_size' && value.definition?.is_visible !== false)?.value : undefined,
         material: product.product_type === 'carbon_rim'
           ? product.spec_values?.find(value => value.definition?.slug === 'material' && value.definition?.is_visible !== false)?.value
-          : wheelsetSeoProperties?.material,
+          : product.product_type === 'spoke' ? spokesSeoProperties?.material : wheelsetSeoProperties?.material,
+        model: spokesSeoProperties?.model,
+        color: spokesSeoProperties?.color,
         weightGrams: product.product_type === 'carbon_rim'
           ? options.selectedVariant.value?.carbon_rim_specification?.net_weight_grams
           : wheelsetSeoProperties?.weightGrams,
         additionalProperties: product.product_type === 'wheelset'
           ? wheelsetSeoProperties?.additionalProperties
-          : product.product_type === 'carbon_rim' ? [...(product.spec_values || [])
+          : product.product_type === 'spoke'
+            ? spokesSeoProperties?.additionalProperties
+            : product.product_type === 'carbon_rim' ? [...(product.spec_values || [])
           .filter(value => value.definition?.is_visible !== false && value.definition?.slug && value.value != null && value.value !== '')
           .map(value => ({ '@type': 'PropertyValue' as const, propertyID: value.definition!.slug, name: value.definition!.name, value: String(value.value), ...(value.definition!.unit ? { unitText: value.definition!.unit } : {}) })),
           ...(options.activeVariants.value.length === 1 ? buildCarbonRimSalesVariantEngineeringProperties(options.selectedVariant.value?.carbon_rim_specification) : []),
         ] : undefined,
         name: product.name,
-        mpn: product.product_type === 'wheelset' ? product.mpn : undefined,
-        gtin: product.product_type === 'wheelset' ? product.gtin : undefined,
+        mpn: product.product_type === 'wheelset' ? product.mpn : spokesSeoIdentifiers?.mpn,
+        gtin: product.product_type === 'wheelset' ? product.gtin : spokesSeoIdentifiers?.gtin,
         category: product.product_category?.name,
         brand: product.brand?.name,
         metaTitle: product.meta_title,

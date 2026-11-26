@@ -95,6 +95,9 @@ func (s *ProductService) validateDedicatedCarbonRimUpdate(existing *product.Prod
 }
 
 func (s *ProductService) buildProductVariantsForDedicatedType(kind string, templateID *uint, inputs []ProductVariantInput, currency string, options []product.ProductVariantOptionValue) ([]product.ProductVariant, error) {
+	if kind == product.ProductTypeSpoke && len(inputs) == 0 {
+		return []product.ProductVariant{}, nil
+	}
 	if kind != product.ProductTypeCarbonRim {
 		return s.buildVariants(templateID, inputs, currency, options)
 	}

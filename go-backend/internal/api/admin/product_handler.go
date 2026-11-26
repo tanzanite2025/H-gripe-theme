@@ -215,6 +215,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		CarbonRimSpecification:         req.CarbonRimSpecification,
 		BicycleTireSpecification:       req.BicycleTireSpecification,
 		WheelsetSpecification:          req.WheelsetSpecification,
+		SpokeSpecification:             req.SpokeSpecification,
 		ProductSpecificationTemplateID: req.ProductSpecificationTemplateID,
 		ProductCategoryID:              req.ProductCategoryID,
 		BrandID:                        req.BrandID,
@@ -285,6 +286,7 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	_, updateCarbonRimSpecification := raw["carbon_rim_specification"]
 	_, updateBicycleTireSpecification := raw["bicycle_tire_specification"]
 	_, updateWheelsetSpecification := raw["wheelset_specification"]
+	_, updateSpokeSpecification := raw["spoke_specification"]
 	_, updateParentID := raw["parent_id"]
 	_, updateProductSpecificationTemplateID := raw["product_specification_template_id"]
 	_, updateProductCategoryID := raw["product_category_id"]
@@ -333,6 +335,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		UpdateBicycleTireSpecification:       updateBicycleTireSpecification,
 		WheelsetSpecification:                req.WheelsetSpecification,
 		UpdateWheelsetSpecification:          updateWheelsetSpecification,
+		SpokeSpecification:                   req.SpokeSpecification,
+		UpdateSpokeSpecification:             updateSpokeSpecification,
 		ProductSpecificationTemplateID:       req.ProductSpecificationTemplateID,
 		UpdateProductSpecificationTemplateID: updateProductSpecificationTemplateID,
 		ProductCategoryID:                    req.ProductCategoryID,

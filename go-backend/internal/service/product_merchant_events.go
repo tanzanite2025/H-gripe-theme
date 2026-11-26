@@ -48,10 +48,34 @@ func enqueueMerchantProductChangeWithPublisher(publisher MerchantProductEventPub
 	return enqueueMerchantProductWithdrawWithPublisher(publisher, item, reason)
 }
 
+func enqueueMerchantProductTranslationGroupChangesWithPublisher(
+	publisher MerchantProductEventPublisher,
+	translations []product.ProductTranslation,
+	reason string,
+) error {
+	if publisher == nil {
+		return nil
+	}
+	for _, translation := range translations {
+		if translation.Status == "active" {
+			if err := publisher.EnqueueProductUpsert(translation.ID, reason); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := publisher.EnqueueProductWithdraw(translation.ID, reason); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func merchantProductSourceChangeReason(input ProductUpdateInput) string {
 	switch {
 	case input.Status != nil:
 		return "product_status_changed"
+	case input.UpdateSpokeSpecification:
+		return "product_spoke_specification_changed"
 	case input.UpdateVariants:
 		return "product_variants_changed"
 	case input.UpdateMedia:
@@ -74,7 +98,7 @@ func merchantProductSourceChangeReason(input ProductUpdateInput) string {
 }
 
 func merchantProductUpdateAffectsChannel(input ProductUpdateInput) bool {
-	return input.UpdateCarbonRimSpecification || input.UpdateWheelsetSpecification || input.Status != nil ||
+	return input.UpdateCarbonRimSpecification || input.UpdateWheelsetSpecification || input.UpdateSpokeSpecification || input.Status != nil ||
 		input.Name != nil ||
 		input.Slug != nil ||
 		input.Description != nil ||

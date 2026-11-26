@@ -238,6 +238,49 @@
       @retry-supplier-cost="retrySupplierCost"
     />
 
+    <SpokesDedicatedProductEditorDialog
+      v-if="activeProductEditorKind === 'spoke'"
+      v-model:open="dialogVisible"
+      :mode="dialogMode"
+      :submitting="submitting"
+      :form="productForm"
+      :errors="formErrors"
+      :spokes-system-category-display-path="spokesSystemCategoryDisplayPath"
+      :brand-select-value="brandSelectValue"
+      :brands="brands"
+      :shipping-templates="shippingTemplates"
+      :after-sales-templates="afterSalesTemplates"
+      :packaging-templates="packagingTemplates"
+      :customs-classifications="availableCustomsClassifications"
+      :language-options="languageOptions"
+      :default-variant-index="defaultVariantIndex"
+      :uploading-media="uploadingMedia"
+      :supplier-cost-visible="canViewSupplierCost"
+      :supplier-cost-can-edit="canEditSupplierCost"
+      :supplier-cost-loading="supplierCostLoading"
+      :supplier-cost-saving="supplierCostSaving"
+      :supplier-cost-pending="supplierCostPending"
+      :supplier-cost-error="supplierCostError"
+      :supplier-cost-last-saved-at="supplierCostLastSavedAt"
+      :supplier-cost-drafts="supplierCostDraftRows"
+      @submit="submitForm"
+      @clear-error="clearFieldError"
+      @product-brand-select="setProductBrand"
+      @product-information-template-select="setProductInformationTemplate"
+      @customs-classification-select="handleCustomsClassificationSelect"
+      @customs-classification-manual-edit="clearCustomsClassification"
+      @add-variant="addVariant"
+      @remove-variant="removeVariant"
+      @set-default-variant="setDefaultVariant"
+      @set-variant-active="setVariantActive"
+      @upload-media="handleMediaUpload"
+      @add-media-url="addMediaUrl"
+      @set-primary-media="setPrimaryMedia"
+      @move-media="moveMedia"
+      @remove-media="removeMedia"
+      @retry-supplier-cost="retrySupplierCost"
+    />
+
     <SpokeRepairKitProductEditorDialog
       v-model:open="spokeRepairKitDialogVisible"
       :mode="spokeRepairKitDialogMode"
@@ -287,6 +330,7 @@ import ProductCreationTypeDialog, { type ProductCreationType } from '@/component
 import ProductEditorDialog from '@/components/admin/product/ProductEditorDialog.vue'
 import BicycleTireDedicatedProductEditorDialog from '@/components/admin/product/BicycleTireDedicatedProductEditorDialog.vue'
 import WheelsetDedicatedProductEditorDialog from '@/components/admin/product/WheelsetDedicatedProductEditorDialog.vue'
+import SpokesDedicatedProductEditorDialog from '@/components/admin/product/SpokesDedicatedProductEditorDialog.vue'
 import ProductFilterPanel from '@/components/admin/product/ProductFilterPanel.vue'
 import ProductTablePanel from '@/components/admin/product/ProductTablePanel.vue'
 import ProductTranslationGroupDialog from '@/components/admin/product/ProductTranslationGroupDialog.vue'
@@ -410,6 +454,7 @@ const {
   carbonRimSystemCategoryDisplayPath,
   bicycleTireSystemCategoryDisplayPath,
   wheelsetSystemCategoryDisplayPath,
+  spokesSystemCategoryDisplayPath,
   brandSelectValue,
   templateScopedValuesTouched,
   templateSyncDialogVisible,
@@ -473,7 +518,7 @@ const {
 })
 
 const creationTypeDialogVisible = ref(false)
-const activeProductEditorKind = ref<'generic' | 'bicycle-tire' | 'wheelset'>('generic')
+const activeProductEditorKind = ref<'generic' | 'bicycle-tire' | 'wheelset' | 'spoke'>('generic')
 const spokeRepairKitDialogVisible = ref(false)
 const spokeRepairKitDialogMode = ref<'create' | 'edit'>('create')
 const spokeRepairKitEditingProduct = ref<AdminProductRecord | null>(null)
@@ -484,6 +529,7 @@ const spokeRepairKitCategoryId = computed<number | null>(() => {
 })
 const standardProductCategories = computed(() => productCategories.value.filter((item) => {
   if (item.slug === 'spoke-repair-kits') return false
+  if (item.slug === 'spokes') return false
   if (item.slug !== 'wheelset') return true
   return String(item.id) === String(productForm.product_category_id)
 }))
@@ -546,6 +592,11 @@ const handleCreationTypeContinue = async (type: ProductCreationType): Promise<vo
     await showGenericCreateDialog('wheelset')
     return
   }
+  if (type === 'spoke') {
+    activeProductEditorKind.value = 'spoke'
+    await showGenericCreateDialog('spoke')
+    return
+  }
   activeProductEditorKind.value = 'generic'
   await showGenericCreateDialog(type === 'carbon-rim' ? 'carbon_rim' : '')
 }
@@ -559,7 +610,9 @@ const openProductEditDialog = async (product: AdminProductRecord): Promise<void>
     ? 'bicycle-tire'
     : product.product_type === 'wheelset'
       ? 'wheelset'
-      : 'generic'
+      : product.product_type === 'spoke'
+        ? 'spoke'
+        : 'generic'
   await showGenericEditDialog(product)
 }
 
