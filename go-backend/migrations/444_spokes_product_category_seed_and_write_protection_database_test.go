@@ -14,6 +14,12 @@ func createSpokesProductCategoryMigrationTransaction(t *testing.T, rootEnabled b
 		rootState = "TRUE"
 	}
 	_, err := tx.ExecContext(t.Context(), `
+DO $$
+DECLARE isolated_schema TEXT := 'spokes_category_test_' || pg_backend_pid();
+BEGIN
+    EXECUTE format('CREATE SCHEMA %I', isolated_schema);
+    PERFORM set_config('search_path', isolated_schema || ', pg_temp', TRUE);
+END $$;
 CREATE TEMP TABLE product_categories (
     id BIGSERIAL PRIMARY KEY, parent_id BIGINT REFERENCES product_categories(id),
     name TEXT NOT NULL, slug TEXT UNIQUE NOT NULL, description TEXT NOT NULL DEFAULT '',
@@ -27,7 +33,6 @@ CREATE TEMP TABLE product_category_translations (
 CREATE TEMP TABLE quick_buy_step_product_categories (product_category_id BIGINT REFERENCES product_categories(id)) ON COMMIT DROP;
 ALTER TABLE products ADD COLUMN product_type TEXT NOT NULL DEFAULT '', ADD COLUMN product_category_id BIGINT;
 INSERT INTO product_categories(id, name, slug, depth, is_enabled) VALUES (317, 'Wheel Components', 'wheel-components', 1, `+rootState+`);
-SET LOCAL search_path TO pg_temp;
 `)
 	if err != nil {
 		t.Fatal(err)
