@@ -112,7 +112,6 @@ const props = withDefaults(defineProps<{
   productCategoriesError?: string | null
   productCategoryDisplayLimit?: number
   productCategoryBasePath?: string
-  productCategoryQueryParameterName?: string
   density?: ProductCategoryNavigationCardsDensity
   columns?: number
   showHeader?: boolean
@@ -123,7 +122,6 @@ const props = withDefaults(defineProps<{
 }>(), {
   productCategoryDisplayLimit: 0,
   productCategoryBasePath: '/shop',
-  productCategoryQueryParameterName: 'product_category',
   density: 'comfortable',
   columns: 0,
   showHeader: true,

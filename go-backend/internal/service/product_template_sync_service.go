@@ -74,6 +74,9 @@ func (s *ProductService) PreviewProductTemplateSync(productID uint) (*ProductTem
 	if product.IsRetiredCarbonRimSpecificationTemplateSlug(template.Slug) {
 		return nil, fmt.Errorf("%w: retired rim templates cannot synchronize specifications", ErrProductSpecificationTemplateInvalid)
 	}
+	if product.IsRetiredWheelsetSpecificationTemplateSlug(template.Slug) {
+		return nil, fmt.Errorf("%w: retired wheelset templates cannot synchronize specifications", ErrProductSpecificationTemplateInvalid)
+	}
 	return buildProductTemplateSyncDiff(item, template), nil
 }
 

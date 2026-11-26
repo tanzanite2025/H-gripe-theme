@@ -26,7 +26,10 @@ const (
 // out of this response.
 type PublicProduct struct {
 	ProductType                  string                                `json:"product_type,omitempty"`
+	MPN                          string                                `json:"mpn,omitempty"`
+	GTIN                         string                                `json:"gtin,omitempty"`
 	CarbonRimSpecification       *productdomain.CarbonRimSpecification `json:"carbon_rim_specification,omitempty"`
+	WheelsetSpecification        *productdomain.WheelsetSpecification  `json:"wheelset_specification,omitempty"`
 	ID                           uint                                  `json:"id"`
 	Name                         string                                `json:"name"`
 	Slug                         string                                `json:"slug"`
@@ -351,7 +354,7 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 	}
 
 	definitionsByID := make(map[uint]productdomain.SpecDefinition)
-	if item.ProductSpecificationTemplate != nil {
+	if item.ProductType != productdomain.ProductTypeWheelset && item.ProductSpecificationTemplate != nil {
 		for _, definition := range item.ProductSpecificationTemplate.SpecDefinitions {
 			definitionsByID[definition.ID] = definition
 		}
@@ -414,16 +417,21 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		optionValueRelations = append(optionValueRelations, PublicProductOptionValueRelation{ID: relation.ID, SourceOptionValueID: relation.SourceOptionValueID, TargetOptionValueID: relation.TargetOptionValueID, RelationType: relation.RelationType})
 	}
 
-	specValues := publicCarbonRimSpecificationValues(item.CarbonRimSpecification, locale)
-	for _, value := range item.SpecValues {
-		if value.SpecDefinition == nil || !value.SpecDefinition.IsVisible {
-			continue
+	var specValues []PublicProductSpecValue
+	if item.ProductType == productdomain.ProductTypeWheelset {
+		specValues = publicWheelsetSpecificationValues(item.WheelsetSpecification, locale)
+	} else {
+		specValues = publicCarbonRimSpecificationValues(item.CarbonRimSpecification, locale)
+		for _, value := range item.SpecValues {
+			if value.SpecDefinition == nil || !value.SpecDefinition.IsVisible {
+				continue
+			}
+			definition := publicSpecDefinitionFromDomain(*value.SpecDefinition)
+			specValues = append(specValues, PublicProductSpecValue{
+				Value:      value.Value,
+				Definition: &definition,
+			})
 		}
-		definition := publicSpecDefinitionFromDomain(*value.SpecDefinition)
-		specValues = append(specValues, PublicProductSpecValue{
-			Value:      value.Value,
-			Definition: &definition,
-		})
 	}
 
 	spokeRepairKitModels := make([]PublicSpokeRepairKitModel, 0, len(item.SpokeRepairKitModels))
@@ -438,10 +446,21 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 			SortOrder:         model.SortOrder,
 		})
 	}
+	mpn, gtin := wheelsetStructuredDataProductIdentifiers(item)
+	var wheelsetSpecification *productdomain.WheelsetSpecification
+	var productSpecificationTemplate *PublicProductSpecificationTemplate
+	if item.ProductType == productdomain.ProductTypeWheelset {
+		wheelsetSpecification = item.WheelsetSpecification
+	} else {
+		productSpecificationTemplate = publicProductSpecificationTemplateFromDomain(item.ProductSpecificationTemplate)
+	}
 
 	return PublicProduct{
 		ProductType:                  item.ProductType,
+		MPN:                          mpn,
+		GTIN:                         gtin,
 		CarbonRimSpecification:       item.CarbonRimSpecification,
+		WheelsetSpecification:        wheelsetSpecification,
 		ID:                           item.ID,
 		Name:                         item.Name,
 		Slug:                         item.Slug,
@@ -462,13 +481,26 @@ func PublicProductFromDomainWithLocaleAndRoutes(item productdomain.Product, disp
 		PackagingTemplate:            publicProductInformationTemplateFromDomain(item.PackagingTemplate),
 		Availability:                 availabilityForProduct(item),
 		Media:                        media,
-		ProductSpecificationTemplate: publicProductSpecificationTemplateFromDomain(item.ProductSpecificationTemplate),
+		ProductSpecificationTemplate: productSpecificationTemplate,
 		SpecValues:                   specValues,
 		Variants:                     variants,
 		VariantOptionValues:          variantOptionValues,
 		OptionValueRelations:         optionValueRelations,
 		SpokeRepairKitModels:         spokeRepairKitModels,
 	}
+}
+
+func wheelsetStructuredDataProductIdentifiers(item productdomain.Product) (string, string) {
+	if item.ProductType != productdomain.ProductTypeWheelset {
+		return "", ""
+	}
+
+	mpn := strings.TrimSpace(item.ManufacturerProductIdentifier)
+	gtin := strings.TrimSpace(item.StandardProductIdentifier)
+	if !productdomain.IsValidGS1GlobalTradeItemNumber(gtin) {
+		gtin = ""
+	}
+	return mpn, gtin
 }
 
 func publicProductCategoryFromDomainWithLocale(item *productdomain.ProductCategory, locale string) *PublicProductCategory {

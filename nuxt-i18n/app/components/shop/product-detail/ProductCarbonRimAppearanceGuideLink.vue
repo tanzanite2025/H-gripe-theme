@@ -1,6 +1,6 @@
 <template>
   <NuxtLink
-    v-if="isRimOrWheelsetSpecificationTemplate"
+    v-if="isRimSpecificationTemplate"
     :to="localePath('/company/about/appearance')"
     class="product-rim-appearance-guide-link"
   >
@@ -15,8 +15,8 @@ import { useI18n, useLocalePath } from '#imports'
 const props = defineProps<{ productSpecificationTemplateSlug: string }>()
 const { t } = useI18n()
 const localePath = useLocalePath()
-const isRimOrWheelsetSpecificationTemplate = computed(() => (
-  ['rim', 'carbon_rim', 'wheelset'].includes(props.productSpecificationTemplateSlug)
+const isRimSpecificationTemplate = computed(() => (
+  ['rim', 'carbon_rim'].includes(props.productSpecificationTemplateSlug)
 ))
 </script>
 

@@ -52,10 +52,10 @@
         <div class="product-meta" aria-live="polite" aria-atomic="true">
           <span v-if="formattedPrice" class="product-price">{{ formattedPrice }}</span>
           <span
-            v-if="product.product_specification_template?.name"
+            v-if="productTypeBadgeLabel"
             class="product-specification-template-pill"
           >
-            {{ product.product_specification_template.name }}
+            {{ productTypeBadgeLabel }}
           </span>
         </div>
 
@@ -209,7 +209,7 @@
       surface="product_detail_bottom"
       :title="t('recommendations.productDetailTitle', 'You may also like')"
       :product-id="product.id"
-      :category-id="product.product_specification_template_id || product.product_specification_template?.id || null"
+      :category-id="product.product_category?.id || null"
       :exclude-product-ids="[product.id]"
       :limit="6"
     />
@@ -363,6 +363,12 @@ const isMadeToOrder = computed(() => Boolean(
   isMadeToOrderFulfillment(shopProduct.value?.fulfillmentMode)
     || isMadeToOrderFulfillment(product.value?.fulfillment_mode)
     || selectedAvailability.value === 'made_to_order',
+))
+
+const productTypeBadgeLabel = computed(() => (
+  product.value?.product_type === 'wheelset'
+    ? product.value.product_category?.name || ''
+    : product.value?.product_specification_template?.name || ''
 ))
 
 useProductDetailSeo({

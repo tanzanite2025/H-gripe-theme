@@ -297,7 +297,9 @@ func quickBuyStepViews(steps []quickbuy.Step, locale string, exposeProductSpecif
 	resolver := quickBuyMediaResolver(resolvers)
 	result := make([]QuickBuyStepView, 0, len(steps))
 	for _, step := range steps {
-		result = append(result, quickBuyStepView(step, locale, exposeProductSpecificationTemplates, resolver))
+		exposeStepTemplates := exposeProductSpecificationTemplates && len(step.ProductSpecificationTemplates) > 0
+		exposeStepFilters := exposeProductSpecificationTemplates && (exposeStepTemplates || quickBuyStepHasWheelsetProductCategory(step))
+		result = append(result, quickBuyStepView(step, locale, exposeStepTemplates, exposeStepFilters, resolver))
 	}
 	return result
 }
@@ -338,7 +340,7 @@ func quickBuyFlowTranslationViews(translations []quickbuy.FlowTranslation) []Qui
 	return result
 }
 
-func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificationTemplates bool, resolvers ...PublicMediaURLResolver) QuickBuyStepView {
+func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificationTemplates bool, exposeProductFilters bool, resolvers ...PublicMediaURLResolver) QuickBuyStepView {
 	resolver := quickBuyMediaResolver(resolvers)
 	productCategories := make([]QuickBuyProductCategoryView, 0, len(step.ProductCategories))
 	productSpecificationTemplates := make([]QuickBuyProductSpecificationTemplateView, 0, len(step.ProductSpecificationTemplates))
@@ -371,7 +373,7 @@ func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificat
 		SortOrder:                     step.SortOrder,
 		ProductCategories:             productCategories,
 		ProductSpecificationTemplates: productSpecificationTemplates,
-		Filters:                       quickBuyStepFiltersForScope(step, nil, exposeProductSpecificationTemplates),
+		Filters:                       quickBuyStepFiltersForScope(step, nil, exposeProductFilters),
 	}
 }
 
@@ -398,6 +400,22 @@ func quickBuyFilterableSpecDefinitions(step quickbuy.Step) []productdomain.SpecD
 			}
 		}
 	}
+	if quickBuyStepHasWheelsetProductCategory(step) {
+		for _, definition := range productdomain.WheelsetProductLevelSpecificationFilterDefinitions() {
+			if _, exists := definitionsBySlug[definition.Slug]; exists {
+				continue
+			}
+			definitionsBySlug[definition.Slug] = productdomain.SpecDefinition{
+				Slug:         definition.Slug,
+				Name:         definition.Name,
+				FieldType:    definition.FieldType,
+				Presentation: definition.Presentation,
+				Unit:         definition.Unit,
+				IsVisible:    true,
+				IsFilterable: true,
+			}
+		}
+	}
 
 	definitions := make([]productdomain.SpecDefinition, 0, len(definitionsBySlug))
 	for _, definition := range definitionsBySlug {
@@ -410,6 +428,15 @@ func quickBuyFilterableSpecDefinitions(step quickbuy.Step) []productdomain.SpecD
 		return definitions[i].SortOrder < definitions[j].SortOrder
 	})
 	return definitions
+}
+
+func quickBuyStepHasWheelsetProductCategory(step quickbuy.Step) bool {
+	for _, category := range step.ProductCategories {
+		if category.ProductCategory != nil && strings.EqualFold(strings.TrimSpace(category.ProductCategory.Slug), productdomain.ProductTypeWheelset) {
+			return true
+		}
+	}
+	return false
 }
 
 func quickBuyFilterableSpecSlugs(step quickbuy.Step) []string {

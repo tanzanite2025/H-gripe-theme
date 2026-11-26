@@ -29,5 +29,8 @@ func normalizeAndValidateRequiredProductIdentifiers(record *product.Product) err
 			return fmt.Errorf("%w: %s不能超过 70 个字符", ErrProductCustomsInfoInvalid, field.label)
 		}
 	}
+	if record.ProductType == product.ProductTypeWheelset && record.StandardProductIdentifier != "" && !product.IsValidGS1GlobalTradeItemNumber(record.StandardProductIdentifier) {
+		return fmt.Errorf("%w: WHEELSET EAN/GTIN must be a valid 8-, 12-, 13-, or 14-digit GS1 identifier with a correct check digit", ErrProductCustomsInfoInvalid)
+	}
 	return nil
 }

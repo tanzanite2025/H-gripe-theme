@@ -238,12 +238,22 @@ func TestProductServiceRejectsUnsafeAdminProductSlugUpdate(t *testing.T) {
 	assert.Equal(t, "safe-product", currentProduct.Slug)
 }
 
-func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.T) {
+func TestProductServiceListsOnlyWheelsetProductLevelDynamicFiltersForCategoryTree(t *testing.T) {
 	db, productService := newTestProductService(t)
 	wheelsetCategory := seedProductCategoryForProductServiceTest(t, db, "Wheelsets", "wheelset", nil)
 	childCategory := seedProductCategoryForProductServiceTest(t, db, "Carbon Wheelsets", "carbon-wheelsets", &wheelsetCategory.ID)
 	otherCategory := seedProductCategoryForProductServiceTest(t, db, "Tires", "tires", nil)
 	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)
+	genericWheelSizeDefinition := product.SpecDefinition{
+		ProductSpecificationTemplateID: productSpecificationTemplate.ID,
+		Group:                          "Dimensions",
+		Name:                           "Generic wheel size",
+		Slug:                           product.WheelsetFilterKeyWheelSize,
+		FieldType:                      "text",
+		IsFilterable:                   true,
+		IsVisible:                      true,
+	}
+	require.NoError(t, db.Create(&genericWheelSizeDefinition).Error)
 
 	_, err := productService.CreateAdminProduct(ProductCreateInput{
 		MerchantProductIdentifier:      "TEST-MERCHANT-PRODUCT",
@@ -256,6 +266,7 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "30.5",
+			product.WheelsetFilterKeyWheelSize: "650B generic-template value",
 		},
 		Variants: []ProductVariantInput{
 			{
@@ -281,6 +292,7 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 		Locale:                         "en",
 		SpecValues: map[string]string{
 			"outer_width_mm": "45",
+			product.WheelsetFilterKeyWheelSize: "650B generic-template value",
 		},
 		Variants: []ProductVariantInput{
 			{
@@ -320,13 +332,50 @@ func TestProductServiceListsOnlyWheelsetDynamicValuesForCategoryTree(t *testing.
 	})
 	require.NoError(t, err)
 
+	wheelsetProductType := product.ProductTypeWheelset
+	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:     "TEST-MERCHANT-WHEELSET-PRODUCT",
+		ManufacturerProductIdentifier: "TEST-MANUFACTURER-WHEELSET-PRODUCT",
+		ProductType:                   &wheelsetProductType,
+		ProductCategoryID:             &wheelsetCategory.ID,
+		WheelsetSpecification: &product.WheelsetSpecification{
+			SchemaVersion: 1,
+			FrontWheel: product.WheelsetProductWheelSpecification{
+				WheelSize: "700C", SpokeHoleCounts: []int{24}, LacingPatterns: []string{"2x"},
+				AxleStandard: "12x100", BrakeInterface: "Center Lock",
+			},
+			RearWheel: product.WheelsetProductWheelSpecification{
+				WheelSize: "650B", SpokeHoleCounts: []int{28}, LacingPatterns: []string{"3x"},
+				AxleStandard: "12x142", BrakeInterface: "Center Lock", FreehubBody: "XDR",
+			},
+		},
+		Name:     "Dedicated Wheelset",
+		Slug:     "dedicated-wheelset",
+		Status:   "active",
+		Locale:   "en",
+		Currency: "USD",
+		Variants: []ProductVariantInput{{
+			SKU: "DEDICATED-WHEELSET-001", PriceMinor: 45900, Stock: 3, IsDefault: true, IsActive: boolPtr(true),
+		}},
+	})
+	require.NoError(t, err)
+
 	filters, err := productService.ListFilterableSpecificationsWithDynamicValuesForCategory("wheelset")
 	require.NoError(t, err)
-	require.Len(t, filters, 2)
-	assert.Equal(t, "brake_type", filters[0].Slug)
-	assert.Equal(t, []string{"disc", "rim"}, filters[0].Values)
-	assert.Equal(t, "outer_width_mm", filters[1].Slug)
-	assert.Equal(t, []string{"30.5", "45"}, filters[1].Values)
+	require.Len(t, filters, len(product.WheelsetProductLevelSpecificationFilterDefinitions()))
+	valuesBySlug := make(map[string][]string, len(filters))
+	for _, filter := range filters {
+		valuesBySlug[filter.Slug] = filter.Values
+	}
+	assert.NotContains(t, valuesBySlug, "brake_type")
+	assert.NotContains(t, valuesBySlug, "outer_width_mm")
+	assert.Equal(t, []string{"700C"}, valuesBySlug[product.WheelsetFilterKeyFrontWheelSize])
+	assert.Equal(t, []string{"650B"}, valuesBySlug[product.WheelsetFilterKeyRearWheelSize])
+	assert.Empty(t, valuesBySlug[product.WheelsetFilterKeyWheelSize])
+	assert.Equal(t, []string{"12x100"}, valuesBySlug[product.WheelsetFilterKeyFrontAxle])
+	assert.Equal(t, []string{"12x142"}, valuesBySlug[product.WheelsetFilterKeyRearAxle])
+	assert.Equal(t, []string{"Center Lock"}, valuesBySlug[product.WheelsetFilterKeyBrakeMount])
+	assert.Equal(t, []string{"XDR"}, valuesBySlug[product.WheelsetFilterKeyFreehub])
 }
 
 func TestProductServiceAdminProductPersistsCustomsInformation(t *testing.T) {

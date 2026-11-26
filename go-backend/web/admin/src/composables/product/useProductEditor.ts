@@ -2,11 +2,13 @@ import { validateProductDeclarationIdentifiers } from '@/modules/product/product
 import { computed, reactive, ref } from 'vue'
 import { createEmptyCarbonRimSpecificationForm, createEmptyCarbonRimVariantSpecificationForm, normalizeCarbonRimSpecificationForSubmission, normalizeCarbonRimVariantSpecificationForSubmission, validateCarbonRimDedicatedProductSubmission } from '@/modules/product/carbonRimDedicatedSpecificationFormValuesAndValidation'
 import { createBicycleTireProductFormValuesFromSchwalbeCatalogItem, createEmptyBicycleTireSpecificationForm, normalizeBicycleTireSpecificationForSubmission, validateBicycleTireDedicatedProductSubmission } from '@/modules/product/bicycleTireDedicatedSpecificationFormValuesAndValidation'
+import { createEmptyWheelsetSpecificationForm, createWheelsetSpecificationFormFromProduct, normalizeWheelsetSpecificationForSubmission, validateWheelsetDedicatedProductSubmission } from '@/modules/product/wheelsetDedicatedProductSpecificationFormValuesAndValidation'
 import { toast } from 'vue-sonner'
 import productApi from '@/api/products'
 import productCategoryApi from '@/api/productCategories'
 import { requireCarbonRimSystemCategory, buildCarbonRimRequiredSystemCategoryDisplayPath } from '@/modules/product/carbonRimRequiredSystemCategorySelection'
 import { requireBicycleTireSystemCategory, buildBicycleTireSystemCategoryDisplayPath } from '@/modules/product/bicycleTireRequiredSystemCategorySelection'
+import { requireWheelsetSystemCategory, buildWheelsetSystemCategoryDisplayPath } from '@/modules/product/wheelsetRequiredSystemCategorySelection'
 import productSpecificationTemplateApi from '@/api/productSpecificationTemplates'
 import schwalbeTireCatalogApi, { type SchwalbeTireCatalogItem } from '@/api/schwalbeTireCatalog'
 import { useProductMediaManager } from '@/composables/product/useProductMediaManager'
@@ -62,6 +64,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const productSpecTemplates = ref<any[]>([])
   const carbonRimSystemCategoryDisplayPath = ref('')
   const bicycleTireSystemCategoryDisplayPath = ref('')
+  const wheelsetSystemCategoryDisplayPath = ref('')
   const loadRequiredCarbonRimSystemCategory = async () => {
     const categories = (await productCategoryApi.list({ include_disabled: true })).flat
     const category = requireCarbonRimSystemCategory(categories)
@@ -72,6 +75,12 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     const categories = (await productCategoryApi.list({ include_disabled: true })).flat
     const category = requireBicycleTireSystemCategory(categories)
     bicycleTireSystemCategoryDisplayPath.value = buildBicycleTireSystemCategoryDisplayPath(categories)
+    return category
+  }
+  const loadRequiredWheelsetSystemCategory = async () => {
+    const categories = (await productCategoryApi.list({ include_disabled: true })).flat
+    const category = requireWheelsetSystemCategory(categories)
+    wheelsetSystemCategoryDisplayPath.value = buildWheelsetSystemCategoryDisplayPath(categories)
     return category
   }
   const schwalbeTireCatalogItems = ref<SchwalbeTireCatalogItem[]>([])
@@ -93,6 +102,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     product_type: '',
     carbon_rim_specification: null,
     bicycle_tire_specification: null,
+    wheelset_specification: null,
     parent_id: null,
     product_specification_template_id: null,
     product_category_id: null,
@@ -197,7 +207,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     clearFieldError('brand_id')
   }
   const setProductCategory = (value: string) => {
-    if (productForm.product_type === 'carbon_rim') return
+    if (productForm.product_type === 'carbon_rim' || productForm.product_type === 'wheelset') return
     productForm.product_category_id = value === '__none__' ? null : Number(value)
     clearFieldError('product_category_id')
   }
@@ -531,6 +541,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     product_type: productForm.product_type || undefined,
     carbon_rim_specification: productForm.product_type === 'carbon_rim' ? normalizeCarbonRimSpecificationForSubmission(productForm.carbon_rim_specification) : undefined,
     bicycle_tire_specification: productForm.product_type === 'bicycle_tire' ? normalizeBicycleTireSpecificationForSubmission(productForm.bicycle_tire_specification) : undefined,
+    wheelset_specification: productForm.product_type === 'wheelset' ? normalizeWheelsetSpecificationForSubmission(productForm.wheelset_specification) : undefined,
     id: productForm.id,
     product_specification_template_id: productForm.product_specification_template_id,
     product_category_id: productForm.product_category_id,
@@ -565,6 +576,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     Object.assign(formErrors, validateProductDeclarationIdentifiers(payload))
     if (payload.product_type === 'carbon_rim') Object.assign(formErrors, validateCarbonRimDedicatedProductSubmission(payload))
     if (payload.product_type === 'bicycle_tire') Object.assign(formErrors, validateBicycleTireDedicatedProductSubmission(payload))
+    if (payload.product_type === 'wheelset') Object.assign(formErrors, validateWheelsetDedicatedProductSubmission(payload))
     if (!payload.name) formErrors.name = '请输入商品名称'
     if (!payload.slug) formErrors.slug = '请输入 URL slug'
     if (!payload.locale) formErrors.locale = '请选择语言'
@@ -670,6 +682,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       product_type: '',
       carbon_rim_specification: null,
       bicycle_tire_specification: null,
+      wheelset_specification: null,
       parent_id: null,
       product_specification_template_id: null,
       product_category_id: null,
@@ -734,6 +747,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const showCreateDialog = async (productType = '') => {
     let carbonRimCategoryID: number | null = null
     let bicycleTireCategoryID: number | null = null
+    let wheelsetCategoryID: number | null = null
     if (productType === 'carbon_rim') {
       try {
         carbonRimCategoryID = (await loadRequiredCarbonRimSystemCategory()).id
@@ -747,6 +761,14 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         bicycleTireCategoryID = (await loadRequiredBicycleTireSystemCategory()).id
       } catch (error) {
         toast.error(error instanceof Error ? error.message : '读取外胎系统分类失败，请重试')
+        return
+      }
+    }
+    if (productType === 'wheelset') {
+      try {
+        wheelsetCategoryID = (await loadRequiredWheelsetSystemCategory()).id
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : '读取 WHEELSET 系统分类失败，请重试')
         return
       }
     }
@@ -765,6 +787,12 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       productForm.bicycle_tire_specification = createEmptyBicycleTireSpecificationForm()
       productForm.variants = [createEmptyVariant({ is_default: true })]
     }
+    if (productType === 'wheelset') {
+      productForm.product_type = productType
+      productForm.product_category_id = wheelsetCategoryID
+      productForm.wheelset_specification = createEmptyWheelsetSpecificationForm()
+      productForm.variants = [createEmptyVariant({ is_default: true })]
+    }
     templateSyncDialogVisible.value = false
     templateSyncDiff.value = null
     await notifyProductLoaded(null, 'create')
@@ -777,7 +805,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     let detail = product
     try {
       await fetchPrimaryPricingCurrency()
-      if (!['carbon_rim', 'bicycle_tire'].includes(product.product_type) && productSpecTemplates.value.length === 0) await fetchProductSpecTemplates()
+      if (!['carbon_rim', 'bicycle_tire', 'wheelset'].includes(product.product_type) && productSpecTemplates.value.length === 0) await fetchProductSpecTemplates()
       detail = await productApi.get(product.id)
       if (detail.product_type === 'carbon_rim') {
         const category = await loadRequiredCarbonRimSystemCategory()
@@ -786,6 +814,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       if (detail.product_type === 'bicycle_tire') {
         const category = await loadRequiredBicycleTireSystemCategory()
         if (detail.product_category_id !== category.id) throw new Error('外胎商品分类不正确，请先检查数据库迁移')
+      }
+      if (detail.product_type === 'wheelset') {
+        const category = await loadRequiredWheelsetSystemCategory()
+        if (detail.product_category_id !== category.id) throw new Error('WHEELSET 商品分类不正确，请先检查系统分类配置')
       }
       if (detail.product_specification_template && !productSpecTemplates.value.some((template) => template.id === detail.product_specification_template.id)) {
         productSpecTemplates.value.push(detail.product_specification_template)
@@ -799,6 +831,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       product_type: detail.product_type || '',
       carbon_rim_specification: detail.carbon_rim_specification ? { ...createEmptyCarbonRimSpecificationForm(), ...detail.carbon_rim_specification } : null,
       bicycle_tire_specification: detail.bicycle_tire_specification ? { ...createEmptyBicycleTireSpecificationForm(), ...detail.bicycle_tire_specification } : (detail.product_type === 'bicycle_tire' ? createEmptyBicycleTireSpecificationForm() : null),
+      wheelset_specification: detail.product_type === 'wheelset' ? createWheelsetSpecificationFormFromProduct(detail.wheelset_specification) : null,
       parent_id: detail.parent_id || null,
       id: detail.id,
       product_specification_template_id: detail.product_specification_template_id || detail.product_specification_template?.id || null,
@@ -889,6 +922,14 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
           return
         }
       }
+      if (payload.product_type === 'wheelset') {
+        const category = await loadRequiredWheelsetSystemCategory()
+        if (payload.product_category_id !== category.id) {
+          formErrors.product_category_id = 'WHEELSET 商品必须归入 WHEELSET 系统分类'
+          toast.error(formErrors.product_category_id)
+          return
+        }
+      }
       if (!validateForm(payload)) return
       let savedProduct: any
       if (dialogMode.value === 'create') {
@@ -926,6 +967,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     productSpecTemplates,
     carbonRimSystemCategoryDisplayPath,
     bicycleTireSystemCategoryDisplayPath,
+    wheelsetSystemCategoryDisplayPath,
     schwalbeTireCatalogItems,
     schwalbeTireCatalogLoading,
     schwalbeTireCatalogError,

@@ -68,7 +68,7 @@
         <AdminFormField label="商家产品识别码（MPID）" for-id="product-merchant-identifier" required description="填写商家实际使用的产品识别码，最多 70 个字符" :error="errors.merchant_product_identifier">
           <Input id="product-merchant-identifier" v-model="form.merchant_product_identifier" aria-required="true" :aria-invalid="Boolean(errors.merchant_product_identifier)" placeholder="填写商家产品识别码" @input="emit('clear-error', 'merchant_product_identifier')" />
         </AdminFormField>
-        <AdminFormField label="制造商产品识别码（NSPID）" for-id="product-manufacturer-identifier" required description="填写制造商提供的真实产品编码，最多 70 个字符" :error="errors.manufacturer_product_identifier">
+        <AdminFormField :label="manufacturerIdentifierLabel" for-id="product-manufacturer-identifier" required :description="manufacturerIdentifierDescription" :error="errors.manufacturer_product_identifier">
           <Input id="product-manufacturer-identifier" v-model="form.manufacturer_product_identifier" aria-required="true" :aria-invalid="Boolean(errors.manufacturer_product_identifier)" placeholder="填写制造商产品识别码" @input="emit('clear-error', 'manufacturer_product_identifier')" />
         </AdminFormField>
         <AdminFormField :label="standardIdentifierLabel" for-id="product-standard-identifier" :description="standardIdentifierDescription" :error="errors.standard_product_identifier">
@@ -118,6 +118,8 @@ const props = withDefaults(defineProps<{
   customsClassifications?: CustomsClassificationRecord[]
   description?: string
   customsDescriptionPlaceholder?: string
+  manufacturerIdentifierLabel?: string
+  manufacturerIdentifierDescription?: string
   standardIdentifierLabel?: string
   standardIdentifierDescription?: string
   standardIdentifierPlaceholder?: string
@@ -126,6 +128,8 @@ const props = withDefaults(defineProps<{
   customsClassifications: () => [],
   description: '维护商品的基础清关属性；申报价值不在产品上固定，后续按订单确认。',
   customsDescriptionPlaceholder: '例如 Bicycle frame',
+  manufacturerIdentifierLabel: '制造商产品识别码（NSPID）',
+  manufacturerIdentifierDescription: '填写制造商提供的真实产品编码，最多 70 个字符',
   standardIdentifierLabel: '国际标准商品编码（SPID）',
   standardIdentifierDescription: '有则填写，没有可留空，最多 70 个字符',
   standardIdentifierPlaceholder: '选填：国际标准商品编码',

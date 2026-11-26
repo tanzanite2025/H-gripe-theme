@@ -1,6 +1,7 @@
 package product
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -239,6 +240,101 @@ func TestListProductsFiltersFeaturedResultsByProductCategory(t *testing.T) {
 	}
 	if !strings.Contains(body, `"page":1`) || !strings.Contains(body, `"total":1`) {
 		t.Fatalf("response omitted product pagination metadata: %s", body)
+	}
+}
+
+func TestListProductsAppliesDedicatedWheelsetProductFilters(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	if err := db.AutoMigrate(
+		&productdomain.ProductCategory{},
+		&productdomain.ProductCategoryTranslation{},
+		&productdomain.ProductSpecificationTemplate{},
+		&productdomain.SpecDefinition{},
+		&productdomain.Product{},
+		&productdomain.ProductMedia{},
+		&productdomain.ProductSpecValue{},
+		&productdomain.ProductVariant{},
+	); err != nil {
+		t.Fatalf("migrate test db: %v", err)
+	}
+
+	wheelsetCategory := productdomain.ProductCategory{
+		Name:      "Wheelsets",
+		Slug:      productdomain.ProductTypeWheelset,
+		Depth:     1,
+		IsEnabled: true,
+	}
+	if err := db.Create(&wheelsetCategory).Error; err != nil {
+		t.Fatalf("seed wheelset category: %v", err)
+	}
+
+	createWheelset := func(slug, frontWheelSize, rearWheelSize string) {
+		categoryID := wheelsetCategory.ID
+		item := productdomain.Product{
+			ProductType:       productdomain.ProductTypeWheelset,
+			ProductCategoryID: &categoryID,
+			WheelsetSpecification: &productdomain.WheelsetSpecification{
+				SchemaVersion: 1,
+				FrontWheel: productdomain.WheelsetProductWheelSpecification{
+					WheelSize:       frontWheelSize,
+					SpokeHoleCounts: []int{24},
+					LacingPatterns:  []string{"2-cross"},
+				},
+				RearWheel: productdomain.WheelsetProductWheelSpecification{
+					WheelSize:       rearWheelSize,
+					SpokeHoleCounts: []int{24},
+					LacingPatterns:  []string{"2-cross"},
+				},
+			},
+			Name:   slug,
+			Slug:   slug,
+			Status: "active",
+			Locale: "en",
+		}
+		if err := db.Create(&item).Error; err != nil {
+			t.Fatalf("seed wheelset product %s: %v", slug, err)
+		}
+		if err := db.Create(&productdomain.ProductVariant{
+			ProductID:  item.ID,
+			SKU:        strings.ToUpper(slug) + "-VAR",
+			Title:      "Default",
+			PriceMinor: 10000,
+			Stock:      1,
+			IsDefault:  true,
+			IsActive:   true,
+		}).Error; err != nil {
+			t.Fatalf("seed wheelset product variant %s: %v", slug, err)
+		}
+	}
+
+	createWheelset("wheelset-mixed-diameter", "29", "27.5")
+	createWheelset("wheelset-matching-diameter", "29", "29")
+
+	router := gin.New()
+	router.Use(func(c *gin.Context) {
+		c.Set("locale", "en")
+		c.Next()
+	})
+	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
+	router.GET("/products", handler.ListProducts)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products?product_category=wheelset&attributes=%7B%22wheel_size%22%3A%5B%2229%22%5D%7D", nil)
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("expected filtered wheelset response to return 200, got %d: %s", response.Code, response.Body.String())
+	}
+	body := response.Body.String()
+	if !strings.Contains(body, `"slug":"wheelset-matching-diameter"`) {
+		t.Fatalf("expected matching wheelset in response, got %s", body)
+	}
+	if strings.Contains(body, `"slug":"wheelset-mixed-diameter"`) || !strings.Contains(body, `"total":1`) {
+		t.Fatalf("response did not apply the product-level whole-wheelset size filter: %s", body)
 	}
 }
 
@@ -570,7 +666,7 @@ func TestListPublicChatProductsIncludesDisplayCurrencyContextAndTotal(t *testing
 	}
 }
 
-func TestListProductSpecificationTemplatesDoesNotExposeSpecDefinitions(t *testing.T) {
+func TestListProductSpecificationTemplatesHidesRetiredWheelsetAndDoesNotExposeDefinitions(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
@@ -583,7 +679,7 @@ func TestListProductSpecificationTemplatesDoesNotExposeSpecDefinitions(t *testin
 		t.Fatalf("migrate test db: %v", err)
 	}
 
-	productSpecificationTemplate := productdomain.ProductSpecificationTemplate{
+	retiredWheelsetTemplate := productdomain.ProductSpecificationTemplate{
 		Name:      "Wheelset",
 		Slug:      "wheelset",
 		IsEnabled: true,
@@ -591,8 +687,11 @@ func TestListProductSpecificationTemplatesDoesNotExposeSpecDefinitions(t *testin
 			{Name: "Material", Slug: "material", FieldType: "text", IsVisible: true},
 		},
 	}
-	if err := db.Create(&productSpecificationTemplate).Error; err != nil {
-		t.Fatalf("seed product specification template: %v", err)
+	if err := db.Create(&retiredWheelsetTemplate).Error; err != nil {
+		t.Fatalf("seed retired wheelset template: %v", err)
+	}
+	if err := db.Create(&productdomain.ProductSpecificationTemplate{Name: "Handlebar", Slug: "handlebar", IsEnabled: true}).Error; err != nil {
+		t.Fatalf("seed active product specification template: %v", err)
 	}
 
 	router := gin.New()
@@ -606,8 +705,11 @@ func TestListProductSpecificationTemplatesDoesNotExposeSpecDefinitions(t *testin
 	if response.Code != http.StatusOK {
 		t.Fatalf("expected product specification templates to return 200, got %d: %s", response.Code, response.Body.String())
 	}
-	if !strings.Contains(response.Body.String(), `"slug":"wheelset"`) {
-		t.Fatalf("expected response to include public product specification template, got %s", response.Body.String())
+	if strings.Contains(response.Body.String(), `"slug":"wheelset"`) {
+		t.Fatalf("retired wheelset template is still public: %s", response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), `"slug":"handlebar"`) {
+		t.Fatalf("expected response to retain other public product templates, got %s", response.Body.String())
 	}
 	if strings.Contains(response.Body.String(), "spec_definitions") {
 		t.Fatalf("public product specification template index exposes specs: %s", response.Body.String())

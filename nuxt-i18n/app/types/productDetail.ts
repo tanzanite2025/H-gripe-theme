@@ -99,6 +99,35 @@ export interface CarbonRimVariantSpecification {
   net_weight_grams: number
 }
 
+export interface WheelsetWheelProductSpecification {
+  wheel_size: string
+  spoke_hole_counts: number[]
+  lacing_patterns: string[]
+  bead_seat_diameter_mm?: number | null
+  material?: string
+  brake_interface?: string
+  rim_profile?: string
+  tire_system?: string
+  rim_depth_mm?: number | null
+  rim_internal_width_mm?: number | null
+  rim_external_width_mm?: number | null
+  hub_interface?: string
+  axle_standard?: string
+  freehub_body?: string
+  spoke_type?: string
+  weight_g?: number | null
+  max_tire_pressure_bar?: number | null
+}
+
+export interface WheelsetProductSpecification {
+  schema_version: 1
+  front_wheel: WheelsetWheelProductSpecification
+  rear_wheel: WheelsetWheelProductSpecification
+  net_weight_g?: number | null
+  max_system_weight_kg?: number | null
+  certifications?: string[]
+}
+
 export interface ProductVariant {
   carbon_rim_specification?: CarbonRimVariantSpecification
   id: number
@@ -232,7 +261,10 @@ export interface ProductBreadcrumb {
 
 export interface GoProduct {
   carbon_rim_specification?: CarbonRimProductSpecification
+  wheelset_specification?: WheelsetProductSpecification
   product_type?: string
+  mpn?: string
+  gtin?: string
   id: number
   product_specification_template_id?: number
   product_specification_template?: ProductSpecificationTemplate

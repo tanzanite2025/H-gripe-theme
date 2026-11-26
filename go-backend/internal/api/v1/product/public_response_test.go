@@ -69,6 +69,72 @@ func TestPublicProductFromDomainExposesPurchasableSkuFactsWithoutExactInventory(
 	}
 }
 
+func TestPublicProductFromDomainExposesValidatedMpnAndGtinOnlyForWheelsets(t *testing.T) {
+	wheelset := productdomain.Product{
+		ProductType:                   productdomain.ProductTypeWheelset,
+		MerchantProductIdentifier:     "INTERNAL-MERCHANT-WHEELSET-001",
+		ManufacturerProductIdentifier: " FACTORY-WHEELSET-001 ",
+		StandardProductIdentifier:     " 00012345678905 ",
+	}
+	publicWheelset := PublicProductFromDomain(wheelset)
+	if publicWheelset.MPN != "FACTORY-WHEELSET-001" {
+		t.Fatalf("wheelset MPN = %q", publicWheelset.MPN)
+	}
+	if publicWheelset.GTIN != "00012345678905" {
+		t.Fatalf("wheelset GTIN = %q", publicWheelset.GTIN)
+	}
+
+	serializedWheelset, err := json.Marshal(publicWheelset)
+	if err != nil {
+		t.Fatalf("marshal public wheelset: %v", err)
+	}
+	for _, field := range []string{`"mpn":"FACTORY-WHEELSET-001"`, `"gtin":"00012345678905"`} {
+		if !strings.Contains(string(serializedWheelset), field) {
+			t.Fatalf("public wheelset omits %s: %s", field, serializedWheelset)
+		}
+	}
+	for _, field := range []string{`"merchant_product_identifier"`, `"manufacturer_product_identifier"`, `"standard_product_identifier"`, `INTERNAL-MERCHANT-WHEELSET-001`} {
+		if strings.Contains(string(serializedWheelset), field) {
+			t.Fatalf("public wheelset exposes raw internal field %s: %s", field, serializedWheelset)
+		}
+	}
+
+	wheelset.StandardProductIdentifier = "00012345678904"
+	if invalidGTIN := PublicProductFromDomain(wheelset).GTIN; invalidGTIN != "" {
+		t.Fatalf("invalid wheelset GTIN was exposed: %q", invalidGTIN)
+	}
+	wheelset.ManufacturerProductIdentifier = ""
+	wheelset.StandardProductIdentifier = ""
+	serializedWheelset, err = json.Marshal(PublicProductFromDomain(wheelset))
+	if err != nil {
+		t.Fatalf("marshal wheelset without public identifiers: %v", err)
+	}
+	if strings.Contains(string(serializedWheelset), `"mpn"`) || strings.Contains(string(serializedWheelset), `"gtin"`) {
+		t.Fatalf("absent identifiers must be omitted without using merchant identifier as fallback: %s", serializedWheelset)
+	}
+
+	ordinaryProduct := productdomain.Product{
+		ManufacturerProductIdentifier: "FACTORY-OTHER-001",
+		StandardProductIdentifier:     "4006381333931",
+		WheelsetSpecification: &productdomain.WheelsetSpecification{
+			SchemaVersion: 1,
+			FrontWheel: productdomain.WheelsetProductWheelSpecification{
+				WheelSize: "700C", SpokeHoleCounts: []int{24}, LacingPatterns: []string{"2x"},
+			},
+			RearWheel: productdomain.WheelsetProductWheelSpecification{
+				WheelSize: "700C", SpokeHoleCounts: []int{24}, LacingPatterns: []string{"2x"},
+			},
+		},
+	}
+	publicOrdinaryProduct := PublicProductFromDomain(ordinaryProduct)
+	if publicOrdinaryProduct.MPN != "" || publicOrdinaryProduct.GTIN != "" {
+		t.Fatalf("non-wheelset identifiers were exposed as WHEELSET Schema fields: %#v", publicOrdinaryProduct)
+	}
+	if publicOrdinaryProduct.WheelsetSpecification != nil {
+		t.Fatal("non-wheelset wheelset specification was exposed in the public response")
+	}
+}
+
 func TestPublicProductFromDomainStatusOverridesSkuAvailability(t *testing.T) {
 	for _, status := range []string{"inactive", "out_of_stock"} {
 		t.Run(status, func(t *testing.T) {
@@ -141,17 +207,17 @@ func TestPublicProductFromDomainExposesMadeToOrderAvailabilityWithoutStock(t *te
 func TestPublicProductSpecificationTemplateUsesBaseNameRegardlessOfLocale(t *testing.T) {
 	item := productdomain.Product{
 		ProductSpecificationTemplate: &productdomain.ProductSpecificationTemplate{
-			Name: "Wheelset",
+			Name: "Road Bike",
 		},
 	}
 
 	translated := PublicProductFromDomainWithLocale(item, "", "zh_cn")
-	if translated.ProductSpecificationTemplate == nil || translated.ProductSpecificationTemplate.Name != "Wheelset" {
+	if translated.ProductSpecificationTemplate == nil || translated.ProductSpecificationTemplate.Name != "Road Bike" {
 		t.Fatalf("expected base product specification template name, got %#v", translated.ProductSpecificationTemplate)
 	}
 
 	fallback := PublicProductFromDomainWithLocale(item, "", "fr")
-	if fallback.ProductSpecificationTemplate == nil || fallback.ProductSpecificationTemplate.Name != "Wheelset" {
+	if fallback.ProductSpecificationTemplate == nil || fallback.ProductSpecificationTemplate.Name != "Road Bike" {
 		t.Fatalf("expected product specification template name to remain stable, got %#v", fallback.ProductSpecificationTemplate)
 	}
 }
@@ -286,8 +352,8 @@ func TestPublicProductFromDomainCanonicalizesFirstPartyMediaURLs(t *testing.T) {
 			LogoURL: "http://media.internal:8080/uploads/brands/logo.webp",
 		},
 		ProductSpecificationTemplate: &productdomain.ProductSpecificationTemplate{
-			Name: "Wheelset",
-			Slug: "wheelset",
+			Name: "Road Bike",
+			Slug: "road-bike",
 			SpecDefinitions: []productdomain.SpecDefinition{
 				{
 					ID:        17,

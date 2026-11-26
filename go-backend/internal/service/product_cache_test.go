@@ -29,6 +29,19 @@ func TestProductDetailCacheInvalidatorDeletesIDAndSlugKeys(t *testing.T) {
 	}, cache.deletedKeys)
 }
 
+func TestWheelsetSpecificationUpdateInvalidatesProductDetailCacheByID(t *testing.T) {
+	item := product.Product{ID: 73, ProductType: product.ProductTypeWheelset, Slug: "wheelset-cache-test", Locale: "en"}
+	repo := &fakeProductCacheIdentityRepository{productsByID: map[uint]product.Product{item.ID: item}}
+	cache := &recordingProductDetailCache{}
+	service := &ProductService{productCacheInvalidator: NewProductDetailCacheInvalidator(repo, cache)}
+
+	service.clearProductCache(&item)
+
+	assert.Equal(t, []uint{73}, repo.requestedIDs)
+	assert.Contains(t, cache.deletedKeys, "product:73")
+	assert.Contains(t, cache.deletedKeys, "product:slug:wheelset-cache-test:en")
+}
+
 func TestProductDetailCacheInvalidatorDeletesDependentProductKeys(t *testing.T) {
 	repo := &fakeProductCacheIdentityRepository{
 		productsByProductSpecificationTemplateID: map[uint][]product.Product{

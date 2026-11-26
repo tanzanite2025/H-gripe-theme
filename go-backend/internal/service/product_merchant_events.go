@@ -74,7 +74,7 @@ func merchantProductSourceChangeReason(input ProductUpdateInput) string {
 }
 
 func merchantProductUpdateAffectsChannel(input ProductUpdateInput) bool {
-	return input.UpdateCarbonRimSpecification || input.Status != nil ||
+	return input.UpdateCarbonRimSpecification || input.UpdateWheelsetSpecification || input.Status != nil ||
 		input.Name != nil ||
 		input.Slug != nil ||
 		input.Description != nil ||

@@ -66,7 +66,7 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 	if err != nil {
 		return nil, nil, err
 	}
-	if err := s.rejectNewBindingToRetiredCarbonRimTemplate(source.ProductSpecificationTemplateID, nil); err != nil {
+	if err := s.rejectRetiredProductSpecificationTemplateUse(source.ProductSpecificationTemplateID, nil); err != nil {
 		return nil, nil, err
 	}
 	if err := s.validateCarbonRimProductTypeAndSystemCategoryBinding(source.ProductType, source.ProductCategoryID); err != nil {
@@ -85,6 +85,14 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 			return nil, nil, err
 		}
 		if err := product.ValidateBicycleTireSpecification(source.BicycleTireSpecification); err != nil {
+			return nil, nil, fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
+		}
+	}
+	if source.ProductType == product.ProductTypeWheelset {
+		if err := s.validateWheelsetProductTypeAndSystemCategoryBinding(source.ProductType, source.ProductCategoryID); err != nil {
+			return nil, nil, err
+		}
+		if err := product.ValidateWheelsetSpecification(source.WheelsetSpecification); err != nil {
 			return nil, nil, fmt.Errorf("%w: %v", ErrProductSpecInvalid, err)
 		}
 	}
@@ -134,6 +142,7 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 		ProductType:                    source.ProductType,
 		CarbonRimSpecification:         source.CarbonRimSpecification,
 		BicycleTireSpecification:       source.BicycleTireSpecification,
+		WheelsetSpecification:          source.WheelsetSpecification,
 		ProductSpecificationTemplateID: source.ProductSpecificationTemplateID,
 		ProductCategoryID:              source.ProductCategoryID,
 		BrandID:                        source.BrandID,

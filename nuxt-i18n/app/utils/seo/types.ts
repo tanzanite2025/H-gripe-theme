@@ -39,12 +39,20 @@ export interface ProductSeoPropertyValue {
   '@type': 'PropertyValue'
   propertyID: string
   name: string
-  value: string
+  value: string | ProductSeoQuantitativeValue
   unitText?: string
+}
+
+export interface ProductSeoQuantitativeValue {
+  '@type': 'QuantitativeValue'
+  value: number
+  unitCode: string
 }
 
 export interface ProductSeoInput {
   category?: string | null
+  mpn?: string | null
+  gtin?: string | null
   size?: string
   material?: string
   weightGrams?: number
@@ -113,6 +121,8 @@ export interface ProductSeoShippingDetails {
 
 export interface ProductSeoSchema {
   category?: string
+  mpn?: string
+  gtin?: string
   size?: string
   material?: string
   weight?: { '@type': 'QuantitativeValue'; value: number; unitCode: 'GRM' }

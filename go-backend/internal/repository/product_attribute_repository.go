@@ -106,6 +106,7 @@ func (r *ProductRepository) FindAllProductSpecificationTemplates(includeDisabled
 	if !includeDisabled {
 		query = query.Where("is_enabled = ?", true)
 	}
+	query = query.Where("LOWER(TRIM(slug)) <> ?", product.ProductTypeWheelset)
 
 	err := query.Order("sort_order ASC, id ASC").Find(&productSpecificationTemplates).Error
 	return productSpecificationTemplates, err
@@ -117,6 +118,7 @@ func (r *ProductRepository) FindPublicProductSpecificationTemplates(includeDisab
 	if !includeDisabled {
 		query = query.Where("is_enabled = ?", true)
 	}
+	query = query.Where("LOWER(TRIM(slug)) <> ?", product.ProductTypeWheelset)
 
 	err := query.Order("sort_order ASC, id ASC").Find(&productSpecificationTemplates).Error
 	return productSpecificationTemplates, err

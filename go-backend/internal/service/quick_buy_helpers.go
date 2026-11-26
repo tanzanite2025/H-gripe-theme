@@ -105,8 +105,8 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 		return nil, err
 	}
 	page, pageSize := normalizeQuickBuyCandidatePaging(input.Page, input.PageSize)
-	exposeProductSpecificationTemplates := !isDefaultQuickBuyFlow(version) && len(step.ProductSpecificationTemplates) > 0
-	if !exposeProductSpecificationTemplates {
+	exposeProductFilters := !isDefaultQuickBuyFlow(version) && (len(step.ProductSpecificationTemplates) > 0 || quickBuyStepHasWheelsetProductCategory(*step))
+	if !exposeProductFilters {
 		input.SpecFilters = nil
 	}
 	specFilters, err := normalizeQuickBuySpecFilters(*step, input.SpecFilters)
@@ -118,7 +118,7 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 		FlowVersionID: version.ID,
 		Locale:        locale,
 		Currency:      currency,
-		Step:          quickBuyStepView(*step, locale, exposeProductSpecificationTemplates, s.mediaURLResolver),
+		Step:          quickBuyStepView(*step, locale, len(step.ProductSpecificationTemplates) > 0 && exposeProductFilters, exposeProductFilters, s.mediaURLResolver),
 		Products:      []productdomain.Product{},
 		Page:          page,
 		PageSize:      pageSize,
@@ -142,7 +142,7 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 	result.Products = products
 	result.Total = total
 	result.HasMore = int64(page*pageSize) < total
-	if !exposeProductSpecificationTemplates {
+	if !exposeProductFilters {
 		return result, nil
 	}
 	filterValues, err := s.productRepo.ListQuickBuyFilterValues(repository.ProductQuickBuyCandidateQuery{
@@ -155,7 +155,7 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 	if err != nil {
 		return nil, err
 	}
-	result.Step.Filters = quickBuyStepFiltersForScope(*step, filterValues, exposeProductSpecificationTemplates)
+	result.Step.Filters = quickBuyStepFiltersForScope(*step, filterValues, exposeProductFilters)
 	return result, nil
 }
 

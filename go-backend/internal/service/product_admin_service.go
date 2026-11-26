@@ -71,6 +71,7 @@ type ProductCreateInput struct {
 	ProductType                    *string
 	CarbonRimSpecification         *product.CarbonRimSpecification
 	BicycleTireSpecification       *product.BicycleTireSpecification
+	WheelsetSpecification          *product.WheelsetSpecification
 	ProductSpecificationTemplateID *uint
 	ProductCategoryID              *uint
 	BrandID                        *uint
@@ -112,6 +113,8 @@ type ProductUpdateInput struct {
 	UpdateCarbonRimSpecification         bool
 	BicycleTireSpecification             *product.BicycleTireSpecification
 	UpdateBicycleTireSpecification       bool
+	WheelsetSpecification                *product.WheelsetSpecification
+	UpdateWheelsetSpecification          bool
 	ProductSpecificationTemplateID       *uint
 	UpdateProductSpecificationTemplateID bool
 	ProductCategoryID                    *uint
@@ -203,6 +206,9 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 	if err := s.validateDedicatedCarbonRimCreation(input); err != nil {
 		return nil, err
 	}
+	if err := s.validateDedicatedWheelsetCreation(input); err != nil {
+		return nil, err
+	}
 	if len(input.OptionValueRelations) > 0 {
 		return nil, fmt.Errorf("%w: save the product before configuring option value relations", ErrProductOptionRelationInvalid)
 	}
@@ -238,7 +244,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		return nil, err
 	}
 
-	if err := s.rejectNewBindingToRetiredCarbonRimTemplate(input.ProductSpecificationTemplateID, nil); err != nil {
+	if err := s.rejectRetiredProductSpecificationTemplateUse(input.ProductSpecificationTemplateID, nil); err != nil {
 		return nil, err
 	}
 	specValues, err := s.buildSpecValues(input.ProductSpecificationTemplateID, input.SpecValues)
@@ -312,6 +318,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		ProductType:                    dedicatedProductTypeValue(input.ProductType),
 		CarbonRimSpecification:         input.CarbonRimSpecification,
 		BicycleTireSpecification:       input.BicycleTireSpecification,
+		WheelsetSpecification:          input.WheelsetSpecification,
 		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
 		ProductCategoryID:              input.ProductCategoryID,
 		BrandID:                        input.BrandID,
@@ -420,7 +427,10 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if err := s.validateDedicatedCarbonRimUpdate(existingProduct, &input); err != nil {
 		return nil, err
 	}
-	if err := s.rejectNewBindingToRetiredCarbonRimTemplate(input.ProductSpecificationTemplateID, existingProduct.ProductSpecificationTemplateID); err != nil {
+	if err := s.validateDedicatedWheelsetUpdate(existingProduct, &input); err != nil {
+		return nil, err
+	}
+	if err := s.rejectRetiredProductSpecificationTemplateUse(input.ProductSpecificationTemplateID, existingProduct.ProductSpecificationTemplateID); err != nil {
 		return nil, err
 	}
 	if input.UpdateCarbonRimSpecification {
@@ -430,6 +440,10 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if input.UpdateBicycleTireSpecification {
 		existingProduct.BicycleTireSpecification = input.BicycleTireSpecification
 		existingProduct.BicycleTireSpecificationDirty = true
+	}
+	if input.UpdateWheelsetSpecification {
+		existingProduct.WheelsetSpecification = input.WheelsetSpecification
+		existingProduct.WheelsetSpecificationDirty = true
 	}
 	previousProduct := *existingProduct
 	previousAfterSalesTemplateID := existingProduct.AfterSalesTemplateID

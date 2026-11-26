@@ -21,6 +21,7 @@ import {
 } from '~/utils/productDetail'
 import { createSeoJsonLdScript } from '~/utils/seo/jsonLd'
 import { buildCarbonRimSalesVariantEngineeringProperties } from '~/utils/seo/carbonRimSalesVariantEngineeringProperties'
+import { buildWheelsetProductLevelSeoProperties } from '~/utils/seo/wheelsetProductLevelSeoProperties'
 import {
   buildProductPath,
   toAbsoluteSeoUrl,
@@ -188,7 +189,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
     }
 
     const productShippingDetails = product.shipping_details
-    const seoVariants = options.activeVariants.value.map((variant) => {
+    const seoVariants = product.product_type === 'wheelset' ? undefined : options.activeVariants.value.map((variant) => {
       const price = variantSeoPrice(variant)
       return {
         additionalProperties: product.product_type === 'carbon_rim' ? buildCarbonRimSalesVariantEngineeringProperties(variant.carbon_rim_specification) : undefined,
@@ -213,25 +214,36 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
           : null,
       }
     })
+    const wheelsetSeoProperties = product.product_type === 'wheelset'
+      ? buildWheelsetProductLevelSeoProperties(product.wheelset_specification)
+      : null
 
     return buildProductSeoDocument(
       {
         size: product.product_type === 'carbon_rim' ? product.spec_values?.find(value => value.definition?.slug === 'wheel_size' && value.definition?.is_visible !== false)?.value : undefined,
-        material: product.product_type === 'carbon_rim' ? product.spec_values?.find(value => value.definition?.slug === 'material' && value.definition?.is_visible !== false)?.value : undefined,
-        weightGrams: product.product_type === 'carbon_rim' ? options.selectedVariant.value?.carbon_rim_specification?.net_weight_grams : undefined,
-        additionalProperties: product.product_type === 'carbon_rim' ? [...(product.spec_values || [])
+        material: product.product_type === 'carbon_rim'
+          ? product.spec_values?.find(value => value.definition?.slug === 'material' && value.definition?.is_visible !== false)?.value
+          : wheelsetSeoProperties?.material,
+        weightGrams: product.product_type === 'carbon_rim'
+          ? options.selectedVariant.value?.carbon_rim_specification?.net_weight_grams
+          : wheelsetSeoProperties?.weightGrams,
+        additionalProperties: product.product_type === 'wheelset'
+          ? wheelsetSeoProperties?.additionalProperties
+          : product.product_type === 'carbon_rim' ? [...(product.spec_values || [])
           .filter(value => value.definition?.is_visible !== false && value.definition?.slug && value.value != null && value.value !== '')
           .map(value => ({ '@type': 'PropertyValue' as const, propertyID: value.definition!.slug, name: value.definition!.name, value: String(value.value), ...(value.definition!.unit ? { unitText: value.definition!.unit } : {}) })),
           ...(options.activeVariants.value.length === 1 ? buildCarbonRimSalesVariantEngineeringProperties(options.selectedVariant.value?.carbon_rim_specification) : []),
         ] : undefined,
         name: product.name,
+        mpn: product.product_type === 'wheelset' ? product.mpn : undefined,
+        gtin: product.product_type === 'wheelset' ? product.gtin : undefined,
         category: product.product_category?.name,
         brand: product.brand?.name,
         metaTitle: product.meta_title,
         metaDescription: product.meta_description,
         shortDescription: product.short_description,
         description: product.description,
-        sku: product.sku,
+        sku: product.product_type === 'wheelset' ? undefined : product.sku,
         imageUrls: [
           product.thumbnail,
           ...options.productImages.value.map((image) => image.url),
@@ -240,7 +252,7 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
           price: String(options.currentDisplayPrice.value.amount),
           currency: options.currentDisplayPrice.value.currency,
           availability: options.selectedAvailability.value,
-          sku: options.selectedVariant.value?.sku || product.sku,
+          sku: product.product_type === 'wheelset' ? undefined : options.selectedVariant.value?.sku || product.sku,
         },
         aggregateRating: product.review_summary
           ? {
@@ -259,9 +271,11 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
             }
           : null,
         productGroupId: `product-${product.id}`,
-        variesBy: product.product_type === 'carbon_rim' ? ['spoke_hole_count', 'drilling_pattern', 'finish_code'] : options.variantOptionDefinitions.value.map((definition) => (
-          `https://schema.org/${String(definition.slug || '').trim()}`
-        )),
+        variesBy: product.product_type === 'wheelset'
+          ? undefined
+          : product.product_type === 'carbon_rim' ? ['spoke_hole_count', 'drilling_pattern', 'finish_code'] : options.variantOptionDefinitions.value.map((definition) => (
+            `https://schema.org/${String(definition.slug || '').trim()}`
+          )),
         variants: seoVariants,
       },
       {

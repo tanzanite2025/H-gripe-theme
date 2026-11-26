@@ -17,6 +17,19 @@ func TestMerchantProductUpdateAffectsChannelWhenBrandChanges(t *testing.T) {
 	}))
 }
 
+func TestMerchantProductUpdateAffectsChannelWhenWheelsetSpecificationChanges(t *testing.T) {
+	assert.True(t, merchantProductUpdateAffectsChannel(ProductUpdateInput{
+		UpdateWheelsetSpecification: true,
+	}))
+}
+
+func TestMerchantProductUpdateDoesNotTreatProductSchemaIdentifiersAsMerchantOfferChanges(t *testing.T) {
+	assert.False(t, merchantProductUpdateAffectsChannel(ProductUpdateInput{
+		UpdateManufacturerProductIdentifier: true,
+		UpdateStandardProductIdentifier:     true,
+	}))
+}
+
 func TestMerchantProductCoreChangedWhenBrandChanges(t *testing.T) {
 	previousBrandID := uint(1)
 	nextBrandID := uint(2)

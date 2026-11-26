@@ -593,7 +593,7 @@ func (r *ProductRepository) FindProductCacheIdentitiesByIDs(ids []uint) ([]produ
 	if len(ids) == 0 {
 		return products, nil
 	}
-	err := r.db.Select("id", "slug", "locale").Where("id IN ? OR (product_type IN ? AND parent_id IN ?)", ids, []string{product.ProductTypeCarbonRim, product.ProductTypeBicycleTire}, ids).Find(&products).Error
+	err := r.db.Select("id", "slug", "locale").Where("id IN ? OR (product_type IN ? AND parent_id IN ?)", ids, []string{product.ProductTypeCarbonRim, product.ProductTypeBicycleTire, product.ProductTypeWheelset}, ids).Find(&products).Error
 	return products, err
 }
 
@@ -738,6 +738,10 @@ func productUpdateColumns(p *product.Product) map[string]interface{} {
 	if p.BicycleTireSpecificationDirty {
 		encodedSpecification, _ := json.Marshal(p.BicycleTireSpecification)
 		columns["bicycle_tire_specification"] = string(encodedSpecification)
+	}
+	if p.WheelsetSpecificationDirty {
+		encodedSpecification, _ := json.Marshal(p.WheelsetSpecification)
+		columns["wheelset_specification"] = string(encodedSpecification)
 	}
 	return columns
 }

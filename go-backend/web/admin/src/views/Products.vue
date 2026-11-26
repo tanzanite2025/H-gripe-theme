@@ -195,6 +195,49 @@
       @retry-supplier-cost="retrySupplierCost"
     />
 
+    <WheelsetDedicatedProductEditorDialog
+      v-if="activeProductEditorKind === 'wheelset'"
+      v-model:open="dialogVisible"
+      :mode="dialogMode"
+      :submitting="submitting"
+      :form="productForm"
+      :errors="formErrors"
+      :wheelset-system-category-display-path="wheelsetSystemCategoryDisplayPath"
+      :brand-select-value="brandSelectValue"
+      :brands="brands"
+      :shipping-templates="shippingTemplates"
+      :after-sales-templates="afterSalesTemplates"
+      :packaging-templates="packagingTemplates"
+      :customs-classifications="availableCustomsClassifications"
+      :language-options="languageOptions"
+      :default-variant-index="defaultVariantIndex"
+      :uploading-media="uploadingMedia"
+      :supplier-cost-visible="canViewSupplierCost"
+      :supplier-cost-can-edit="canEditSupplierCost"
+      :supplier-cost-loading="supplierCostLoading"
+      :supplier-cost-saving="supplierCostSaving"
+      :supplier-cost-pending="supplierCostPending"
+      :supplier-cost-error="supplierCostError"
+      :supplier-cost-last-saved-at="supplierCostLastSavedAt"
+      :supplier-cost-drafts="supplierCostDraftRows"
+      @submit="submitForm"
+      @clear-error="clearFieldError"
+      @product-brand-select="setProductBrand"
+      @product-information-template-select="setProductInformationTemplate"
+      @customs-classification-select="handleCustomsClassificationSelect"
+      @customs-classification-manual-edit="clearCustomsClassification"
+      @add-variant="addVariant"
+      @remove-variant="removeVariant"
+      @set-default-variant="setDefaultVariant"
+      @set-variant-active="setVariantActive"
+      @upload-media="handleMediaUpload"
+      @add-media-url="addMediaUrl"
+      @set-primary-media="setPrimaryMedia"
+      @move-media="moveMedia"
+      @remove-media="removeMedia"
+      @retry-supplier-cost="retrySupplierCost"
+    />
+
     <SpokeRepairKitProductEditorDialog
       v-model:open="spokeRepairKitDialogVisible"
       :mode="spokeRepairKitDialogMode"
@@ -243,6 +286,7 @@ import AdminStatsGrid from '@/components/admin/AdminStatsGrid.vue'
 import ProductCreationTypeDialog, { type ProductCreationType } from '@/components/admin/product/ProductCreationTypeDialog.vue'
 import ProductEditorDialog from '@/components/admin/product/ProductEditorDialog.vue'
 import BicycleTireDedicatedProductEditorDialog from '@/components/admin/product/BicycleTireDedicatedProductEditorDialog.vue'
+import WheelsetDedicatedProductEditorDialog from '@/components/admin/product/WheelsetDedicatedProductEditorDialog.vue'
 import ProductFilterPanel from '@/components/admin/product/ProductFilterPanel.vue'
 import ProductTablePanel from '@/components/admin/product/ProductTablePanel.vue'
 import ProductTranslationGroupDialog from '@/components/admin/product/ProductTranslationGroupDialog.vue'
@@ -365,6 +409,7 @@ const {
   productCategorySelectValue,
   carbonRimSystemCategoryDisplayPath,
   bicycleTireSystemCategoryDisplayPath,
+  wheelsetSystemCategoryDisplayPath,
   brandSelectValue,
   templateScopedValuesTouched,
   templateSyncDialogVisible,
@@ -428,7 +473,7 @@ const {
 })
 
 const creationTypeDialogVisible = ref(false)
-const activeProductEditorKind = ref<'generic' | 'bicycle-tire'>('generic')
+const activeProductEditorKind = ref<'generic' | 'bicycle-tire' | 'wheelset'>('generic')
 const spokeRepairKitDialogVisible = ref(false)
 const spokeRepairKitDialogMode = ref<'create' | 'edit'>('create')
 const spokeRepairKitEditingProduct = ref<AdminProductRecord | null>(null)
@@ -437,7 +482,11 @@ const spokeRepairKitCategoryId = computed<number | null>(() => {
   const category = productCategories.value.find((item) => item.slug === 'spoke-repair-kits')
   return category?.id ?? null
 })
-const standardProductCategories = computed(() => productCategories.value.filter((item) => item.slug !== 'spoke-repair-kits'))
+const standardProductCategories = computed(() => productCategories.value.filter((item) => {
+  if (item.slug === 'spoke-repair-kits') return false
+  if (item.slug !== 'wheelset') return true
+  return String(item.id) === String(productForm.product_category_id)
+}))
 
 const isSpokeRepairKitProduct = (product: AdminProductRecord): boolean => {
   const categorySlug = String(product.product_category?.slug || product.product_category_slug || '').trim().toLowerCase()
@@ -492,6 +541,11 @@ const handleCreationTypeContinue = async (type: ProductCreationType): Promise<vo
     await showGenericCreateDialog('bicycle_tire')
     return
   }
+  if (type === 'wheelset') {
+    activeProductEditorKind.value = 'wheelset'
+    await showGenericCreateDialog('wheelset')
+    return
+  }
   activeProductEditorKind.value = 'generic'
   await showGenericCreateDialog(type === 'carbon-rim' ? 'carbon_rim' : '')
 }
@@ -501,7 +555,11 @@ const openProductEditDialog = async (product: AdminProductRecord): Promise<void>
     await openSpokeRepairKitEditDialog(product)
     return
   }
-  activeProductEditorKind.value = product.product_type === 'bicycle_tire' ? 'bicycle-tire' : 'generic'
+  activeProductEditorKind.value = product.product_type === 'bicycle_tire'
+    ? 'bicycle-tire'
+    : product.product_type === 'wheelset'
+      ? 'wheelset'
+      : 'generic'
   await showGenericEditDialog(product)
 }
 

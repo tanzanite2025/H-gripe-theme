@@ -100,6 +100,159 @@ func TestListQuickBuyCandidatesIncludesMadeToOrderProductsWithoutStock(t *testin
 	requireProductIDs(t, results, item.ID)
 }
 
+func TestListQuickBuyCandidatesFiltersWheelsetsByDedicatedFrontAndRearSpecifications(t *testing.T) {
+	db := newProductQueryTestDB(t)
+	repo := NewProductRepository(db)
+
+	mixedDiameter := seedDedicatedWheelsetFilterProduct(t, db, "Mullet Wheelset", "mullet-wheelset", "27.5")
+	matchingDiameters := seedDedicatedWheelsetFilterProduct(t, db, "29 Inch Wheelset", "29-inch-wheelset", "29")
+	matchingDiameters.WheelsetSpecification.RearWheel.FreehubBody = "hg"
+	require.NoError(t, db.Save(&matchingDiameters).Error)
+
+	testCases := []struct {
+		name       string
+		filters    map[string][]string
+		expectedID []uint
+	}{
+		{
+			name:       "legacy whole wheelset size excludes mixed diameters",
+			filters:    map[string][]string{product.WheelsetFilterKeyWheelSize: {"29"}},
+			expectedID: []uint{matchingDiameters.ID},
+		},
+		{
+			name:       "legacy multi-value wheel size still requires one value on both wheels",
+			filters:    map[string][]string{product.WheelsetFilterKeyWheelSize: {"27.5", "29"}},
+			expectedID: []uint{matchingDiameters.ID},
+		},
+		{
+			name:       "front wheel size reads front wheel",
+			filters:    map[string][]string{product.WheelsetFilterKeyFrontWheelSize: {"29"}},
+			expectedID: []uint{mixedDiameter.ID, matchingDiameters.ID},
+		},
+		{
+			name:       "rear wheel size reads rear wheel",
+			filters:    map[string][]string{product.WheelsetFilterKeyRearWheelSize: {"27.5"}},
+			expectedID: []uint{mixedDiameter.ID},
+		},
+		{
+			name:       "front axle reads front wheel",
+			filters:    map[string][]string{product.WheelsetFilterKeyFrontAxle: {"15x110"}},
+			expectedID: []uint{mixedDiameter.ID, matchingDiameters.ID},
+		},
+		{
+			name:       "rear axle reads rear wheel",
+			filters:    map[string][]string{product.WheelsetFilterKeyRearAxle: {"12x148"}},
+			expectedID: []uint{mixedDiameter.ID, matchingDiameters.ID},
+		},
+		{
+			name:       "brake mount requires both wheels",
+			filters:    map[string][]string{product.WheelsetFilterKeyBrakeMount: {"center_lock"}},
+			expectedID: []uint{mixedDiameter.ID, matchingDiameters.ID},
+		},
+		{
+			name:       "freehub reads rear wheel",
+			filters:    map[string][]string{product.WheelsetFilterKeyFreehub: {"micro_spline"}},
+			expectedID: []uint{mixedDiameter.ID},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			results, _, err := repo.ListQuickBuyCandidates(ProductQuickBuyCandidateQuery{
+				Locale:      "en",
+				SpecFilters: testCase.filters,
+				Limit:       10,
+			})
+			require.NoError(t, err)
+			actualIDs := productIDs(results)
+			require.ElementsMatch(t, testCase.expectedID, actualIDs)
+		})
+	}
+}
+
+func TestListWheelsetCategoryFilterOptionsReadsDedicatedProductSpecifications(t *testing.T) {
+	db := newProductQueryTestDB(t)
+	repo := NewProductRepository(db)
+	require.NoError(t, db.AutoMigrate(&product.ProductCategory{}))
+
+	category := product.ProductCategory{
+		Name:      "Wheelsets",
+		Slug:      product.ProductTypeWheelset,
+		Depth:     1,
+		IsEnabled: true,
+	}
+	require.NoError(t, db.Create(&category).Error)
+
+	emptyFilters, err := repo.ListFilterableSpecificationsWithDynamicValuesForCategory(product.ProductTypeWheelset)
+	require.NoError(t, err)
+	require.Len(t, emptyFilters, len(product.WheelsetProductLevelSpecificationFilterDefinitions()))
+	for _, filter := range emptyFilters {
+		require.Empty(t, filter.Values)
+	}
+
+	seedDedicatedWheelsetFilterProduct(t, db, "Mullet Wheelset", "mullet-wheelset", "27.5", category.ID)
+	seedDedicatedWheelsetFilterProduct(t, db, "29 Inch Wheelset", "29-inch-wheelset", "29", category.ID)
+
+	filters, err := repo.ListFilterableSpecificationsWithDynamicValuesForCategory(product.ProductTypeWheelset)
+	require.NoError(t, err)
+	require.Len(t, filters, len(product.WheelsetProductLevelSpecificationFilterDefinitions()))
+	valuesBySlug := make(map[string][]string, len(filters))
+	for _, filter := range filters {
+		valuesBySlug[filter.Slug] = filter.Values
+	}
+	require.Equal(t, []string{"29"}, valuesBySlug[product.WheelsetFilterKeyWheelSize])
+	require.Equal(t, []string{"29"}, valuesBySlug[product.WheelsetFilterKeyFrontWheelSize])
+	require.Equal(t, []string{"27.5", "29"}, valuesBySlug[product.WheelsetFilterKeyRearWheelSize])
+	require.Equal(t, []string{"15x110"}, valuesBySlug[product.WheelsetFilterKeyFrontAxle])
+	require.Equal(t, []string{"12x148"}, valuesBySlug[product.WheelsetFilterKeyRearAxle])
+	require.Equal(t, []string{"center_lock"}, valuesBySlug[product.WheelsetFilterKeyBrakeMount])
+	require.Equal(t, []string{"micro_spline"}, valuesBySlug[product.WheelsetFilterKeyFreehub])
+}
+
+func seedDedicatedWheelsetFilterProduct(t *testing.T, db *gorm.DB, name, slug, rearWheelSize string, productCategoryIDs ...uint) product.Product {
+	t.Helper()
+	var categoryID *uint
+	if len(productCategoryIDs) > 0 {
+		categoryID = &productCategoryIDs[0]
+	}
+	item := product.Product{
+		ProductType:       product.ProductTypeWheelset,
+		ProductCategoryID: categoryID,
+		WheelsetSpecification: &product.WheelsetSpecification{
+			SchemaVersion: 1,
+			FrontWheel: product.WheelsetProductWheelSpecification{
+				WheelSize:       "29",
+				SpokeHoleCounts: []int{24},
+				LacingPatterns:  []string{"2-cross"},
+				AxleStandard:    "15x110",
+				BrakeInterface:  "center_lock",
+			},
+			RearWheel: product.WheelsetProductWheelSpecification{
+				WheelSize:       rearWheelSize,
+				SpokeHoleCounts: []int{24},
+				LacingPatterns:  []string{"2-cross"},
+				AxleStandard:    "12x148",
+				BrakeInterface:  "center_lock",
+				FreehubBody:     "micro_spline",
+			},
+		},
+		Name:   name,
+		Slug:   slug,
+		Status: "active",
+		Locale: "en",
+	}
+	require.NoError(t, db.Create(&item).Error)
+	require.NoError(t, db.Create(&product.ProductVariant{
+		ProductID:  item.ID,
+		SKU:        slug + "-variant",
+		IsActive:   true,
+		IsDefault:  true,
+		Stock:      1,
+		PriceMinor: 1000,
+	}).Error)
+	return item
+}
+
 func TestListQuickBuyCandidatesExcludesSpokeRepairKitProducts(t *testing.T) {
 	db := newProductQueryTestDB(t)
 	repo := NewProductRepository(db)

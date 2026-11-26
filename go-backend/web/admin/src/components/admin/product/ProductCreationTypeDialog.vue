@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
-export type ProductCreationType = 'standard' | 'spoke-repair-kit' | 'carbon-rim' | 'bicycle-tire'
+export type ProductCreationType = 'standard' | 'spoke-repair-kit' | 'carbon-rim' | 'bicycle-tire' | 'wheelset'
 
 const props = withDefaults(defineProps<{
   open?: boolean
@@ -51,7 +51,8 @@ const emit = defineEmits<{
 }>()
 
 const options: Array<{ value: ProductCreationType; title: string; description: string }> = [
-	{ value: 'bicycle-tire', title: '自行车外胎', description: '按外胎专用规格新建商品；制造商资料缺失的字段可以留空。' },
+  { value: 'bicycle-tire', title: '自行车外胎', description: '按外胎专用规格新建商品；制造商资料缺失的字段可以留空。' },
+  { value: 'wheelset', title: 'WHEELSET 轮组', description: '分别填写前后轮的产品级规格；没有可靠资料的可选字段可以留空。' },
   { value: 'carbon-rim', title: '碳纤维车圈', description: '单只碟刹车圈：填写截面规格、孔数与涂装，分别维护各销售 SKU 的价格和库存。' },
   {
     value: 'standard',

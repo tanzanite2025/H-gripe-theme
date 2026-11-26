@@ -136,6 +136,9 @@ func (s *ProductService) CreateProductSpecificationTemplate(input ProductSpecifi
 	if product.IsRetiredCarbonRimSpecificationTemplateSlug(input.Slug) {
 		return nil, fmt.Errorf("%w: rim specification templates are retired", ErrProductSpecificationTemplateInvalid)
 	}
+	if product.IsRetiredWheelsetSpecificationTemplateSlug(input.Slug) {
+		return nil, fmt.Errorf("%w: wheelset specification templates are retired; use the dedicated wheelset product type", ErrProductSpecificationTemplateInvalid)
+	}
 	productSpecificationTemplate, err := normalizeProductSpecificationTemplateInput(input)
 	if err != nil {
 		return nil, err
@@ -163,6 +166,9 @@ func (s *ProductService) UpdateProductSpecificationTemplate(id uint, input Produ
 	}
 	if product.IsRetiredCarbonRimSpecificationTemplateSlug(existing.Slug) || product.IsRetiredCarbonRimSpecificationTemplateSlug(input.Slug) {
 		return nil, fmt.Errorf("%w: retired rim templates are read-only", ErrProductSpecificationTemplateInvalid)
+	}
+	if product.IsRetiredWheelsetSpecificationTemplateSlug(existing.Slug) || product.IsRetiredWheelsetSpecificationTemplateSlug(input.Slug) {
+		return nil, fmt.Errorf("%w: retired wheelset templates are read-only", ErrProductSpecificationTemplateInvalid)
 	}
 
 	productSpecificationTemplate, err := normalizeProductSpecificationTemplateInput(input)
@@ -263,6 +269,9 @@ func (s *ProductService) DeleteProductSpecificationTemplate(id uint) error {
 	existing, err := s.GetProductSpecificationTemplate(id)
 	if err != nil {
 		return err
+	}
+	if product.IsRetiredWheelsetSpecificationTemplateSlug(existing.Slug) {
+		return fmt.Errorf("%w: retired wheelset templates can only be removed by the guarded database migration", ErrProductSpecificationTemplateInvalid)
 	}
 	if existing.IsSystemManaged {
 		return fmt.Errorf("%w: product specification template cannot be deleted", ErrProductSpecificationTemplateSystemManaged)

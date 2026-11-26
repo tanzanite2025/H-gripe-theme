@@ -9,7 +9,6 @@
         :product-categories-loading="categoriesLoading"
         :heading="categoryNavigationHeading"
         :all-product-categories-label="viewAllLabel"
-        product-category-query-parameter-name="product_specification_template"
         @category-navigate="emit('category-click', $event)"
         @navigate="emit('view-all')"
       />

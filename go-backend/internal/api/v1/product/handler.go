@@ -78,6 +78,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	locale := publicContext.Locale
 	featured := c.Query("featured") == "true"
 	categorySlug := strings.TrimSpace(c.Query("product_category"))
+	specFilters := parseSpecFilterQuery(c)
 	params := pagination.ParsePagination(c)
 
 	if c.Query("page_size") == "" {
@@ -90,7 +91,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 	var products []productdomain.Product
 	var total int64
 	var err error
-	if categorySlug == "" {
+	if categorySlug == "" && len(specFilters) == 0 {
 		products, total, err = h.productService.ListPublic(
 			locale,
 			featured,
@@ -107,6 +108,7 @@ func (h *Handler) ListProducts(c *gin.Context) {
 			Featured:      featuredFilter,
 			CategorySlug:  categorySlug,
 			PriceCurrency: publicContext.DisplayCurrency,
+			SpecFilters:   specFilters,
 			Page:          params.Page,
 			PageSize:      params.PageSize,
 		})

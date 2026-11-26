@@ -155,6 +155,83 @@ func normalizeSpecFilterValues(values []string) []string {
 	return result
 }
 
+func wheelsetSpecificationJSONPathExpression(path []string, dialect string) string {
+	if dialect == "postgres" {
+		return fmt.Sprintf("products.wheelset_specification #>> '{%s}'", strings.Join(path, ","))
+	}
+	return fmt.Sprintf("json_extract(products.wheelset_specification, '$.%s')", strings.Join(path, "."))
+}
+
+func wheelsetSpecificationFilterSQLCondition(definition product.WheelsetSpecificationFilterDefinition, values []string, dialect string) (string, []interface{}) {
+	valueConditions := make([]string, 0, len(values))
+	args := []interface{}{product.ProductTypeWheelset}
+	pathExpressions := make([]string, 0, len(definition.JSONPaths))
+	for _, path := range definition.JSONPaths {
+		pathExpressions = append(pathExpressions, wheelsetSpecificationJSONPathExpression(path, dialect))
+	}
+
+	for _, value := range values {
+		pathConditions := make([]string, 0, len(pathExpressions))
+		for _, pathExpression := range pathExpressions {
+			pathConditions = append(pathConditions, pathExpression+" = ?")
+			args = append(args, value)
+		}
+		joinOperator := " OR "
+		if definition.RequiresSameValueInPaths {
+			joinOperator = " AND "
+		}
+		valueConditions = append(valueConditions, "("+strings.Join(pathConditions, joinOperator)+")")
+	}
+
+	return "(products.product_type = ? AND products.wheelset_specification IS NOT NULL AND (" + strings.Join(valueConditions, " OR ") + "))", args
+}
+
+func wheelsetSpecificationFilterValuesFromJSON(rawJSON []byte, definition product.WheelsetSpecificationFilterDefinition) []string {
+	var object map[string]interface{}
+	if err := json.Unmarshal(rawJSON, &object); err != nil {
+		return nil
+	}
+
+	valuesByPath := make([]string, 0, len(definition.JSONPaths))
+	for _, path := range definition.JSONPaths {
+		var current interface{} = object
+		for _, segment := range path {
+			properties, ok := current.(map[string]interface{})
+			if !ok {
+				current = nil
+				break
+			}
+			current = properties[segment]
+		}
+		value, ok := current.(string)
+		if !ok || strings.TrimSpace(value) == "" {
+			valuesByPath = append(valuesByPath, "")
+			continue
+		}
+		valuesByPath = append(valuesByPath, strings.TrimSpace(value))
+	}
+
+	if definition.RequiresSameValueInPaths {
+		if len(valuesByPath) == 0 || valuesByPath[0] == "" {
+			return nil
+		}
+		for _, value := range valuesByPath[1:] {
+			if value != valuesByPath[0] {
+				return nil
+			}
+		}
+		return []string{valuesByPath[0]}
+	}
+
+	result := make([]string, 0, len(valuesByPath))
+	for _, value := range valuesByPath {
+		if value != "" {
+			result = append(result, value)
+		}
+	}
+	return normalizeSpecFilterValues(result)
+}
+
 func applyProductSpecFilters(query *gorm.DB, specFilters map[string][]string, dialect string) (*gorm.DB, error) {
 	slugs := make([]string, 0, len(specFilters))
 	valuesBySlug := make(map[string][]string, len(specFilters))
@@ -191,7 +268,7 @@ func applyProductSpecFilters(query *gorm.DB, specFilters map[string][]string, di
 			variantArgs = append(variantArgs, fmt.Sprintf("%%\"%s\":\"%s\"%%", slug, value))
 		}
 
-		query = query.Where(fmt.Sprintf(`(
+		condition := fmt.Sprintf(`(
 			EXISTS (
 				SELECT 1
 				FROM product_spec_values %s
@@ -208,7 +285,19 @@ func applyProductSpecFilters(query *gorm.DB, specFilters map[string][]string, di
 				  AND %s.is_active = TRUE
 				  AND (%s)
 			)
-		)`, valueAlias, defAlias, defAlias, valueAlias, valueAlias, defAlias, valueAlias, variantAlias, variantAlias, variantAlias, variantAlias, strings.Join(variantConditions, " OR ")), append([]interface{}{slug, values}, variantArgs...)...)
+		)
+		`, valueAlias, defAlias, defAlias, valueAlias, valueAlias, defAlias, valueAlias, variantAlias, variantAlias, variantAlias, variantAlias, strings.Join(variantConditions, " OR "))
+		args := append([]interface{}{slug, values}, variantArgs...)
+		for _, definition := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
+			if definition.Slug != slug {
+				continue
+			}
+			wheelsetCondition, wheelsetArgs := wheelsetSpecificationFilterSQLCondition(definition, values, dialect)
+			condition = strings.TrimSuffix(strings.TrimSpace(condition), ")") + " OR " + wheelsetCondition + ")"
+			args = append(args, wheelsetArgs...)
+			break
+		}
+		query = query.Where(condition, args...)
 	}
 	return query, nil
 }
@@ -538,6 +627,9 @@ func (r *ProductRepository) ListQuickBuyFilterValues(input ProductQuickBuyCandid
 				valuesBySlug[slug][value] = struct{}{}
 			}
 		}
+		if err := r.addWheelsetSpecificationFilterValues(productIDs, []string{slug}, valuesBySlug); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, slug := range normalizedSlugs {
@@ -701,6 +793,7 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 	if categorySlug == "" {
 		return []ProductCategoryFilterableSpecification{}, nil
 	}
+	wheelsetCategory := strings.EqualFold(categorySlug, product.ProductTypeWheelset)
 
 	var productIDs []uint
 	if err := r.db.Table("products").
@@ -722,7 +815,19 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 		Pluck("products.id", &productIDs).Error; err != nil {
 		return nil, err
 	}
-	if len(productIDs) == 0 {
+	filterValueProductIDs := productIDs
+	if wheelsetCategory {
+		filterValueProductIDs = nil
+		if len(productIDs) > 0 {
+			if err := r.db.Table("products").
+				Where("id IN ?", productIDs).
+				Where("product_type = ?", product.ProductTypeWheelset).
+				Pluck("id", &filterValueProductIDs).Error; err != nil {
+				return nil, err
+			}
+		}
+	}
+	if len(productIDs) == 0 && !wheelsetCategory {
 		return []ProductCategoryFilterableSpecification{}, nil
 	}
 
@@ -733,16 +838,18 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 		Unit      string
 	}
 	var definitions []definitionRow
-	if err := r.db.Table("product_spec_definitions AS definition").
-		Select("DISTINCT definition.slug, definition.name, definition.field_type, definition.unit").
-		Joins("JOIN products ON products.product_specification_template_id = definition.product_specification_template_id").
-		Where("products.id IN ?", productIDs).
-		Where("definition.is_filterable = TRUE AND definition.is_visible = TRUE").
-		Order("definition.slug ASC").
-		Scan(&definitions).Error; err != nil {
-		return nil, err
+	if len(productIDs) > 0 && !wheelsetCategory {
+		if err := r.db.Table("product_spec_definitions AS definition").
+			Select("DISTINCT definition.slug, definition.name, definition.field_type, definition.unit").
+			Joins("JOIN products ON products.product_specification_template_id = definition.product_specification_template_id").
+			Where("products.id IN ?", productIDs).
+			Where("definition.is_filterable = TRUE AND definition.is_visible = TRUE").
+			Order("definition.slug ASC").
+			Scan(&definitions).Error; err != nil {
+			return nil, err
+		}
 	}
-	if len(definitions) == 0 {
+	if len(definitions) == 0 && !wheelsetCategory {
 		return []ProductCategoryFilterableSpecification{}, nil
 	}
 
@@ -767,8 +874,21 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 			Options:   []string{},
 		})
 	}
-	if len(knownSlugs) == 0 {
-		return []ProductCategoryFilterableSpecification{}, nil
+	if wheelsetCategory {
+		for _, definition := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
+			if _, exists := valuesBySlug[definition.Slug]; exists {
+				continue
+			}
+			knownSlugs = append(knownSlugs, definition.Slug)
+			valuesBySlug[definition.Slug] = make(map[string]struct{})
+			result = append(result, ProductCategoryFilterableSpecification{
+				Slug:      definition.Slug,
+				Name:      definition.Name,
+				FieldType: definition.FieldType,
+				Unit:      definition.Unit,
+				Options:   []string{},
+			})
+		}
 	}
 
 	type valueRow struct {
@@ -776,13 +896,15 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 		Value string
 	}
 	var valueRows []valueRow
-	if err := r.db.Table("product_spec_values AS value").
-		Select("definition.slug, value.value").
-		Joins("JOIN product_spec_definitions AS definition ON definition.id = value.spec_definition_id").
-		Where("value.product_id IN ?", productIDs).
-		Where("definition.slug IN ?", knownSlugs).
-		Scan(&valueRows).Error; err != nil {
-		return nil, err
+	if len(filterValueProductIDs) > 0 && len(knownSlugs) > 0 {
+		if err := r.db.Table("product_spec_values AS value").
+			Select("definition.slug, value.value").
+			Joins("JOIN product_spec_definitions AS definition ON definition.id = value.spec_definition_id").
+			Where("value.product_id IN ?", filterValueProductIDs).
+			Where("definition.slug IN ?", knownSlugs).
+			Scan(&valueRows).Error; err != nil {
+			return nil, err
+		}
 	}
 	for _, row := range valueRows {
 		if values, exists := valuesBySlug[row.Slug]; exists {
@@ -793,11 +915,13 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 	}
 
 	var variantOptionValues []string
-	if err := r.db.Model(&product.ProductVariant{}).
-		Where("product_id IN ?", productIDs).
-		Where("deleted_at IS NULL AND is_active = TRUE").
-		Pluck("option_values", &variantOptionValues).Error; err != nil {
-		return nil, err
+	if len(filterValueProductIDs) > 0 {
+		if err := r.db.Model(&product.ProductVariant{}).
+			Where("product_id IN ?", filterValueProductIDs).
+			Where("deleted_at IS NULL AND is_active = TRUE").
+			Pluck("option_values", &variantOptionValues).Error; err != nil {
+			return nil, err
+		}
 	}
 	for _, raw := range variantOptionValues {
 		var values map[string]interface{}
@@ -814,11 +938,20 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 			}
 		}
 	}
+	if wheelsetCategory && len(filterValueProductIDs) > 0 {
+		wheelsetFilterSlugs := make([]string, 0, len(product.WheelsetProductLevelSpecificationFilterDefinitions()))
+		for _, definition := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
+			wheelsetFilterSlugs = append(wheelsetFilterSlugs, definition.Slug)
+		}
+		if err := r.addWheelsetSpecificationFilterValues(filterValueProductIDs, wheelsetFilterSlugs, valuesBySlug); err != nil {
+			return nil, err
+		}
+	}
 
 	filtered := make([]ProductCategoryFilterableSpecification, 0, len(result))
 	for _, item := range result {
 		valuesSet := valuesBySlug[item.Slug]
-		if len(valuesSet) == 0 {
+		if len(valuesSet) == 0 && (!wheelsetCategory || !isWheelsetProductLevelSpecificationFilterSlug(item.Slug)) {
 			continue
 		}
 		values := make([]string, 0, len(valuesSet))
@@ -830,6 +963,55 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 		filtered = append(filtered, item)
 	}
 	return filtered, nil
+}
+
+func isWheelsetProductLevelSpecificationFilterSlug(slug string) bool {
+	for _, definition := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
+		if definition.Slug == slug {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *ProductRepository) addWheelsetSpecificationFilterValues(productIDs []uint, slugs []string, valuesBySlug map[string]map[string]struct{}) error {
+	if len(productIDs) == 0 || len(slugs) == 0 {
+		return nil
+	}
+	requestedSlugs := make(map[string]struct{}, len(slugs))
+	for _, slug := range slugs {
+		requestedSlugs[strings.TrimSpace(slug)] = struct{}{}
+	}
+	definitionsBySlug := make(map[string]product.WheelsetSpecificationFilterDefinition, len(slugs))
+	for _, item := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
+		if _, requested := requestedSlugs[item.Slug]; requested {
+			definitionsBySlug[item.Slug] = item
+		}
+	}
+	if len(definitionsBySlug) == 0 {
+		return nil
+	}
+
+	var specifications [][]byte
+	if err := r.db.Table("products").
+		Where("id IN ?", productIDs).
+		Where("product_type = ?", product.ProductTypeWheelset).
+		Where("wheelset_specification IS NOT NULL").
+		Pluck("wheelset_specification", &specifications).Error; err != nil {
+		return err
+	}
+	for _, rawJSON := range specifications {
+		for slug, definition := range definitionsBySlug {
+			values := valuesBySlug[slug]
+			if values == nil {
+				continue
+			}
+			for _, value := range wheelsetSpecificationFilterValuesFromJSON(rawJSON, definition) {
+				values[value] = struct{}{}
+			}
+		}
+	}
+	return nil
 }
 
 func (r *ProductRepository) quickBuyCandidateProductIDs(input ProductQuickBuyCandidateQuery) ([]uint, error) {

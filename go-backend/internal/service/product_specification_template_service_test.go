@@ -252,6 +252,69 @@ func TestProductServiceListsPublicProductSpecificationTemplatesWithoutSpecificat
 	assert.Equal(t, "Wheelset", publicTypes[0].Name)
 }
 
+func TestRetiredWheelsetTemplateCannotBeCreatedBoundListedUpdatedOrSynchronized(t *testing.T) {
+	db, productService := newTestProductService(t)
+	retiredTemplate := product.ProductSpecificationTemplate{
+		Name: "Legacy Wheelset", Slug: "wheelset", IsEnabled: true, IsSystemManaged: true,
+	}
+	activeTemplate := product.ProductSpecificationTemplate{
+		Name: "Handlebar", Slug: "handlebar", IsEnabled: true,
+	}
+	require.NoError(t, db.Create(&retiredTemplate).Error)
+	require.NoError(t, db.Create(&activeTemplate).Error)
+
+	_, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
+		Name: "Wheelset", Slug: "WHEELSET", IsEnabled: true,
+	})
+	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
+	_, err = productService.UpdateProductSpecificationTemplate(retiredTemplate.ID, ProductSpecificationTemplateInput{
+		Name: "Renamed Wheelset", Slug: retiredTemplate.Slug, IsEnabled: true,
+	})
+	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
+	require.ErrorIs(t, productService.DeleteProductSpecificationTemplate(retiredTemplate.ID), ErrProductSpecificationTemplateInvalid)
+
+	for _, includeDisabled := range []bool{false, true} {
+		adminTemplates, listErr := productService.ListProductSpecificationTemplates(includeDisabled)
+		require.NoError(t, listErr)
+		require.Len(t, adminTemplates, 1)
+		require.Equal(t, "handlebar", adminTemplates[0].Slug)
+		publicTemplates, listErr := productService.ListPublicProductSpecificationTemplates(includeDisabled)
+		require.NoError(t, listErr)
+		require.Len(t, publicTemplates, 1)
+		require.Equal(t, "handlebar", publicTemplates[0].Slug)
+	}
+
+	invalidTemplateBoundProduct := product.Product{
+		MerchantProductIdentifier:      "LEGACY-WHEELSET-MERCHANT-001",
+		ManufacturerProductIdentifier:  "LEGACY-WHEELSET-MANUFACTURER-001",
+		Name:                           "Retired-template-bound wheelset",
+		Slug:                           "retired-template-bound-wheelset-test",
+		Locale:                         "en",
+		Currency:                       "USD",
+		ProductSpecificationTemplateID: &retiredTemplate.ID,
+	}
+	require.NoError(t, db.Create(&invalidTemplateBoundProduct).Error)
+	title := "This retired-template binding must not remain editable"
+	_, err = productService.UpdateAdminProduct(invalidTemplateBoundProduct.ID, ProductUpdateInput{Name: &title})
+	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
+	_, err = productService.PreviewProductTemplateSync(invalidTemplateBoundProduct.ID)
+	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
+	_, _, err = productService.CopyAdminProductTranslation(invalidTemplateBoundProduct.ID, "fr")
+	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
+
+	_, err = productService.CreateAdminProduct(ProductCreateInput{
+		MerchantProductIdentifier:      "NEW-WHEELSET-MERCHANT-001",
+		ManufacturerProductIdentifier:  "NEW-WHEELSET-MANUFACTURER-001",
+		Name:                           "Incorrect generic wheelset",
+		Slug:                           "incorrect-generic-wheelset",
+		Locale:                         "en",
+		Currency:                       "USD",
+		Status:                         "active",
+		ProductSpecificationTemplateID: &retiredTemplate.ID,
+	})
+	require.ErrorIs(t, err, ErrProductSpecificationTemplateInvalid)
+}
+
 func TestProductServiceUpdatesProductSpecificationTemplateAndReplacesSpecs(t *testing.T) {
 	_, productService := newTestProductService(t)
 	created, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{

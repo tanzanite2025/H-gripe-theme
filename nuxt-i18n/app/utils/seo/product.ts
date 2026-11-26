@@ -167,6 +167,8 @@ export const buildProductJsonLd = (
     }
   }
 
+  if (cleanText(input.mpn)) schema.mpn = cleanText(input.mpn)
+  if (cleanText(input.gtin)) schema.gtin = cleanText(input.gtin)
   if (description) schema.description = description
   if (cleanText(input.category)) schema.category = cleanText(input.category)
   if (input.additionalProperties?.length) schema.additionalProperty = input.additionalProperties

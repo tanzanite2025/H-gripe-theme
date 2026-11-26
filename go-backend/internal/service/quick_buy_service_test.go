@@ -666,6 +666,85 @@ func TestQuickBuyServiceUsesTemplateFilterableSpecificationsAndDynamicValues(t *
 	assert.NotEqual(t, first.ID, filtered.Products[0].ID)
 }
 
+func TestQuickBuyServiceFiltersDedicatedWheelsetsByCategoryWithoutTemplateBinding(t *testing.T) {
+	db, quickBuyService := newQuickBuyTestService(t)
+	wheelsetCategory := seedQuickBuyProductCategory(t, db, "Wheelsets", productdomain.ProductTypeWheelset, nil)
+	productCategoryID := wheelsetCategory.ID
+	wheelset := productdomain.Product{
+		ProductType:       productdomain.ProductTypeWheelset,
+		ProductCategoryID: &productCategoryID,
+		WheelsetSpecification: &productdomain.WheelsetSpecification{
+			SchemaVersion: 1,
+			FrontWheel: productdomain.WheelsetProductWheelSpecification{
+				WheelSize:       "29",
+				SpokeHoleCounts: []int{24},
+				LacingPatterns:  []string{"2-cross"},
+				AxleStandard:    "15x110",
+				BrakeInterface:  "center_lock",
+			},
+			RearWheel: productdomain.WheelsetProductWheelSpecification{
+				WheelSize:       "27.5",
+				SpokeHoleCounts: []int{24},
+				LacingPatterns:  []string{"2-cross"},
+				AxleStandard:    "12x148",
+				BrakeInterface:  "center_lock",
+				FreehubBody:     "micro_spline",
+			},
+		},
+		Name:   "Mullet Wheelset",
+		Slug:   "quick-buy-mullet-wheelset",
+		Status: "active",
+		Locale: "en",
+	}
+	require.NoError(t, db.Create(&wheelset).Error)
+	require.NoError(t, db.Create(&productdomain.ProductVariant{
+		ProductID:  wheelset.ID,
+		SKU:        "QUICK-BUY-MULLET-WHEELSET-VARIANT",
+		IsActive:   true,
+		IsDefault:  true,
+		Stock:      1,
+		PriceMinor: 10000,
+	}).Error)
+
+	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
+		Slug:         "wheelset-category-build",
+		Name:         "Wheelset Category Build",
+		EntrySurface: "dock",
+		Version: QuickBuyVersionInput{
+			Steps: []QuickBuyStepInput{{
+				StepKey:            "wheelset",
+				Name:               "Wheelsets",
+				ProductCategoryIDs: []uint{wheelsetCategory.ID},
+			}},
+		},
+	})
+	require.NoError(t, err)
+
+	candidates, err := quickBuyService.PreviewVersionStepCandidates(created.Version.ID, QuickBuyCandidateInput{
+		StepKey: "wheelset",
+		Locale:  "en",
+	})
+	require.NoError(t, err)
+	require.Len(t, candidates.Products, 1)
+	require.Len(t, candidates.Step.Filters, len(productdomain.WheelsetProductLevelSpecificationFilterDefinitions()))
+	filterValuesBySlug := make(map[string][]string, len(candidates.Step.Filters))
+	for _, filter := range candidates.Step.Filters {
+		filterValuesBySlug[filter.Slug] = filter.Values
+	}
+	require.Equal(t, []string{"27.5"}, filterValuesBySlug[productdomain.WheelsetFilterKeyRearWheelSize])
+
+	filtered, err := quickBuyService.PreviewVersionStepCandidates(created.Version.ID, QuickBuyCandidateInput{
+		StepKey: "wheelset",
+		Locale:  "en",
+		SpecFilters: map[string][]string{
+			productdomain.WheelsetFilterKeyRearWheelSize: {"27.5"},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, filtered.Products, 1)
+	require.Equal(t, wheelset.ID, filtered.Products[0].ID)
+}
+
 func TestQuickBuyServiceRejectsSessionSelectionFromWrongProductSpecificationTemplate(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
 	rimType := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
