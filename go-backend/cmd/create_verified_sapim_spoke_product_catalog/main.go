@@ -50,7 +50,11 @@ func runCreateVerifiedSAPIMSpokeProductCatalog() error {
 	if err != nil {
 		return fmt.Errorf("get catalog database connection: %w", err)
 	}
-	defer sqlDatabase.Close()
+	defer func() {
+		if err := sqlDatabase.Close(); err != nil {
+			log.Printf("close catalog database: %v", err)
+		}
+	}()
 
 	brandRepository := repository.NewProductBrandRepository(databaseConnection)
 	productRepository := repository.NewProductRepository(databaseConnection)

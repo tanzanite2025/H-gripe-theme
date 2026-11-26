@@ -11,7 +11,7 @@ import (
 // Product identifiers are carrier-independent catalog data. Never manufacture
 // an identifier from a SKU or copy the merchant identifier into the factory code.
 func normalizeAndValidateRequiredProductIdentifiers(record *product.Product) error {
-	identifiersRequired := !(record.ProductType == product.ProductTypeSpoke && strings.TrimSpace(record.Status) == "inactive" && strings.TrimSpace(record.SKU) == "")
+	identifiersRequired := record.ProductType != product.ProductTypeSpoke || strings.TrimSpace(record.Status) != "inactive" || strings.TrimSpace(record.SKU) != ""
 	fields := []struct {
 		value    *string
 		label    string
