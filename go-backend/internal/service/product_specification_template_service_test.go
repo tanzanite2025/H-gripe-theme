@@ -146,6 +146,7 @@ func TestProductServicePersistsTemplateOptionItemsAndRevision(t *testing.T) {
 }
 
 func TestProductServiceMaterializesTemplateOptionItemsOnProductCreate(t *testing.T) {
+	t.Skip("template materialization is retired; manual SKU rows are the supported product input")
 	_, productService := newTestProductService(t)
 	priceDelta := int64(1500)
 	template, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{

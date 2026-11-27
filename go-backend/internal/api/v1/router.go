@@ -352,7 +352,6 @@ func RegisterRoutes(r *gin.Engine, deps *app.Dependencies, cfg *config.Config) {
 		productGroup.Use(commercialInventoryProbeGuard)
 		{
 			productGroup.GET("", productHandler.ListProducts)
-			productGroup.GET("/specification-templates", productHandler.ListProductSpecificationTemplates)
 			productGroup.GET("/schwalbe-tire-catalog", productHandler.ListSchwalbeTireCatalog)
 			productGroup.GET("/schwalbe-tire-catalog/selector", productHandler.SearchSchwalbeTireCatalogSelector)
 			productGroup.GET("/categories", productHandler.ListCategories)

@@ -134,17 +134,10 @@
                     <SelectItem v-for="variant in persistedVariants" :key="`variant-${variant.id}`" :value="`variant:${variant.id}`">
                       SKU：{{ variant.sku || variant.title || variant.id }}
                     </SelectItem>
-                    <SelectItem
-                      v-for="option in enabledVariantOptionValues"
-                      :key="`option-${option.id}`"
-                      :value="`option:${option.id}`"
-                    >
-                      {{ optionDefinitionName(option) }}：{{ option.label || option.value_key }}
-                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <p class="mt-1 text-[11px] leading-4 text-muted-foreground">
-                  可把同一组图片绑定到颜色选项，避免颜色 × 尺寸重复上传。
+                  可把同一组图片绑定到某个 SKU；其他图片保持为商品公共媒体。
                 </p>
               </AdminFormField>
 
@@ -221,26 +214,16 @@ import {
   getProductMediaRoleOptions,
   getProductMediaTypeLabel,
 } from '@/lib/productMedia'
-import type {
-  ProductMediaForm,
-  ProductMediaType,
-  ProductSpecDefinition,
-  ProductVariantForm,
-  ProductVariantOptionValueForm,
-} from '@/modules/product/productEditorTypes'
+import type { ProductMediaForm, ProductMediaType, ProductVariantForm } from '@/modules/product/productEditorTypes'
 
 const props = withDefaults(defineProps<{
   mediaItems?: ProductMediaForm[]
   variants?: ProductVariantForm[]
-  variantOptionValues?: ProductVariantOptionValueForm[]
-  specDefinitions?: ProductSpecDefinition[]
   uploading?: boolean
   error?: string
 }>(), {
   mediaItems: () => [],
   variants: () => [],
-  variantOptionValues: () => [],
-  specDefinitions: () => [],
   uploading: false,
   error: '',
 })
@@ -257,21 +240,14 @@ const emit = defineEmits<{
   (event: 'remove', index: number): void
 }>()
 
-const enabledVariantOptionValues = computed(() => props.variantOptionValues.filter((item) => item?.is_enabled !== false && item?.id))
 const persistedVariants = computed(() => props.variants.filter((item) => Number(item?.id || 0) > 0))
-const optionDefinitionName = (option: ProductVariantOptionValueForm): string => {
-  const definition = props.specDefinitions.find((item) => Number(item?.id) === Number(option?.spec_definition_id))
-  return definition?.name || definition?.slug || '选项'
-}
 const mediaScopeValue = (item: ProductMediaForm): string => {
   if (item?.variant_id) return `variant:${item.variant_id}`
-  if (item?.variant_option_value_id) return `option:${item.variant_option_value_id}`
   return '__product__'
 }
 const setMediaScope = (item: ProductMediaForm, value: unknown): void => {
   const raw = String(value || '')
   item.variant_id = raw.startsWith('variant:') ? Number(raw.slice(8)) : null
-  item.variant_option_value_id = raw.startsWith('option:') ? Number(raw.slice(7)) : null
 }
 
 const chooseUpload = (type: ProductMediaType): void => {

@@ -1,17 +1,11 @@
 <template>
   <div class="space-y-4">
-    <AdminPageHeader title="商品管理" description="管理商品资料、规格、SKU 变体和库存状态">
+    <AdminPageHeader title="商品管理" description="管理商品资料、销售 SKU 和库存状态">
       <template #actions>
         <Button variant="outline" as-child>
           <RouterLink to="/catalog/brands">
             <Tag class="size-4" />
             商品品牌
-          </RouterLink>
-        </Button>
-        <Button variant="outline" as-child>
-          <RouterLink to="/catalog/templates">
-            <Tags class="size-4" />
-            商品规格模板
           </RouterLink>
         </Button>
         <Button variant="outline" as-child>
@@ -88,26 +82,16 @@
       :submitting="submitting"
       :form="productForm"
       :errors="formErrors"
-      :product-spec-templates="productSpecTemplates"
       :brands="brands"
       :product-categories="standardProductCategories"
       :carbon-rim-system-category-display-path="carbonRimSystemCategoryDisplayPath"
-      :selected-product-spec-template="selectedProductSpecTemplate"
       :brand-select-value="brandSelectValue"
-      :selected-spec-definitions="selectedSpecDefinitions"
-      :variant-spec-definitions="variantSpecDefinitions"
       :default-variant-index="defaultVariantIndex"
-      :product-spec-template-select-value="productSpecTemplateSelectValue"
       :product-category-select-value="productCategorySelectValue"
       :shipping-templates="shippingTemplates"
       :after-sales-templates="afterSalesTemplates"
       :packaging-templates="packagingTemplates"
       :customs-classifications="availableCustomsClassifications"
-      :template-scoped-values-touched="templateScopedValuesTouched"
-      :template-sync-dialog-visible="templateSyncDialogVisible"
-      :template-sync-diff="templateSyncDiff"
-      :template-sync-loading="templateSyncLoading"
-      :template-sync-applying="templateSyncApplying"
       :uploading-media="uploadingMedia"
       :supplier-cost-visible="canViewSupplierCost"
       :supplier-cost-can-edit="canEditSupplierCost"
@@ -117,23 +101,14 @@
       :supplier-cost-error="supplierCostError"
       :supplier-cost-last-saved-at="supplierCostLastSavedAt"
       :supplier-cost-drafts="supplierCostDraftRows"
-      :parse-spec-options="parseSpecOptions"
-      :format-spec-option="formatSpecOption"
-      :get-spec-label="getSpecLabel"
-      :spec-select-value="specSelectValue"
       :language-options="languageOptions"
       @submit="submitForm"
       @clear-error="clearFieldError"
-      @product-spec-template-select="handleProductSpecTemplateSelect"
-      @preview-template-sync="previewTemplateSync"
-      @update-template-sync-open="setTemplateSyncDialogOpen"
-      @confirm-template-sync="confirmTemplateSync"
       @product-category-select="setProductCategory"
       @product-brand-select="setProductBrand"
       @product-information-template-select="setProductInformationTemplate"
       @customs-classification-select="handleCustomsClassificationSelect"
       @customs-classification-manual-edit="clearCustomsClassification"
-      @set-spec-select-value="setSpecSelectValue"
       @add-variant="addVariant"
       @remove-variant="removeVariant"
       @set-default-variant="setDefaultVariant"
@@ -434,7 +409,6 @@ const {
 } = useProductCatalog()
 
 const {
-  productSpecTemplates,
   schwalbeTireCatalogItems,
   schwalbeTireCatalogLoading,
   schwalbeTireCatalogError,
@@ -445,27 +419,13 @@ const {
   formErrors,
   productForm,
   uploadingMedia,
-  selectedProductSpecTemplate,
-  selectedSpecDefinitions,
-  variantSpecDefinitions,
   defaultVariantIndex,
-  productSpecTemplateSelectValue,
   productCategorySelectValue,
   carbonRimSystemCategoryDisplayPath,
   bicycleTireSystemCategoryDisplayPath,
   wheelsetSystemCategoryDisplayPath,
   spokesSystemCategoryDisplayPath,
   brandSelectValue,
-  templateScopedValuesTouched,
-  templateSyncDialogVisible,
-  templateSyncDiff,
-  templateSyncLoading,
-  templateSyncApplying,
-  parseSpecOptions,
-  formatSpecOption,
-  getSpecLabel,
-  specSelectValue,
-  setSpecSelectValue,
   setProductCategory,
   setProductBrand,
   setProductInformationTemplate,
@@ -481,14 +441,10 @@ const {
   removeVariant,
   setDefaultVariant,
   setVariantActive,
-  handleProductSpecTemplateSelect,
   setSchwalbeTireCatalogModel,
   fetchSchwalbeTireCatalog,
-  fetchProductSpecTemplates,
   showCreateDialog: showGenericCreateDialog,
   showEditDialog: showGenericEditDialog,
-  previewTemplateSync,
-  confirmTemplateSync,
   submitForm
 } = useProductEditor({
   refreshProducts,
@@ -618,11 +574,6 @@ const openProductEditDialog = async (product: AdminProductRecord): Promise<void>
 
 const handleSpokeRepairKitSaved = async (): Promise<void> => {
   await refreshProducts()
-}
-
-const setTemplateSyncDialogOpen = (open: boolean) => {
-  templateSyncDialogVisible.value = open
-  if (!open) templateSyncDiff.value = null
 }
 
 const supplierCostDraftRows = computed(() => supplierCostRowsForVariants(
@@ -846,7 +797,6 @@ const executeConfirmedAction = async () => {
 
 onMounted(() => Promise.all([
   supportedLanguages.fetchLanguages(),
-  fetchProductSpecTemplates(),
   fetchBrands(),
   fetchProductCategories(),
   fetchShippingTemplates(),

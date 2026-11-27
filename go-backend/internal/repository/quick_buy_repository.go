@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"fmt"
 	"time"
 
 	"commerce-platform/internal/domain/quickbuy"
@@ -245,12 +246,6 @@ func preloadQuickBuyVersion(db *gorm.DB) *gorm.DB {
 		Preload("Steps.ProductCategories.ProductCategory.Translations", func(db *gorm.DB) *gorm.DB {
 			return db.Order("locale ASC, id ASC")
 		}).
-		Preload("Steps.ProductSpecificationTemplates", func(db *gorm.DB) *gorm.DB {
-			return db.Order("sort_order ASC, id ASC")
-		}).
-		Preload("Steps.ProductSpecificationTemplates.ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
-			return db.Order("sort_order ASC, id ASC")
-		}).
 		Preload("Steps.Filters", func(db *gorm.DB) *gorm.DB {
 			return db.Order("sort_order ASC, id ASC")
 		}).
@@ -359,6 +354,9 @@ func createQuickBuyVersionChildren(tx *gorm.DB, version *quickbuy.Version) error
 		step.FlowVersionID = version.ID
 		productCategories := step.ProductCategories
 		productSpecificationTemplates := step.ProductSpecificationTemplates
+		if len(productSpecificationTemplates) > 0 {
+			return fmt.Errorf("product specification template step references are retired; bind a product category instead")
+		}
 		filters := step.Filters
 		step.ProductCategories = nil
 		step.ProductSpecificationTemplates = nil

@@ -1,0 +1,2 @@
+ALTER TABLE product_specification_templates
+  DROP CONSTRAINT IF EXISTS retired_spoke_template_slug_cannot_be_recreated;

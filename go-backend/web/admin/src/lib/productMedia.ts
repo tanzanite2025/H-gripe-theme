@@ -95,7 +95,6 @@ export const createProductMediaItem = (overrides: Record<string, any> = {}, sort
     id: null,
     local_key: `media-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     variant_id: null,
-    variant_option_value_id: null,
     media_asset_id: null,
     media_type: 'image',
     role: 'gallery',
@@ -122,7 +121,6 @@ export const buildProductMediaFormValues = (product: any) => (
   (product.media || []).map((item, index) => createProductMediaItem({
     id: item.id || null,
     variant_id: item.variant_id || null,
-    variant_option_value_id: item.variant_option_value_id || null,
     media_asset_id: item.media_asset_id || null,
     media_type: item.media_type || 'image',
     role: item.role || (item.media_type === 'video' ? 'video' : 'gallery'),
@@ -190,7 +188,6 @@ export const normalizeProductMediaForPayload = (items: Array<Record<string, any>
     .map((item, index) => ({
       id: item.id || undefined,
       variant_id: item.variant_id || undefined,
-      variant_option_value_id: item.variant_option_value_id || undefined,
       media_asset_id: item.media_asset_id || undefined,
       media_type: item.media_type === 'video' ? 'video' : 'image',
       role: normalizeProductMediaRole(item.media_type, item.role, Boolean(item.is_primary)),

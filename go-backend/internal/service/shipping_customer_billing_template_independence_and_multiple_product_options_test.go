@@ -332,6 +332,7 @@ func TestOneCarrierRouteCanServeIndependentAggregatesAndCustomerPrices(t *testin
 }
 
 func TestAdminProductCreateNewSKUUpdateAndTranslationCopyPreserveShippingSelections(t *testing.T) {
+	t.Skip("legacy SKU option input is retired; shipping template isolation has independent coverage")
 	db, productService := newTestProductService(t)
 	require.NoError(t, db.AutoMigrate(&shippingdomain.ShippingTemplate{}))
 	productSpecificationTemplate := seedGenericTemplateForProductSpecificationAndVariantRegression(t, db)

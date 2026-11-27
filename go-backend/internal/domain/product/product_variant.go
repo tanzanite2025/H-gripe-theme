@@ -13,13 +13,13 @@ import (
 type ProductVariant struct {
 	CarbonRimSpecification   *CarbonRimVariantSpecification   `gorm:"serializer:json;type:jsonb" json:"carbon_rim_specification,omitempty"`
 	ID                       uint                             `gorm:"primarykey" json:"id"`
-	ProductID                uint                             `gorm:"not null;index;uniqueIndex:idx_product_variant_options" json:"product_id"`
+	ProductID                uint                             `gorm:"not null;index" json:"product_id"`
 	MasterVariantID          *uint                            `gorm:"index" json:"master_variant_id,omitempty"`
 	ShippingTemplateIDs      []uint                           `gorm:"-" json:"shipping_template_ids"`
 	ShippingTemplateBindings []ProductShippingTemplateBinding `gorm:"foreignKey:VariantID;references:ID" json:"shipping_template_bindings,omitempty"`
 	SKU                      string                           `gorm:"type:varchar(120);uniqueIndex:idx_product_variants_sku_active,where:deleted_at IS NULL;not null" json:"sku"`
 	Title                    string                           `gorm:"type:varchar(160)" json:"title"`
-	OptionValues             string                           `gorm:"type:jsonb;not null;default:'{}';uniqueIndex:idx_product_variant_options" json:"option_values"`
+	OptionValues             string                           `gorm:"type:jsonb;not null;default:'{}'" json:"-"`
 	Currency                 string                           `gorm:"size:3;not null;default:'USD';index" json:"currency"`
 	PriceMinor               int64                            `gorm:"column:price_minor;not null;default:0" json:"price_minor"`
 	// DisplayPriceData is hydrated from ProductDisplayPriceSnapshot by the
@@ -35,8 +35,8 @@ type ProductVariant struct {
 	CreatedAt            time.Time                       `json:"created_at"`
 	UpdatedAt            time.Time                       `json:"updated_at"`
 	DeletedAt            gorm.DeletedAt                  `gorm:"index" json:"-"`
-	OptionGroupRules     []ProductOptionGroupVariantRule `gorm:"foreignKey:VariantID" json:"option_group_rules,omitempty"`
-	OptionValueRules     []ProductOptionValueVariantRule `gorm:"foreignKey:VariantID" json:"option_value_rules,omitempty"`
+	OptionGroupRules     []ProductOptionGroupVariantRule `gorm:"foreignKey:VariantID" json:"-"`
+	OptionValueRules     []ProductOptionValueVariantRule `gorm:"foreignKey:VariantID" json:"-"`
 }
 
 func (ProductVariant) TableName() string {

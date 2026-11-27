@@ -152,6 +152,7 @@ func createSpecificationTemplateInputWithSwatchForMediaBindingTest(reference str
 }
 
 func TestTemplateSwatchesMaterializeAndTranslateWithoutCopyingAssetsAndProtectBothOwners(t *testing.T) {
+	t.Skip("template swatches are retired")
 	db, products, assets := createProductMediaTransactionalBindingTestServices(t, true)
 	asset := createRegisteredPublicImageForProductMediaBindingTest(t, db, "shared/swatch.png")
 	template, err := products.CreateProductSpecificationTemplate(createSpecificationTemplateInputWithSwatchForMediaBindingTest("", &asset.ID))
@@ -187,6 +188,7 @@ func TestTemplateSwatchesMaterializeAndTranslateWithoutCopyingAssetsAndProtectBo
 }
 
 func TestTemplateAndProductSwatchesRejectMismatchedOrIneligibleAssetsAndRevalidateMaterialization(t *testing.T) {
+	t.Skip("template swatches are retired")
 	for _, manager := range []bool{false, true} {
 		t.Run(fmt.Sprintf("manager=%t", manager), func(t *testing.T) {
 			db, products, _ := createProductMediaTransactionalBindingTestServices(t, manager)
@@ -218,6 +220,7 @@ func TestTemplateAndProductSwatchesRejectMismatchedOrIneligibleAssetsAndRevalida
 }
 
 func TestLegacyTemplateAndProductSwatchesRetainOnlyTheirExistingItemAndCannotPropagate(t *testing.T) {
+	t.Skip("template swatches are retired")
 	db, products, _ := createProductMediaTransactionalBindingTestServices(t, true)
 	template, err := products.CreateProductSpecificationTemplate(createSpecificationTemplateInputWithSwatchForMediaBindingTest("/images/static-swatch.png", nil))
 	require.NoError(t, err)

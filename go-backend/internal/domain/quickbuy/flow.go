@@ -84,7 +84,7 @@ type Step struct {
 	DefaultQuantity               int                                `gorm:"not null;default:1" json:"default_quantity"`
 	AllowSkip                     bool                               `gorm:"not null;default:false" json:"allow_skip"`
 	ProductCategories             []StepProductCategory              `gorm:"foreignKey:StepID" json:"product_categories,omitempty"`
-	ProductSpecificationTemplates []StepProductSpecificationTemplate `gorm:"foreignKey:StepID" json:"product_specification_templates,omitempty"`
+	ProductSpecificationTemplates []StepProductSpecificationTemplate `gorm:"foreignKey:StepID" json:"-"`
 	Filters                       []StepFilter                       `gorm:"foreignKey:StepID" json:"filters,omitempty"`
 	CreatedAt                     time.Time                          `json:"created_at"`
 	UpdatedAt                     time.Time                          `json:"updated_at"`

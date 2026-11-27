@@ -275,16 +275,6 @@ func (h *Handler) GetFilterableAttributes(c *gin.Context) {
 	})
 }
 
-func (h *Handler) ListProductSpecificationTemplates(c *gin.Context) {
-	productSpecificationTemplates, err := h.productService.ListPublicProductSpecificationTemplates(false)
-	if err != nil {
-		apierror.RespondInternalError(c, err)
-		return
-	}
-
-	response.Success(c, PublicProductSpecificationTemplatesFromDomainWithLocale(productSpecificationTemplates, middleware.GetLocale(c)))
-}
-
 func (h *Handler) ListSchwalbeTireCatalog(c *gin.Context) {
 	items, err := h.productService.ListSchwalbeTireCatalog(c.Query("search"))
 	if err != nil {

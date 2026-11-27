@@ -11,7 +11,6 @@ const stoppedStorefrontPageShellGETPaths = Object.freeze({
   '/api/v1/settings/social': 'social_settings',
   '/api/v1/settings/website-profile': 'website_profile',
   '/api/v1/settings/website-name': 'website_name',
-  '/api/v1/products/specification-templates': 'specification_templates',
   '/api/v1/settings/currency-policy': 'currency_policy',
   '/api/v1/content/faq-pages/by-route': 'product_page_faq',
 });

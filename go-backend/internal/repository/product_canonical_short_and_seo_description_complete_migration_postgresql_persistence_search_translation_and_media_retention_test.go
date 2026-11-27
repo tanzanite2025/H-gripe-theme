@@ -114,7 +114,7 @@ func TestPostgreSQLCompletelyMigratedProductDescriptionsPersistSearchTranslateAn
 			return repo.SearchPublicCompact(ProductSearchQuery{Locale: "en", Status: "active", Keyword: "canonicalsummaryonlyneedle", Limit: 10})
 		}},
 		{"admin_existing_name_search", func() ([]product.Product, error) {
-			rows, _, err := repo.FindAllWithFilters(1, 10, "active", "en", loaded.Name, "", "", "")
+			rows, _, err := repo.FindAllWithFilters(1, 10, "active", "en", loaded.Name, "", "")
 			return rows, err
 		}},
 		{"quick_buy", func() ([]product.Product, error) {

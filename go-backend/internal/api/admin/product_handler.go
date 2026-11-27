@@ -34,6 +34,48 @@ func rejectProductSEORequestFields(raw map[string]json.RawMessage) (string, bool
 	return "", false
 }
 
+func retiredProductSpecificationRequestField(raw map[string]json.RawMessage) string {
+	for _, field := range []string{
+		"product_specification_template_id",
+		"specs",
+		"variant_option_values",
+		"option_value_relations",
+	} {
+		if _, supplied := raw[field]; supplied {
+			return field
+		}
+	}
+
+	var variants []map[string]json.RawMessage
+	if err := json.Unmarshal(raw["variants"], &variants); err == nil {
+		for _, variant := range variants {
+			for _, field := range []string{"option_values", "option_group_rules", "option_value_rules"} {
+				if _, supplied := variant[field]; supplied {
+					return "variants." + field
+				}
+			}
+		}
+	}
+
+	var media []map[string]json.RawMessage
+	if err := json.Unmarshal(raw["media"], &media); err == nil {
+		for _, item := range media {
+			if _, supplied := item["variant_option_value_id"]; supplied {
+				return "media.variant_option_value_id"
+			}
+		}
+	}
+	return ""
+}
+
+func rejectRetiredProductSpecificationRequest(c *gin.Context, raw map[string]json.RawMessage) bool {
+	if field := retiredProductSpecificationRequestField(raw); field != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": field + " is retired; maintain product facts in dedicated product fields and sale choices as SKU rows"})
+		return true
+	}
+	return false
+}
+
 // ListProducts 获取商品列表
 // GET /api/admin/products
 func (h *ProductHandler) ListProducts(c *gin.Context) {
@@ -44,7 +86,6 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 	search := c.Query("search")
 	featured := c.Query("featured")
 	customsStatus := c.Query("customs_status")
-	productSpecificationTemplateID := c.Query("product_specification_template_id")
 
 	if page < 1 {
 		page = 1
@@ -53,7 +94,7 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 		pageSize = 20
 	}
 
-	products, total, err := h.productService.ListAdmin(page, pageSize, status, locale, search, featured, customsStatus, productSpecificationTemplateID)
+	products, total, err := h.productService.ListAdmin(page, pageSize, status, locale, search, featured, customsStatus)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch products"})
 		return
@@ -90,46 +131,6 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"product": product,
 	})
-}
-
-// PreviewProductTemplateSync returns the explicit changes that would be
-// applied when the product is synchronized with its current template.
-// GET /api/admin/products/:id/template-sync/preview
-func (h *ProductHandler) PreviewProductTemplateSync(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil || id == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
-		return
-	}
-	diff, err := h.productService.PreviewProductTemplateSync(uint(id))
-	if err != nil {
-		respondProductServiceError(c, err, "Failed to preview product template sync")
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"data": diff})
-}
-
-// SyncProductTemplate applies a reviewed template revision to the product.
-// POST /api/admin/products/:id/template-sync
-func (h *ProductHandler) SyncProductTemplate(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil || id == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
-		return
-	}
-	var request struct {
-		ExpectedRevision int `json:"expected_revision" binding:"required,min=1"`
-	}
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	updated, diff, err := h.productService.SyncProductTemplate(uint(id), request.ExpectedRevision)
-	if err != nil {
-		respondProductServiceError(c, err, "Failed to synchronize product template")
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"product": updated, "data": diff})
 }
 
 // GetProductTranslations 获取商品翻译组
@@ -197,6 +198,9 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if rejectRetiredProductSpecificationRequest(c, raw) {
+		return
+	}
 	if _, supplied := raw["shipping_template_ids"]; supplied {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "shipping_template_ids must be configured on each SKU; product-level shipping templates are not supported"})
 		return
@@ -216,7 +220,7 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		BicycleTireSpecification:       req.BicycleTireSpecification,
 		WheelsetSpecification:          req.WheelsetSpecification,
 		SpokeSpecification:             req.SpokeSpecification,
-		ProductSpecificationTemplateID: req.ProductSpecificationTemplateID,
+		GenericProductSchema:           req.GenericProductSchema,
 		ProductCategoryID:              req.ProductCategoryID,
 		BrandID:                        req.BrandID,
 		AfterSalesTemplateID:           req.AfterSalesTemplateID,
@@ -236,11 +240,8 @@ func (h *ProductHandler) CreateProduct(c *gin.Context) {
 		Locale:                         req.Locale,
 		ParentID:                       req.ParentID,
 		Featured:                       req.Featured,
-		SpecValues:                     normalizeRequestSpecs(req.Specs),
 		Variants:                       normalizeVariantRequests(req.Variants),
-		VariantOptionValues:            normalizeVariantOptionValueRequests(req.VariantOptionValues),
 		Media:                          normalizeMediaRequests(req.Media),
-		OptionValueRelations:           normalizeProductOptionValueRelationRequests(req.OptionValueRelations),
 		SpokeRepairKitModelKeys:        normalizeSpokeRepairKitModelKeys(req.SpokeRepairKitModelKeys),
 	})
 	if err != nil {
@@ -274,6 +275,9 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if rejectRetiredProductSpecificationRequest(c, raw) {
+		return
+	}
 	if _, supplied := raw["shipping_template_ids"]; supplied {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "shipping_template_ids must be configured on each SKU; product-level shipping templates are not supported"})
 		return
@@ -287,8 +291,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 	_, updateBicycleTireSpecification := raw["bicycle_tire_specification"]
 	_, updateWheelsetSpecification := raw["wheelset_specification"]
 	_, updateSpokeSpecification := raw["spoke_specification"]
+	_, updateGenericProductSchema := raw["generic_product_schema"]
 	_, updateParentID := raw["parent_id"]
-	_, updateProductSpecificationTemplateID := raw["product_specification_template_id"]
 	_, updateProductCategoryID := raw["product_category_id"]
 	_, updateBrandID := raw["brand_id"]
 	_, updateAfterSalesTemplateID := raw["after_sales_template_id"]
@@ -304,21 +308,9 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 
 	_, updateCurrency := raw["currency"]
 	_, updateFulfillmentMode := raw["fulfillment_mode"]
-	_, updateSpecs := raw["specs"]
 	_, updateVariants := raw["variants"]
-	_, updateVariantOptionValues := raw["variant_option_values"]
 	_, updateMedia := raw["media"]
-	_, updateOptionValueRelations := raw["option_value_relations"]
 	_, updateSpokeRepairKitModelKeys := raw["spoke_repair_kit_model_keys"]
-	if updateProductSpecificationTemplateID && !updateSpecs {
-		updateSpecs = true
-	}
-	if updateProductSpecificationTemplateID && !updateVariants {
-		updateVariants = true
-	}
-	if updateProductSpecificationTemplateID && !updateVariantOptionValues {
-		updateVariantOptionValues = true
-	}
 
 	updatedProduct, err := h.productService.UpdateAdminProduct(uint(id), service.ProductUpdateInput{
 		MerchantProductIdentifier:           req.MerchantProductIdentifier,
@@ -337,8 +329,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		UpdateWheelsetSpecification:          updateWheelsetSpecification,
 		SpokeSpecification:                   req.SpokeSpecification,
 		UpdateSpokeSpecification:             updateSpokeSpecification,
-		ProductSpecificationTemplateID:       req.ProductSpecificationTemplateID,
-		UpdateProductSpecificationTemplateID: updateProductSpecificationTemplateID,
+		GenericProductSchema:                 req.GenericProductSchema,
+		UpdateGenericProductSchema:           updateGenericProductSchema,
 		ProductCategoryID:                    req.ProductCategoryID,
 		UpdateProductCategoryID:              updateProductCategoryID,
 		BrandID:                              req.BrandID,
@@ -370,16 +362,10 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		ParentID:                             req.ParentID,
 		UpdateParentID:                       updateParentID,
 		Featured:                             req.Featured,
-		SpecValues:                           normalizeRequestSpecs(req.Specs),
-		UpdateSpecValues:                     updateSpecs,
 		Variants:                             normalizeVariantRequests(req.Variants),
 		UpdateVariants:                       updateVariants,
-		VariantOptionValues:                  normalizeVariantOptionValueRequests(req.VariantOptionValues),
-		UpdateVariantOptionValues:            updateVariantOptionValues,
 		Media:                                normalizeMediaRequests(req.Media),
 		UpdateMedia:                          updateMedia,
-		OptionValueRelations:                 normalizeProductOptionValueRelationRequests(req.OptionValueRelations),
-		UpdateOptionValueRelations:           updateOptionValueRelations,
 		SpokeRepairKitModelKeys:              normalizeSpokeRepairKitModelKeys(req.SpokeRepairKitModelKeys),
 		UpdateSpokeRepairKitModelKeys:        updateSpokeRepairKitModelKeys,
 	})
@@ -526,15 +512,4 @@ func (h *ProductHandler) GetFilterableAttributes(c *gin.Context) {
 		"success": true,
 		"data":    attrs,
 	})
-}
-
-func (h *ProductHandler) ListProductSpecificationTemplates(c *gin.Context) {
-	includeDisabled := c.Query("include_disabled") == "true"
-	productSpecificationTemplates, err := h.productService.ListProductSpecificationTemplates(includeDisabled)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"data": productSpecificationTemplates})
 }

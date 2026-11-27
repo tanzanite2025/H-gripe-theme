@@ -72,7 +72,6 @@
       :submitting="submitting"
       :form="productForm"
       :errors="formErrors"
-      :product-spec-templates="productSpecTemplates"
       :schwalbe-tire-catalog-items="schwalbeTireCatalogItems"
       :schwalbe-tire-catalog-loading="schwalbeTireCatalogLoading"
       :schwalbe-tire-catalog-error="schwalbeTireCatalogError"
@@ -80,12 +79,8 @@
       :brands="brands"
       :carbon-rim-system-category-display-path="carbonRimSystemCategoryDisplayPath"
       :bicycle-tire-system-category-display-path="bicycleTireSystemCategoryDisplayPath"
-      :selected-product-spec-template="selectedProductSpecTemplate"
       :brand-select-value="brandSelectValue"
-      :selected-spec-definitions="selectedSpecDefinitions"
-      :variant-spec-definitions="variantSpecDefinitions"
       :default-variant-index="defaultVariantIndex"
-      :product-spec-template-select-value="productSpecTemplateSelectValue"
       :shipping-templates="shippingTemplates"
       :after-sales-template-select-value="afterSalesTemplateSelectValue"
       :packaging-template-select-value="packagingTemplateSelectValue"
@@ -93,23 +88,16 @@
       :packaging-templates="editorPackagingTemplates"
       :customs-classifications="activeCustomsClassifications"
       :customs-classification-select-value="customsClassificationSelectValue"
-      :template-scoped-values-touched="templateScopedValuesTouched"
       :uploading-media="uploadingMedia"
-      :parse-spec-options="parseSpecOptions"
-      :format-spec-option="formatSpecOption"
-      :get-spec-label="getSpecLabel"
-      :spec-select-value="specSelectValue"
       :language-options="languageOptions"
       @submit="submitForm"
       @clear-error="clearFieldError"
-      @product-spec-template-select="handleProductSpecTemplateSelect"
       @schwalbe-tire-model-select="setSchwalbeTireCatalogModel"
       @retry-schwalbe-tire-catalog="fetchSchwalbeTireCatalog"
       @product-brand-select="setProductBrand"
       @product-information-template-select="setProductInformationTemplate"
       @customs-classification-select="handleCustomsClassificationSelect"
       @customs-classification-manual-edit="clearCustomsClassification"
-      @set-spec-select-value="setSpecSelectValue"
       @add-variant="addVariant"
       @remove-variant="removeVariant"
       @set-default-variant="setDefaultVariant"
@@ -221,7 +209,6 @@ const statItems = computed(() => [
 ])
 
 const {
-  productSpecTemplates,
   schwalbeTireCatalogItems,
   schwalbeTireCatalogLoading,
   schwalbeTireCatalogError,
@@ -232,20 +219,10 @@ const {
   formErrors,
   productForm,
   uploadingMedia,
-  selectedProductSpecTemplate,
-  selectedSpecDefinitions,
-  variantSpecDefinitions,
   defaultVariantIndex,
-  productSpecTemplateSelectValue,
   brandSelectValue,
   afterSalesTemplateSelectValue,
   packagingTemplateSelectValue,
-  templateScopedValuesTouched,
-  parseSpecOptions,
-  formatSpecOption,
-  getSpecLabel,
-  specSelectValue,
-  setSpecSelectValue,
   setProductBrand,
   setProductInformationTemplate,
   applyCustomsClassification,
@@ -260,10 +237,8 @@ const {
   removeVariant,
   setDefaultVariant,
   setVariantActive,
-  handleProductSpecTemplateSelect,
   setSchwalbeTireCatalogModel,
   fetchSchwalbeTireCatalog,
-  fetchProductSpecTemplates: fetchEditorProductSpecTemplates,
   showEditDialog,
   carbonRimSystemCategoryDisplayPath,
   bicycleTireSystemCategoryDisplayPath,
@@ -311,7 +286,6 @@ const handleCreateTemplateFromCandidate = (candidate: Parameters<typeof openTemp
 onMounted(async () => {
   await supportedLanguages.fetchLanguages()
   await Promise.all([
-    fetchEditorProductSpecTemplates(),
     fetchEditorResources(),
     fetchTemplates(),
     fetchProductRows(),

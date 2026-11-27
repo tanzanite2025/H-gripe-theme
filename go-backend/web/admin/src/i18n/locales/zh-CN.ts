@@ -131,7 +131,6 @@ const zhCN = {
     'mp4-to-webm': 'MP4 转 WebM',
     catalog: '商品中心',
     'catalog-products': '商品管理',
-    'catalog-templates': '商品规格模板',
     'catalog-information-templates': '产品信息模板',
     'catalog-home-main-products': '首页主力产品',
     'fitment-catalog': '车型适配资料库',

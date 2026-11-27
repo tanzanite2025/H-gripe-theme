@@ -19,7 +19,7 @@ func publicCarbonRimSpecificationValues(spec *productdomain.CarbonRimSpecificati
 		if locale == "zh_cn" {
 			name, group = chinese, "碳纤维车圈规格"
 		}
-		rows = append(rows, PublicProductSpecValue{Value: value, Definition: &PublicSpecDefinition{Slug: slug, Name: name, Group: group, Unit: unit, FieldType: "text", Role: "attribute", IsVisible: true}})
+		rows = append(rows, PublicProductSpecValue{Value: value, Definition: &PublicSpecDefinition{Slug: slug, Name: name, Group: group, Unit: unit, FieldType: "text", IsVisible: true}})
 	}
 	formatCarbonRimMeasurement := func(value float64) string { return strconv.FormatFloat(value, 'f', -1, 64) }
 	appendCarbonRimSpecificationRow("model", "Model", "型号", spec.Model, "")

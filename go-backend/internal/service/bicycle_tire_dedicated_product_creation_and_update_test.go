@@ -113,7 +113,7 @@ func TestDedicatedBicycleTireUpdateRejectsProductSpecificationTemplateBinding(t 
 		ProductSpecificationTemplateID:       &templateID,
 	})
 	require.ErrorIs(t, err, ErrProductSpecInvalid)
-	require.ErrorContains(t, err, "not a template")
+	require.ErrorContains(t, err, "templates are retired")
 }
 
 func TestDedicatedBicycleTireProductTypeAndTranslationParentCannotChangeThroughAdminUpdate(t *testing.T) {

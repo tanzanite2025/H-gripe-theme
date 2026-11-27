@@ -87,16 +87,6 @@ func registerProductRoutes(
 		productProfitabilityGroup.POST("/bulk-upsert", middleware.RequirePermission(auth.PermSupplierCostEdit), productProfitabilityHandler.BulkUpsert)
 	}
 
-	productSpecificationTemplatesGroup := authenticated.Group("/product-specification-templates")
-	productSpecificationTemplatesGroup.Use(middleware.RequirePermission(auth.PermProductView))
-	{
-		productSpecificationTemplatesGroup.GET("", productHandler.ListProductSpecificationTemplates)
-		productSpecificationTemplatesGroup.GET("/:id", productHandler.GetProductSpecificationTemplate)
-		productSpecificationTemplatesGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateProductSpecificationTemplate)
-		productSpecificationTemplatesGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateProductSpecificationTemplate)
-		productSpecificationTemplatesGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProductSpecificationTemplate)
-	}
-
 	productBrandsGroup := authenticated.Group("/product-brands")
 	productBrandsGroup.Use(middleware.RequirePermission(auth.PermProductView))
 	{
@@ -125,12 +115,10 @@ func registerProductRoutes(
 		productsGroup.GET("", productHandler.ListProducts)
 		productsGroup.GET("/stats", productHandler.GetProductStats)
 		productsGroup.GET("/customs-summary", productHandler.GetCustomsSummary)
-		productsGroup.GET("/:id/template-sync/preview", productHandler.PreviewProductTemplateSync)
 		productsGroup.GET("/:id", productHandler.GetProduct)
 		productsGroup.GET("/:id/translations", productHandler.GetProductTranslations)
 		productsGroup.POST("", middleware.RequirePermission(auth.PermProductCreate), productHandler.CreateProduct)
 		productsGroup.PUT("/:id", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateProduct)
-		productsGroup.POST("/:id/template-sync", middleware.RequirePermission(auth.PermProductEdit), productHandler.SyncProductTemplate)
 		productsGroup.POST("/:id/translations/copy", middleware.RequirePermission(auth.PermProductCreate), productHandler.CopyProductTranslation)
 		productsGroup.PATCH("/:id/status", middleware.RequirePermission(auth.PermProductEdit), productHandler.UpdateProductStatus)
 		productsGroup.DELETE("/:id", middleware.RequirePermission(auth.PermProductDelete), productHandler.DeleteProduct)

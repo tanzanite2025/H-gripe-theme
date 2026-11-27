@@ -13,25 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestProductOptionValueRelationUpdateContractMapsAllFields(t *testing.T) {
-	var request productUpdateRequest
-	require.NoError(t, json.Unmarshal([]byte(`{
-		"option_value_relations": [{
-			"id": 17,
-			"source_option_value_id": 101,
-			"target_option_value_id": 202,
-			"relation_type": "requires"
-		}]
-	}`), &request))
-
-	require.Len(t, request.OptionValueRelations, 1)
-	input := normalizeProductOptionValueRelationRequests(request.OptionValueRelations)
-	require.Len(t, input, 1)
-	require.NotNil(t, input[0].ID)
-	require.Equal(t, uint(17), *input[0].ID)
-	require.Equal(t, uint(101), input[0].SourceOptionValueID)
-	require.Equal(t, uint(202), input[0].TargetOptionValueID)
-	require.Equal(t, "requires", input[0].RelationType)
+func TestRetiredOptionValueRelationFieldIsRejected(t *testing.T) {
+	var raw map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal([]byte(`{"option_value_relations":[]}`), &raw))
+	require.Equal(t, "option_value_relations", retiredProductSpecificationRequestField(raw))
 }
 
 func TestProductOptionValueRelationErrorsReturnBadRequest(t *testing.T) {

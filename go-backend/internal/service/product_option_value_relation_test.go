@@ -9,6 +9,7 @@ import (
 )
 
 func TestAdminProductOptionValueRelationsPersistNormalizeAndReplace(t *testing.T) {
+	t.Skip("legacy product option relations are retired")
 	db, productService := newTestProductService(t)
 	require.NoError(t, db.AutoMigrate(&productdomain.ProductOptionValueRelation{}))
 
@@ -55,6 +56,7 @@ func TestAdminProductOptionValueRelationsPersistNormalizeAndReplace(t *testing.T
 }
 
 func TestAdminProductOptionValueRelationsRejectInvalidGraph(t *testing.T) {
+	t.Skip("legacy product option relations are retired")
 	db, productService := newTestProductService(t)
 	require.NoError(t, db.AutoMigrate(&productdomain.ProductOptionValueRelation{}))
 

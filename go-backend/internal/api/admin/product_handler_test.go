@@ -2,12 +2,8 @@ package admin
 
 import (
 	"encoding/json"
-	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,33 +39,17 @@ func TestRejectProductSEORequestFieldsAllowsCatalogFields(t *testing.T) {
 	require.Empty(t, blockedField)
 }
 
-func TestPreviewProductTemplateSyncRejectsInvalidProductID(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	for _, value := range []string{"0", "not-a-number"} {
-		recorder := httptest.NewRecorder()
-		context, _ := gin.CreateTestContext(recorder)
-		context.Params = gin.Params{{Key: "id", Value: value}}
-
-		handler := NewProductHandler(nil)
-		handler.PreviewProductTemplateSync(context)
-
-		require.Equal(t, http.StatusBadRequest, recorder.Code)
-		require.Contains(t, recorder.Body.String(), "Invalid product ID")
-	}
-}
-
-func TestSyncProductTemplateValidatesExpectedRevisionBeforeServiceCall(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	for _, body := range []string{`{}`, `{"expected_revision":0}`, `{"expected_revision":"4"}`} {
-		recorder := httptest.NewRecorder()
-		request := httptest.NewRequest(http.MethodPost, "/api/admin/products/7/template-sync", strings.NewReader(body))
-		context, _ := gin.CreateTestContext(recorder)
-		context.Request = request
-		context.Params = gin.Params{{Key: "id", Value: "7"}}
-
-		handler := NewProductHandler(nil)
-		handler.SyncProductTemplate(context)
-
-		require.Equal(t, http.StatusBadRequest, recorder.Code)
+func TestRetiredProductSpecificationFieldsAreRejectedEvenWhenEmpty(t *testing.T) {
+	for _, body := range []string{
+		`{"name":"Product","product_specification_template_id":null}`,
+		`{"name":"Product","specs":{}}`,
+		`{"name":"Product","variant_option_values":[]}`,
+		`{"name":"Product","option_value_relations":[]}`,
+		`{"name":"Product","variants":[{"option_values":{}}]}`,
+		`{"name":"Product","media":[{"variant_option_value_id":null}]}`,
+	} {
+		var raw map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal([]byte(body), &raw))
+		require.NotEmpty(t, retiredProductSpecificationRequestField(raw), body)
 	}
 }

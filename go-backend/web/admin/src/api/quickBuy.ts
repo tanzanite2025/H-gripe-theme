@@ -10,14 +10,6 @@ import {
 } from '@/utils/apiResponse'
 
 export type QuickBuyVersionStatus = 'draft' | 'published' | 'archived' | string
-export interface QuickBuyProductSpecTemplateRef {
-  id: number
-  slug: string
-  name: string
-  image_url?: string
-  primary?: boolean
-}
-
 export interface QuickBuyProductCategoryRef {
   id: number
   parent_id?: number | null
@@ -41,7 +33,6 @@ export interface QuickBuyStep {
   name: string
   sort_order: number
   product_categories: QuickBuyProductCategoryRef[]
-  product_specification_templates: QuickBuyProductSpecTemplateRef[]
 }
 
 export interface QuickBuyVersion {
@@ -95,7 +86,6 @@ export interface QuickBuyStepPayload {
   step_key: string
   name: string
   product_category_ids: number[]
-  product_specification_template_ids?: number[]
 }
 
 export interface QuickBuyValidationIssue {
@@ -105,7 +95,6 @@ export interface QuickBuyValidationIssue {
   step_key?: string
   rule_key?: string
   product_category_id?: number
-  product_specification_template_id?: number
 }
 
 export interface QuickBuyValidationResult {
@@ -131,10 +120,6 @@ export interface QuickBuyPreviewProduct {
     is_primary?: boolean
     media_type?: string
   }>
-  product_specification_template?: {
-    name?: string
-    slug?: string
-  } | null
   availability?: string
 }
 

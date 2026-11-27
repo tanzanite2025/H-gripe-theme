@@ -105,7 +105,7 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 		return nil, err
 	}
 	page, pageSize := normalizeQuickBuyCandidatePaging(input.Page, input.PageSize)
-	exposeProductFilters := !isDefaultQuickBuyFlow(version) && (len(step.ProductSpecificationTemplates) > 0 || quickBuyStepHasWheelsetProductCategory(*step))
+	exposeProductFilters := !isDefaultQuickBuyFlow(version) && quickBuyStepHasWheelsetProductCategory(*step)
 	if !exposeProductFilters {
 		input.SpecFilters = nil
 	}
@@ -118,7 +118,7 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 		FlowVersionID: version.ID,
 		Locale:        locale,
 		Currency:      currency,
-		Step:          quickBuyStepView(*step, locale, len(step.ProductSpecificationTemplates) > 0 && exposeProductFilters, exposeProductFilters, s.mediaURLResolver),
+		Step:          quickBuyStepView(*step, locale, false, exposeProductFilters, s.mediaURLResolver),
 		Products:      []productdomain.Product{},
 		Page:          page,
 		PageSize:      pageSize,
@@ -128,13 +128,12 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 	}
 
 	products, total, err := s.productRepo.ListQuickBuyCandidates(repository.ProductQuickBuyCandidateQuery{
-		Locale:                          locale,
-		ProductSpecificationTemplateIDs: quickBuyStepProductSpecificationTemplateIDsForVersion(version, *step),
-		ProductCategoryIDs:              quickBuyStepProductCategoryIDs(*step),
-		Keyword:                         strings.TrimSpace(input.Keyword),
-		SpecFilters:                     specFilters,
-		Offset:                          (page - 1) * pageSize,
-		Limit:                           pageSize,
+		Locale:             locale,
+		ProductCategoryIDs: quickBuyStepProductCategoryIDs(*step),
+		Keyword:            strings.TrimSpace(input.Keyword),
+		SpecFilters:        specFilters,
+		Offset:             (page - 1) * pageSize,
+		Limit:              pageSize,
 	})
 	if err != nil {
 		return nil, err
@@ -146,11 +145,10 @@ func (s *QuickBuyService) listVersionStepCandidates(version quickbuy.Version, in
 		return result, nil
 	}
 	filterValues, err := s.productRepo.ListQuickBuyFilterValues(repository.ProductQuickBuyCandidateQuery{
-		Locale:                          locale,
-		ProductSpecificationTemplateIDs: quickBuyStepProductSpecificationTemplateIDsForVersion(version, *step),
-		ProductCategoryIDs:              quickBuyStepProductCategoryIDs(*step),
-		Keyword:                         strings.TrimSpace(input.Keyword),
-		SpecFilters:                     specFilters,
+		Locale:             locale,
+		ProductCategoryIDs: quickBuyStepProductCategoryIDs(*step),
+		Keyword:            strings.TrimSpace(input.Keyword),
+		SpecFilters:        specFilters,
 	}, quickBuyFilterableSpecSlugs(*step))
 	if err != nil {
 		return nil, err
@@ -194,7 +192,7 @@ func (s *QuickBuyService) sessionItemFromSelection(session quickbuy.Session, ver
 		}
 		return nil, false, err
 	}
-	if err := s.validateQuickBuyProductAllowedForStep(*step, *productItem, !isDefaultQuickBuyFlow(version)); err != nil {
+	if err := s.validateQuickBuyProductAllowedForStep(*step, *productItem); err != nil {
 		return nil, false, err
 	}
 	if variant.Stock < quantity {
@@ -260,7 +258,7 @@ func (s *QuickBuyService) validateQuickBuySession(version quickbuy.Version, item
 			result.addIssue("product_unavailable", fmt.Sprintf("product %d is no longer available", item.ProductID), item.StepKey, item.ProductID, item.VariantID)
 			continue
 		}
-		if err := s.validateQuickBuyProductAllowedForStep(*step, *productItem, !isDefaultQuickBuyFlow(version)); err != nil {
+		if err := s.validateQuickBuyProductAllowedForStep(*step, *productItem); err != nil {
 			result.addIssue("product_not_allowed", err.Error(), item.StepKey, item.ProductID, item.VariantID)
 		}
 		if variant.Stock < item.Quantity {

@@ -153,10 +153,12 @@ func (s *ProductService) buildVariants(productSpecificationTemplateID *uint, inp
 		if err := validateVariantOptionRules(input.OptionGroupRules, input.OptionValueRules, customDefinitionIDs, optionValuesByID); err != nil {
 			return nil, err
 		}
-		if _, exists := seenOptions[optionJSON]; exists {
-			return nil, fmt.Errorf("%w: duplicate option combination %s", ErrProductVariantInvalid, optionJSON)
+		if len(optionValues) > 0 {
+			if _, exists := seenOptions[optionJSON]; exists {
+				return nil, fmt.Errorf("%w: duplicate option combination %s", ErrProductVariantInvalid, optionJSON)
+			}
+			seenOptions[optionJSON] = struct{}{}
 		}
-		seenOptions[optionJSON] = struct{}{}
 
 		isActive := true
 		if input.IsActive != nil {
@@ -186,6 +188,9 @@ func (s *ProductService) buildVariants(productSpecificationTemplateID *uint, inp
 		}
 		if variant.Title == "" {
 			variant.Title = variantTitle(optionValues)
+			if len(optionValues) == 0 {
+				variant.Title = input.SKU
+			}
 		}
 		variants = append(variants, variant)
 	}

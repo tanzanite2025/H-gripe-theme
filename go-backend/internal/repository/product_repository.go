@@ -234,18 +234,9 @@ func (r *ProductRepository) FindByIDContext(ctx context.Context, id uint) (*prod
 	var p product.Product
 	query := r.preloadProductCategory(r.db.WithContext(ctx).Preload("Brand")).Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
-	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
-		return orderSpecDefinitions(db)
-	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
-		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
 	})
-	if r.db.Migrator().HasTable(&product.ProductSpecOptionItem{}) {
-		query = preloadProductSpecDefinitionOptionItems(query)
-	}
-	query = r.preloadProductVariantOptionRules(query)
-	query = r.preloadProductVariantOptionValues(query)
 	query = r.preloadSpokeRepairKitModels(query)
 	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").First(&p, id).Error
 	if err != nil {
@@ -376,18 +367,9 @@ func (r *ProductRepository) FindBySlugContext(ctx context.Context, slug, locale 
 	var p product.Product
 	query := r.preloadProductCategory(r.db.WithContext(ctx).Preload("Brand")).Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
-	}).Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
-		return orderSpecDefinitions(db)
-	}).Preload("SpecValues.SpecDefinition", func(db *gorm.DB) *gorm.DB {
-		return orderSpecDefinitions(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
-	})
-	if r.db.Migrator().HasTable(&product.ProductSpecOptionItem{}) {
-		query = preloadProductSpecDefinitionOptionItems(query)
-	}
-	query = r.preloadProductVariantOptionRules(query)
-	query = r.preloadProductVariantOptionValues(query).Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").Where("slug = ?", slug)
+	}).Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").Where("slug = ?", slug)
 	query = r.preloadSpokeRepairKitModels(query)
 
 	if locale != "" {
@@ -409,7 +391,6 @@ func (r *ProductRepository) FindBySKU(sku string) (*product.Product, error) {
 	var p product.Product
 	query := r.preloadProductCategory(r.db.Preload("Brand")).Preload("Media", orderProductMedia).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB { return orderProductVariants(db) })
-	query = r.preloadProductVariantOptionValues(query)
 	query = r.preloadSpokeRepairKitModels(query)
 	err := query.Preload("AfterSalesTemplate").Preload("PackagingTemplate").Preload("CustomsClassificationProfile").
 		Joins("JOIN product_variants product_sku_lookup ON product_sku_lookup.product_id = products.id AND product_sku_lookup.deleted_at IS NULL AND product_sku_lookup.sku = ?", sku).
@@ -749,6 +730,16 @@ func productUpdateColumns(p *product.Product) map[string]interface{} {
 	if p.SpokeSpecificationDirty {
 		encodedSpecification, _ := json.Marshal(p.SpokeSpecification)
 		columns["spoke_specification"] = string(encodedSpecification)
+	}
+	if p.GenericProductSchemaDirty {
+		if p.GenericProductSchema == nil {
+			// A cleared optional product-level schema must become SQL NULL. JSON
+			// null is a non-object JSONB value and is rejected by migration 448.
+			columns["generic_product_schema"] = nil
+		} else {
+			encodedSpecification, _ := json.Marshal(p.GenericProductSchema)
+			columns["generic_product_schema"] = string(encodedSpecification)
+		}
 	}
 	return columns
 }

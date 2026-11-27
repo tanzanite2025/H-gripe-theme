@@ -15,7 +15,7 @@ type ProductMedia struct {
 	ID                   uint           `gorm:"primarykey" json:"id"`
 	ProductID            uint           `gorm:"not null;index" json:"product_id"`
 	VariantID            *uint          `gorm:"index" json:"variant_id,omitempty"`
-	VariantOptionValueID *uint          `gorm:"index" json:"variant_option_value_id,omitempty"`
+	VariantOptionValueID *uint          `gorm:"index" json:"-"`
 	MediaAssetID         *uint          `gorm:"index" json:"media_asset_id,omitempty"`
 	MediaType            string         `gorm:"default:'image';not null;index" json:"media_type"`
 	Role                 string         `gorm:"default:'gallery';not null;index" json:"role"`

@@ -73,6 +73,7 @@ type ProductCreateInput struct {
 	BicycleTireSpecification       *product.BicycleTireSpecification
 	WheelsetSpecification          *product.WheelsetSpecification
 	SpokeSpecification             *product.SpokesProductSpecification
+	GenericProductSchema           *product.GenericProductSchema
 	ProductSpecificationTemplateID *uint
 	ProductCategoryID              *uint
 	BrandID                        *uint
@@ -118,6 +119,8 @@ type ProductUpdateInput struct {
 	UpdateWheelsetSpecification          bool
 	SpokeSpecification                   *product.SpokesProductSpecification
 	UpdateSpokeSpecification             bool
+	GenericProductSchema                 *product.GenericProductSchema
+	UpdateGenericProductSchema           bool
 	ProductSpecificationTemplateID       *uint
 	UpdateProductSpecificationTemplateID bool
 	ProductCategoryID                    *uint
@@ -165,8 +168,8 @@ type ProductUpdateInput struct {
 	UpdateSpokeRepairKitModelKeys        bool
 }
 
-func (s *ProductService) ListAdmin(page, pageSize int, status, locale, search, featured, customsStatus, productSpecificationTemplateID string) ([]product.Product, int64, error) {
-	products, total, err := s.productRepo.FindAllWithFilters(page, pageSize, status, locale, search, featured, customsStatus, productSpecificationTemplateID)
+func (s *ProductService) ListAdmin(page, pageSize int, status, locale, search, featured, customsStatus string) ([]product.Product, int64, error) {
+	products, total, err := s.productRepo.FindAllWithFilters(page, pageSize, status, locale, search, featured, customsStatus)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -200,7 +203,32 @@ func (s *ProductService) ListFilterableSpecificationsWithDynamicValuesForCategor
 }
 
 func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.Product, error) {
+	if err := s.rejectRetiredProductSpecificationTemplateUse(input.ProductSpecificationTemplateID, nil); err != nil {
+		return nil, err
+	}
+	if len(input.SpecValues) > 0 {
+		return nil, fmt.Errorf("%w: product specification values are retired; use dedicated product-level fields", ErrProductSpecInvalid)
+	}
+	if len(input.VariantOptionValues) > 0 {
+		return nil, fmt.Errorf("%w: template option values are retired", ErrProductSpecInvalid)
+	}
+	if len(input.OptionValueRelations) > 0 {
+		return nil, fmt.Errorf("%w: template option relations are retired", ErrProductOptionRelationInvalid)
+	}
+	for _, variant := range input.Variants {
+		if len(variant.OptionValues) > 0 || len(variant.OptionGroupRules) > 0 || len(variant.OptionValueRules) > 0 {
+			return nil, fmt.Errorf("%w: SKU options must be represented as independent SKU rows", ErrProductVariantInvalid)
+		}
+	}
+	for _, media := range input.Media {
+		if media.VariantOptionValueID != nil {
+			return nil, fmt.Errorf("%w: product media cannot reference retired template option values", ErrProductSpecificationTemplateInvalid)
+		}
+	}
 	if err := validateDedicatedProductTypeCreation(input); err != nil {
+		return nil, err
+	}
+	if err := validateGenericProductSchemaCreation(input); err != nil {
 		return nil, err
 	}
 	if err := s.validateDedicatedBicycleTireCreation(input); err != nil {
@@ -326,6 +354,7 @@ func (s *ProductService) CreateAdminProduct(input ProductCreateInput) (*product.
 		BicycleTireSpecification:       input.BicycleTireSpecification,
 		WheelsetSpecification:          input.WheelsetSpecification,
 		SpokeSpecification:             input.SpokeSpecification,
+		GenericProductSchema:           input.GenericProductSchema,
 		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
 		ProductCategoryID:              input.ProductCategoryID,
 		BrandID:                        input.BrandID,
@@ -425,7 +454,33 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if err := s.validateSpokeRepairKitProductUpdateType(existingProduct, input); err != nil {
 		return nil, err
 	}
+	if err := s.rejectRetiredProductSpecificationTemplateUse(input.ProductSpecificationTemplateID, existingProduct.ProductSpecificationTemplateID); err != nil {
+		return nil, err
+	}
+	if input.UpdateProductSpecificationTemplateID || input.UpdateSpecValues || input.UpdateVariantOptionValues || input.UpdateOptionValueRelations {
+		if input.UpdateOptionValueRelations {
+			return nil, fmt.Errorf("%w: template option relations are retired", ErrProductOptionRelationInvalid)
+		}
+		return nil, fmt.Errorf("%w: product specification values and template option configuration are retired", ErrProductSpecInvalid)
+	}
+	if input.UpdateVariants {
+		for _, variant := range input.Variants {
+			if len(variant.OptionValues) > 0 || len(variant.OptionGroupRules) > 0 || len(variant.OptionValueRules) > 0 {
+				return nil, fmt.Errorf("%w: SKU options must be represented as independent SKU rows", ErrProductVariantInvalid)
+			}
+		}
+	}
+	if input.UpdateMedia {
+		for _, media := range input.Media {
+			if media.VariantOptionValueID != nil {
+				return nil, fmt.Errorf("%w: product media cannot reference retired template option values", ErrProductSpecificationTemplateInvalid)
+			}
+		}
+	}
 	if err := validateDedicatedProductTypeUpdate(existingProduct, &input); err != nil {
+		return nil, err
+	}
+	if err := validateGenericProductSchemaUpdate(existingProduct, &input); err != nil {
 		return nil, err
 	}
 	if err := s.validateDedicatedBicycleTireUpdate(existingProduct, &input); err != nil {
@@ -444,9 +499,6 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 		return nil, ErrTransactionalOutboxNotConfigured
 	}
 	cacheInvalidationProductIDs := []uint{existingProduct.ID}
-	if err := s.rejectRetiredProductSpecificationTemplateUse(input.ProductSpecificationTemplateID, existingProduct.ProductSpecificationTemplateID); err != nil {
-		return nil, err
-	}
 	if input.UpdateCarbonRimSpecification {
 		existingProduct.CarbonRimSpecification = input.CarbonRimSpecification
 		existingProduct.CarbonRimSpecificationDirty = true
@@ -462,6 +514,10 @@ func (s *ProductService) UpdateAdminProduct(id uint, input ProductUpdateInput) (
 	if input.UpdateSpokeSpecification {
 		existingProduct.SpokeSpecification = input.SpokeSpecification
 		existingProduct.SpokeSpecificationDirty = true
+	}
+	if input.UpdateGenericProductSchema {
+		existingProduct.GenericProductSchema = input.GenericProductSchema
+		existingProduct.GenericProductSchemaDirty = true
 	}
 	previousProduct := *existingProduct
 	previousAfterSalesTemplateID := existingProduct.AfterSalesTemplateID

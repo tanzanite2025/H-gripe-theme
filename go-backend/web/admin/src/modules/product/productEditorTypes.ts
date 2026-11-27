@@ -5,7 +5,14 @@ export interface ProductFormRecord {
   bicycle_tire_specification?: import('./bicycleTireDedicatedSpecificationFormValuesAndValidation').BicycleTireSpecificationForm | null
   wheelset_specification?: import('./wheelsetDedicatedProductSpecificationFormValuesAndValidation').WheelsetSpecificationForm | null
   spoke_specification?: import('./spokesDedicatedProductSpecificationFormValuesAndValidation').SpokesProductSpecificationForm | null
-  product_specification_template_id: number | string | null
+  generic_product_schema?: {
+    schema_version: 1
+    model: string
+    material: string
+    color: string
+    size: string
+    weight_g: number | null
+  } | null
   product_category_id: number | string | null
   brand_id: number | string | null
   after_sales_template_id: number | string | null
@@ -26,11 +33,8 @@ export interface ProductFormRecord {
   short_description: string
   status: string
   featured: boolean
-  specs: Record<string, any>
   variants: any[]
   media: any[]
-  variant_option_values: ProductVariantOptionValueForm[]
-  option_value_relations: ProductOptionValueRelationForm[]
   [key: string]: any
 }
 
@@ -40,7 +44,6 @@ export interface ProductMediaForm {
   id: number | string | null
   local_key?: string
   variant_id: number | string | null
-  variant_option_value_id: number | string | null
   media_asset_id?: number | string | null
   media_type: ProductMediaType | string
   role?: string
@@ -61,7 +64,6 @@ export interface ProductVariantForm {
   id?: number | string | null
   sku?: string
   title?: string
-  option_values: Record<string, any>
   currency?: string
   price?: string
   price_minor?: number | string
@@ -69,8 +71,6 @@ export interface ProductVariantForm {
   shipping_template_ids?: Array<number | string>
   stock?: number | string
   is_active?: boolean
-  option_group_rules?: ProductOptionGroupVariantRuleForm[]
-  option_value_rules?: ProductOptionValueVariantRuleForm[]
 }
 
 export interface ProductTemplateSyncDiffItem {

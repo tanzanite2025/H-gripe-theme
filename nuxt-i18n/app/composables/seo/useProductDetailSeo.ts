@@ -224,18 +224,23 @@ export function useProductDetailSeo(options: ProductDetailSeoOptions) {
     const spokesSeoIdentifiers = product.product_type === 'spoke'
       ? buildSpokesProductLevelSeoIdentifiers(product.mpn, product.gtin)
       : null
+    // Ordinary products omit the empty product_type in the public JSON
+    // response, so both '' and undefined mean the generic product path.
+    const genericSchema = !product.product_type ? product.generic_product_schema : undefined
 
     return buildProductSeoDocument(
       {
-        size: product.product_type === 'carbon_rim' ? product.spec_values?.find(value => value.definition?.slug === 'wheel_size' && value.definition?.is_visible !== false)?.value : undefined,
+        size: product.product_type === 'carbon_rim'
+          ? product.spec_values?.find(value => value.definition?.slug === 'wheel_size' && value.definition?.is_visible !== false)?.value
+          : genericSchema?.size,
         material: product.product_type === 'carbon_rim'
           ? product.spec_values?.find(value => value.definition?.slug === 'material' && value.definition?.is_visible !== false)?.value
-          : product.product_type === 'spoke' ? spokesSeoProperties?.material : wheelsetSeoProperties?.material,
-        model: spokesSeoProperties?.model,
-        color: spokesSeoProperties?.color,
+          : product.product_type === 'spoke' ? spokesSeoProperties?.material : product.product_type === 'wheelset' ? wheelsetSeoProperties?.material : genericSchema?.material,
+        model: product.product_type === 'spoke' ? spokesSeoProperties?.model : genericSchema?.model,
+        color: product.product_type === 'spoke' ? spokesSeoProperties?.color : genericSchema?.color,
         weightGrams: product.product_type === 'carbon_rim'
           ? options.selectedVariant.value?.carbon_rim_specification?.net_weight_grams
-          : wheelsetSeoProperties?.weightGrams,
+          : product.product_type === 'wheelset' ? wheelsetSeoProperties?.weightGrams : genericSchema?.weight_g,
         additionalProperties: product.product_type === 'wheelset'
           ? wheelsetSeoProperties?.additionalProperties
           : product.product_type === 'spoke'

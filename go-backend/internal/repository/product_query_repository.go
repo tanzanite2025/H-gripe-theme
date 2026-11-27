@@ -13,38 +13,36 @@ import (
 )
 
 type ProductSearchQuery struct {
-	Locale                           string
-	Status                           string
-	Featured                         *bool
-	Keyword                          string
-	ProductSpecificationTemplateSlug string
-	CategorySlug                     string
-	BrandSlug                        string
-	PriceMin                         *int64
-	PriceMax                         *int64
-	PriceCurrency                    string
-	SpecFilters                      map[string][]string
-	Offset                           int
-	Limit                            int
+	Locale        string
+	Status        string
+	Featured      *bool
+	Keyword       string
+	CategorySlug  string
+	BrandSlug     string
+	PriceMin      *int64
+	PriceMax      *int64
+	PriceCurrency string
+	SpecFilters   map[string][]string
+	Offset        int
+	Limit         int
 }
 
 type ProductQuickBuyCandidateQuery struct {
-	Locale                          string
-	ProductSpecificationTemplateIDs []uint
-	ProductCategoryIDs              []uint
-	Keyword                         string
-	SpecFilters                     map[string][]string
-	Offset                          int
-	Limit                           int
+	Locale             string
+	ProductCategoryIDs []uint
+	Keyword            string
+	SpecFilters        map[string][]string
+	Offset             int
+	Limit              int
 }
 
 type ProductRecommendationQuery struct {
-	Locale                         string
-	ProductSpecificationTemplateID *uint
-	Keyword                        string
-	ExcludeProductIDs              []uint
-	Offset                         int
-	Limit                          int
+	Locale            string
+	ProductCategoryID *uint
+	Keyword           string
+	ExcludeProductIDs []uint
+	Offset            int
+	Limit             int
 }
 
 type ProductCategoryFilterableSpecification struct {
@@ -95,9 +93,6 @@ func applyQuickBuyCandidateScope(query *gorm.DB, input ProductQuickBuyCandidateQ
 			OR `+activeVariantInStockSQL("pv_quick_buy_candidate_stock")+`
 		)`, product.FulfillmentModeMadeToOrder)
 
-	if len(input.ProductSpecificationTemplateIDs) > 0 {
-		query = query.Where("products.product_specification_template_id IN ?", input.ProductSpecificationTemplateIDs)
-	}
 	if len(input.ProductCategoryIDs) > 0 {
 		query = query.Where(`products.product_category_id IN (
 			WITH RECURSIVE quick_buy_category_tree(id) AS (
@@ -120,8 +115,7 @@ func applyQuickBuyCandidateScope(query *gorm.DB, input ProductQuickBuyCandidateQ
 	}
 	if input.Keyword != "" {
 		pattern := "%" + strings.ToLower(input.Keyword) + "%"
-		query = query.Joins("LEFT JOIN product_specification_templates quick_buy_product_specification_templates ON quick_buy_product_specification_templates.id = products.product_specification_template_id").
-			Where(`
+		query = query.Where(`
 				LOWER(products.name) LIKE ?
 				OR EXISTS (
 					SELECT 1 FROM product_variants pv_quick_buy_search
@@ -131,9 +125,7 @@ func applyQuickBuyCandidateScope(query *gorm.DB, input ProductQuickBuyCandidateQ
 				)
 				OR LOWER(products.short_description) LIKE ?
 				OR LOWER(products.description) LIKE ?
-				OR LOWER(quick_buy_product_specification_templates.name) LIKE ?
-				OR LOWER(quick_buy_product_specification_templates.slug) LIKE ?
-			`, pattern, pattern, pattern, pattern, pattern, pattern)
+			`, pattern, pattern, pattern, pattern)
 	}
 	return query
 }
@@ -246,57 +238,18 @@ func applyProductSpecFilters(query *gorm.DB, specFilters map[string][]string, di
 	}
 	sort.Strings(slugs)
 
-	for index, slug := range slugs {
+	definitionsBySlug := make(map[string]product.WheelsetSpecificationFilterDefinition)
+	for _, definition := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
+		definitionsBySlug[definition.Slug] = definition
+	}
+	for _, slug := range slugs {
 		values := valuesBySlug[slug]
-		valueAlias := fmt.Sprintf("psv_%d", index)
-		defAlias := fmt.Sprintf("psd_%d", index)
-		variantAlias := fmt.Sprintf("pvv_%d", index)
-		variantConditions := make([]string, 0, len(values))
-		var variantArgs []interface{}
-		for _, value := range values {
-			if dialect == "postgres" {
-				filter, err := json.Marshal(map[string]string{slug: value})
-				if err != nil {
-					return nil, fmt.Errorf("marshal variant option filter: %w", err)
-				}
-				variantConditions = append(variantConditions, fmt.Sprintf("(%s.option_values)::jsonb @> ?::jsonb", variantAlias))
-				variantArgs = append(variantArgs, string(filter))
-				continue
-			}
-
-			variantConditions = append(variantConditions, fmt.Sprintf("%s.option_values LIKE ?", variantAlias))
-			variantArgs = append(variantArgs, fmt.Sprintf("%%\"%s\":\"%s\"%%", slug, value))
+		definition, known := definitionsBySlug[slug]
+		if !known {
+			query = query.Where("1 = 0")
+			continue
 		}
-
-		condition := fmt.Sprintf(`(
-			EXISTS (
-				SELECT 1
-				FROM product_spec_values %s
-				JOIN product_spec_definitions %s ON %s.id = %s.spec_definition_id
-				WHERE %s.product_id = products.id
-				  AND %s.slug = ?
-				  AND %s.value IN ?
-			)
-			OR EXISTS (
-				SELECT 1
-				FROM product_variants %s
-				WHERE %s.product_id = products.id
-				  AND %s.deleted_at IS NULL
-				  AND %s.is_active = TRUE
-				  AND (%s)
-			)
-		)
-		`, valueAlias, defAlias, defAlias, valueAlias, valueAlias, defAlias, valueAlias, variantAlias, variantAlias, variantAlias, variantAlias, strings.Join(variantConditions, " OR "))
-		args := append([]interface{}{slug, values}, variantArgs...)
-		for _, definition := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
-			if definition.Slug != slug {
-				continue
-			}
-			wheelsetCondition, wheelsetArgs := wheelsetSpecificationFilterSQLCondition(definition, values, dialect)
-			condition = strings.TrimSuffix(strings.TrimSpace(condition), ")") + " OR " + wheelsetCondition + ")"
-			args = append(args, wheelsetArgs...)
-			break
-		}
+		condition, args := wheelsetSpecificationFilterSQLCondition(definition, values, dialect)
 		query = query.Where(condition, args...)
 	}
 	return query, nil
@@ -306,8 +259,10 @@ func (r *ProductRepository) List(locale, status string, featured bool, offset, l
 	var products []product.Product
 	var total int64
 
-	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("Media", orderProductMedia).Preload("ProductSpecificationTemplate.SpecDefinitions", orderSpecDefinitions).Preload("Variants", orderProductVariants))
-	query = r.preloadProductVariantOptionValues(query)
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).
+		Preload("Brand").
+		Preload("Media", orderProductMedia).
+		Preload("Variants", orderProductVariants))
 	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate").
@@ -378,13 +333,9 @@ func (r *ProductRepository) ListPublicAvailable(locale string, offset, limit int
 		Preload("Media", func(db *gorm.DB) *gorm.DB {
 			return orderProductMedia(db)
 		}).
-		Preload("ProductSpecificationTemplate.SpecDefinitions", func(db *gorm.DB) *gorm.DB {
-			return orderSpecDefinitions(db)
-		}).
 		Preload("Variants", func(db *gorm.DB) *gorm.DB {
 			return orderProductVariants(db)
 		}))
-	query = r.preloadProductVariantOptionValues(query)
 	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate").
@@ -426,10 +377,7 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 	query := r.preloadProductCategory(r.db.Model(&product.Product{}).
 		Preload("Brand").
 		Preload("Media", orderProductMedia).
-		Preload("ProductSpecificationTemplate.SpecDefinitions", orderSpecDefinitions).
-		Preload("SpecValues.SpecDefinition", orderSpecDefinitions).
 		Preload("Variants", orderProductVariants))
-	query = r.preloadProductVariantOptionValues(query)
 	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate").
@@ -443,16 +391,27 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 	if input.Locale != "" {
 		query = query.Where("products.locale = ?", input.Locale)
 	}
-	if input.ProductSpecificationTemplateID != nil && *input.ProductSpecificationTemplateID > 0 {
-		query = query.Where("products.product_specification_template_id = ?", *input.ProductSpecificationTemplateID)
+	if input.ProductCategoryID != nil && *input.ProductCategoryID > 0 {
+		query = query.Where(`products.product_category_id IN (
+			WITH RECURSIVE recommendation_category_tree(id) AS (
+				SELECT id FROM product_categories WHERE id = ? AND is_enabled = TRUE
+
+				UNION ALL
+
+				SELECT child.id
+				FROM product_categories child
+				JOIN recommendation_category_tree parent ON child.parent_id = parent.id
+				WHERE child.is_enabled = TRUE
+			)
+			SELECT id FROM recommendation_category_tree
+		)`, *input.ProductCategoryID)
 	}
 	if len(input.ExcludeProductIDs) > 0 {
 		query = query.Where("products.id NOT IN ?", input.ExcludeProductIDs)
 	}
 	if input.Keyword != "" {
 		pattern := "%" + strings.ToLower(input.Keyword) + "%"
-		query = query.Joins("LEFT JOIN product_specification_templates recommendation_product_specification_templates ON recommendation_product_specification_templates.id = products.product_specification_template_id").
-			Where(`
+		query = query.Where(`
 				LOWER(products.name) LIKE ?
 				OR EXISTS (
 					SELECT 1 FROM product_variants pv_recommendation_search
@@ -462,9 +421,7 @@ func (r *ProductRepository) ListRecommendationCandidates(input ProductRecommenda
 				)
 				OR LOWER(products.short_description) LIKE ?
 				OR LOWER(products.description) LIKE ?
-				OR LOWER(recommendation_product_specification_templates.name) LIKE ?
-				OR LOWER(recommendation_product_specification_templates.slug) LIKE ?
-			`, pattern, pattern, pattern, pattern, pattern, pattern)
+			`, pattern, pattern, pattern, pattern)
 	}
 
 	if err := query.Distinct("products.id").Count(&total).Error; err != nil {
@@ -495,10 +452,7 @@ func (r *ProductRepository) ListQuickBuyCandidates(input ProductQuickBuyCandidat
 	query := r.db.Model(&product.Product{}).
 		Preload("Brand").
 		Preload("Media", orderProductMedia).
-		Preload("ProductSpecificationTemplate.SpecDefinitions", orderSpecDefinitions).
-		Preload("SpecValues.SpecDefinition", orderSpecDefinitions).
 		Preload("Variants", orderProductVariants)
-	query = r.preloadProductVariantOptionValues(query)
 	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate")
@@ -592,41 +546,6 @@ func (r *ProductRepository) ListQuickBuyFilterValues(input ProductQuickBuyCandid
 		if len(productIDs) == 0 {
 			continue
 		}
-
-		var specValues []string
-		if err := r.db.Table("product_spec_values AS psv").
-			Select("psv.value").
-			Joins("JOIN product_spec_definitions AS psd ON psd.id = psv.spec_definition_id").
-			Where("psv.product_id IN ?", productIDs).
-			Where("psd.slug = ?", slug).
-			Pluck("psv.value", &specValues).Error; err != nil {
-			return nil, err
-		}
-		for _, rawValue := range specValues {
-			value := strings.TrimSpace(rawValue)
-			if value != "" {
-				valuesBySlug[slug][value] = struct{}{}
-			}
-		}
-
-		var rawVariantValues []string
-		if err := r.db.Model(&product.ProductVariant{}).
-			Where("product_id IN ?", productIDs).
-			Where("deleted_at IS NULL").
-			Where("is_active = ?", true).
-			Pluck("option_values", &rawVariantValues).Error; err != nil {
-			return nil, err
-		}
-		for _, raw := range rawVariantValues {
-			var object map[string]interface{}
-			if err := json.Unmarshal([]byte(raw), &object); err != nil {
-				continue
-			}
-			value := strings.TrimSpace(fmt.Sprint(object[slug]))
-			if value != "" && value != "<nil>" {
-				valuesBySlug[slug][value] = struct{}{}
-			}
-		}
 		if err := r.addWheelsetSpecificationFilterValues(productIDs, []string{slug}, valuesBySlug); err != nil {
 			return nil, err
 		}
@@ -643,157 +562,15 @@ func (r *ProductRepository) ListQuickBuyFilterValues(input ProductQuickBuyCandid
 	return result, nil
 }
 
-func (r *ProductRepository) ListFilterableSpecificationsForCategory(categorySlug string) ([]ProductCategoryFilterableSpecification, error) {
-	categorySlug = strings.TrimSpace(categorySlug)
-	if categorySlug == "" {
-		return []ProductCategoryFilterableSpecification{}, nil
-	}
-
-	var productIDs []uint
-	if err := r.db.Table("products").
-		Select("DISTINCT products.id").
-		Where("products.deleted_at IS NULL").
-		Where(`products.product_category_id IN (
-			WITH RECURSIVE category_tree(id) AS (
-				SELECT id FROM product_categories WHERE slug = ? AND is_enabled = TRUE
-
-				UNION ALL
-
-				SELECT child.id
-				FROM product_categories child
-				JOIN category_tree parent ON child.parent_id = parent.id
-				WHERE child.is_enabled = TRUE
-			)
-			SELECT id FROM category_tree
-		)`, categorySlug).
-		Pluck("products.id", &productIDs).Error; err != nil {
-		return nil, err
-	}
-	if len(productIDs) == 0 {
-		return []ProductCategoryFilterableSpecification{}, nil
-	}
-
-	type definitionRow struct {
-		Slug      string
-		Name      string
-		FieldType string
-		Unit      string
-	}
-	var definitions []definitionRow
-	if err := r.db.Table("product_spec_definitions AS definition").
-		Select("DISTINCT definition.slug, definition.name, definition.field_type, definition.unit").
-		Joins("JOIN products ON products.product_specification_template_id = definition.product_specification_template_id").
-		Where("products.id IN ?", productIDs).
-		Where("definition.is_filterable = TRUE AND definition.is_visible = TRUE").
-		Order("definition.slug ASC").
-		Scan(&definitions).Error; err != nil {
-		return nil, err
-	}
-	if len(definitions) == 0 {
-		return []ProductCategoryFilterableSpecification{}, nil
-	}
-
-	result := make([]ProductCategoryFilterableSpecification, 0, len(definitions))
-	valuesBySlug := make(map[string]map[string]struct{}, len(definitions))
-	knownSlugs := make([]string, 0, len(definitions))
-	for _, definition := range definitions {
-		slug := strings.TrimSpace(definition.Slug)
-		if slug == "" {
-			continue
-		}
-		if _, exists := valuesBySlug[slug]; exists {
-			continue
-		}
-		knownSlugs = append(knownSlugs, slug)
-		valuesBySlug[slug] = make(map[string]struct{})
-		options := []string{}
-		var optionKeys []string
-		_ = r.db.Table("product_spec_option_items AS item").
-			Select("item.value_key").
-			Group("item.value_key").
-			Joins("JOIN product_spec_definitions AS item_definition ON item_definition.id = item.spec_definition_id").
-			Joins("JOIN products AS option_product ON option_product.product_specification_template_id = item_definition.product_specification_template_id").
-			Where("option_product.id IN ? AND item_definition.slug = ? AND item_definition.is_filterable = TRUE AND item_definition.is_visible = TRUE", productIDs, slug).
-			Order("MIN(item.sort_order) ASC, MIN(item.id) ASC").Pluck("item.value_key", &optionKeys).Error
-		options = append(options, optionKeys...)
-		for _, option := range options {
-			if value := strings.TrimSpace(option); value != "" {
-				valuesBySlug[slug][value] = struct{}{}
-			}
-		}
-		result = append(result, ProductCategoryFilterableSpecification{
-			Slug:      slug,
-			Name:      strings.TrimSpace(definition.Name),
-			FieldType: strings.TrimSpace(definition.FieldType),
-			Unit:      strings.TrimSpace(definition.Unit),
-			Options:   normalizeSpecFilterValues(options),
-		})
-	}
-	if len(knownSlugs) == 0 {
-		return []ProductCategoryFilterableSpecification{}, nil
-	}
-
-	type valueRow struct {
-		Slug  string
-		Value string
-	}
-	var valueRows []valueRow
-	if err := r.db.Table("product_spec_values AS value").
-		Select("definition.slug, value.value").
-		Joins("JOIN product_spec_definitions AS definition ON definition.id = value.spec_definition_id").
-		Where("value.product_id IN ?", productIDs).
-		Where("definition.slug IN ?", knownSlugs).
-		Scan(&valueRows).Error; err != nil {
-		return nil, err
-	}
-	for _, row := range valueRows {
-		if values, exists := valuesBySlug[row.Slug]; exists {
-			if value := strings.TrimSpace(row.Value); value != "" {
-				values[value] = struct{}{}
-			}
-		}
-	}
-
-	var variantOptionValues []string
-	if err := r.db.Model(&product.ProductVariant{}).
-		Where("product_id IN ?", productIDs).
-		Where("deleted_at IS NULL AND is_active = TRUE").
-		Pluck("option_values", &variantOptionValues).Error; err != nil {
-		return nil, err
-	}
-	for _, raw := range variantOptionValues {
-		var values map[string]interface{}
-		if err := json.Unmarshal([]byte(raw), &values); err != nil {
-			continue
-		}
-		for slug, rawValue := range values {
-			knownValues, exists := valuesBySlug[slug]
-			if !exists {
-				continue
-			}
-			if value := strings.TrimSpace(fmt.Sprint(rawValue)); value != "" && value != "<nil>" {
-				knownValues[value] = struct{}{}
-			}
-		}
-	}
-
-	for index := range result {
-		values := make([]string, 0, len(valuesBySlug[result[index].Slug]))
-		for value := range valuesBySlug[result[index].Slug] {
-			values = append(values, value)
-		}
-		sort.Strings(values)
-		result[index].Values = values
-	}
-	return result, nil
-}
-
 func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCategory(categorySlug string) ([]ProductCategoryFilterableSpecification, error) {
 	categorySlug = strings.TrimSpace(categorySlug)
 	if categorySlug == "" {
 		return []ProductCategoryFilterableSpecification{}, nil
 	}
 	wheelsetCategory := strings.EqualFold(categorySlug, product.ProductTypeWheelset)
+	if !wheelsetCategory {
+		return []ProductCategoryFilterableSpecification{}, nil
+	}
 
 	var productIDs []uint
 	if err := r.db.Table("products").
@@ -815,145 +592,37 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 		Pluck("products.id", &productIDs).Error; err != nil {
 		return nil, err
 	}
-	filterValueProductIDs := productIDs
-	if wheelsetCategory {
-		filterValueProductIDs = nil
-		if len(productIDs) > 0 {
-			if err := r.db.Table("products").
-				Where("id IN ?", productIDs).
-				Where("product_type = ?", product.ProductTypeWheelset).
-				Pluck("id", &filterValueProductIDs).Error; err != nil {
-				return nil, err
-			}
-		}
-	}
-	if len(productIDs) == 0 && !wheelsetCategory {
-		return []ProductCategoryFilterableSpecification{}, nil
-	}
-
-	type definitionRow struct {
-		Slug      string
-		Name      string
-		FieldType string
-		Unit      string
-	}
-	var definitions []definitionRow
-	if len(productIDs) > 0 && !wheelsetCategory {
-		if err := r.db.Table("product_spec_definitions AS definition").
-			Select("DISTINCT definition.slug, definition.name, definition.field_type, definition.unit").
-			Joins("JOIN products ON products.product_specification_template_id = definition.product_specification_template_id").
-			Where("products.id IN ?", productIDs).
-			Where("definition.is_filterable = TRUE AND definition.is_visible = TRUE").
-			Order("definition.slug ASC").
-			Scan(&definitions).Error; err != nil {
+	filterValueProductIDs := []uint{}
+	if len(productIDs) > 0 {
+		if err := r.db.Table("products").
+			Where("id IN ?", productIDs).
+			Where("product_type = ?", product.ProductTypeWheelset).
+			Pluck("id", &filterValueProductIDs).Error; err != nil {
 			return nil, err
 		}
 	}
-	if len(definitions) == 0 && !wheelsetCategory {
-		return []ProductCategoryFilterableSpecification{}, nil
-	}
-
+	definitions := product.WheelsetProductLevelSpecificationFilterDefinitions()
 	result := make([]ProductCategoryFilterableSpecification, 0, len(definitions))
 	valuesBySlug := make(map[string]map[string]struct{}, len(definitions))
-	knownSlugs := make([]string, 0, len(definitions))
+	filterSlugs := make([]string, 0, len(definitions))
 	for _, definition := range definitions {
-		slug := strings.TrimSpace(definition.Slug)
-		if slug == "" {
-			continue
-		}
-		if _, exists := valuesBySlug[slug]; exists {
-			continue
-		}
-		knownSlugs = append(knownSlugs, slug)
-		valuesBySlug[slug] = make(map[string]struct{})
+		filterSlugs = append(filterSlugs, definition.Slug)
+		valuesBySlug[definition.Slug] = make(map[string]struct{})
 		result = append(result, ProductCategoryFilterableSpecification{
-			Slug:      slug,
-			Name:      strings.TrimSpace(definition.Name),
-			FieldType: strings.TrimSpace(definition.FieldType),
-			Unit:      strings.TrimSpace(definition.Unit),
+			Slug:      definition.Slug,
+			Name:      definition.Name,
+			FieldType: definition.FieldType,
+			Unit:      definition.Unit,
 			Options:   []string{},
 		})
 	}
-	if wheelsetCategory {
-		for _, definition := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
-			if _, exists := valuesBySlug[definition.Slug]; exists {
-				continue
-			}
-			knownSlugs = append(knownSlugs, definition.Slug)
-			valuesBySlug[definition.Slug] = make(map[string]struct{})
-			result = append(result, ProductCategoryFilterableSpecification{
-				Slug:      definition.Slug,
-				Name:      definition.Name,
-				FieldType: definition.FieldType,
-				Unit:      definition.Unit,
-				Options:   []string{},
-			})
-		}
-	}
-
-	type valueRow struct {
-		Slug  string
-		Value string
-	}
-	var valueRows []valueRow
-	if len(filterValueProductIDs) > 0 && len(knownSlugs) > 0 {
-		if err := r.db.Table("product_spec_values AS value").
-			Select("definition.slug, value.value").
-			Joins("JOIN product_spec_definitions AS definition ON definition.id = value.spec_definition_id").
-			Where("value.product_id IN ?", filterValueProductIDs).
-			Where("definition.slug IN ?", knownSlugs).
-			Scan(&valueRows).Error; err != nil {
-			return nil, err
-		}
-	}
-	for _, row := range valueRows {
-		if values, exists := valuesBySlug[row.Slug]; exists {
-			if value := strings.TrimSpace(row.Value); value != "" {
-				values[value] = struct{}{}
-			}
-		}
-	}
-
-	var variantOptionValues []string
-	if len(filterValueProductIDs) > 0 {
-		if err := r.db.Model(&product.ProductVariant{}).
-			Where("product_id IN ?", filterValueProductIDs).
-			Where("deleted_at IS NULL AND is_active = TRUE").
-			Pluck("option_values", &variantOptionValues).Error; err != nil {
-			return nil, err
-		}
-	}
-	for _, raw := range variantOptionValues {
-		var values map[string]interface{}
-		if err := json.Unmarshal([]byte(raw), &values); err != nil {
-			continue
-		}
-		for slug, rawValue := range values {
-			knownValues, exists := valuesBySlug[slug]
-			if !exists {
-				continue
-			}
-			if value := strings.TrimSpace(fmt.Sprint(rawValue)); value != "" && value != "<nil>" {
-				knownValues[value] = struct{}{}
-			}
-		}
-	}
-	if wheelsetCategory && len(filterValueProductIDs) > 0 {
-		wheelsetFilterSlugs := make([]string, 0, len(product.WheelsetProductLevelSpecificationFilterDefinitions()))
-		for _, definition := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
-			wheelsetFilterSlugs = append(wheelsetFilterSlugs, definition.Slug)
-		}
-		if err := r.addWheelsetSpecificationFilterValues(filterValueProductIDs, wheelsetFilterSlugs, valuesBySlug); err != nil {
-			return nil, err
-		}
+	if err := r.addWheelsetSpecificationFilterValues(filterValueProductIDs, filterSlugs, valuesBySlug); err != nil {
+		return nil, err
 	}
 
 	filtered := make([]ProductCategoryFilterableSpecification, 0, len(result))
 	for _, item := range result {
 		valuesSet := valuesBySlug[item.Slug]
-		if len(valuesSet) == 0 && (!wheelsetCategory || !isWheelsetProductLevelSpecificationFilterSlug(item.Slug)) {
-			continue
-		}
 		values := make([]string, 0, len(valuesSet))
 		for value := range valuesSet {
 			values = append(values, value)
@@ -963,15 +632,6 @@ func (r *ProductRepository) ListFilterableSpecificationsWithDynamicValuesForCate
 		filtered = append(filtered, item)
 	}
 	return filtered, nil
-}
-
-func isWheelsetProductLevelSpecificationFilterSlug(slug string) bool {
-	for _, definition := range product.WheelsetProductLevelSpecificationFilterDefinitions() {
-		if definition.Slug == slug {
-			return true
-		}
-	}
-	return false
 }
 
 func (r *ProductRepository) addWheelsetSpecificationFilterValues(productIDs []uint, slugs []string, valuesBySlug map[string]map[string]struct{}) error {
@@ -1080,8 +740,11 @@ func (r *ProductRepository) SearchPublic(input ProductSearchQuery) ([]product.Pr
 	var products []product.Product
 	var total int64
 
-	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("CustomsClassificationProfile").Preload("Media", orderProductMedia).Preload("ProductSpecificationTemplate.SpecDefinitions", orderSpecDefinitions).Preload("Variants", orderProductVariants))
-	query = r.preloadProductVariantOptionValues(query)
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).
+		Preload("Brand").
+		Preload("CustomsClassificationProfile").
+		Preload("Media", orderProductMedia).
+		Preload("Variants", orderProductVariants))
 	query = r.preloadSpokeRepairKitModels(query).
 		Preload("AfterSalesTemplate").
 		Preload("PackagingTemplate").
@@ -1156,9 +819,6 @@ func applyPublicProductSearchFilters(query *gorm.DB, input ProductSearchQuery, d
 	if input.Featured != nil {
 		query = query.Where("products.featured = ?", *input.Featured)
 	}
-	if input.ProductSpecificationTemplateSlug != "" {
-		query = query.Joins("JOIN product_specification_templates ON product_specification_templates.id = products.product_specification_template_id AND product_specification_templates.slug = ?", input.ProductSpecificationTemplateSlug)
-	}
 	if input.CategorySlug != "" {
 		query = query.Where(`products.product_category_id IN (
 			WITH RECURSIVE category_tree AS (
@@ -1217,11 +877,11 @@ func applyPublicProductSearchFilters(query *gorm.DB, input ProductSearchQuery, d
 	return applyProductSpecFilters(query, input.SpecFilters, dialect)
 }
 
-func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, locale, search, featured, customsStatus, productSpecificationTemplateID string) ([]product.Product, int64, error) {
+func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, locale, search, featured, customsStatus string) ([]product.Product, int64, error) {
 	var products []product.Product
 	var total int64
 
-	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("ProductSpecificationTemplate").Preload("CustomsClassificationProfile").Preload("Media", func(db *gorm.DB) *gorm.DB {
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("CustomsClassificationProfile").Preload("Media", func(db *gorm.DB) *gorm.DB {
 		return orderProductMedia(db)
 	}).Preload("Variants", func(db *gorm.DB) *gorm.DB {
 		return orderProductVariants(db)
@@ -1233,9 +893,6 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 	}
 	if locale != "" {
 		query = query.Where("locale = ?", locale)
-	}
-	if productSpecificationTemplateID != "" {
-		query = query.Where("product_specification_template_id = ?", productSpecificationTemplateID)
 	}
 	if search != "" {
 		pattern := "%" + search + "%"

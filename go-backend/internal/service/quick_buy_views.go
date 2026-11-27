@@ -144,14 +144,13 @@ func quickBuyProductSnapshotForVariant(item productdomain.Product, selectedVaria
 		variantID = variant.ID
 	}
 	return quickBuyJSON(map[string]interface{}{
-		"id":                                item.ID,
-		"product_specification_template_id": item.ProductSpecificationTemplateID,
-		"sku":                               sku,
-		"variant_id":                        variantID,
-		"name":                              item.Name,
-		"slug":                              item.Slug,
-		"thumbnail":                         thumbnail,
-		"featured_image":                    thumbnail,
+		"id":             item.ID,
+		"sku":            sku,
+		"variant_id":     variantID,
+		"name":           item.Name,
+		"slug":           item.Slug,
+		"thumbnail":      thumbnail,
+		"featured_image": thumbnail,
 		"currency": func() string {
 			if variant != nil && variant.Currency != "" {
 				return variant.Currency
@@ -297,9 +296,11 @@ func quickBuyStepViews(steps []quickbuy.Step, locale string, exposeProductSpecif
 	resolver := quickBuyMediaResolver(resolvers)
 	result := make([]QuickBuyStepView, 0, len(steps))
 	for _, step := range steps {
-		exposeStepTemplates := exposeProductSpecificationTemplates && len(step.ProductSpecificationTemplates) > 0
-		exposeStepFilters := exposeProductSpecificationTemplates && (exposeStepTemplates || quickBuyStepHasWheelsetProductCategory(step))
-		result = append(result, quickBuyStepView(step, locale, exposeStepTemplates, exposeStepFilters, resolver))
+		// Product specification templates are retired. The flag is retained at
+		// this private boundary so older callers cannot accidentally change the
+		// public response shape; only dedicated wheelset filters remain exposed.
+		exposeStepFilters := exposeProductSpecificationTemplates && quickBuyStepHasWheelsetProductCategory(step)
+		result = append(result, quickBuyStepView(step, locale, false, exposeStepFilters, resolver))
 	}
 	return result
 }
@@ -340,10 +341,9 @@ func quickBuyFlowTranslationViews(translations []quickbuy.FlowTranslation) []Qui
 	return result
 }
 
-func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificationTemplates bool, exposeProductFilters bool, resolvers ...PublicMediaURLResolver) QuickBuyStepView {
+func quickBuyStepView(step quickbuy.Step, locale string, _ bool, exposeProductFilters bool, resolvers ...PublicMediaURLResolver) QuickBuyStepView {
 	resolver := quickBuyMediaResolver(resolvers)
 	productCategories := make([]QuickBuyProductCategoryView, 0, len(step.ProductCategories))
-	productSpecificationTemplates := make([]QuickBuyProductSpecificationTemplateView, 0, len(step.ProductSpecificationTemplates))
 	stepSlug := step.StepKey
 	for index, item := range step.ProductCategories {
 		if item.ProductCategory == nil {
@@ -354,17 +354,6 @@ func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificat
 		}
 		productCategories = append(productCategories, quickBuyProductCategoryView(*item.ProductCategory, locale, item.IsPrimary, resolver))
 	}
-	if exposeProductSpecificationTemplates {
-		for index, item := range step.ProductSpecificationTemplates {
-			if item.ProductSpecificationTemplate == nil {
-				continue
-			}
-			if index == 0 {
-				stepSlug = item.ProductSpecificationTemplate.Slug
-			}
-			productSpecificationTemplates = append(productSpecificationTemplates, quickBuyProductSpecificationTemplateView(*item.ProductSpecificationTemplate, item.IsPrimary))
-		}
-	}
 	return QuickBuyStepView{
 		ID:                            step.ID,
 		StepKey:                       step.StepKey,
@@ -372,7 +361,7 @@ func quickBuyStepView(step quickbuy.Step, locale string, exposeProductSpecificat
 		Name:                          step.Name,
 		SortOrder:                     step.SortOrder,
 		ProductCategories:             productCategories,
-		ProductSpecificationTemplates: productSpecificationTemplates,
+		ProductSpecificationTemplates: []QuickBuyProductSpecificationTemplateView{},
 		Filters:                       quickBuyStepFiltersForScope(step, nil, exposeProductFilters),
 	}
 }
@@ -386,20 +375,6 @@ func quickBuyStepFiltersForScope(step quickbuy.Step, valuesBySlug map[string][]s
 
 func quickBuyFilterableSpecDefinitions(step quickbuy.Step) []productdomain.SpecDefinition {
 	definitionsBySlug := make(map[string]productdomain.SpecDefinition)
-	for _, item := range step.ProductSpecificationTemplates {
-		if item.ProductSpecificationTemplate == nil {
-			continue
-		}
-		for _, definition := range item.ProductSpecificationTemplate.SpecDefinitions {
-			slug := strings.TrimSpace(definition.Slug)
-			if slug == "" || !definition.IsVisible || !definition.IsFilterable {
-				continue
-			}
-			if _, exists := definitionsBySlug[slug]; !exists {
-				definitionsBySlug[slug] = definition
-			}
-		}
-	}
 	if quickBuyStepHasWheelsetProductCategory(step) {
 		for _, definition := range productdomain.WheelsetProductLevelSpecificationFilterDefinitions() {
 			if _, exists := definitionsBySlug[definition.Slug]; exists {

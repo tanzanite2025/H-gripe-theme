@@ -10,7 +10,7 @@
       <form class="flex min-h-0 min-w-0 flex-1 flex-col" @submit.prevent="emit('submit')">
         <DialogHeader class="shrink-0 border-b px-5 py-4 pr-12">
           <DialogTitle>{{ mode === 'create' ? (isDedicatedCarbonRim ? '添加碳纤维车圈' : '添加商品') : (isDedicatedCarbonRim ? '编辑碳纤维车圈' : '编辑商品') }}</DialogTitle>
-          <DialogDescription>{{ isDedicatedCarbonRim ? '录入单只碟刹车圈的型号、尺寸和实际销售规格，再维护图片、物流及发布信息。' : '先录入商品基础识别信息，再绑定商品规格模板；模板决定下方商品字段和 SKU 选项列。' }}</DialogDescription>
+          <DialogDescription>{{ isDedicatedCarbonRim ? '录入单只碟刹车圈的型号、尺寸和实际销售规格，再维护图片、物流及发布信息。' : '填写商品基础资料，并按实际销售方式维护 SKU、价格和库存。' }}</DialogDescription>
         </DialogHeader>
 
         <div
@@ -21,7 +21,7 @@
         >
           <ol class="grid gap-1.5 rounded-lg border border-dashed bg-muted/20 p-2 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
             <li
-              v-for="step in (isDedicatedCarbonRim ? carbonRimEditorSteps : editorSteps)"
+              v-for="step in (isDedicatedCarbonRim ? carbonRimEditorSteps : productEditorSteps)"
               :key="step.no"
               class="flex min-w-0 items-center gap-2 rounded-md bg-background/70 px-2.5 py-1.5"
             >
@@ -34,7 +34,7 @@
           <div v-if="Object.keys(errors).length" role="alert" class="rounded-lg border border-destructive/40 p-3 text-sm text-destructive">
             <p v-for="(message, key) in errors" :key="key">{{ message }}</p>
           </div>
-          <AdminFormSection id="product-basic-information" title="基础信息" :description="isDedicatedCarbonRim ? '填写品牌、名称与销售文案；车圈工程参数在下一分区维护。' : '规格字段通过商品规格模板定义。'">
+          <AdminFormSection id="product-basic-information" title="基础信息" :description="isDedicatedCarbonRim ? '填写品牌、名称与销售文案；车圈工程参数在下一分区维护。' : '填写商品自身的品牌、分类、识别和销售文案。'">
             <div class="grid gap-4 md:grid-cols-3">
               <AdminFormField label="商品名称" required :error="errors.name">
                 <Input v-model="form.name" placeholder="请输入商品名称" @input="emit('clear-error', 'name')" />
@@ -114,180 +114,38 @@
             @clear-error="emit('clear-error', $event)"
           />
 
-          <CarbonRimDedicatedProductSpecificationFields v-if="isDedicatedCarbonRim" :specification="form.carbon_rim_specification" :locked="Boolean(form.parent_id)" :error="errors.carbon_rim_specification" />
-          <AdminFormSection v-if="!isDedicatedCarbonRim" title="绑定商品规格模板" description="选择模板后，下方才会出现对应的商品参数字段和 SKU 选项列。">
-            <div class="grid gap-3 2xl:grid-cols-[minmax(20rem,0.68fr)_minmax(0,1.32fr)]">
-              <div class="grid gap-3 rounded-xl border bg-muted/20 p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end 2xl:block 2xl:space-y-3">
-                <AdminFormField label="商品规格模板">
-                  <Select :model-value="productSpecTemplateSelectValue" @update:model-value="emit('product-spec-template-select', $event)">
-                    <SelectTrigger class="w-full"><SelectValue placeholder="请选择商品规格模板" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">未选择模板</SelectItem>
-                      <SelectItem v-for="type in productSpecTemplates" :key="type.id" :value="String(type.id)">
-                        {{ type.name }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </AdminFormField>
-                <Button type="button" variant="outline" size="sm" as-child>
-                  <RouterLink to="/catalog/templates">
-                    <Tags class="size-3.5" />
-                    维护商品规格模板
-                  </RouterLink>
-                </Button>
-                <p class="text-xs leading-5 text-muted-foreground lg:col-span-2 2xl:col-span-1">
-                  模板只定义字段结构，当前商品的重量、价格、库存和尺寸值仍在这里维护。
-                </p>
-              </div>
-
-              <div class="rounded-xl border border-dashed bg-muted/20 p-3">
-                <div v-if="selectedProductSpecTemplate" class="grid gap-3 xl:grid-cols-[minmax(14rem,0.72fr)_minmax(0,1.28fr)]">
-                  <div class="min-w-0 space-y-2">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="min-w-0 truncate text-sm font-bold">{{ selectedProductSpecTemplate.name }}</span>
-                      <span class="rounded-full bg-background px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
-                        {{ selectedProductSpecTemplate.slug }}
-                      </span>
-                    </div>
-                    <p v-if="selectedProductSpecTemplate.description" class="line-clamp-2 text-xs leading-5 text-muted-foreground">
-                      {{ selectedProductSpecTemplate.description }}
-                    </p>
-                   <div class="flex flex-wrap gap-2">
-                      <span class="rounded-full bg-background px-2.5 py-1 text-[11px] font-black text-foreground">
-                        商品字段 {{ selectedSpecDefinitions.length }}
-                      </span>
-                      <span class="rounded-full bg-background px-2.5 py-1 text-[11px] font-black text-foreground">
-                        SKU 字段 {{ variantSpecDefinitions.length }}
-                      </span>
-                    </div>
-                    <div v-if="templateScopedValuesTouched" class="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-800 dark:text-amber-200">
-                      切换模板会清空旧模板下的字段值和 SKU 选项值；SKU 价格、重量、库存和商品媒体会保留。
-                     </div>
-                     <Button
-                       v-if="mode === 'edit' && form.id"
-                       type="button"
-                       variant="outline"
-                       size="sm"
-                       :disabled="templateSyncLoading"
-                       @click="emit('preview-template-sync')"
-                     >
-                       <LoaderCircle v-if="templateSyncLoading" class="size-3.5 animate-spin" />
-                       <Tags v-else class="size-3.5" />
-                       {{ templateSyncLoading ? '读取差异中' : '预览模板同步' }}
-                     </Button>
-                   </div>
-
-                  <div class="grid min-w-0 gap-2 lg:grid-cols-2">
-                    <div class="min-w-0 rounded-xl bg-background/70 p-2.5">
-                      <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">商品参数字段</span>
-                        <span class="font-mono text-xs font-black text-foreground">{{ selectedSpecDefinitions.length }}</span>
-                      </div>
-                      <div v-if="selectedSpecDefinitions.length" class="mt-2 flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
-                        <span
-                          v-for="spec in selectedSpecDefinitions"
-                          :key="`product-${spec.id || spec.slug}`"
-                          class="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
-                        >
-                          {{ getSpecLabel(spec) }}
-                        </span>
-                      </div>
-                      <p v-else class="mt-2 text-xs text-muted-foreground">该模板没有商品级参数字段。</p>
-                    </div>
-                    <div class="min-w-0 rounded-xl bg-background/70 p-2.5">
-                      <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70">SKU 选项字段</span>
-                        <span class="font-mono text-xs font-black text-primary">{{ variantSpecDefinitions.length }}</span>
-                      </div>
-                      <div v-if="variantSpecDefinitions.length" class="mt-2 flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
-                        <span
-                          v-for="spec in variantSpecDefinitions"
-                          :key="`variant-${spec.id || spec.slug}`"
-                          class="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
-                        >
-                          {{ getSpecLabel(spec) }}
-                        </span>
-                      </div>
-                      <p v-else class="mt-2 text-xs text-muted-foreground">没有 SKU 选项字段，仅维护默认 SKU。</p>
-                    </div>
-                  </div>
-                </div>
-                <p v-else class="text-xs leading-5 text-muted-foreground">
-                  未选择模板时，下方不会出现商品参数字段，也不会给 SKU 生成选项列。建议先在“商品规格模板”页面创建车圈、车架等模板，再回到这里绑定。
-                </p>
-              </div>
-            </div>
-          </AdminFormSection>
-
-          <AdminFormSection v-if="!isDedicatedCarbonRim"
-            title="商品参数（来自模板）"
-            :description="selectedSpecDefinitions.length ? '这里填写当前商品自己的参数值；字段来源于已绑定商品规格模板。' : '当前模板没有商品级参数字段；可以直接继续维护 SKU。'"
+          <AdminFormSection
+            v-if="!isDedicatedCarbonRim && !form.product_type"
+            id="product-schema-facts"
+            title="产品结构化信息"
+            description="普通商品可选填写；用于前台 Product Schema。未知字段可以留空，不影响商品创建。"
           >
-            <div v-if="selectedSpecDefinitions.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
-              <AdminFormField
-                v-for="spec in selectedSpecDefinitions"
-                :key="spec.id || spec.slug"
-                class="min-w-0"
-                :label="getSpecLabel(spec)"
-                :required="spec.is_required"
-                :error="errors[`spec:${spec.slug}`]"
-              >
-                <template v-if="spec.field_type === 'number'">
-                  <Input
-                    v-model.number="form.specs[spec.slug]"
-                    type="number"
-                    min="0"
-                    :step="spec.unit === 'bar' ? '0.1' : '1'"
-                    @input="emit('clear-error', `spec:${spec.slug}`)"
-                  />
-                </template>
-                <Select
-                  v-else-if="spec.field_type === 'select' && parseSpecOptions(spec).length"
-                  :model-value="specSelectValue(form.specs[spec.slug])"
-                  @update:model-value="emit('set-spec-select-value', spec.slug, $event)"
-                >
-                  <SelectTrigger class="w-full"><SelectValue placeholder="请选择" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__empty__">未设置</SelectItem>
-                    <SelectItem v-for="option in parseSpecOptions(spec)" :key="String(option)" :value="String(option)">
-                      {{ formatSpecOption(option) }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  v-else-if="spec.field_type === 'select'"
-                  v-model="form.specs[spec.slug]"
-                  :placeholder="`请输入${spec.name}（可动态录入）`"
-                  @input="emit('clear-error', `spec:${spec.slug}`)"
-                />
-                <div v-else-if="spec.field_type === 'boolean'" class="flex h-9 items-center gap-2">
-                  <Switch v-model="form.specs[spec.slug]" :aria-label="spec.name" />
- <span class="text-xs text-muted-foreground">{{ form.specs[spec.slug] ? '是': '否'}}</span>
-                </div>
-                <Input
-                  v-else
-                  v-model="form.specs[spec.slug]"
-                  :placeholder="`请输入${spec.name}`"
-                  @input="emit('clear-error', `spec:${spec.slug}`)"
-                />
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <AdminFormField label="型号" description="对应 Schema.org model">
+                <Input v-model="form.generic_product_schema.model" placeholder="例如 ABC-100" />
+              </AdminFormField>
+              <AdminFormField label="材料" description="对应 Schema.org material">
+                <Input v-model="form.generic_product_schema.material" placeholder="例如 Aluminum" />
+              </AdminFormField>
+              <AdminFormField label="颜色" description="对应 Schema.org color">
+                <Input v-model="form.generic_product_schema.color" placeholder="例如 Black" />
+              </AdminFormField>
+              <AdminFormField label="尺寸" description="对应 Schema.org size">
+                <Input v-model="form.generic_product_schema.size" placeholder="例如 700C" />
+              </AdminFormField>
+              <AdminFormField label="产品重量（克）" description="产品级净重；SKU 重量仍用于履约和运费">
+                <Input v-model.number="form.generic_product_schema.weight_g" type="number" min="0" step="0.01" placeholder="可留空" />
               </AdminFormField>
             </div>
-            <div v-else class="rounded-xl border border-dashed bg-muted/20 px-4 py-5 text-center text-xs text-muted-foreground">
-              {{ selectedProductSpecTemplate ? '这个模板没有商品级字段。' : '选择商品规格模板后，商品级字段会显示在这里。' }}
-            </div>
           </AdminFormSection>
 
-          <AdminFormSection id="product-sales-variants" :title="isDedicatedCarbonRim ? '销售规格与库存' : 'SKU 变体矩阵'" :description="isDedicatedCarbonRim ? '每行代表一种实际销售的孔数、钻孔和涂装组合。已保存组合保持稳定；停卖请取消启用。重量按单只录入。' : 'SKU 选项列来自商品规格模板；价格、重量和库存按每一行维护。'">
+          <CarbonRimDedicatedProductSpecificationFields v-if="isDedicatedCarbonRim" :specification="form.carbon_rim_specification" :locked="Boolean(form.parent_id)" :error="errors.carbon_rim_specification" />
+          <AdminFormSection id="product-sales-variants" :title="isDedicatedCarbonRim ? '销售规格与库存' : 'SKU 与库存'" :description="isDedicatedCarbonRim ? '每行代表一种实际销售的孔数、钻孔和涂装组合。已保存组合保持稳定；停卖请取消启用。重量按单只录入。' : '按实际销售方式添加 SKU；名称、编码、价格、重量、线路计费和库存由每个 SKU 独立维护。'">
             <div class="min-w-0 rounded-lg border">
               <ProductVariantEditor
                 :dedicated-carbon-rim="isDedicatedCarbonRim"
                 :engineering-facts-locked="Boolean(form.parent_id)"
                 :variants="form.variants"
-                :spec-definitions="variantSpecDefinitions"
-                :option-values="form.variant_option_values"
-                :option-value-relations="form.option_value_relations"
-                :product-id="form.id"
-                :custom-option-definitions="customOptionDefinitions"
                 :default-index="defaultVariantIndex"
                 :shipping-templates="shippingTemplates"
                 class="min-w-0 p-3"
@@ -298,7 +156,6 @@
               />
             </div>
             <p v-if="errors.variants" class="mt-2 text-xs font-medium text-destructive">{{ errors.variants }}</p>
-            <p v-if="errors.option_value_relations" class="mt-2 text-xs font-medium text-destructive">{{ errors.option_value_relations }}</p>
           </AdminFormSection>
 
           <ProductProfitabilitySection
@@ -318,8 +175,6 @@
           <ProductMediaSection id="product-media-section"
             :media-items="form.media"
             :variants="form.variants"
-            :variant-option-values="form.variant_option_values"
-            :spec-definitions="variantSpecDefinitions"
             :uploading="uploadingMedia"
             :error="errors.media"
             @upload="(...args) => emit('upload-media', ...args)"
@@ -354,13 +209,6 @@
       </form>
     </DialogContent>
   </Dialog>
-  <ProductTemplateSyncDialog
-    :open="templateSyncDialogVisible"
-    :diff="templateSyncDiff"
-    :applying="templateSyncApplying"
-    @update:open="emit('update-template-sync-open', $event)"
-    @confirm="emit('confirm-template-sync')"
-  />
 </template>
 
 <script setup lang="ts">
@@ -368,8 +216,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import CarbonRimDedicatedProductSpecificationFields from './CarbonRimDedicatedProductSpecificationFields.vue'
 import type { PropType } from 'vue'
 import { carbonRimSystemCategorySlug } from '@/modules/product/carbonRimRequiredSystemCategorySelection'
-import { RouterLink } from 'vue-router'
-import { LoaderCircle, Tags } from '@lucide/vue'
+import { LoaderCircle } from '@lucide/vue'
 import AdminFormField from '@/components/admin/AdminFormField.vue'
 import AdminFormSection from '@/components/admin/AdminFormSection.vue'
 import StorefrontLocaleSelect from '@/components/admin/StorefrontLocaleSelect.vue'
@@ -378,10 +225,9 @@ import ProductCustomsSection from '@/components/admin/product/ProductCustomsSect
 import ProductMediaSection from '@/components/admin/product/ProductMediaSection.vue'
 import ProductProfitabilitySection from '@/components/admin/product/ProductProfitabilitySection.vue'
 import ProductPublishingSection from '@/components/admin/product/ProductPublishingSection.vue'
-import ProductTemplateSyncDialog from '@/components/admin/product/ProductTemplateSyncDialog.vue'
 import ProductVariantEditor from '@/components/admin/product/ProductVariantEditor.vue'
 import type { ProductSupplierCostProfitDraft } from '@/composables/product/useProductSupplierCostProfitDraft'
-import type { ProductFormRecord, ProductTemplateSyncDiff } from '@/modules/product/productEditorTypes'
+import type { ProductFormRecord } from '@/modules/product/productEditorTypes'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -393,35 +239,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-
-const editorSteps = [
-  { no: '01', label: '基础识别' },
-  { no: '02', label: '绑定模板' },
-  { no: '03', label: '填写参数' },
-  { no: '04', label: '维护 SKU' },
-  { no: '05', label: '商品成本' },
-]
-
-interface ProductSpecDefinition {
-  id?: number
-  slug: string
-  name: string
-  field_type: string
-  presentation?: string
-  is_required?: boolean
-  unit?: string
-  option_items?: Array<{ value_key?: string; default_label?: string }>
-}
-
-interface ProductSpecTemplateRecord {
-  id: number
-  name: string
-  slug: string
-  description?: string
-  spec_definitions?: ProductSpecDefinition[]
-}
 
 interface ProductBrandRecord {
   id: number
@@ -468,8 +286,6 @@ interface LanguageOption {
   label: string
 }
 
-type ProductFormValue = string | number | boolean | null | undefined
-
 const scrollContainer = ref<HTMLElement | null>(null)
 
 const handleOpenAutoFocus = (event: Event) => {
@@ -487,15 +303,9 @@ const props = defineProps({
   submitting: { type: Boolean, default: false },
   form: { type: Object as PropType<ProductFormRecord>, required: true },
   errors: { type: Object as PropType<Record<string, string>>, default: () => ({}) },
-  productSpecTemplates: { type: Array as PropType<ProductSpecTemplateRecord[]>, default: () => [] },
   brands: { type: Array as PropType<ProductBrandRecord[]>, default: () => [] },
   productCategories: { type: Array as PropType<ProductCategoryRecord[]>, default: () => [] },
-  selectedProductSpecTemplate: { type: Object as PropType<ProductSpecTemplateRecord | null>, default: null },
-  selectedSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
-  variantSpecDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
-  customOptionDefinitions: { type: Array as PropType<ProductSpecDefinition[]>, default: () => [] },
   defaultVariantIndex: { type: Number, default: 0 },
-  productSpecTemplateSelectValue: { type: String, default: '__none__' },
   productCategorySelectValue: { type: String, default: '__none__' },
   carbonRimSystemCategoryDisplayPath: { type: String, required: true },
   brandSelectValue: { type: String, default: '__none__' },
@@ -503,11 +313,6 @@ const props = defineProps({
   afterSalesTemplates: { type: Array as PropType<InformationTemplateRecord[]>, default: () => [] },
   packagingTemplates: { type: Array as PropType<InformationTemplateRecord[]>, default: () => [] },
   customsClassifications: { type: Array as PropType<CustomsClassificationRecord[]>, default: () => [] },
-  templateScopedValuesTouched: { type: Boolean, default: false },
-  templateSyncDialogVisible: { type: Boolean, default: false },
-  templateSyncDiff: { type: Object as PropType<ProductTemplateSyncDiff | null>, default: null },
-  templateSyncLoading: { type: Boolean, default: false },
-  templateSyncApplying: { type: Boolean, default: false },
   uploadingMedia: { type: Boolean, default: false },
   supplierCostVisible: { type: Boolean, default: false },
   supplierCostCanEdit: { type: Boolean, default: false },
@@ -517,14 +322,14 @@ const props = defineProps({
   supplierCostError: { type: String, default: '' },
   supplierCostLastSavedAt: { type: String, default: '' },
   supplierCostDrafts: { type: Array as PropType<ProductSupplierCostProfitDraft[]>, default: () => [] },
-  parseSpecOptions: { type: Function as PropType<(spec: ProductSpecDefinition) => ProductFormValue[]>, required: true },
-  formatSpecOption: { type: Function as PropType<(option: ProductFormValue) => string>, required: true },
-  getSpecLabel: { type: Function as PropType<(spec: ProductSpecDefinition) => string>, required: true },
-  specSelectValue: { type: Function as PropType<(value: ProductFormValue) => string>, required: true },
   languageOptions: { type: Array as PropType<LanguageOption[]>, default: () => [] },
 })
 
 const isDedicatedCarbonRim = computed(() => props.form.product_type === 'carbon_rim')
+const productEditorSteps = [
+  { no: '01', label: '商品资料' }, { no: '02', label: '销售 SKU' },
+  { no: '03', label: '图片视频' }, { no: '04', label: '物流与售后' },
+]
 const carbonRimEditorSteps = [
   { no: '01', label: '商品资料' }, { no: '02', label: '车圈规格' },
   { no: '03', label: '销售规格' }, { no: '04', label: '图片视频' },
@@ -546,16 +351,11 @@ const emit = defineEmits([
   'update:open',
   'submit',
   'clear-error',
-  'product-spec-template-select',
-  'preview-template-sync',
-  'update-template-sync-open',
-  'confirm-template-sync',
   'product-category-select',
   'product-brand-select',
   'product-information-template-select',
   'customs-classification-select',
   'customs-classification-manual-edit',
-  'set-spec-select-value',
   'add-variant',
   'remove-variant',
   'set-default-variant',

@@ -155,6 +155,7 @@ func (s *ProductService) CopyAdminProductTranslation(id uint, targetLocale strin
 		BicycleTireSpecification:       source.BicycleTireSpecification,
 		WheelsetSpecification:          source.WheelsetSpecification,
 		SpokeSpecification:             source.SpokeSpecification,
+		GenericProductSchema:           source.GenericProductSchema,
 		ProductSpecificationTemplateID: source.ProductSpecificationTemplateID,
 		ProductCategoryID:              source.ProductCategoryID,
 		BrandID:                        source.BrandID,

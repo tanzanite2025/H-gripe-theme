@@ -93,11 +93,6 @@
             <div class="min-w-0 rounded-md border">
               <ProductVariantEditor
                 :variants="form.variants"
-                :spec-definitions="[]"
-                :option-values="form.variant_option_values"
-                :option-value-relations="form.option_value_relations"
-                :product-id="form.id"
-                :custom-option-definitions="[]"
                 :default-index="defaultVariantIndex"
                 :shipping-templates="shippingTemplates"
                 class="min-w-0 p-3"
@@ -108,7 +103,6 @@
               />
             </div>
             <p v-if="errors.variants" class="mt-2 text-xs font-medium text-destructive">{{ errors.variants }}</p>
-            <p v-if="errors.option_value_relations" class="mt-2 text-xs font-medium text-destructive">{{ errors.option_value_relations }}</p>
           </AdminFormSection>
 
           <ProductProfitabilitySection
@@ -129,8 +123,6 @@
             id="spokes-media-section"
             :media-items="form.media"
             :variants="form.variants"
-            :variant-option-values="form.variant_option_values"
-            :spec-definitions="[]"
             :uploading="uploadingMedia"
             :error="errors.media"
             @upload="(...args) => emit('upload-media', ...args)"

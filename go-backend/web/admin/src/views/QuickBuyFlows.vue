@@ -70,7 +70,7 @@
               <div v-if="validationIssues.length" class="mt-1 space-y-1">
                 <p
                   v-for="issue in validationIssues"
-                  :key="`${issue.severity}-${issue.code}-${issue.step_key || issue.rule_key || issue.product_category_id || issue.product_specification_template_id || issue.message}`"
+                  :key="`${issue.severity}-${issue.code}-${issue.step_key || issue.rule_key || issue.product_category_id || issue.message}`"
                   class="text-xs font-bold"
                 >
                   [{{ issue.severity }}] {{ issue.message }}

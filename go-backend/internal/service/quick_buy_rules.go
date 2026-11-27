@@ -128,6 +128,9 @@ func (s *QuickBuyService) normalizeStepInputs(input []QuickBuyStepInput) ([]quic
 	steps := make([]quickbuy.Step, 0, len(input))
 	seen := make(map[string]struct{}, len(input))
 	for index, item := range input {
+		if len(item.ProductSpecificationTemplateIDs) > 0 {
+			return nil, fmt.Errorf("%w: product specification template filters are retired; select products by category", ErrQuickBuyInvalid)
+		}
 		stepKey := normalizeQuickBuyKey(item.StepKey)
 		if stepKey == "" {
 			return nil, fmt.Errorf("%w: step %d key is required", ErrQuickBuyInvalid, index+1)
@@ -144,22 +147,17 @@ func (s *QuickBuyService) normalizeStepInputs(input []QuickBuyStepInput) ([]quic
 		if err != nil {
 			return nil, fmt.Errorf("%w: step %q product categories: %v", ErrQuickBuyInvalid, stepKey, err)
 		}
-		productSpecificationTemplates, err := s.normalizeStepProductSpecificationTemplates(item.ProductSpecificationTemplateIDs)
-		if err != nil {
-			return nil, fmt.Errorf("%w: step %q product specification templates: %v", ErrQuickBuyInvalid, stepKey, err)
-		}
 		steps = append(steps, quickbuy.Step{
-			StepKey:                       stepKey,
-			Name:                          name,
-			SortOrder:                     (index + 1) * 10,
-			SelectionMode:                 quickbuy.SelectionModeSingle,
-			IsRequired:                    true,
-			MinSelect:                     0,
-			MaxSelect:                     1,
-			DefaultQuantity:               1,
-			AllowSkip:                     false,
-			ProductCategories:             productCategories,
-			ProductSpecificationTemplates: productSpecificationTemplates,
+			StepKey:           stepKey,
+			Name:              name,
+			SortOrder:         (index + 1) * 10,
+			SelectionMode:     quickbuy.SelectionModeSingle,
+			IsRequired:        true,
+			MinSelect:         0,
+			MaxSelect:         1,
+			DefaultQuantity:   1,
+			AllowSkip:         false,
+			ProductCategories: productCategories,
 		})
 	}
 	sort.SliceStable(steps, func(i, j int) bool {
@@ -194,34 +192,6 @@ func (s *QuickBuyService) normalizeStepProductCategories(ids []uint) ([]quickbuy
 			ProductCategoryID: id,
 			IsPrimary:         len(result) == 0,
 			SortOrder:         (index + 1) * 10,
-		})
-	}
-	return result, nil
-}
-
-func (s *QuickBuyService) normalizeStepProductSpecificationTemplates(ids []uint) ([]quickbuy.StepProductSpecificationTemplate, error) {
-	seen := make(map[uint]struct{}, len(ids))
-	result := make([]quickbuy.StepProductSpecificationTemplate, 0, len(ids))
-	for index, id := range ids {
-		if id == 0 {
-			continue
-		}
-		if _, exists := seen[id]; exists {
-			continue
-		}
-		seen[id] = struct{}{}
-		if s.productRepo != nil {
-			if _, err := s.productRepo.FindProductSpecificationTemplateByID(id); err != nil {
-				if repository.IsRecordNotFound(err) {
-					return nil, fmt.Errorf("product specification template %d does not exist", id)
-				}
-				return nil, err
-			}
-		}
-		result = append(result, quickbuy.StepProductSpecificationTemplate{
-			ProductSpecificationTemplateID: id,
-			IsPrimary:                      len(result) == 0,
-			SortOrder:                      (index + 1) * 10,
 		})
 	}
 	return result, nil
@@ -273,7 +243,10 @@ func validateQuickBuyVersion(version quickbuy.Version) QuickBuyValidationResult 
 		if step.SelectionMode == quickbuy.SelectionModeSingle && step.MaxSelect > 1 {
 			result.addIssue("error", "single_step_max_select", fmt.Sprintf("single-select step %q cannot allow more than one selection", step.StepKey), step.StepKey, "", 0)
 		}
-		if step.IsRequired && len(step.ProductCategories) == 0 && len(step.ProductSpecificationTemplates) == 0 && step.SelectionMode != quickbuy.SelectionModeAuto && !isDefaultQuickBuyFlow(version) {
+		if len(step.ProductSpecificationTemplates) > 0 {
+			result.addIssue("error", "retired_product_specification_templates", fmt.Sprintf("step %q contains retired product specification template references; bind a product category instead", step.StepKey), step.StepKey, "", 0)
+		}
+		if step.IsRequired && len(step.ProductCategories) == 0 && step.SelectionMode != quickbuy.SelectionModeAuto && !isDefaultQuickBuyFlow(version) {
 			result.addIssue("error", "required_step_product_categories", fmt.Sprintf("required step %q needs at least one product category", step.StepKey), step.StepKey, "", 0)
 		}
 		if step.IsRequired && step.AllowSkip {
@@ -303,27 +276,6 @@ func validateQuickBuyVersion(version quickbuy.Version) QuickBuyValidationResult 
 			}
 		}
 
-		if !isDefaultQuickBuyFlow(version) {
-			productSpecificationTemplates := make(map[uint]struct{}, len(step.ProductSpecificationTemplates))
-			for _, item := range step.ProductSpecificationTemplates {
-				if item.ProductSpecificationTemplateID == 0 {
-					result.addIssue("error", "invalid_product_specification_template", fmt.Sprintf("step %q contains an empty product specification template reference", step.StepKey), step.StepKey, "", 0)
-					continue
-				}
-				if _, exists := productSpecificationTemplates[item.ProductSpecificationTemplateID]; exists {
-					result.addIssue("error", "duplicate_product_specification_template", fmt.Sprintf("step %q references product specification template %d more than once", step.StepKey, item.ProductSpecificationTemplateID), step.StepKey, "", item.ProductSpecificationTemplateID)
-					continue
-				}
-				productSpecificationTemplates[item.ProductSpecificationTemplateID] = struct{}{}
-				if item.ProductSpecificationTemplate == nil {
-					result.addIssue("error", "missing_product_specification_template", fmt.Sprintf("step %q references missing product specification template %d", step.StepKey, item.ProductSpecificationTemplateID), step.StepKey, "", item.ProductSpecificationTemplateID)
-					continue
-				}
-				if !item.ProductSpecificationTemplate.IsEnabled {
-					result.addIssue("error", "disabled_product_specification_template", fmt.Sprintf("step %q references disabled product specification template %q", step.StepKey, item.ProductSpecificationTemplate.Slug), step.StepKey, "", item.ProductSpecificationTemplateID)
-				}
-			}
-		}
 	}
 	if version.Flow != nil && isDefaultQuickBuyFlowSlug(version.Flow.Slug) {
 		for _, requiredStepKey := range quickBuyDefaultStepKeys {
@@ -452,7 +404,7 @@ func validateQuickBuySelectionBounds(version quickbuy.Version, items []quickbuy.
 	return nil
 }
 
-func (s *QuickBuyService) validateQuickBuyProductAllowedForStep(step quickbuy.Step, item productdomain.Product, enforceProductSpecificationTemplates bool) error {
+func (s *QuickBuyService) validateQuickBuyProductAllowedForStep(step quickbuy.Step, item productdomain.Product) error {
 	categorySlug := ""
 	if item.ProductCategory != nil {
 		categorySlug = item.ProductCategory.Slug
@@ -463,10 +415,7 @@ func (s *QuickBuyService) validateQuickBuyProductAllowedForStep(step quickbuy.St
 	if err := s.validateQuickBuyProductCategoryAllowedForStep(step, item); err != nil {
 		return err
 	}
-	if !enforceProductSpecificationTemplates {
-		return nil
-	}
-	return validateQuickBuyProductSpecificationTemplateAllowedForStep(step, item)
+	return nil
 }
 
 func (s *QuickBuyService) validateQuickBuyProductCategoryAllowedForStep(step quickbuy.Step, item productdomain.Product) error {
@@ -490,21 +439,6 @@ func (s *QuickBuyService) validateQuickBuyProductCategoryAllowedForStep(step qui
 	return fmt.Errorf("%w: product %d is not in an allowed product category for step %q", ErrQuickBuyInvalid, item.ID, step.StepKey)
 }
 
-func validateQuickBuyProductSpecificationTemplateAllowedForStep(step quickbuy.Step, item productdomain.Product) error {
-	if len(step.ProductSpecificationTemplates) == 0 {
-		return nil
-	}
-	if item.ProductSpecificationTemplateID == nil {
-		return fmt.Errorf("%w: product %d has no product specification template for step %q", ErrQuickBuyInvalid, item.ID, step.StepKey)
-	}
-	for _, productSpecificationTemplate := range step.ProductSpecificationTemplates {
-		if productSpecificationTemplate.ProductSpecificationTemplateID == *item.ProductSpecificationTemplateID {
-			return nil
-		}
-	}
-	return fmt.Errorf("%w: product %d is not allowed for step %q", ErrQuickBuyInvalid, item.ID, step.StepKey)
-}
-
 func quickBuyStepByKey(version quickbuy.Version, stepKey string) *quickbuy.Step {
 	for index := range version.Steps {
 		if version.Steps[index].StepKey == stepKey {
@@ -523,24 +457,6 @@ func quickBuyStepProductCategoryIDs(step quickbuy.Step) []uint {
 		ids = append(ids, item.ProductCategoryID)
 	}
 	return ids
-}
-
-func quickBuyStepProductSpecificationTemplateIDs(step quickbuy.Step) []uint {
-	ids := make([]uint, 0, len(step.ProductSpecificationTemplates))
-	for _, item := range step.ProductSpecificationTemplates {
-		if item.ProductSpecificationTemplateID == 0 {
-			continue
-		}
-		ids = append(ids, item.ProductSpecificationTemplateID)
-	}
-	return ids
-}
-
-func quickBuyStepProductSpecificationTemplateIDsForVersion(version quickbuy.Version, step quickbuy.Step) []uint {
-	if isDefaultQuickBuyFlow(version) {
-		return nil
-	}
-	return quickBuyStepProductSpecificationTemplateIDs(step)
 }
 
 func normalizeQuickBuyCandidatePaging(page, pageSize int) (int, int) {

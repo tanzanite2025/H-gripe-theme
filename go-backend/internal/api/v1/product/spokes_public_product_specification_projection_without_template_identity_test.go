@@ -45,9 +45,6 @@ func TestSpokePublicResponseExposesDedicatedFactsWithoutGenericTemplateData(t *t
 	if response.SpokeSpecification != item.SpokeSpecification {
 		t.Fatal("public response did not expose the dedicated spoke specification")
 	}
-	if response.ProductSpecificationTemplate != nil {
-		t.Fatal("spoke response exposed a generic product specification template")
-	}
 	values := make(map[string]string, len(response.SpecValues))
 	colorOptionCount := 0
 	for _, value := range response.SpecValues {

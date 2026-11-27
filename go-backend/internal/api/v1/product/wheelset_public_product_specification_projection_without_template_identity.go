@@ -26,7 +26,7 @@ func publicWheelsetSpecificationValues(specification *productdomain.WheelsetSpec
 			Value: value,
 			Definition: &PublicSpecDefinition{
 				Slug: slug, Name: name, Group: group, Unit: unit,
-				FieldType: "text", Role: "attribute", IsVisible: true,
+				FieldType: "text", IsVisible: true,
 			},
 		})
 	}

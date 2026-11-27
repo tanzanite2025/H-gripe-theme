@@ -83,7 +83,6 @@ func TestPublicCarbonRimCategoryLoadsTranslationsForProductDetailListsAndBreadcr
 			require.Equal(t, uint(975), detail.Data.Category.ID)
 			require.Equal(t, "carbon-rim", detail.Data.Category.Slug)
 			require.Equal(t, scenario.name, detail.Data.Category.Name)
-			require.Nil(t, detail.Data.ProductSpecificationTemplate)
 			require.NotNil(t, detail.Data.CarbonRimSpecification)
 			require.Equal(t, "700c", detail.Data.CarbonRimSpecification.WheelSize)
 			require.Equal(t, "carbon_fiber", detail.Data.CarbonRimSpecification.Material)

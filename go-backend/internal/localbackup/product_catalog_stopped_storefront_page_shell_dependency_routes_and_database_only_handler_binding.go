@@ -18,14 +18,13 @@ import (
 // availability, authentication, tracking and personalized recommendations need
 // their own side-effect and identity contracts before they can be bound.
 var stoppedStorefrontPageShellReadOnlyGETPaths = map[string]string{
-	"redirects":               "/api/v1/storefront/redirects",
-	"seo_home":                "/api/v1/seo/home",
-	"social_settings":         "/api/v1/settings/social",
-	"website_profile":         "/api/v1/settings/website-profile",
-	"website_name":            "/api/v1/settings/website-name",
-	"specification_templates": "/api/v1/products/specification-templates",
-	"currency_policy":         "/api/v1/settings/currency-policy",
-	"product_page_faq":        "/api/v1/content/faq-pages/by-route",
+	"redirects":        "/api/v1/storefront/redirects",
+	"seo_home":         "/api/v1/seo/home",
+	"social_settings":  "/api/v1/settings/social",
+	"website_profile":  "/api/v1/settings/website-profile",
+	"website_name":     "/api/v1/settings/website-name",
+	"currency_policy":  "/api/v1/settings/currency-policy",
+	"product_page_faq": "/api/v1/content/faq-pages/by-route",
 }
 
 func bindStoppedProductReadOnlyStorefrontPageShellDatabaseHandlers(router *gin.Engine, database *gorm.DB, settings *service.SettingService, settingsHandler *publicsettings.Handler, productHandler *publicproduct.Handler, policy *service.CurrencyPolicyService, media *service.MediaService) {
@@ -36,7 +35,6 @@ func bindStoppedProductReadOnlyStorefrontPageShellDatabaseHandlers(router *gin.E
 	router.GET(stoppedStorefrontPageShellReadOnlyGETPaths["social_settings"], settingsHandler.GetSocialSettings)
 	router.GET(stoppedStorefrontPageShellReadOnlyGETPaths["website_profile"], settingsHandler.GetWebsiteProfile)
 	router.GET(stoppedStorefrontPageShellReadOnlyGETPaths["website_name"], settingsHandler.GetWebsiteName)
-	router.GET(stoppedStorefrontPageShellReadOnlyGETPaths["specification_templates"], productHandler.ListProductSpecificationTemplates)
 	router.GET(stoppedStorefrontPageShellReadOnlyGETPaths["currency_policy"], publiccurrency.NewHandler(policy, nil).GetPolicy)
 	faq := service.NewFAQService(repository.NewFAQRepository(database))
 	faq.ConfigureMediaService(media)

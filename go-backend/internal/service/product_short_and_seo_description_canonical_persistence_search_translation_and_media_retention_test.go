@@ -64,7 +64,7 @@ func TestProductCanonicalDescriptionsPersistSearchTranslateAndProtectSummaryOnly
 				{"admin", func() ([]product.Product, error) {
 					// Admin search intentionally searches names/descriptions/SKUs; summaries must
 					// still be loaded without extending that established contract.
-					rows, _, err := products.ListAdmin(1, 10, "active", "en", name, "", "", "")
+					rows, _, err := products.ListAdmin(1, 10, "active", "en", name, "", "")
 					return rows, err
 				}},
 				{"quick_buy", func() ([]product.Product, error) {

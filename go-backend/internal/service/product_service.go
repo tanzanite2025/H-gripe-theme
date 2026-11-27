@@ -305,31 +305,30 @@ var (
 )
 
 type ProductSearchInput struct {
-	Locale                           string
-	Status                           string
-	Featured                         *bool
-	Keyword                          string
-	ProductSpecificationTemplateSlug string
-	CategorySlug                     string
-	BrandSlug                        string
-	PriceMin                         *int64
-	PriceMax                         *int64
-	PriceCurrency                    string
-	SpecFilters                      map[string][]string
-	Page                             int
-	PageSize                         int
+	Locale        string
+	Status        string
+	Featured      *bool
+	Keyword       string
+	CategorySlug  string
+	BrandSlug     string
+	PriceMin      *int64
+	PriceMax      *int64
+	PriceCurrency string
+	SpecFilters   map[string][]string
+	Page          int
+	PageSize      int
 	// OffsetPageSize lets lookahead callers fetch PageSize rows while keeping
 	// the page offset based on the nominal user-visible page size.
 	OffsetPageSize int
 }
 
 type ProductRecommendationCandidateInput struct {
-	Locale                         string
-	ProductSpecificationTemplateID *uint
-	Keyword                        string
-	ExcludeProductIDs              []uint
-	Page                           int
-	PageSize                       int
+	Locale            string
+	ProductCategoryID *uint
+	Keyword           string
+	ExcludeProductIDs []uint
+	Page              int
+	PageSize          int
 }
 
 func (s *ProductService) GetByID(id uint) (*product.Product, error) {
@@ -685,12 +684,12 @@ func (s *ProductService) ListRecommendationCandidates(input ProductRecommendatio
 
 	offset := (page - 1) * pageSize
 	products, total, err := s.productRepo.ListRecommendationCandidates(repository.ProductRecommendationQuery{
-		Locale:                         input.Locale,
-		ProductSpecificationTemplateID: input.ProductSpecificationTemplateID,
-		Keyword:                        input.Keyword,
-		ExcludeProductIDs:              input.ExcludeProductIDs,
-		Offset:                         offset,
-		Limit:                          pageSize,
+		Locale:            input.Locale,
+		ProductCategoryID: input.ProductCategoryID,
+		Keyword:           input.Keyword,
+		ExcludeProductIDs: input.ExcludeProductIDs,
+		Offset:            offset,
+		Limit:             pageSize,
 	})
 	return sanitizeProductSliceHTML(products), total, err
 }
@@ -698,19 +697,18 @@ func (s *ProductService) ListRecommendationCandidates(input ProductRecommendatio
 func (s *ProductService) SearchPublic(input ProductSearchInput) ([]product.Product, int64, error) {
 	offset, limit := resolveProductSearchPagination(input)
 	query := repository.ProductSearchQuery{
-		Locale:                           input.Locale,
-		Status:                           "active",
-		Featured:                         input.Featured,
-		Keyword:                          input.Keyword,
-		ProductSpecificationTemplateSlug: input.ProductSpecificationTemplateSlug,
-		CategorySlug:                     input.CategorySlug,
-		BrandSlug:                        input.BrandSlug,
-		PriceMin:                         input.PriceMin,
-		PriceMax:                         input.PriceMax,
-		PriceCurrency:                    input.PriceCurrency,
-		SpecFilters:                      input.SpecFilters,
-		Offset:                           offset,
-		Limit:                            limit,
+		Locale:        input.Locale,
+		Status:        "active",
+		Featured:      input.Featured,
+		Keyword:       input.Keyword,
+		CategorySlug:  input.CategorySlug,
+		BrandSlug:     input.BrandSlug,
+		PriceMin:      input.PriceMin,
+		PriceMax:      input.PriceMax,
+		PriceCurrency: input.PriceCurrency,
+		SpecFilters:   input.SpecFilters,
+		Offset:        offset,
+		Limit:         limit,
 	}
 	products, total, err := s.productRepo.SearchPublic(query)
 	return sanitizeProductSliceHTML(products), total, err
@@ -723,19 +721,18 @@ func (s *ProductService) SearchPublicCompact(input ProductSearchInput) ([]produc
 	offset, limit := resolveProductSearchPagination(input)
 
 	products, err := s.productRepo.SearchPublicCompact(repository.ProductSearchQuery{
-		Locale:                           input.Locale,
-		Status:                           "active",
-		Featured:                         input.Featured,
-		Keyword:                          input.Keyword,
-		ProductSpecificationTemplateSlug: input.ProductSpecificationTemplateSlug,
-		CategorySlug:                     input.CategorySlug,
-		BrandSlug:                        input.BrandSlug,
-		PriceMin:                         input.PriceMin,
-		PriceMax:                         input.PriceMax,
-		PriceCurrency:                    input.PriceCurrency,
-		SpecFilters:                      input.SpecFilters,
-		Offset:                           offset,
-		Limit:                            limit,
+		Locale:        input.Locale,
+		Status:        "active",
+		Featured:      input.Featured,
+		Keyword:       input.Keyword,
+		CategorySlug:  input.CategorySlug,
+		BrandSlug:     input.BrandSlug,
+		PriceMin:      input.PriceMin,
+		PriceMax:      input.PriceMax,
+		PriceCurrency: input.PriceCurrency,
+		SpecFilters:   input.SpecFilters,
+		Offset:        offset,
+		Limit:         limit,
 	})
 	return sanitizeProductSliceHTML(products), err
 }

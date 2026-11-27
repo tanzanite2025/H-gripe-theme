@@ -46,8 +46,10 @@ type Product struct {
 	WheelsetSpecificationDirty     bool                        `gorm:"-" json:"-"`
 	SpokeSpecification             *SpokesProductSpecification `gorm:"serializer:json;type:jsonb" json:"spoke_specification,omitempty"`
 	SpokeSpecificationDirty        bool                        `gorm:"-" json:"-"`
+	GenericProductSchema           *GenericProductSchema       `gorm:"serializer:json;type:jsonb" json:"generic_product_schema,omitempty"`
+	GenericProductSchemaDirty      bool                        `gorm:"-" json:"-"`
 	ID                             uint                        `gorm:"primarykey" json:"id"`
-	ProductSpecificationTemplateID *uint                       `gorm:"index" json:"product_specification_template_id"`
+	ProductSpecificationTemplateID *uint                       `gorm:"index" json:"-"`
 	ProductCategoryID              *uint                       `gorm:"index" json:"product_category_id"`
 	BrandID                        *uint                       `gorm:"index" json:"brand_id,omitempty"`
 	AfterSalesTemplateID           *uint                       `gorm:"index" json:"after_sales_template_id"`
@@ -86,16 +88,16 @@ type Product struct {
 	MetaTitle                    string                        `json:"meta_title"`
 	MetaDesc                     string                        `gorm:"column:meta_description;type:text" json:"meta_description"`
 	Media                        []ProductMedia                `gorm:"foreignKey:ProductID" json:"media,omitempty"`
-	ProductSpecificationTemplate *ProductSpecificationTemplate `gorm:"foreignKey:ProductSpecificationTemplateID" json:"product_specification_template,omitempty"`
+	ProductSpecificationTemplate *ProductSpecificationTemplate `gorm:"foreignKey:ProductSpecificationTemplateID" json:"-"`
 	ProductCategory              *ProductCategory              `gorm:"foreignKey:ProductCategoryID;constraint:OnDelete:SET NULL" json:"product_category,omitempty"`
 	Brand                        *ProductBrand                 `gorm:"foreignKey:BrandID;constraint:OnDelete:RESTRICT" json:"brand,omitempty"`
 	AfterSalesTemplate           *ProductInformationTemplate   `gorm:"foreignKey:AfterSalesTemplateID;constraint:OnDelete:SET NULL" json:"after_sales_template,omitempty"`
 	PackagingTemplate            *ProductInformationTemplate   `gorm:"foreignKey:PackagingTemplateID;constraint:OnDelete:SET NULL" json:"packaging_template,omitempty"`
 	CustomsClassificationProfile *CustomsClassificationProfile `gorm:"foreignKey:CustomsClassificationProfileID;constraint:OnDelete:SET NULL" json:"customs_classification_profile,omitempty"`
-	SpecValues                   []ProductSpecValue            `gorm:"foreignKey:ProductID" json:"spec_values,omitempty"`
+	SpecValues                   []ProductSpecValue            `gorm:"foreignKey:ProductID" json:"-"`
 	Variants                     []ProductVariant              `gorm:"foreignKey:ProductID" json:"variants,omitempty"`
-	VariantOptionValues          []ProductVariantOptionValue   `gorm:"foreignKey:ProductID" json:"variant_option_values,omitempty"`
-	OptionValueRelations         []ProductOptionValueRelation  `gorm:"foreignKey:ProductID" json:"option_value_relations,omitempty"`
+	VariantOptionValues          []ProductVariantOptionValue   `gorm:"foreignKey:ProductID" json:"-"`
+	OptionValueRelations         []ProductOptionValueRelation  `gorm:"foreignKey:ProductID" json:"-"`
 	SpokeRepairKitModels         []SpokeRepairKitModel         `gorm:"foreignKey:ProductID" json:"spoke_repair_kit_models,omitempty"`
 	OptionValueRelationsDirty    bool                          `gorm:"-" json:"-"`
 	TranslationGroup             *ProductTranslationGroup      `gorm:"-" json:"translation_group,omitempty"`

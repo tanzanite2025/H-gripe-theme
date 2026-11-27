@@ -93,15 +93,13 @@ func TestNormalizeRecommendationQueryKeepsUnicodeBoundary(t *testing.T) {
 	require.Len(t, []rune(normalized), 160)
 }
 
-func TestRecommendationServicePrioritizesMatchingSpecsOnProductDetail(t *testing.T) {
+func TestRecommendationServicePrioritizesSameCategoryProductsOnProductDetail(t *testing.T) {
 	db, productService := newTestProductService(t)
-	productSpecificationTemplateID, brakeTypeSpecID := seedRecommendationProductSpecificationTemplate(t, db)
-	context := seedRecommendationTypedProduct(t, db, "context-wheel", "Context Wheel", productSpecificationTemplateID, 1)
-	matching := seedRecommendationTypedProduct(t, db, "matching-wheel", "Matching Wheel", productSpecificationTemplateID, 2)
-	other := seedRecommendationTypedProduct(t, db, "other-wheel", "Other Wheel", productSpecificationTemplateID, 20)
-	seedRecommendationSpecValue(t, db, context.ID, brakeTypeSpecID, "disc")
-	seedRecommendationSpecValue(t, db, matching.ID, brakeTypeSpecID, "disc")
-	seedRecommendationSpecValue(t, db, other.ID, brakeTypeSpecID, "rim")
+	category := product.ProductCategory{Name: "Wheelsets", Slug: "wheelsets", IsEnabled: true}
+	require.NoError(t, db.Create(&category).Error)
+	context := seedRecommendationCategorizedProduct(t, db, "context-wheel", "Context Wheel", category.ID, 1)
+	matching := seedRecommendationCategorizedProduct(t, db, "matching-wheel", "Matching Wheel", category.ID, 2)
+	seedRecommendationProduct(t, db, "other-wheel", "Other Wheel", "en", true, 8, false, 20)
 
 	recommendationService := NewRecommendationService(productService)
 	result, err := recommendationService.Recommend(RecommendationRequest{
@@ -114,7 +112,7 @@ func TestRecommendationServicePrioritizesMatchingSpecsOnProductDetail(t *testing
 	require.Len(t, result.Items, 2)
 	require.Equal(t, matching.ID, result.Items[0].ProductID)
 	require.Equal(t, "similar_products", result.Items[0].Slot)
-	require.Equal(t, "matching_specs", result.Items[0].Reason)
+	require.Equal(t, "same_product_category", result.Items[0].Reason)
 }
 
 func TestRecommendationServiceUsesPersonalBehaviorSignals(t *testing.T) {
@@ -181,79 +179,45 @@ func seedRecommendationProduct(
 		status = "inactive"
 	}
 	item := product.Product{
-		SKU:       slug + "-sku",
-		Name:      name,
-		Slug:      slug,
-		Status:    status,
-		Locale:    locale,
-		Featured:  featured,
-		ViewCount: viewCount,
+		SKU:        slug + "-sku",
+		Name:       name,
+		Slug:       slug,
+		Status:     status,
+		Locale:     locale,
+		Featured:   featured,
+		ViewCount:  viewCount,
 		PriceMinor: 39900,
 	}
 	require.NoError(t, db.Create(&item).Error)
 
 	variant := product.ProductVariant{
-		ProductID: item.ID,
-		SKU:       slug + "-variant",
-		Title:     name,
+		ProductID:  item.ID,
+		SKU:        slug + "-variant",
+		Title:      name,
 		PriceMinor: 39900,
-		Stock:     stock,
-		IsActive:  active,
-		IsDefault: true,
+		Stock:      stock,
+		IsActive:   active,
+		IsDefault:  true,
 	}
 	require.NoError(t, db.Create(&variant).Error)
 
 	return item
 }
 
-func seedRecommendationProductSpecificationTemplate(t *testing.T, db *gorm.DB) (uint, uint) {
-	t.Helper()
-
-	productSpecificationTemplate := product.ProductSpecificationTemplate{
-		Name:      "Wheelset",
-		Slug:      "wheelset_recommendation_test",
-		IsEnabled: true,
-	}
-	require.NoError(t, db.Create(&productSpecificationTemplate).Error)
-
-	brakeType := product.SpecDefinition{
-		ProductSpecificationTemplateID: productSpecificationTemplate.ID,
-		Group:                          "Compatibility",
-		Name:                           "Brake Type",
-		Slug:                           "brake_type",
-		FieldType:                      "select",
-		IsFilterable:                   true,
-		IsVisible:                      true,
-		SortOrder:                      10,
-	}
-	require.NoError(t, db.Create(&brakeType).Error)
-	return productSpecificationTemplate.ID, brakeType.ID
-}
-
-func seedRecommendationTypedProduct(
+func seedRecommendationCategorizedProduct(
 	t *testing.T,
 	db *gorm.DB,
 	slug string,
 	name string,
-	productSpecificationTemplateID uint,
+	productCategoryID uint,
 	viewCount int,
 ) product.Product {
 	t.Helper()
 
 	item := seedRecommendationProduct(t, db, slug, name, "en", true, 8, false, viewCount)
-	item.ProductSpecificationTemplateID = &productSpecificationTemplateID
-	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", item.ID).Update("product_specification_template_id", productSpecificationTemplateID).Error)
+	item.ProductCategoryID = &productCategoryID
+	require.NoError(t, db.Model(&product.Product{}).Where("id = ?", item.ID).Update("product_category_id", productCategoryID).Error)
 	return item
-}
-
-func seedRecommendationSpecValue(t *testing.T, db *gorm.DB, productID uint, specDefinitionID uint, value string) {
-	t.Helper()
-
-	require.NoError(t, db.Create(&product.ProductSpecValue{
-		ProductID:        productID,
-		SpecDefinitionID: specDefinitionID,
-		Value:            value,
-	}).Error)
 }
 
 func seedRecommendationEvent(

@@ -13,7 +13,6 @@ func TestCarbonRimPublicFactsHaveNoTemplateOrExactInventoryAndOmitUnknownLimits(
 	tubeless := false
 	item := productdomain.Product{ID: 7, ProductType: productdomain.ProductTypeCarbonRim, Status: "active", Name: "Carbon rim", CarbonRimSpecification: &productdomain.CarbonRimSpecification{SchemaVersion: 1, Model: "R45", BeadSeatDiameterMM: 622, DepthMM: 45, InternalWidthMM: 25, ExternalWidthMM: 32, BeadStructure: "hooked", TubelessReady: &tubeless}, Variants: []productdomain.ProductVariant{{ID: 9, ProductID: 7, SKU: "R45-24", IsActive: true, IsDefault: true, Stock: 123, Currency: "USD", PriceMinor: 19900, OptionValues: `{"rim_configuration":"24H / uniform / matte-black"}`, CarbonRimSpecification: &productdomain.CarbonRimVariantSpecification{SpokeHoleCount: 24, DrillingPattern: "uniform", FinishCode: "matte-black", NetWeightGrams: 430}}}}
 	response := PublicProductFromDomainWithLocale(item, "USD", "zh_cn")
-	require.Nil(t, response.ProductSpecificationTemplate)
 	require.Equal(t, item.CarbonRimSpecification, response.CarbonRimSpecification)
 	require.Len(t, response.Variants, 1)
 	require.Equal(t, 430.0, response.Variants[0].CarbonRimSpecification.NetWeightGrams)

@@ -15,10 +15,14 @@ import (
 // selection. It shares the hardened catalog response contract so this legacy
 // search path cannot become a more verbose data-extraction side channel.
 func (h *Handler) ListPublicChatProducts(c *gin.Context) {
+	if strings.TrimSpace(c.Query("product_specification_template")) != "" {
+		apierror.RespondBadRequest(c, "product specification template filters are retired; select products by category")
+		return
+	}
+
 	publicContext := h.resolvePublicContext(c)
 	locale := publicContext.Locale
 	keyword := strings.TrimSpace(c.Query("keyword"))
-	productSpecificationTemplateSlug := strings.TrimSpace(c.Query("product_specification_template"))
 	categorySlug := strings.TrimSpace(c.Query("product_category"))
 	brandSlug := strings.TrimSpace(c.Query("brand"))
 	priceMin := parseOptionalMinorQuery(c, "price_min_minor")
@@ -39,17 +43,16 @@ func (h *Handler) ListPublicChatProducts(c *gin.Context) {
 	}
 
 	searchInput := service.ProductSearchInput{
-		Locale:                           locale,
-		Keyword:                          keyword,
-		ProductSpecificationTemplateSlug: productSpecificationTemplateSlug,
-		CategorySlug:                     categorySlug,
-		BrandSlug:                        brandSlug,
-		PriceMin:                         priceMin,
-		PriceMax:                         priceMax,
-		PriceCurrency:                    publicContext.DisplayCurrency,
-		SpecFilters:                      specFilters,
-		Page:                             page,
-		PageSize:                         pageSize,
+		Locale:        locale,
+		Keyword:       keyword,
+		CategorySlug:  categorySlug,
+		BrandSlug:     brandSlug,
+		PriceMin:      priceMin,
+		PriceMax:      priceMax,
+		PriceCurrency: publicContext.DisplayCurrency,
+		SpecFilters:   specFilters,
+		Page:          page,
+		PageSize:      pageSize,
 	}
 	var products []productdomain.Product
 	var total int64

@@ -37,7 +37,7 @@ func TestQuickBuyRejectsSpokeRepairKitWithoutWheelsetSelection(t *testing.T) {
 		},
 	}
 
-	err := service.validateQuickBuyProductAllowedForStep(quickbuy.Step{StepKey: "product"}, item, false)
+	err := service.validateQuickBuyProductAllowedForStep(quickbuy.Step{StepKey: "product"}, item)
 	require.ErrorIs(t, err, ErrQuickBuyInvalid)
 	require.ErrorContains(t, err, "compatible wheelset model selection")
 }
@@ -83,15 +83,15 @@ func TestNormalizeQuickBuyCurrencyRejectsUnsupportedValues(t *testing.T) {
 
 func TestQuickBuySelectionRejectsCurrencyMismatch(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	template := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
+	template := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
 		Slug:         "currency-guard",
 		Name:         "Currency Guard",
 		EntrySurface: "dock",
 		Version: QuickBuyVersionInput{Steps: []QuickBuyStepInput{{
-			StepKey:                         "rim",
-			Name:                            "Rim",
-			ProductSpecificationTemplateIDs: []uint{template.ID},
+			StepKey:            "rim",
+			Name:               "Rim",
+			ProductCategoryIDs: []uint{template.ID},
 		}}},
 	})
 	require.NoError(t, err)
@@ -119,7 +119,7 @@ func TestQuickBuySelectionRejectsCurrencyMismatch(t *testing.T) {
 
 func TestQuickBuyServiceCreatesPublishesAndReturnsCurrentFlow(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
+	productSpecificationTemplate := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
 		Slug:         "wheelset-build",
@@ -128,9 +128,9 @@ func TestQuickBuyServiceCreatesPublishesAndReturnsCurrentFlow(t *testing.T) {
 		Version: QuickBuyVersionInput{
 			Steps: []QuickBuyStepInput{
 				{
-					StepKey:                         "rim",
-					Name:                            "Rims",
-					ProductSpecificationTemplateIDs: []uint{productSpecificationTemplate.ID},
+					StepKey:            "rim",
+					Name:               "Rims",
+					ProductCategoryIDs: []uint{productSpecificationTemplate.ID},
 				},
 			},
 		},
@@ -150,8 +150,8 @@ func TestQuickBuyServiceCreatesPublishesAndReturnsCurrentFlow(t *testing.T) {
 	require.Len(t, current.Steps, 1)
 	assert.Equal(t, "rim", current.Steps[0].StepKey)
 	assert.Equal(t, "rim", current.Steps[0].Slug)
-	require.Len(t, current.Steps[0].ProductSpecificationTemplates, 1)
-	assert.Equal(t, "rim", current.Steps[0].ProductSpecificationTemplates[0].Slug)
+	require.Len(t, current.Steps[0].ProductCategories, 1)
+	assert.Equal(t, "rim", current.Steps[0].ProductCategories[0].Slug)
 }
 
 func TestQuickBuyServiceProtectsDefaultQuickBuildSteps(t *testing.T) {
@@ -228,7 +228,7 @@ func TestQuickBuyServiceAllowsAdditionalQuickBuildSteps(t *testing.T) {
 
 func TestQuickBuyServiceFiltersDefaultFlowCandidatesByProductCategory(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
+	productSpecificationTemplate := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
 	wheelsets := seedQuickBuyProductCategory(t, db, "Wheelsets", "wheelset", nil)
 	carbonWheelsets := seedQuickBuyProductCategory(t, db, "Carbon Wheelsets", "carbon-wheelset", &wheelsets.ID)
 	tires := seedQuickBuyProductCategory(t, db, "Tires", "tires", nil)
@@ -283,7 +283,7 @@ func TestQuickBuyServiceFiltersDefaultFlowCandidatesByProductCategory(t *testing
 
 func TestQuickBuyServiceLocalizesFlowHelpTextWithBaseFallback(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Localized Rim", "localized_rim")
+	productSpecificationTemplate := seedQuickBuyCatalogCategory(t, db, "Localized Rim", "localized_rim")
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
 		Slug:     "localized-build",
@@ -297,9 +297,9 @@ func TestQuickBuyServiceLocalizesFlowHelpTextWithBaseFallback(t *testing.T) {
 		Version: QuickBuyVersionInput{
 			Steps: []QuickBuyStepInput{
 				{
-					StepKey:                         "rim",
-					Name:                            "Rims",
-					ProductSpecificationTemplateIDs: []uint{productSpecificationTemplate.ID},
+					StepKey:            "rim",
+					Name:               "Rims",
+					ProductCategoryIDs: []uint{productSpecificationTemplate.ID},
 				},
 			},
 		},
@@ -351,11 +351,11 @@ func TestQuickBuyServiceRejectsPublishWithoutRequiredProductSpecificationTemplat
 	require.ErrorIs(t, err, ErrQuickBuyInvalid)
 }
 
-func TestQuickBuyServiceValidationFlagsDisabledProductSpecificationTemplate(t *testing.T) {
+func TestQuickBuyServiceValidationFlagsDisabledProductCategory(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
-	require.NoError(t, db.Model(&productdomain.ProductSpecificationTemplate{}).
-		Where("id = ?", productSpecificationTemplate.ID).
+	productCategory := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
+	require.NoError(t, db.Model(&productdomain.ProductCategory{}).
+		Where("id = ?", productCategory.ID).
 		Update("is_enabled", false).Error)
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
@@ -365,9 +365,9 @@ func TestQuickBuyServiceValidationFlagsDisabledProductSpecificationTemplate(t *t
 		Version: QuickBuyVersionInput{
 			Steps: []QuickBuyStepInput{
 				{
-					StepKey:                         "rim",
-					Name:                            "Rims",
-					ProductSpecificationTemplateIDs: []uint{productSpecificationTemplate.ID},
+					StepKey:            "rim",
+					Name:               "Rims",
+					ProductCategoryIDs: []uint{productCategory.ID},
 				},
 			},
 		},
@@ -379,7 +379,7 @@ func TestQuickBuyServiceValidationFlagsDisabledProductSpecificationTemplate(t *t
 	require.NotNil(t, result)
 	require.False(t, result.Valid)
 	require.NotEmpty(t, result.Issues)
-	assert.Equal(t, "disabled_product_specification_template", result.Issues[0].Code)
+	assert.Equal(t, "disabled_product_category", result.Issues[0].Code)
 
 	_, err = quickBuyService.PublishVersion(created.Version.ID, nil)
 	require.ErrorIs(t, err, ErrQuickBuyInvalid)
@@ -387,7 +387,7 @@ func TestQuickBuyServiceValidationFlagsDisabledProductSpecificationTemplate(t *t
 
 func TestQuickBuyServiceCreatesSessionAndStoresSelectionSnapshot(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
+	productSpecificationTemplate := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
 	productRecord := seedQuickBuyProduct(t, db, productSpecificationTemplate.ID)
 	require.NoError(t, db.Create(&productdomain.ProductMedia{
 		ProductID:    productRecord.ID,
@@ -405,9 +405,9 @@ func TestQuickBuyServiceCreatesSessionAndStoresSelectionSnapshot(t *testing.T) {
 		Version: QuickBuyVersionInput{
 			Steps: []QuickBuyStepInput{
 				{
-					StepKey:                         "rim",
-					Name:                            "Rims",
-					ProductSpecificationTemplateIDs: []uint{productSpecificationTemplate.ID},
+					StepKey:            "rim",
+					Name:               "Rims",
+					ProductCategoryIDs: []uint{productSpecificationTemplate.ID},
 				},
 			},
 		},
@@ -491,7 +491,7 @@ func TestQuickBuyProductSnapshotUsesSelectedVariantSummary(t *testing.T) {
 
 func TestQuickBuyServiceAllowsClearingAndReselectingStep(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
+	productSpecificationTemplate := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
 	firstProduct := seedQuickBuyProductWithDetails(t, db, productSpecificationTemplate.ID, "QB-RIM-001", "First Rim", "first-rim", 100)
 	secondProduct := seedQuickBuyProductWithDetails(t, db, productSpecificationTemplate.ID, "QB-RIM-002", "Second Rim", "second-rim", 120)
 
@@ -502,9 +502,9 @@ func TestQuickBuyServiceAllowsClearingAndReselectingStep(t *testing.T) {
 		Version: QuickBuyVersionInput{
 			Steps: []QuickBuyStepInput{
 				{
-					StepKey:                         "rim",
-					Name:                            "Wheelset custom configuration",
-					ProductSpecificationTemplateIDs: []uint{productSpecificationTemplate.ID},
+					StepKey:            "rim",
+					Name:               "Wheelset custom configuration",
+					ProductCategoryIDs: []uint{productSpecificationTemplate.ID},
 				},
 			},
 		},
@@ -550,8 +550,8 @@ func TestQuickBuyServiceAllowsClearingAndReselectingStep(t *testing.T) {
 
 func TestQuickBuyServiceListsSessionStepCandidatesByBoundProductSpecificationTemplate(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	rimType := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
-	handlebarType := seedQuickBuyProductSpecificationTemplate(t, db, "Handlebar", "handlebar")
+	rimType := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
+	handlebarType := seedQuickBuyCatalogCategory(t, db, "Handlebar", "handlebar")
 	rimProduct := seedQuickBuyProduct(t, db, rimType.ID)
 	_ = seedQuickBuyProductWithDetails(t, db, handlebarType.ID, "QB-HB-001", "Quick Buy Handlebar", "quick-buy-handlebar", 70)
 
@@ -562,9 +562,9 @@ func TestQuickBuyServiceListsSessionStepCandidatesByBoundProductSpecificationTem
 		Version: QuickBuyVersionInput{
 			Steps: []QuickBuyStepInput{
 				{
-					StepKey:                         "rim",
-					Name:                            "Rims",
-					ProductSpecificationTemplateIDs: []uint{rimType.ID},
+					StepKey:            "rim",
+					Name:               "Rims",
+					ProductCategoryIDs: []uint{rimType.ID},
 				},
 			},
 		},
@@ -592,78 +592,22 @@ func TestQuickBuyServiceListsSessionStepCandidatesByBoundProductSpecificationTem
 	assert.Equal(t, rimProduct.ID, result.Products[0].ID)
 	assert.Equal(t, int64(1), result.Total)
 	assert.Equal(t, "rim", result.Step.StepKey)
-	assert.Equal(t, "rim", result.Step.ProductSpecificationTemplates[0].Slug)
+	assert.Equal(t, "rim", result.Step.ProductCategories[0].Slug)
 	assert.False(t, result.HasMore)
 }
 
-func TestQuickBuyServiceUsesTemplateFilterableSpecificationsAndDynamicValues(t *testing.T) {
-	db, quickBuyService := newQuickBuyTestService(t)
-	rimType := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
-	specDefinition := productdomain.SpecDefinition{
-		ProductSpecificationTemplateID: rimType.ID,
-		Group:                          "规格",
-		Name:                           "Rim Depth",
-		Slug:                           "rim_depth",
-		FieldType:                      "number",
-		Unit:                           "mm",
-		IsVisible:                      true,
-		IsFilterable:                   true,
-		SortOrder:                      10,
-	}
-	require.NoError(t, db.Create(&specDefinition).Error)
-
-	first := seedQuickBuyProductWithDetails(t, db, rimType.ID, "QB-RIM-033", "Rim 33", "quick-buy-rim-33", 100)
-	second := seedQuickBuyProductWithDetails(t, db, rimType.ID, "QB-RIM-045", "Rim 45", "quick-buy-rim-45", 110)
-	require.NoError(t, db.Create(&productdomain.ProductSpecValue{
-		ProductID:        first.ID,
-		SpecDefinitionID: specDefinition.ID,
-		Value:            "33",
-	}).Error)
-	require.NoError(t, db.Create(&productdomain.ProductSpecValue{
-		ProductID:        second.ID,
-		SpecDefinitionID: specDefinition.ID,
-		Value:            "45",
-	}).Error)
-
-	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
-		Slug:         "dynamic-filter-build",
-		Name:         "Dynamic Filter Build",
+func TestQuickBuyServiceRejectsRetiredTemplateFilterConfiguration(t *testing.T) {
+	_, quickBuyService := newQuickBuyTestService(t)
+	_, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
+		Slug:         "retired-template-filter",
+		Name:         "Retired Template Filter",
 		EntrySurface: "dock",
-		Version: QuickBuyVersionInput{
-			Steps: []QuickBuyStepInput{
-				{
-					StepKey:                         "rim",
-					Name:                            "Rims",
-					ProductSpecificationTemplateIDs: []uint{rimType.ID},
-				},
-			},
-		},
+		Version: QuickBuyVersionInput{Steps: []QuickBuyStepInput{{
+			StepKey: "product", Name: "Products", ProductSpecificationTemplateIDs: []uint{1},
+		}}},
 	})
-	require.NoError(t, err)
-
-	result, err := quickBuyService.PreviewVersionStepCandidates(created.Version.ID, QuickBuyCandidateInput{
-		StepKey:  "rim",
-		Locale:   "en",
-		PageSize: 12,
-	})
-	require.NoError(t, err)
-	require.Len(t, result.Products, 2)
-	require.Len(t, result.Step.Filters, 1)
-	assert.Equal(t, "rim_depth", result.Step.Filters[0].Slug)
-	assert.Equal(t, []string{"33", "45"}, result.Step.Filters[0].Values)
-
-	filtered, err := quickBuyService.PreviewVersionStepCandidates(created.Version.ID, QuickBuyCandidateInput{
-		StepKey: "rim",
-		Locale:  "en",
-		SpecFilters: map[string][]string{
-			"rim_depth": {"45"},
-		},
-		PageSize: 12,
-	})
-	require.NoError(t, err)
-	require.Len(t, filtered.Products, 1)
-	assert.Equal(t, second.ID, filtered.Products[0].ID)
-	assert.NotEqual(t, first.ID, filtered.Products[0].ID)
+	require.ErrorIs(t, err, ErrQuickBuyInvalid)
+	require.ErrorContains(t, err, "select products by category")
 }
 
 func TestQuickBuyServiceFiltersDedicatedWheelsetsByCategoryWithoutTemplateBinding(t *testing.T) {
@@ -745,10 +689,10 @@ func TestQuickBuyServiceFiltersDedicatedWheelsetsByCategoryWithoutTemplateBindin
 	require.Equal(t, wheelset.ID, filtered.Products[0].ID)
 }
 
-func TestQuickBuyServiceRejectsSessionSelectionFromWrongProductSpecificationTemplate(t *testing.T) {
+func TestQuickBuyServiceRejectsSessionSelectionFromWrongProductCategory(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	rimType := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
-	handlebarType := seedQuickBuyProductSpecificationTemplate(t, db, "Handlebar", "handlebar")
+	rimType := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
+	handlebarType := seedQuickBuyCatalogCategory(t, db, "Handlebar", "handlebar")
 	wrongProduct := seedQuickBuyProductWithDetails(t, db, handlebarType.ID, "QB-HB-002", "Wrong Handlebar", "wrong-handlebar", 80)
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
@@ -758,9 +702,9 @@ func TestQuickBuyServiceRejectsSessionSelectionFromWrongProductSpecificationTemp
 		Version: QuickBuyVersionInput{
 			Steps: []QuickBuyStepInput{
 				{
-					StepKey:                         "rim",
-					Name:                            "Rims",
-					ProductSpecificationTemplateIDs: []uint{rimType.ID},
+					StepKey:            "rim",
+					Name:               "Rims",
+					ProductCategoryIDs: []uint{rimType.ID},
 				},
 			},
 		},
@@ -783,12 +727,12 @@ func TestQuickBuyServiceRejectsSessionSelectionFromWrongProductSpecificationTemp
 		},
 	})
 	require.ErrorIs(t, err, ErrQuickBuyInvalid)
-	assert.Contains(t, err.Error(), "not allowed")
+	assert.Contains(t, err.Error(), "not in an allowed product category")
 }
 
 func TestQuickBuyServicePreviewsDraftVersionCandidates(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
+	productSpecificationTemplate := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
 	productRecord := seedQuickBuyProduct(t, db, productSpecificationTemplate.ID)
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
@@ -798,9 +742,9 @@ func TestQuickBuyServicePreviewsDraftVersionCandidates(t *testing.T) {
 		Version: QuickBuyVersionInput{
 			Steps: []QuickBuyStepInput{
 				{
-					StepKey:                         "rim",
-					Name:                            "Rims",
-					ProductSpecificationTemplateIDs: []uint{productSpecificationTemplate.ID},
+					StepKey:            "rim",
+					Name:               "Rims",
+					ProductCategoryIDs: []uint{productSpecificationTemplate.ID},
 				},
 			},
 		},
@@ -817,7 +761,7 @@ func TestQuickBuyServicePreviewsDraftVersionCandidates(t *testing.T) {
 
 func TestQuickBuyServiceDoesNotAllowExplicitInactiveVersion(t *testing.T) {
 	db, quickBuyService := newQuickBuyTestService(t)
-	productSpecificationTemplate := seedQuickBuyProductSpecificationTemplate(t, db, "Rim", "rim")
+	productSpecificationTemplate := seedQuickBuyCatalogCategory(t, db, "Rim", "rim")
 	startsAt := time.Now().UTC().Add(time.Hour)
 
 	created, err := quickBuyService.CreateFlow(QuickBuyFlowInput{
@@ -828,9 +772,9 @@ func TestQuickBuyServiceDoesNotAllowExplicitInactiveVersion(t *testing.T) {
 			StartsAt: &startsAt,
 			Steps: []QuickBuyStepInput{
 				{
-					StepKey:                         "rim",
-					Name:                            "Rims",
-					ProductSpecificationTemplateIDs: []uint{productSpecificationTemplate.ID},
+					StepKey:            "rim",
+					Name:               "Rims",
+					ProductCategoryIDs: []uint{productSpecificationTemplate.ID},
 				},
 			},
 		},
@@ -892,16 +836,9 @@ func newQuickBuyTestService(t *testing.T) (*gorm.DB, *QuickBuyService) {
 	return db, NewQuickBuyService(repository.NewQuickBuyRepository(db), productRepo, repository.NewProductCategoryRepository(db))
 }
 
-func seedQuickBuyProductSpecificationTemplate(t *testing.T, db *gorm.DB, name, slug string) productdomain.ProductSpecificationTemplate {
+func seedQuickBuyCatalogCategory(t *testing.T, db *gorm.DB, name, slug string) productdomain.ProductCategory {
 	t.Helper()
-
-	productSpecificationTemplate := productdomain.ProductSpecificationTemplate{
-		Name:      name,
-		Slug:      slug,
-		IsEnabled: true,
-	}
-	require.NoError(t, db.Create(&productSpecificationTemplate).Error)
-	return productSpecificationTemplate
+	return seedQuickBuyProductCategory(t, db, name, slug, nil)
 }
 
 func seedQuickBuyProductCategory(t *testing.T, db *gorm.DB, name, slug string, parentID *uint) productdomain.ProductCategory {
@@ -921,28 +858,26 @@ func seedQuickBuyProductCategory(t *testing.T, db *gorm.DB, name, slug string, p
 	return category
 }
 
-func seedQuickBuyProduct(t *testing.T, db *gorm.DB, productSpecificationTemplateID uint) productdomain.Product {
+func seedQuickBuyProduct(t *testing.T, db *gorm.DB, productCategoryID uint) productdomain.Product {
 	t.Helper()
-	return seedQuickBuyProductWithDetails(t, db, productSpecificationTemplateID, "QB-RIM-001", "Quick Buy Rim", "quick-buy-rim", 100)
+	return seedQuickBuyProductWithDetails(t, db, productCategoryID, "QB-RIM-001", "Quick Buy Rim", "quick-buy-rim", 100)
 }
 
-func seedQuickBuyProductWithDetails(t *testing.T, db *gorm.DB, productSpecificationTemplateID uint, sku, name, slug string, price float64, productCategoryIDs ...uint) productdomain.Product {
+func seedQuickBuyProductWithDetails(t *testing.T, db *gorm.DB, productCategoryID uint, sku, name, slug string, price float64, additionalCategoryIDs ...uint) productdomain.Product {
 	t.Helper()
-	var productCategoryID *uint
-	if len(productCategoryIDs) > 0 && productCategoryIDs[0] > 0 {
-		productCategoryID = &productCategoryIDs[0]
+	if len(additionalCategoryIDs) > 0 && additionalCategoryIDs[0] > 0 {
+		productCategoryID = additionalCategoryIDs[0]
 	}
 	productRecord := productdomain.Product{
-		ProductSpecificationTemplateID: &productSpecificationTemplateID,
-		ProductCategoryID:              productCategoryID,
-		SKU:                            sku,
-		Name:                           name,
-		Slug:                           slug,
-		Currency:                       "USD",
-		PriceMinor:                     int64(price * 100),
-		Stock:                          5,
-		Status:                         "active",
-		Locale:                         "en",
+		ProductCategoryID: &productCategoryID,
+		SKU:               sku,
+		Name:              name,
+		Slug:              slug,
+		Currency:          "USD",
+		PriceMinor:        int64(price * 100),
+		Stock:             5,
+		Status:            "active",
+		Locale:            "en",
 	}
 	require.NoError(t, db.Create(&productRecord).Error)
 	variant := productdomain.ProductVariant{

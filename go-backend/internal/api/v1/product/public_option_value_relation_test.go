@@ -10,12 +10,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPublicProductExposesPersistedOptionValueRelations(t *testing.T) {
+func TestPublicProductDoesNotExposeRetiredTemplateOptionData(t *testing.T) {
 	item := productdomain.Product{
 		ID:     7,
 		Name:   "Configured product",
 		Slug:   "configured-product",
 		Status: "active",
+		Variants: []productdomain.ProductVariant{{
+			ID: 10, ProductID: 7, SKU: "SKU-1", Title: "SKU-1", OptionValues: `{"color":"black"}`, IsActive: true,
+		}},
+		VariantOptionValues: []productdomain.ProductVariantOptionValue{{
+			ID: 51, ProductID: 7, SpecDefinitionID: 8, ValueKey: "black", Label: "Black", SwatchURL: "/uploads/swatches/black.webp", IsEnabled: true,
+		}},
 		OptionValueRelations: []productdomain.ProductOptionValueRelation{
 			{ID: 31, ProductID: 7, SourceOptionValueID: 101, TargetOptionValueID: 202, RelationType: productdomain.OptionValueRelationRequires},
 			{ID: 0, ProductID: 7, SourceOptionValueID: 202, TargetOptionValueID: 303, RelationType: productdomain.OptionValueRelationConflicts},
@@ -23,13 +29,9 @@ func TestPublicProductExposesPersistedOptionValueRelations(t *testing.T) {
 		},
 	}
 
-	publicProduct := PublicProductFromDomain(item)
-	require.Equal(t, []PublicProductOptionValueRelation{{
-		ID: 31, SourceOptionValueID: 101, TargetOptionValueID: 202, RelationType: productdomain.OptionValueRelationRequires,
-	}}, publicProduct.OptionValueRelations)
-
-	payload, err := json.Marshal(publicProduct)
+	payload, err := json.Marshal(PublicProductFromDomain(item))
 	require.NoError(t, err)
-	require.Contains(t, string(payload), `"option_value_relations":[{"id":31,"source_option_value_id":101,"target_option_value_id":202,"relation_type":"requires"}]`)
-	require.False(t, strings.Contains(string(payload), `"product_id"`), "public relation must not expose its storage owner")
+	for _, retiredField := range []string{"product_specification_template", "spec_values", "variant_option_values", "option_value_relations", "option_values", "spec_definition_id"} {
+		require.False(t, strings.Contains(string(payload), `"`+retiredField+`"`), "retired product field %q was exposed: %s", retiredField, payload)
+	}
 }

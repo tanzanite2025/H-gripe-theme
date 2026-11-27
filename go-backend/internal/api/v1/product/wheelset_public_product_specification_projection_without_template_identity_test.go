@@ -38,10 +38,6 @@ func TestWheelsetPublicResponseUsesIndependentProductFactsWithoutTemplateValues(
 	if response.WheelsetSpecification != item.WheelsetSpecification {
 		t.Fatal("public response did not expose the independent wheelset specification")
 	}
-	if response.ProductSpecificationTemplate != nil {
-		t.Fatal("wheelset response exposed a generic product specification template identity")
-	}
-
 	values := make(map[string]string, len(response.SpecValues))
 	for _, value := range response.SpecValues {
 		if value.Definition == nil {

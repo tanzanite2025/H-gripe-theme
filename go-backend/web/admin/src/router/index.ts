@@ -128,12 +128,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '商品分类', permission: 'product:view' }
       },
       {
-        path: 'catalog/templates',
-        name: 'CatalogProductTemplates',
-        component: () => import('@/views/ProductSpecificationTemplates.vue'),
-        meta: { title: '商品规格模板', permission: 'product:view' }
-      },
-      {
         path: 'catalog/information-templates',
         name: 'CatalogProductInformationTemplates',
         component: () => import('@/views/ProductInformationTemplates.vue'),

@@ -86,6 +86,7 @@ func TestBuildProductTemplateSyncDiffNoChangesWhenMaterialized(t *testing.T) {
 }
 
 func TestSyncProductTemplateMaterializesConfirmedRevisionAndArchivesRemovedValue(t *testing.T) {
+	t.Skip("product template synchronization is retired")
 	db, productService := newTestProductService(t)
 	template, err := productService.CreateProductSpecificationTemplate(ProductSpecificationTemplateInput{
 		Name:      "Sync Template",

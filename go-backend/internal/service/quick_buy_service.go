@@ -148,7 +148,7 @@ type QuickBuyStepView struct {
 	Name                          string                                     `json:"name"`
 	SortOrder                     int                                        `json:"sort_order"`
 	ProductCategories             []QuickBuyProductCategoryView              `json:"product_categories"`
-	ProductSpecificationTemplates []QuickBuyProductSpecificationTemplateView `json:"product_specification_templates"`
+	ProductSpecificationTemplates []QuickBuyProductSpecificationTemplateView `json:"-"`
 	Filters                       []QuickBuySpecFilterView                   `json:"filters"`
 }
 
@@ -193,7 +193,7 @@ type QuickBuyValidationIssue struct {
 	StepKey                        string `json:"step_key,omitempty"`
 	RuleKey                        string `json:"rule_key,omitempty"`
 	ProductCategoryID              uint   `json:"product_category_id,omitempty"`
-	ProductSpecificationTemplateID uint   `json:"product_specification_template_id,omitempty"`
+	ProductSpecificationTemplateID uint   `json:"-"`
 }
 
 type QuickBuySessionInput struct {

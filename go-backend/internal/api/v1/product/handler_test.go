@@ -540,6 +540,23 @@ func TestListPublicChatProductsCompactSecondPageDoesNotSkipLookaheadItem(t *test
 	}
 }
 
+func TestListPublicChatProductsRejectsRetiredTemplateFilter(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET("/products/chat", NewHandler(nil).ListPublicChatProducts)
+
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/products/chat?product_specification_template=rim", nil)
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected retired template filter to return 400, got %d: %s", response.Code, response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), "product specification template filters are retired") {
+		t.Fatalf("expected retired template filter error, got %s", response.Body.String())
+	}
+}
+
 func TestListPublicChatProductsIncludesDisplayCurrencyContextAndTotal(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
@@ -663,56 +680,6 @@ func TestListPublicChatProductsIncludesDisplayCurrencyContextAndTotal(t *testing
 	}
 	if len(body.Data[0].Variants) != 1 || body.Data[0].Variants[0].DisplayPrice == nil {
 		t.Fatalf("expected variant display_price in EUR, got %#v", body.Data[0].Variants)
-	}
-}
-
-func TestListProductSpecificationTemplatesHidesRetiredWheelsetAndDoesNotExposeDefinitions(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open test db: %v", err)
-	}
-	if err := db.AutoMigrate(
-		&productdomain.ProductSpecificationTemplate{},
-		&productdomain.SpecDefinition{},
-	); err != nil {
-		t.Fatalf("migrate test db: %v", err)
-	}
-
-	retiredWheelsetTemplate := productdomain.ProductSpecificationTemplate{
-		Name:      "Wheelset",
-		Slug:      "wheelset",
-		IsEnabled: true,
-		SpecDefinitions: []productdomain.SpecDefinition{
-			{Name: "Material", Slug: "material", FieldType: "text", IsVisible: true},
-		},
-	}
-	if err := db.Create(&retiredWheelsetTemplate).Error; err != nil {
-		t.Fatalf("seed retired wheelset template: %v", err)
-	}
-	if err := db.Create(&productdomain.ProductSpecificationTemplate{Name: "Handlebar", Slug: "handlebar", IsEnabled: true}).Error; err != nil {
-		t.Fatalf("seed active product specification template: %v", err)
-	}
-
-	router := gin.New()
-	handler := NewHandler(service.NewProductService(repository.NewProductRepository(db), nil, 0))
-	router.GET("/products/specification-templates", handler.ListProductSpecificationTemplates)
-
-	response := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/products/specification-templates", nil)
-	router.ServeHTTP(response, request)
-
-	if response.Code != http.StatusOK {
-		t.Fatalf("expected product specification templates to return 200, got %d: %s", response.Code, response.Body.String())
-	}
-	if strings.Contains(response.Body.String(), `"slug":"wheelset"`) {
-		t.Fatalf("retired wheelset template is still public: %s", response.Body.String())
-	}
-	if !strings.Contains(response.Body.String(), `"slug":"handlebar"`) {
-		t.Fatalf("expected response to retain other public product templates, got %s", response.Body.String())
-	}
-	if strings.Contains(response.Body.String(), "spec_definitions") {
-		t.Fatalf("public product specification template index exposes specs: %s", response.Body.String())
 	}
 }
 

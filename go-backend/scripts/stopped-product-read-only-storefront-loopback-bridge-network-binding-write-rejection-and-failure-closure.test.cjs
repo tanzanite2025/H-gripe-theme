@@ -103,7 +103,7 @@ test('page shell dependencies use fixed genuine routes, preserve request context
   const dependencies = [
     ['/api/v1/storefront/redirects', 'redirects'], ['/api/v1/seo/home', 'seo_home'],
     ['/api/v1/settings/social', 'social_settings'], ['/api/v1/settings/website-profile', 'website_profile'],
-    ['/api/v1/settings/website-name', 'website_name'], ['/api/v1/products/specification-templates', 'specification_templates'],
+    ['/api/v1/settings/website-name', 'website_name'],
     ['/api/v1/settings/currency-policy', 'currency_policy'],
   ];
   try {

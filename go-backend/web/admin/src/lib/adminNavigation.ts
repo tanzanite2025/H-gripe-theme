@@ -95,7 +95,6 @@ export const adminNavigationItems: AdminNavigationItem[] = [
       { id: 'catalog-products', path: '/catalog/products', routeName: 'CatalogProducts', label: '商品管理' },
       { id: 'catalog-brands', path: '/catalog/brands', routeName: 'CatalogProductBrands', label: '商品品牌' },
       { id: 'catalog-categories', path: '/catalog/categories', routeName: 'CatalogProductCategories', label: '商品分类' },
-      { id: 'catalog-templates', path: '/catalog/templates', routeName: 'CatalogProductTemplates', label: '商品规格模板' },
       { id: 'catalog-information-templates', path: '/catalog/information-templates', routeName: 'CatalogProductInformationTemplates', label: '产品信息模板' },
       { id: 'catalog-fulfillment-requirements', path: '/catalog/fulfillment-requirements', routeName: 'CatalogProductFulfillmentRequirements', label: '产品履约要求', icon: ShieldCheck },
       { id: 'catalog-customs-classifications', path: '/catalog/customs-classifications', routeName: 'CatalogCustomsClassifications', label: '清关资料中心', icon: FileSearch },

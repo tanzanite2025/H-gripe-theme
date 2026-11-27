@@ -91,7 +91,6 @@ type scoredRecommendationCandidate struct {
 	Score             float64
 	Slot              string
 	Reason            string
-	SpecMatches       int
 	QueryMatches      int
 	GlobalSignalScore float64
 	PersonalScore     float64
@@ -250,17 +249,17 @@ func (s *RecommendationService) collectRecommendationCandidates(surface string, 
 		seen[productID] = struct{}{}
 	}
 
-	addLayer := func(productSpecificationTemplateID *uint, keyword, slot, reason string) error {
+	addLayer := func(productCategoryID *uint, keyword, slot, reason string) error {
 		if len(seeds) >= limit {
 			return nil
 		}
 		products, _, err := s.productService.ListRecommendationCandidates(ProductRecommendationCandidateInput{
-			Locale:                         locale,
-			ProductSpecificationTemplateID: productSpecificationTemplateID,
-			Keyword:                        keyword,
-			ExcludeProductIDs:              excludeIDs,
-			Page:                           1,
-			PageSize:                       limit,
+			Locale:            locale,
+			ProductCategoryID: productCategoryID,
+			Keyword:           keyword,
+			ExcludeProductIDs: excludeIDs,
+			Page:              1,
+			PageSize:          limit,
 		})
 		if err != nil {
 			return err
@@ -288,7 +287,7 @@ func (s *RecommendationService) collectRecommendationCandidates(surface string, 
 		}
 	}
 	if categoryID != nil {
-		if err := addLayer(categoryID, "", "similar_products", "same_product_specification_template"); err != nil {
+		if err := addLayer(categoryID, "", "similar_products", "same_product_category"); err != nil {
 			return nil, err
 		}
 	}
@@ -343,20 +342,19 @@ func scoreRecommendationCandidates(input recommendationScoreInput) []scoredRecom
 			Reason:  seed.Reason,
 		}
 
-		if input.CategoryID != nil && item.ProductSpecificationTemplateID != nil && *item.ProductSpecificationTemplateID == *input.CategoryID {
+		if input.CategoryID != nil && item.ProductCategoryID != nil && *item.ProductCategoryID == *input.CategoryID {
 			candidate.Score += 90
 			if candidate.Reason == "popular_available" {
 				candidate.Slot = "category_followup"
-				candidate.Reason = "same_product_specification_template"
+				candidate.Reason = "same_product_category"
 			}
 		}
 
 		if input.ContextProduct != nil {
-			candidate.SpecMatches = countRecommendationSpecMatches(*input.ContextProduct, item)
-			if candidate.SpecMatches > 0 {
-				candidate.Score += float64(candidate.SpecMatches) * 45
+			if input.ContextProduct.ProductCategoryID != nil && item.ProductCategoryID != nil && *input.ContextProduct.ProductCategoryID == *item.ProductCategoryID {
+				candidate.Score += 90
 				candidate.Slot = "similar_products"
-				candidate.Reason = "matching_specs"
+				candidate.Reason = "same_product_category"
 			}
 		}
 
@@ -442,48 +440,6 @@ func recommendationSignalScore(signal repository.RecommendationProductSignal, pe
 		float64(signal.Purchases)*48)
 }
 
-func countRecommendationSpecMatches(contextProduct product.Product, candidate product.Product) int {
-	contextValues := recommendationComparableSpecValues(contextProduct)
-	if len(contextValues) == 0 {
-		return 0
-	}
-
-	matches := 0
-	for _, value := range candidate.SpecValues {
-		if value.SpecDefinition == nil {
-			continue
-		}
-		if !value.SpecDefinition.IsFilterable && value.SpecDefinition.RuntimeRole() != "variant" {
-			continue
-		}
-		expected, ok := contextValues[value.SpecDefinitionID]
-		if !ok {
-			continue
-		}
-		if normalizeRecommendationComparableValue(value.Value) == expected {
-			matches++
-		}
-	}
-	return matches
-}
-
-func recommendationComparableSpecValues(item product.Product) map[uint]string {
-	values := map[uint]string{}
-	for _, value := range item.SpecValues {
-		if value.SpecDefinition == nil {
-			continue
-		}
-		if !value.SpecDefinition.IsFilterable && value.SpecDefinition.RuntimeRole() != "variant" {
-			continue
-		}
-		normalized := normalizeRecommendationComparableValue(value.Value)
-		if normalized != "" {
-			values[value.SpecDefinitionID] = normalized
-		}
-	}
-	return values
-}
-
 func countRecommendationQueryMatches(tokens []string, item product.Product) int {
 	if len(tokens) == 0 {
 		return 0
@@ -494,8 +450,6 @@ func countRecommendationQueryMatches(tokens []string, item product.Product) int 
 		item.SKU,
 		item.ShortDesc,
 		item.Description,
-		recommendationProductSpecificationTemplateText(item),
-		recommendationSpecText(item),
 	}, " "))
 
 	matches := 0
@@ -599,8 +553,8 @@ func recommendationCategoryID(inputCategoryID *uint, contextProduct *product.Pro
 	if inputCategoryID != nil && *inputCategoryID > 0 {
 		return inputCategoryID
 	}
-	if contextProduct != nil && contextProduct.ProductSpecificationTemplateID != nil && *contextProduct.ProductSpecificationTemplateID > 0 {
-		return contextProduct.ProductSpecificationTemplateID
+	if contextProduct != nil && contextProduct.ProductCategoryID != nil && *contextProduct.ProductCategoryID > 0 {
+		return contextProduct.ProductCategoryID
 	}
 	return nil
 }
@@ -661,25 +615,6 @@ func normalizeRecommendationComparableValue(value string) string {
 		"-", " ",
 	)
 	return strings.Join(strings.Fields(strings.ToLower(replacer.Replace(strings.TrimSpace(value)))), " ")
-}
-
-func recommendationProductSpecificationTemplateText(item product.Product) string {
-	if item.ProductSpecificationTemplate == nil {
-		return ""
-	}
-	parts := []string{item.ProductSpecificationTemplate.Name, item.ProductSpecificationTemplate.Slug, item.ProductSpecificationTemplate.Description}
-	return strings.Join(parts, " ")
-}
-
-func recommendationSpecText(item product.Product) string {
-	parts := make([]string, 0, len(item.SpecValues)*2)
-	for _, value := range item.SpecValues {
-		parts = append(parts, value.Value)
-		if value.SpecDefinition != nil {
-			parts = append(parts, value.SpecDefinition.Name, value.SpecDefinition.Slug)
-		}
-	}
-	return strings.Join(parts, " ")
 }
 
 func recommendationSurfaceUsesSearch(surface string) bool {

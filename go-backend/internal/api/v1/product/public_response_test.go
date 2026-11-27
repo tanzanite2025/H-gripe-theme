@@ -135,6 +135,31 @@ func TestPublicProductFromDomainExposesValidatedMpnAndGtinOnlyForWheelsets(t *te
 	}
 }
 
+func TestPublicProductFromDomainExposesGenericSchemaOnlyForOrdinaryProducts(t *testing.T) {
+	weight := 42.25
+	ordinary := productdomain.Product{
+		GenericProductSchema: &productdomain.GenericProductSchema{
+			SchemaVersion: 1,
+			Model:         "BC-100",
+			Material:      "Aluminium",
+			Color:         "Black",
+			Size:          "Standard",
+			WeightG:       &weight,
+		},
+	}
+	publicOrdinary := PublicProductFromDomain(ordinary)
+	if publicOrdinary.GenericProductSchema == nil || publicOrdinary.GenericProductSchema.Model != "BC-100" {
+		t.Fatalf("ordinary product generic schema was not exposed: %#v", publicOrdinary.GenericProductSchema)
+	}
+
+	dedicated := ordinary
+	dedicated.ProductType = productdomain.ProductTypeWheelset
+	publicDedicated := PublicProductFromDomain(dedicated)
+	if publicDedicated.GenericProductSchema != nil {
+		t.Fatalf("dedicated product leaked ordinary generic schema: %#v", publicDedicated.GenericProductSchema)
+	}
+}
+
 func TestPublicProductFromDomainStatusOverridesSkuAvailability(t *testing.T) {
 	for _, status := range []string{"inactive", "out_of_stock"} {
 		t.Run(status, func(t *testing.T) {
@@ -201,24 +226,6 @@ func TestPublicProductFromDomainExposesMadeToOrderAvailabilityWithoutStock(t *te
 	}
 	if len(publicProduct.Variants) != 1 || publicProduct.Variants[0].Availability != AvailabilityMadeToOrder {
 		t.Fatalf("made-to-order variant availability = %#v", publicProduct.Variants)
-	}
-}
-
-func TestPublicProductSpecificationTemplateUsesBaseNameRegardlessOfLocale(t *testing.T) {
-	item := productdomain.Product{
-		ProductSpecificationTemplate: &productdomain.ProductSpecificationTemplate{
-			Name: "Road Bike",
-		},
-	}
-
-	translated := PublicProductFromDomainWithLocale(item, "", "zh_cn")
-	if translated.ProductSpecificationTemplate == nil || translated.ProductSpecificationTemplate.Name != "Road Bike" {
-		t.Fatalf("expected base product specification template name, got %#v", translated.ProductSpecificationTemplate)
-	}
-
-	fallback := PublicProductFromDomainWithLocale(item, "", "fr")
-	if fallback.ProductSpecificationTemplate == nil || fallback.ProductSpecificationTemplate.Name != "Road Bike" {
-		t.Fatalf("expected product specification template name to remain stable, got %#v", fallback.ProductSpecificationTemplate)
 	}
 }
 
@@ -313,28 +320,17 @@ func TestPublicProductFromDomainExposesVariantOptionPresentationMetadata(t *test
 	}
 
 	publicProduct := PublicProductFromDomain(item)
-
-	if len(publicProduct.VariantOptionValues) != 1 {
-		t.Fatalf("expected one public option value, got %#v", publicProduct.VariantOptionValues)
-	}
-	option := publicProduct.VariantOptionValues[0]
-	if option.SpecSlug != "finish" || option.ValueKey != "ruby_red" || option.Label != "Ruby Red" {
-		t.Fatalf("unexpected public option metadata: %#v", option)
-	}
-	if option.ColorHex != "#8F2028" || option.SwatchURL != "/uploads/swatches/ruby-red.webp" {
-		t.Fatalf("expected public swatch metadata, got %#v", option)
-	}
-	if !option.IsDefault || option.PriceDeltaMinor != 250 || option.InventoryPolicy != "none" {
-		t.Fatalf("expected custom option policy metadata, got %#v", option)
-	}
 	if len(publicProduct.Media) != 1 {
-		t.Fatalf("expected one public media item, got %#v", publicProduct.Media)
+		t.Fatalf("expected product media to remain public, got %#v", publicProduct.Media)
 	}
-	if publicProduct.Media[0].VariantOptionValueID == nil || *publicProduct.Media[0].VariantOptionValueID != optionValueID {
-		t.Fatalf("expected media to expose variant option value reference, got %#v", publicProduct.Media[0])
+	payload, err := json.Marshal(publicProduct)
+	if err != nil {
+		t.Fatalf("marshal public product: %v", err)
 	}
-	if publicProduct.ProductSpecificationTemplate == nil || len(publicProduct.ProductSpecificationTemplate.SpecDefinitions) != 1 || publicProduct.ProductSpecificationTemplate.SpecDefinitions[0].Presentation != "color" {
-		t.Fatalf("expected public product specification template to expose color presentation, got %#v", publicProduct.ProductSpecificationTemplate)
+	for _, retiredField := range []string{"product_specification_template", "variant_option_values", "option_value_relations", "variant_option_value_id", "option_values", "spec_definition_id", "swatch_url"} {
+		if strings.Contains(string(payload), `"`+retiredField+`"`) {
+			t.Fatalf("public product response exposes retired template option field %q: %s", retiredField, payload)
+		}
 	}
 }
 
@@ -399,7 +395,6 @@ func TestPublicProductFromDomainCanonicalizesFirstPartyMediaURLs(t *testing.T) {
 		`"thumbnail_url":"https://shop.example.test/uploads/products/thumb.webp"`,
 		`"poster_url":"https://shop.example.test/uploads/products/poster.webp"`,
 		`"logo_url":"https://shop.example.test/uploads/brands/logo.webp"`,
-		`"swatch_url":"https://shop.example.test/uploads/swatches/black.webp"`,
 	} {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("public product response missing canonical media %s: %s", expected, body)

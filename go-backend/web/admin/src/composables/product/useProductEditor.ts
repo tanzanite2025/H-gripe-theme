@@ -11,19 +11,40 @@ import { requireCarbonRimSystemCategory, buildCarbonRimRequiredSystemCategoryDis
 import { requireBicycleTireSystemCategory, buildBicycleTireSystemCategoryDisplayPath } from '@/modules/product/bicycleTireRequiredSystemCategorySelection'
 import { requireWheelsetSystemCategory, buildWheelsetSystemCategoryDisplayPath } from '@/modules/product/wheelsetRequiredSystemCategorySelection'
 import { requireSpokesSystemCategory, buildSpokesSystemCategoryDisplayPath } from '@/modules/product/spokesRequiredSystemCategorySelection'
-import productSpecificationTemplateApi from '@/api/productSpecificationTemplates'
 import schwalbeTireCatalogApi, { type SchwalbeTireCatalogItem } from '@/api/schwalbeTireCatalog'
 import { useProductMediaManager } from '@/composables/product/useProductMediaManager'
 import { buildProductMediaFormValues } from '@/lib/productMedia'
 import axios from '@/utils/axios'
-import type {
-  ProductFormRecord,
-  ProductOptionValueRelationForm,
-  ProductTemplateSyncDiff,
-  ProductVariantOptionValueForm
-} from '@/modules/product/productEditorTypes'
+import type { ProductFormRecord } from '@/modules/product/productEditorTypes'
 
 type ProductEditorMode = 'create' | 'edit'
+
+const createEmptyGenericProductSchema = () => ({
+  schema_version: 1 as const,
+  model: '',
+  material: '',
+  color: '',
+  size: '',
+  weight_g: null as number | null,
+})
+
+const normalizeGenericProductSchemaForSubmission = (value: ProductFormRecord['generic_product_schema']) => {
+  if (!value) return undefined
+  const model = String(value.model || '').trim()
+  const material = String(value.material || '').trim()
+  const color = String(value.color || '').trim()
+  const size = String(value.size || '').trim()
+  const weight = value.weight_g == null ? null : Number(value.weight_g)
+  if (!model && !material && !color && !size && (!weight || !Number.isFinite(weight) || weight <= 0)) return null
+  return {
+    schema_version: 1 as const,
+    model,
+    material,
+    color,
+    size,
+    weight_g: weight && Number.isFinite(weight) && weight > 0 ? weight : null,
+  }
+}
 
 interface ProductEditorCallbackResult {
   keepDialogOpen?: boolean
@@ -63,7 +84,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     return /^[A-Z]{3}$/.test(code) ? code : defaultPrimaryCurrency
   }
 
-  const productSpecTemplates = ref<any[]>([])
   const carbonRimSystemCategoryDisplayPath = ref('')
   const bicycleTireSystemCategoryDisplayPath = ref('')
   const wheelsetSystemCategoryDisplayPath = ref('')
@@ -101,10 +121,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   const dialogMode = ref<'create' | 'edit'>('create')
   const submitting = ref(false)
   const formErrors = reactive<Record<string, string>>({})
-  const templateSyncDialogVisible = ref(false)
-  const templateSyncDiff = ref<ProductTemplateSyncDiff | null>(null)
-  const templateSyncLoading = ref(false)
-  const templateSyncApplying = ref(false)
 
   const productForm = reactive<ProductFormRecord>({
     id: null,
@@ -113,8 +129,15 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     bicycle_tire_specification: null,
     wheelset_specification: null,
     spoke_specification: null,
+    generic_product_schema: {
+      schema_version: 1,
+      model: '',
+      material: '',
+      color: '',
+      size: '',
+      weight_g: null,
+    },
     parent_id: null,
-    product_specification_template_id: null,
     product_category_id: null,
     brand_id: null,
     after_sales_template_id: null,
@@ -135,10 +158,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     status: 'active',
     locale: resolveDefaultLocale(),
     featured: false,
-    specs: {},
     variants: [],
-    variant_option_values: [],
-    option_value_relations: [],
     media: []
   })
 
@@ -157,61 +177,19 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     normalizeFormMedia
   } = useProductMediaManager(productForm, { clearFieldError })
 
-  const selectedProductSpecTemplate = computed(() => productSpecTemplates.value.find((template) => template.id === productForm.product_specification_template_id) || null)
   const selectedSchwalbeTireArticleNo = computed(() => String(
     productForm.product_type === 'bicycle_tire'
       ? productForm.bicycle_tire_specification?.article_no || ''
-      : productForm.specs.article_no || '',
+      : '',
   ))
-  const definitionRole = (spec: any): string => {
-    const role = String(spec?.role || '').trim()
-    if (role === 'custom_option' || role === 'variant' || role === 'attribute') return role
-    return 'attribute'
-  }
-  const selectedSpecDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => definitionRole(spec) === 'attribute'))
-  const variantSpecDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => definitionRole(spec) === 'variant'))
-  const customOptionDefinitions = computed(() => (selectedProductSpecTemplate.value?.spec_definitions || []).filter((spec: any) => definitionRole(spec) === 'custom_option'))
   const defaultVariantIndex = computed(() => {
     const index = productForm.variants.findIndex((variant: any) => variant.is_default)
     return index >= 0 ? index : 0
   })
-  const productSpecTemplateSelectValue = computed(() => productForm.product_specification_template_id == null ? '__none__' : String(productForm.product_specification_template_id))
   const productCategorySelectValue = computed(() => productForm.product_category_id == null ? '__none__' : String(productForm.product_category_id))
   const brandSelectValue = computed(() => productForm.brand_id == null ? '__none__' : String(productForm.brand_id))
   const afterSalesTemplateSelectValue = computed(() => productForm.after_sales_template_id == null ? '__none__' : String(productForm.after_sales_template_id))
   const packagingTemplateSelectValue = computed(() => productForm.packaging_template_id == null ? '__none__' : String(productForm.packaging_template_id))
-  const hasMeaningfulTemplateValue = (value: any) => {
-    if (value === undefined || value === null || value === '') return false
-    if (value === false) return false
-    if (Array.isArray(value)) return value.length > 0
-    if (typeof value === 'object') return Object.keys(value).length > 0
-    return true
-  }
-  const templateScopedValuesTouched = computed(() => (
-    Object.values(productForm.specs || {}).some(hasMeaningfulTemplateValue) ||
-    productForm.variants.some((variant: any) => Object.values(variant.option_values || {}).some(hasMeaningfulTemplateValue)) ||
-    productForm.variant_option_values.some((item: ProductVariantOptionValueForm) => (
-      hasMeaningfulTemplateValue(item.value_key)
-      || hasMeaningfulTemplateValue(item.label)
-      || hasMeaningfulTemplateValue(item.color_hex)
-      || hasMeaningfulTemplateValue(item.swatch_url)
-    ))
-  ))
-
-  const parseSpecOptions = (spec: any) => {
-    const templateValues = (spec?.option_items || [])
-      .map((item: any) => String(item?.value_key || '').trim())
-      .filter(Boolean)
-    if (templateValues.length) return templateValues
-    return []
-  }
-  const formatSpecOption = (option: unknown) => String(option).replace(/_/g, ' ')
-  const getSpecLabel = (spec: any) => spec.unit ? `${spec.name} (${spec.unit})` : spec.name
-  const specSelectValue = (value: any) => value === undefined || value === null || value === '' ? '__empty__' : String(value)
-  const setSpecSelectValue = (slug: string, value: string) => {
-    productForm.specs[slug] = value === '__empty__' ? '' : value
-    clearFieldError(`spec:${slug}`)
-  }
   const setProductBrand = (value: string) => {
     productForm.brand_id = value === '__none__' ? null : Number(value)
     clearFieldError('brand_id')
@@ -251,42 +229,12 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     return primaryPriceCurrency()
   }
 
-  const coerceSpecValueForForm = (definition: any, value: any) => {
-    if (!definition) return value
-    if (definition.field_type === 'number') {
-      const numberValue = Number(value)
-      return Number.isFinite(numberValue) ? numberValue : undefined
-    }
-    if (definition.field_type === 'boolean') return value === true || value === 'true' || value === '1'
-    return value
-  }
-
-  const buildSpecFormValues = (product: any) => {
-    const values: Record<string, any> = {}
-    ;(product.spec_values || []).forEach((item: any) => {
-      if (item.definition?.slug) values[item.definition.slug] = coerceSpecValueForForm(item.definition, item.value)
-    })
-    return values
-  }
-
-  const parseVariantOptions = (variant: any) => {
-    if (!variant?.option_values) return {}
-    if (typeof variant.option_values === 'object') return { ...variant.option_values }
-    try {
-      const parsed = JSON.parse(variant.option_values)
-      return parsed && typeof parsed === 'object' ? parsed : {}
-    } catch {
-      return {}
-    }
-  }
-
   const createEmptyVariant = (overrides: Record<string, any> = {}) => ({
     shipping_template_ids: [],
     carbon_rim_specification: productForm.product_type === 'carbon_rim' ? createEmptyCarbonRimVariantSpecificationForm() : undefined,
     id: null,
     sku: '',
     title: '',
-    option_values: {},
     currency: primaryPriceCurrency(),
     price: '0.00',
     stock: 0,
@@ -297,140 +245,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     ...overrides
   })
 
-  const createEmptyVariantOptionValue = (
-    overrides: Partial<ProductVariantOptionValueForm> = {}
-  ): ProductVariantOptionValueForm => ({
-    id: null,
-    spec_definition_id: 0,
-    value_key: '',
-    label: '',
-    color_hex: '',
-    swatch_media_asset_id: null,
-    swatch_url: '',
-    sort_order: 0,
-    is_enabled: true,
-    ...overrides
-  })
-
-  const buildVariantOptionValueFormValues = (product: any): ProductVariantOptionValueForm[] => (
-    (product.variant_option_values || []).map((item: any, index: number) => createEmptyVariantOptionValue({
-      id: item.id || null,
-      spec_definition_id: item.spec_definition_id || 0,
-      template_option_item_id: item.template_option_item_id || null,
-      source_template_revision: item.source_template_revision ?? 0,
-      value_key: String(item.value_key || ''),
-      label: String(item.label || ''),
-      color_hex: String(item.color_hex || ''),
-      swatch_media_asset_id: item.swatch_media_asset_id || null,
-      swatch_url: String(item.swatch_url || ''),
-      sort_order: Number(item.sort_order ?? index * 10),
-      is_enabled: item.is_enabled !== false,
-      price_delta_minor: item.price_delta_minor ?? item.custom_option_policy?.price_delta_minor ?? null,
-      is_default: Boolean(item.is_default ?? item.custom_option_policy?.is_default),
-      inventory_policy: item.inventory_policy || item.custom_option_policy?.inventory_policy || 'none',
-      component_variant_id: item.component_variant_id ?? item.custom_option_policy?.component_variant_id ?? null,
-      component_quantity: item.component_quantity ?? item.custom_option_policy?.component_quantity ?? 0,
-      weight_delta_grams: item.weight_delta_grams ?? item.custom_option_policy?.weight_delta_grams ?? 0,
-      packaging_weight_delta_grams: item.packaging_weight_delta_grams ?? item.custom_option_policy?.packaging_weight_delta_grams ?? 0,
-      production_lead_time_days: item.production_lead_time_days ?? item.custom_option_policy?.production_lead_time_days ?? 0,
-      requires_production: Boolean(item.requires_production ?? item.custom_option_policy?.requires_production),
-      cancellation_policy: item.cancellation_policy ?? item.custom_option_policy?.cancellation_policy ?? '',
-      return_policy: item.return_policy ?? item.custom_option_policy?.return_policy ?? 'standard'
-    }))
-  )
-
-  const buildOptionValueRelationFormValues = (product: any): ProductOptionValueRelationForm[] => (
-    (product.option_value_relations || []).map((relation: any) => ({
-      id: relation.id || null,
-      source_option_value_id: Number(relation.source_option_value_id || 0),
-      target_option_value_id: Number(relation.target_option_value_id || 0),
-      relation_type: relation.relation_type === 'conflicts' ? 'conflicts' : 'requires'
-    }))
-  )
-
-  const normalizeVariantOptionValues = () => {
-    const definitionIDs = new Set(
-      [...variantSpecDefinitions.value, ...customOptionDefinitions.value]
-        .map((definition: any) => Number(definition.id || 0))
-        .filter((id: number) => id > 0)
-    )
-    return productForm.variant_option_values
-      .filter((item: ProductVariantOptionValueForm) => (
-        definitionIDs.has(Number(item.spec_definition_id))
-        && String(item.value_key || '').trim()
-      ))
-      .map((item: ProductVariantOptionValueForm, index: number) => ({
-        id: item.id || undefined,
-        spec_definition_id: Number(item.spec_definition_id),
-        template_option_item_id: item.template_option_item_id == null ? undefined : Number(item.template_option_item_id),
-        source_template_revision: Number(item.source_template_revision || 0),
-        value_key: String(item.value_key || '').trim(),
-        label: String(item.label || '').trim(),
-        color_hex: String(item.color_hex || '').trim(),
-        swatch_media_asset_id: item.swatch_media_asset_id ? Number(item.swatch_media_asset_id) : undefined,
-        swatch_url: String(item.swatch_url || '').trim(),
-        sort_order: Number(item.sort_order ?? index * 10),
-        is_enabled: item.is_enabled !== false,
-        price_delta_minor: item.price_delta_minor == null ? undefined : Number(item.price_delta_minor),
-        is_default: Boolean(item.is_default),
-        inventory_policy: String(item.inventory_policy || 'none'),
-        component_variant_id: item.component_variant_id == null ? undefined : Number(item.component_variant_id),
-        component_quantity: Number(item.component_quantity || 0),
-        weight_delta_grams: Number(item.weight_delta_grams || 0),
-        packaging_weight_delta_grams: Number(item.packaging_weight_delta_grams || 0),
-        production_lead_time_days: Number(item.production_lead_time_days || 0),
-        requires_production: Boolean(item.requires_production),
-        cancellation_policy: String(item.cancellation_policy || ''),
-        return_policy: String(item.return_policy || 'standard')
-      }))
-  }
-
-  const normalizeOptionValueRelations = () => productForm.option_value_relations.map((relation) => ({
-    id: relation.id || undefined,
-    source_option_value_id: Number(relation.source_option_value_id || 0),
-    target_option_value_id: Number(relation.target_option_value_id || 0),
-    relation_type: relation.relation_type === 'conflicts' ? 'conflicts' : 'requires'
-  }))
-
-  const materializeTemplateOptionValues = (template: any | null): void => {
-    if (!template) {
-      productForm.variant_option_values = []
-      return
-    }
-    const revision = Number(template.revision || 1)
-    const values: ProductVariantOptionValueForm[] = []
-    ;(template.spec_definitions || []).forEach((definition: any) => {
-      if (definitionRole(definition) !== 'variant' && definitionRole(definition) !== 'custom_option') return
-      ;(definition.option_items || []).forEach((item: any, index: number) => {
-        const enabled = item.is_enabled_by_default !== false
-        values.push(createEmptyVariantOptionValue({
-          spec_definition_id: Number(definition.id || 0),
-          template_option_item_id: item.id || null,
-          source_template_revision: revision,
-          value_key: String(item.value_key || '').trim(),
-          label: String(item.default_label || item.value_key || '').trim(),
-          color_hex: String(item.color_hex || ''),
-          swatch_media_asset_id: item.swatch_media_asset_id || null,
-          swatch_url: String(item.swatch_url || ''),
-          sort_order: Number(item.sort_order ?? index * 10),
-          is_enabled: enabled,
-          price_delta_minor: definitionRole(definition) === 'custom_option' ? (item.default_price_delta_minor ?? null) : null,
-          is_default: definitionRole(definition) === 'custom_option' ? Boolean(item.is_default) : false,
-          inventory_policy: definitionRole(definition) === 'custom_option' ? 'none' : undefined,
-          component_variant_id: null,
-          component_quantity: 0,
-          weight_delta_grams: 0,
-          packaging_weight_delta_grams: 0,
-          production_lead_time_days: 0,
-          requires_production: false,
-          cancellation_policy: '',
-          return_policy: 'standard'
-        }))
-      })
-    })
-    productForm.variant_option_values = values
-  }
-
   const buildVariantFormValues = (product: any) => {
     const variants = (product.variants || []).map((variant: any, index: number) => createEmptyVariant({
       carbon_rim_specification: variant.carbon_rim_specification ? { ...createEmptyCarbonRimVariantSpecificationForm(), ...variant.carbon_rim_specification } : undefined,
@@ -438,7 +252,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       shipping_template_ids: Array.isArray(variant.shipping_template_ids) ? [...variant.shipping_template_ids] : [],
       sku: variant.sku || '',
       title: variant.title || '',
-      option_values: parseVariantOptions(variant),
       currency: validCurrencyCodeOrDefault(variant.currency || product.currency),
       price_minor: Number.isFinite(Number(variant.price_minor)) ? Number(variant.price_minor) : 0,
       price: majorFromMinor(Number.isFinite(Number(variant.price_minor)) ? Number(variant.price_minor) : 0, variant.currency || product.currency),
@@ -446,21 +259,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       weight_grams: variant.weight_grams ?? variant.weight ?? 0,
       is_default: Boolean(variant.is_default),
       is_active: variant.is_active !== false,
-      sort_order: variant.sort_order ?? index * 10,
-      option_group_rules: (variant.option_group_rules || []).map((rule: any) => ({
-        id: rule.id || null,
-        spec_definition_id: Number(rule.spec_definition_id || 0),
-        is_applicable: rule.is_applicable !== false,
-        min_selections_override: rule.min_selections_override ?? null,
-        max_selections_override: rule.max_selections_override ?? null
-      })),
-      option_value_rules: (variant.option_value_rules || []).map((rule: any) => ({
-        id: rule.id || null,
-        product_variant_option_value_id: Number(rule.product_variant_option_value_id || 0),
-        is_enabled: rule.is_enabled !== false,
-        price_delta_minor_override: rule.price_delta_minor_override ?? null,
-        unavailable_reason: String(rule.unavailable_reason || '')
-      }))
+      sort_order: variant.sort_order ?? index * 10
     }))
     if (variants.length === 0) variants.push(createEmptyVariant({ is_default: true }))
     if (!variants.some((variant: any) => variant.is_default)) variants[0].is_default = true
@@ -508,19 +307,12 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     if (!productForm.variants.length) return []
     ensureDefaultVariantIsEnabled()
     if (!productForm.variants.some((variant: any) => variant.is_default)) productForm.variants[0].is_default = true
-    return productForm.variants.map((variant: any, index: number) => {
-      const optionValues: Record<string, any> = {}
-      variantSpecDefinitions.value.forEach((spec: any) => {
-        const value = variant.option_values?.[spec.slug]
-        if (value !== undefined && value !== null && value !== '') optionValues[spec.slug] = value
-      })
-      return {
+    return productForm.variants.map((variant: any, index: number) => ({
         carbon_rim_specification: productForm.product_type === 'carbon_rim' ? normalizeCarbonRimVariantSpecificationForSubmission(variant.carbon_rim_specification) : undefined,
         id: variant.id || undefined,
         shipping_template_ids: Array.from(new Set((Array.isArray(variant.shipping_template_ids) ? variant.shipping_template_ids : []).map((value: any) => Number(value)).filter((value: number) => Number.isInteger(value) && value > 0))),
         sku: String(variant.sku || '').trim(),
         title: String(variant.title || '').trim(),
-        option_values: optionValues,
         currency: validCurrencyCodeOrDefault(variant.currency || productForm.currency),
         price: String(variant.price ?? ''),
         price_minor: minorFromMajor(variant.price, variant.currency || productForm.currency),
@@ -528,23 +320,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         weight_grams: Number(variant.weight_grams || 0),
         is_default: Boolean(variant.is_default),
         is_active: variant.is_active !== false,
-        sort_order: Number(variant.sort_order ?? index * 10),
-        option_group_rules: (variant.option_group_rules || []).filter((rule: any) => Number(rule.spec_definition_id) > 0).map((rule: any) => ({
-          id: rule.id || undefined,
-          spec_definition_id: Number(rule.spec_definition_id),
-          is_applicable: rule.is_applicable !== false,
-          min_selections_override: rule.min_selections_override == null || rule.min_selections_override === '' ? null : Number(rule.min_selections_override),
-          max_selections_override: rule.max_selections_override == null || rule.max_selections_override === '' ? null : Number(rule.max_selections_override)
-        })),
-        option_value_rules: (variant.option_value_rules || []).filter((rule: any) => Number(rule.product_variant_option_value_id) > 0).map((rule: any) => ({
-          id: rule.id || undefined,
-          product_variant_option_value_id: Number(rule.product_variant_option_value_id),
-          is_enabled: rule.is_enabled !== false,
-          price_delta_minor_override: rule.price_delta_minor_override == null || rule.price_delta_minor_override === '' ? null : Number(rule.price_delta_minor_override),
-          unavailable_reason: String(rule.unavailable_reason || '').trim()
-        }))
-      }
-    })
+        sort_order: Number(variant.sort_order ?? index * 10)
+      }))
   }
 
   const buildProductPayload = () => ({
@@ -553,8 +330,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     bicycle_tire_specification: productForm.product_type === 'bicycle_tire' ? normalizeBicycleTireSpecificationForSubmission(productForm.bicycle_tire_specification) : undefined,
     wheelset_specification: productForm.product_type === 'wheelset' ? normalizeWheelsetSpecificationForSubmission(productForm.wheelset_specification) : undefined,
     spoke_specification: productForm.product_type === 'spoke' ? normalizeSpokesProductSpecificationForSubmission(productForm.spoke_specification) : undefined,
+    generic_product_schema: productForm.product_type === '' ? normalizeGenericProductSchemaForSubmission(productForm.generic_product_schema) : undefined,
     id: productForm.id,
-    product_specification_template_id: productForm.product_specification_template_id,
     product_category_id: productForm.product_category_id,
     brand_id: productForm.brand_id,
     after_sales_template_id: productForm.after_sales_template_id,
@@ -575,10 +352,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     status: productForm.status,
     locale: productForm.locale,
     featured: productForm.featured,
-    specs: { ...productForm.specs },
     variants: normalizeFormVariants(),
-    variant_option_values: normalizeVariantOptionValues(),
-    option_value_relations: normalizeOptionValueRelations(),
     media: normalizeFormMedia()
   })
 
@@ -597,44 +371,12 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     if (payload.cn_code && !/^\d{8}$/.test(payload.cn_code)) formErrors.cn_code = 'CN Code 必须是 8 位数字'
     if (payload.country_of_origin && !/^[A-Z]{2}$/.test(payload.country_of_origin)) formErrors.country_of_origin = '请输入 2 位国家代码，例如 CN'
     if (payload.customs_description.length > 255) formErrors.customs_description = '英文报关品名不能超过 255 个字符'
-    selectedSpecDefinitions.value.forEach((spec: any) => {
-      const value = payload.specs[spec.slug]
-      if (spec.is_required && (value === undefined || value === null || value === '')) {
-        formErrors[`spec:${spec.slug}`] = `请填写${spec.name}`
-      }
-    })
     if (!payload.variants.length && !(payload.product_type === 'spoke' && payload.status === 'inactive')) formErrors.variants = '请至少添加一个 SKU 变体'
     else if (payload.variants.some((variant: any) => !variant.sku)) formErrors.variants = '每个变体都必须填写 SKU'
     else if (new Set(payload.variants.map((variant: any) => variant.sku.toLowerCase())).size !== payload.variants.length) formErrors.variants = '变体 SKU 不能重复'
     else if (payload.variants.some((variant: any) => Number(variant.price) <= 0)) formErrors.variants = '每个变体价格必须大于 0'
     else if (payload.variants.some((variant: any) => Number(variant.stock) < 0)) formErrors.variants = '变体库存不能为负数'
     else if (payload.variants.length > 0 && !payload.variants.some((variant: any) => variant.is_active !== false)) formErrors.variants = '请至少启用一个 SKU 变体'
-    const persistedOptionValueIDs = new Set(
-      payload.variant_option_values
-        .map((item: any) => Number(item.id || 0))
-        .filter((id: number) => id > 0)
-    )
-    const relationKeys = new Set<string>()
-    for (const relation of payload.option_value_relations) {
-      const sourceID = Number(relation.source_option_value_id || 0)
-      const targetID = Number(relation.target_option_value_id || 0)
-      if (!persistedOptionValueIDs.has(sourceID) || !persistedOptionValueIDs.has(targetID)) {
-        formErrors.option_value_relations = '选项关系只能使用已保存的选项值'
-        break
-      }
-      if (sourceID === targetID) {
-        formErrors.option_value_relations = '关系两端不能选择同一个选项值'
-        break
-      }
-      const relationKey = relation.relation_type === 'conflicts'
-        ? `conflicts:${Math.min(sourceID, targetID)}:${Math.max(sourceID, targetID)}`
-        : `requires:${sourceID}:${targetID}`
-      if (relationKeys.has(relationKey)) {
-        formErrors.option_value_relations = '不能重复添加相同的选项关系'
-        break
-      }
-      relationKeys.add(relationKey)
-    }
     if (productForm.media.some((item: any) => !String(item.url || '').trim())) formErrors.media = '媒体条目必须填写 URL，空条目请删除'
     else if (payload.media.filter((item: any) => item.media_type === 'image' && item.is_primary).length > 1) formErrors.media = '商品主图只能设置一张'
     if (Object.keys(formErrors).length > 0) {
@@ -669,25 +411,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     clearFieldError('standard_product_identifier')
   }
 
-  const handleProductSpecTemplateSelect = async (value: string) => {
-    const nextProductSpecTemplateID = value === '__none__' ? null : Number(value)
-    if (productForm.product_specification_template_id === nextProductSpecTemplateID) return
-    const hadTemplateValues = templateScopedValuesTouched.value
-    productForm.product_specification_template_id = nextProductSpecTemplateID
-    const nextSpecs: Record<string, any> = {}
-    selectedSpecDefinitions.value.forEach((spec: any) => {
-      if (spec.field_type === 'boolean') nextSpecs[spec.slug] = false
-    })
-    productForm.specs = nextSpecs
-    productForm.variants.forEach((variant: any) => { variant.option_values = {} })
-    materializeTemplateOptionValues(selectedProductSpecTemplate.value)
-    productForm.option_value_relations = []
-    clearFormErrors()
-    if (hadTemplateValues) {
-      toast.info('已切换商品规格模板，商品参数和 SKU 选项值已按新模板重置；SKU 价格、重量、库存和媒体已保留。')
-    }
-  }
-
   const resetForm = () => {
     Object.assign(productForm, {
       id: null,
@@ -696,8 +419,8 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       bicycle_tire_specification: null,
       wheelset_specification: null,
       spoke_specification: null,
+      generic_product_schema: createEmptyGenericProductSchema(),
       parent_id: null,
-      product_specification_template_id: null,
       product_category_id: null,
       brand_id: null,
       after_sales_template_id: null,
@@ -718,22 +441,11 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       status: 'active',
       locale: resolveDefaultLocale(),
       featured: false,
-      specs: {},
       variants: [],
-      variant_option_values: [],
-      option_value_relations: [],
       media: []
     })
     productForm.variants = [createEmptyVariant({ is_default: true })]
     clearFormErrors()
-  }
-
-  const fetchProductSpecTemplates = async () => {
-    try {
-      productSpecTemplates.value = (await productSpecificationTemplateApi.list()).filter((template: any) => !['rim', 'carbon_rim', 'carbon-rim'].includes(String(template.slug).trim().toLowerCase()))
-    } catch (error) {
-      console.error('Failed to fetch product specification templates:', error)
-    }
   }
 
   const notifyProductLoaded = async (product: any | null, mode: ProductEditorMode) => {
@@ -822,8 +534,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       productForm.status = 'inactive'
       productForm.variants = []
     }
-    templateSyncDialogVisible.value = false
-    templateSyncDiff.value = null
     await notifyProductLoaded(null, 'create')
     dialogVisible.value = true
     if (productType === 'bicycle_tire') void fetchSchwalbeTireCatalog()
@@ -834,7 +544,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     let detail = product
     try {
       await fetchPrimaryPricingCurrency()
-      if (!['carbon_rim', 'bicycle_tire', 'wheelset', 'spoke'].includes(product.product_type) && productSpecTemplates.value.length === 0) await fetchProductSpecTemplates()
       detail = await productApi.get(product.id)
       if (detail.product_type === 'carbon_rim') {
         const category = await loadRequiredCarbonRimSystemCategory()
@@ -852,23 +561,19 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
         const category = await loadRequiredSpokesSystemCategory()
         if (detail.product_category_id !== category.id) throw new Error('辐条商品分类不正确，请先检查系统分类配置')
       }
-      if (detail.product_specification_template && !productSpecTemplates.value.some((template) => template.id === detail.product_specification_template.id)) {
-        productSpecTemplates.value.push(detail.product_specification_template)
-      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '获取商品详情失败，请重试后再编辑')
       return
     }
-    const formSpecs = buildSpecFormValues(detail)
     Object.assign(productForm, {
       product_type: detail.product_type || '',
       carbon_rim_specification: detail.carbon_rim_specification ? { ...createEmptyCarbonRimSpecificationForm(), ...detail.carbon_rim_specification } : null,
       bicycle_tire_specification: detail.bicycle_tire_specification ? { ...createEmptyBicycleTireSpecificationForm(), ...detail.bicycle_tire_specification } : (detail.product_type === 'bicycle_tire' ? createEmptyBicycleTireSpecificationForm() : null),
       wheelset_specification: detail.product_type === 'wheelset' ? createWheelsetSpecificationFormFromProduct(detail.wheelset_specification) : null,
       spoke_specification: detail.product_type === 'spoke' ? createSpokesProductSpecificationFormFromProduct(detail.spoke_specification) : null,
+      generic_product_schema: detail.product_type === '' ? { ...createEmptyGenericProductSchema(), ...(detail.generic_product_schema || {}) } : null,
       parent_id: detail.parent_id || null,
       id: detail.id,
-      product_specification_template_id: detail.product_specification_template_id || detail.product_specification_template?.id || null,
       product_category_id: detail.product_category_id ?? detail.product_category?.id ?? null,
       brand_id: detail.brand_id ?? detail.brand?.id ?? null,
       after_sales_template_id: detail.after_sales_template_id ?? detail.after_sales_template?.id ?? null,
@@ -889,10 +594,7 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
       status: detail.status || 'active',
       locale: detail.locale || resolveDefaultLocale(),
       featured: Boolean(detail.featured),
-      specs: formSpecs,
       variants: buildVariantFormValues(detail),
-      variant_option_values: buildVariantOptionValueFormValues(detail),
-      option_value_relations: buildOptionValueRelationFormValues(detail),
       media: buildProductMediaFormValues(detail)
     })
 	if (detail.product_type === 'bicycle_tire') {
@@ -901,38 +603,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     clearFormErrors()
     await notifyProductLoaded(detail, 'edit')
     dialogVisible.value = true
-  }
-
-  const previewTemplateSync = async () => {
-    if (dialogMode.value !== 'edit' || !productForm.id || templateSyncLoading.value) return
-    templateSyncLoading.value = true
-    templateSyncDiff.value = null
-    try {
-      templateSyncDiff.value = await productApi.previewTemplateSync(productForm.id) as ProductTemplateSyncDiff
-      templateSyncDialogVisible.value = true
-    } catch (error: any) {
-      console.error('Failed to preview product template sync:', error)
-      toast.error(error?.response?.data?.error || '读取模板差异失败')
-    } finally {
-      templateSyncLoading.value = false
-    }
-  }
-
-  const confirmTemplateSync = async () => {
-    if (!productForm.id || !templateSyncDiff.value || templateSyncApplying.value) return
-    templateSyncApplying.value = true
-    try {
-      const payload = await productApi.syncTemplate(productForm.id, templateSyncDiff.value.template_revision)
-      templateSyncDialogVisible.value = false
-      templateSyncDiff.value = payload.data as ProductTemplateSyncDiff
-      await showEditDialog(payload.product)
-      toast.success('商品规格模板已同步')
-    } catch (error: any) {
-      console.error('Failed to synchronize product template:', error)
-      toast.error(error?.response?.data?.error || '同步商品规格模板失败，请重新预览')
-    } finally {
-      templateSyncApplying.value = false
-    }
   }
 
   const submitForm = async () => {
@@ -1006,7 +676,6 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
   }
 
   return {
-    productSpecTemplates,
     carbonRimSystemCategoryDisplayPath,
     bicycleTireSystemCategoryDisplayPath,
     wheelsetSystemCategoryDisplayPath,
@@ -1018,29 +687,14 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     dialogVisible,
     dialogMode,
     submitting,
-    templateSyncDialogVisible,
-    templateSyncDiff,
-    templateSyncLoading,
-    templateSyncApplying,
     formErrors,
     productForm,
     uploadingMedia,
-    selectedProductSpecTemplate,
-    selectedSpecDefinitions,
-    variantSpecDefinitions,
-    customOptionDefinitions,
     defaultVariantIndex,
-    productSpecTemplateSelectValue,
     productCategorySelectValue,
     brandSelectValue,
     afterSalesTemplateSelectValue,
     packagingTemplateSelectValue,
-    templateScopedValuesTouched,
-    parseSpecOptions,
-    formatSpecOption,
-    getSpecLabel,
-    specSelectValue,
-    setSpecSelectValue,
     setProductBrand,
     setProductCategory,
     setProductInformationTemplate,
@@ -1058,14 +712,10 @@ export const useProductEditor = (options: Record<string, any> = {}) => {
     removeVariant,
     setDefaultVariant,
     setVariantActive,
-    handleProductSpecTemplateSelect,
     fetchSchwalbeTireCatalog,
     setSchwalbeTireCatalogModel,
-    fetchProductSpecTemplates,
     showCreateDialog,
     showEditDialog,
-    previewTemplateSync,
-    confirmTemplateSync,
     submitForm,
     closeDialog
   }

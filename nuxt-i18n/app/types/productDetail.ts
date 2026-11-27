@@ -166,6 +166,15 @@ export interface SpokesProductSpecification {
   source_urls?: string[]
 }
 
+export interface GenericProductSchema {
+  schema_version: 1
+  model?: string
+  material?: string
+  color?: string
+  size?: string
+  weight_g?: number | null
+}
+
 export interface ProductVariant {
   carbon_rim_specification?: CarbonRimVariantSpecification
   id: number
@@ -301,6 +310,7 @@ export interface GoProduct {
   carbon_rim_specification?: CarbonRimProductSpecification
   wheelset_specification?: WheelsetProductSpecification
   spoke_specification?: SpokesProductSpecification
+  generic_product_schema?: GenericProductSchema
   product_type?: string
   mpn?: string
   gtin?: string

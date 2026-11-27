@@ -10,7 +10,7 @@
       <form class="flex min-h-0 min-w-0 flex-1 flex-col" @submit.prevent="submitSpokeRepairKitProductForm">
         <DialogHeader class="shrink-0 border-b px-5 py-4 pr-12">
           <DialogTitle>{{ mode === 'create' ? '新建辐条修补件' : '编辑辐条修补件' }}</DialogTitle>
-          <DialogDescription>这里沿用商品的描述、清关、成本、媒体和发布设置，只去掉商品规格模板链路；适配轮组型号是这个商品专用的购买选项。</DialogDescription>
+      <DialogDescription>商品资料、清关、成本、媒体和发布设置独立维护；适配轮组型号是修补件专用的购买选项。</DialogDescription>
         </DialogHeader>
 
         <div ref="scrollContainer" class="min-h-0 min-w-0 flex-1 space-y-4 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-8 pt-4 [scrollbar-gutter:stable]" @wheel.stop @touchmove.stop>
@@ -119,8 +119,6 @@
           <ProductMediaSection
             :media-items="form.media"
             :variants="form.variants"
-            :variant-option-values="form.variant_option_values"
-            :spec-definitions="[]"
             :uploading="uploadingMedia"
             :error="errors.media"
             @upload="(...args) => handleMediaUpload(...args)"
@@ -251,7 +249,6 @@ const createEmptySpokeRepairKitSalesVariant = (overrides: Record<string, any> = 
   shipping_template_ids: [],
   sku: '',
   title: '',
-  option_values: {},
   currency: props.currency,
   price: '',
   price_minor: 0,
@@ -260,14 +257,11 @@ const createEmptySpokeRepairKitSalesVariant = (overrides: Record<string, any> = 
   is_default: true,
   is_active: true,
   sort_order: 0,
-  option_group_rules: [],
-  option_value_rules: [],
   ...overrides,
 })
 
 const form = reactive<any>({
   id: null,
-  product_specification_template_id: null,
   product_category_id: null,
   brand_id: null,
   after_sales_template_id: null,
@@ -290,8 +284,6 @@ const form = reactive<any>({
   featured: false,
   media: [],
   model_keys: [],
-  variant_option_values: [],
-  option_value_relations: [],
   variants: [createEmptySpokeRepairKitSalesVariant()],
 })
 
@@ -322,15 +314,6 @@ const readSpokeRepairKitVariantPriceForForm = (variant: any, product: any): stri
     ? String(product?.price_decimal || '')
     : convertSpokeRepairKitMinorAmountToMajorDisplayValue(variant.price_minor, variant?.currency || product?.currency || props.currency)
 }
-const parseSpokeRepairKitVariantOptionValues = (value: unknown): Record<string, any> => {
-  if (value && typeof value === 'object') return { ...(value as Record<string, any>) }
-  try {
-    const parsed = JSON.parse(String(value || '{}'))
-    return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch {
-    return {}
-  }
-}
 const buildSpokeRepairKitWheelsetModelKeyFromRecord = (item: any): string => `${item?.brand_slug || item?.brandSlug || ''}:${item?.wheelset_model_slug || item?.slug || ''}`.toLowerCase()
 
 const populateSpokeRepairKitProductForm = (product: Record<string, any> | null): void => {
@@ -340,7 +323,6 @@ const populateSpokeRepairKitProductForm = (product: Record<string, any> | null):
   const variant = rawVariant || createEmptySpokeRepairKitSalesVariant({ currency })
   Object.assign(form, {
     id: product?.id || null,
-    product_specification_template_id: null,
     product_category_id: props.categoryId || null,
     brand_id: product?.brand_id ?? product?.brand?.id ?? null,
     after_sales_template_id: product?.after_sales_template_id ?? product?.after_sales_template?.id ?? null,
@@ -364,15 +346,12 @@ const populateSpokeRepairKitProductForm = (product: Record<string, any> | null):
     model_keys: Array.isArray(product?.spoke_repair_kit_models)
       ? product.spoke_repair_kit_models.map(buildSpokeRepairKitWheelsetModelKeyFromRecord).filter((key: string) => key !== ':')
       : [],
-    variant_option_values: [],
-    option_value_relations: [],
     media: buildProductMediaFormValues(product || {}),
     variants: [createEmptySpokeRepairKitSalesVariant({
       id: variant?.id || null,
       shipping_template_ids: Array.isArray(variant.shipping_template_ids) ? [...variant.shipping_template_ids] : [],
       sku: String(variant?.sku || product?.sku || ''),
       title: String(variant?.title || ''),
-      option_values: parseSpokeRepairKitVariantOptionValues(variant?.option_values),
       currency: String(variant?.currency || currency).toUpperCase(),
       price: readSpokeRepairKitVariantPriceForForm(variant, product),
       price_minor: Number(variant?.price_minor || 0),
@@ -457,7 +436,6 @@ const buildSpokeRepairKitSalesVariantPayload = (): Record<string, any> => {
     shipping_template_ids: [...variant.shipping_template_ids],
     sku: String(variant.sku || '').trim(),
     title: String(variant.title || '').trim(),
-    option_values: {},
     currency: form.currency,
     price_minor: convertSpokeRepairKitMajorAmountToMinorUnits(variant.price, form.currency),
     stock: Number(variant.stock || 0),
@@ -465,8 +443,6 @@ const buildSpokeRepairKitSalesVariantPayload = (): Record<string, any> => {
     is_default: true,
     is_active: variant.is_active !== false,
     sort_order: 0,
-    option_group_rules: [],
-    option_value_rules: [],
   }
 }
 
@@ -501,7 +477,6 @@ const submitSpokeRepairKitProductForm = async (): Promise<void> => {
   if (!validateSpokeRepairKitProductForm() || submitting.value || supplierCostPending.value) return
   submitting.value = true
   const payload = {
-    product_specification_template_id: null,
     product_category_id: Number(props.categoryId),
     brand_id: form.brand_id ? Number(form.brand_id) : null,
     after_sales_template_id: form.after_sales_template_id,
@@ -523,10 +498,7 @@ const submitSpokeRepairKitProductForm = async (): Promise<void> => {
     status: form.status,
     locale: form.locale,
     featured: Boolean(form.featured),
-    specs: {},
     variants: [buildSpokeRepairKitSalesVariantPayload()],
-    variant_option_values: [],
-    option_value_relations: [],
     media: normalizeFormMedia(),
     spoke_repair_kit_model_keys: [...form.model_keys],
   }
