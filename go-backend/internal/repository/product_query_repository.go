@@ -881,9 +881,7 @@ func (r *ProductRepository) FindAllWithFilters(page, pageSize int, status, local
 	var products []product.Product
 	var total int64
 
-	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("CustomsClassificationProfile").Preload("Media", orderProductMedia).Preload("Variants", func(db *gorm.DB) *gorm.DB {
-		return orderProductVariants(db)
-	}).Preload("AfterSalesTemplate").Preload("PackagingTemplate"))
+	query := r.preloadProductCategory(r.db.Model(&product.Product{}).Preload("Brand").Preload("CustomsClassificationProfile").Preload("Media", orderProductMedia).Preload("Variants", orderProductVariants).Preload("AfterSalesTemplate").Preload("PackagingTemplate"))
 	query = r.preloadSpokeRepairKitModels(query)
 
 	if status != "" {
