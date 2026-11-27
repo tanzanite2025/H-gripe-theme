@@ -176,13 +176,12 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create migration runner: %v", err)
 	}
-	// Migration 431 permanently retires product-level shipping ownership. Only
-	// migrations after this boundary may roll back; the 431 migration tests assert
-	// that product-wide inheritance cannot be resurrected by a down migration.
-	if err := migrator.Migrate(431); err != nil && err != migrate.ErrNoChange {
-		t.Fatalf("roll back migrations to version 431: %v", err)
+	// Migration 447 permanently retires product specification templates. Only
+	// migrations after this boundary may roll back; migration 448 remains reversible.
+	if err := migrator.Migrate(447); err != nil && err != migrate.ErrNoChange {
+		t.Fatalf("roll back migrations to version 447: %v", err)
 	}
-	assertMigrationState(ctx, t, testDB, 431, false)
+	assertMigrationState(ctx, t, testDB, 447, false)
 	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
 		t.Fatalf("reapply migrations after version 431: %v", err)
 	}
