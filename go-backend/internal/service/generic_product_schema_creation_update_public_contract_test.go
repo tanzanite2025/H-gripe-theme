@@ -14,14 +14,14 @@ func TestOrdinaryProductGenericSchemaRoundTripsWithoutTemplateBinding(t *testing
 	created, err := productService.CreateAdminProduct(ProductCreateInput{
 		MerchantProductIdentifier:     "GENERIC-SCHEMA-MERCHANT",
 		ManufacturerProductIdentifier: "GENERIC-SCHEMA-MANUFACTURER",
-		Name:                          "Aluminium Bottle Cage",
-		Slug:                          "aluminium-bottle-cage",
+		Name:                          "Aluminum Bottle Cage",
+		Slug:                          "aluminum-bottle-cage",
 		Status:                        "active",
 		Locale:                        "en",
 		GenericProductSchema: &product.GenericProductSchema{
 			SchemaVersion: 1,
 			Model:         "BC-100",
-			Material:      "Aluminium",
+			Material:      "Aluminum",
 			Color:         "Black",
 			Size:          "Standard",
 			WeightG:       float64Pointer(42.25),
@@ -38,7 +38,7 @@ func TestOrdinaryProductGenericSchemaRoundTripsWithoutTemplateBinding(t *testing
 	require.NoError(t, err)
 	require.NotNil(t, created.GenericProductSchema)
 	require.Nil(t, created.ProductSpecificationTemplateID)
-	require.Equal(t, "Aluminium", created.GenericProductSchema.Material)
+	require.Equal(t, "Aluminum", created.GenericProductSchema.Material)
 
 	loaded, err := productService.GetAdminProduct(created.ID)
 	require.NoError(t, err)

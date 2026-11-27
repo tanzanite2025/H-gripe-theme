@@ -141,7 +141,7 @@ func TestPublicProductFromDomainExposesGenericSchemaOnlyForOrdinaryProducts(t *t
 		GenericProductSchema: &productdomain.GenericProductSchema{
 			SchemaVersion: 1,
 			Model:         "BC-100",
-			Material:      "Aluminium",
+			Material:      "Aluminum",
 			Color:         "Black",
 			Size:          "Standard",
 			WeightG:       &weight,

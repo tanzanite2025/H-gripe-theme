@@ -423,8 +423,8 @@ func assertProductTemplateSourceReset(ctx context.Context, t *testing.T, db *sql
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_specification_templates").Scan(&productSpecificationTemplateCount); err != nil {
 		t.Fatalf("count product specification templates: %v", err)
 	}
-	if productSpecificationTemplateCount != 4 {
-		t.Fatalf("expected four remaining product templates after physical carbon-rim, Schwalbe, and wheelset template removal, got %d", productSpecificationTemplateCount)
+	if productSpecificationTemplateCount != 0 {
+		t.Fatalf("expected all product specification templates to be retired, got %d", productSpecificationTemplateCount)
 	}
 	var removedRimTemplateCount int
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_specification_templates WHERE lower(trim(slug)) IN ('rim','carbon_rim','carbon-rim')").Scan(&removedRimTemplateCount); err != nil {
@@ -438,8 +438,8 @@ func assertProductTemplateSourceReset(ctx context.Context, t *testing.T, db *sql
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM product_spec_definitions").Scan(&specCount); err != nil {
 		t.Fatalf("count product spec definitions: %v", err)
 	}
-	if specCount != 28 {
-		t.Fatalf("expected twenty-eight remaining product spec definitions after removing nine carbon-rim fields, nineteen retired Schwalbe fields, and nine legacy wheelset fields, got %d", specCount)
+	if specCount != 0 {
+		t.Fatalf("expected all product spec definitions to be retired, got %d", specCount)
 	}
 }
 

@@ -16,12 +16,12 @@ func TestOptionalGenericProductSchemaDatabaseConstraintRejectsMissingOrInvalidVe
 
 	if _, err := tx.ExecContext(t.Context(), `
 INSERT INTO products(product_type, generic_product_schema)
-VALUES ('', '{"schema_version":1,"material":"Aluminium"}'), ('spoke', NULL);`); err != nil {
+VALUES ('', '{"schema_version":1,"material":"Aluminum"}'), ('spoke', NULL);`); err != nil {
 		t.Fatalf("valid generic or dedicated product schema was rejected: %v", err)
 	}
 	for _, invalidSchema := range []string{
 		`'{}'`,
-		`'{"material":"Aluminium"}'`,
+		`'{"material":"Aluminum"}'`,
 		`'{"schema_version":null}'`,
 		`'{"schema_version":2}'`,
 		`'[]'`,

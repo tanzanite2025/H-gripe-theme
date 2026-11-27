@@ -546,7 +546,7 @@ func TestListPublicChatProductsRejectsRetiredTemplateFilter(t *testing.T) {
 	router.GET("/products/chat", NewHandler(nil).ListPublicChatProducts)
 
 	response := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/products/chat?product_specification_template=rim", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/products/chat?product_specification_template=rim", nil)
 	router.ServeHTTP(response, request)
 
 	if response.Code != http.StatusBadRequest {
