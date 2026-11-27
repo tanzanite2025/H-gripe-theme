@@ -183,7 +183,7 @@ func TestPrepareSchemaAgainstFreshPostgres(t *testing.T) {
 	}
 	assertMigrationState(ctx, t, testDB, 447, false)
 	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
-		t.Fatalf("reapply migrations after version 431: %v", err)
+		t.Fatalf("reapply migrations after version 447: %v", err)
 	}
 	if err := PrepareSchema(ctx, gormDB, &cfg, "release"); err != nil {
 		t.Fatalf("prepare existing PostgreSQL schema: %v", err)
